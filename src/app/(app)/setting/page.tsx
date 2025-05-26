@@ -1,10 +1,8 @@
 'use client';
 import React, { useState } from 'react';
-import { Card, CardTitle, CardContent } from '../../../components/ui/card';
-import { Avatar, AvatarFallback } from '../../../components/ui/avatar';
-import { Button } from '../../../components/ui/button';
-import { Separator } from '../../../components/ui/separator';
-import { Switch } from '../../../components/ui/switch';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import {
   Camera,
   AtSign,
