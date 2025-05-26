@@ -7,7 +7,7 @@ const ContactPage = () => {
       <div className="bg-[#1a1a1a]">
         <div className="flex items-center justify-between px-4 py-2">
           <span className="text-blue-500">Sort</span>
-          <h1 className="text-lg font-semibold">Contacts</h1>
+          <h1 className="text-lg font-semibold">Contacts Page</h1>
           <div className="flex gap-3">
             <div className="text-blue-500">+</div>
           </div>
