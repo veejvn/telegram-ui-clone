@@ -121,7 +121,6 @@ export default function SettingsPage() {
           <h1 className="text-2xl font-semibold">Your Name</h1>
           <p className="text-sm text-gray-400">+84 12345689</p>
         </div>
-        F
       </div>
 
       {/* Action Shortcuts */}
