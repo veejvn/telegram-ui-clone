@@ -4,7 +4,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useRouter } from "next/navigation";
-
 import {
   Camera,
   AtSign,
@@ -182,6 +181,7 @@ export default function SettingsPage() {
         accept="image/*"
         onChange={handleFileChange}
         className="hidden"
+        aria-label="Upload profile photo"
       />
     </>
   );
