@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -88,6 +88,19 @@ const settings: SettingItem[] = [
 export default function SettingsPage() {
   const [toggles] = useState<Record<string, boolean>>({});
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      console.log("File được chọn:", file.name);
+      // Nếu cần upload: thực hiện fetch/axios POST lên server tại đây
+    }
+  };
 
   return (
     <>
@@ -113,29 +126,35 @@ export default function SettingsPage() {
 
       {/* Action Shortcuts */}
       <div className="mx-4 mt-4 bg-zinc-900 rounded-2xl divide-y divide-zinc-700">
-        {[Camera, AtSign].map((Icon, idx) => (
+        <div className="mx-4 mt-4 bg-zinc-900 rounded-2xl divide-y divide-zinc-700">
+          {/* Set Profile Photo */}
           <div
-            key={idx}
             className="flex items-center justify-between px-4 py-3 cursor-pointer"
-            onClick={() => {
-              if (idx === 0) {
-                router.push("/setting/set-profile-photo");
-              } else {
-                router.push("/setting/set-username");
-              }
-            }}
+            onClick={handleFileSelect}
           >
             <div className="flex items-center space-x-3">
               <div className="bg-indigo-600 h-9 w-9 rounded-full flex items-center justify-center text-white">
-                <Icon className="h-5 w-5" />
+                <Camera className="h-5 w-5" />
               </div>
-              <span className="text-base">
-                {idx === 0 ? "Set Profile Photo" : "Set Username"}
-              </span>
+              <span className="text-base">Set Profile Photo</span>
             </div>
             <ChevronRight className="h-5 w-5 text-gray-500" />
           </div>
-        ))}
+
+          {/* Set Username */}
+          <div
+            className="flex items-center justify-between px-4 py-3 cursor-pointer"
+            onClick={() => router.push("/setting/set-username")}
+          >
+            <div className="flex items-center space-x-3">
+              <div className="bg-indigo-600 h-9 w-9 rounded-full flex items-center justify-center text-white">
+                <AtSign className="h-5 w-5" />
+              </div>
+              <span className="text-base">Set Username</span>
+            </div>
+            <ChevronRight className="h-5 w-5 text-gray-500" />
+          </div>
+        </div>
       </div>
 
       {/* Settings List */}
@@ -158,6 +177,13 @@ export default function SettingsPage() {
         ))}
         <div className="h-14"></div>
       </div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        className="hidden"
+      />
     </>
   );
 }
