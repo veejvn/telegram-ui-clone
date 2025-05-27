@@ -16,7 +16,7 @@ export default function DevicesPage() {
 
     return (
         <div className="p-4 bg-black min-h-screen text-white space-y-4">
-            {/* Back Button */}
+            {/* Nút quay về Settings */}
             <button
                 onClick={() => router.back()}
                 className="flex items-center space-x-2 text-sm text-gray-400"
@@ -31,7 +31,9 @@ export default function DevicesPage() {
                     <div className="bg-orange-500 h-20 w-20 rounded-full flex items-center justify-center mb-4">
                         <QrCode className="h-10 w-10 text-white" />
                     </div>
-                    <h2 className="mt-4 text-center text-gray-300">Link Telegram Desktop or Telegram Web by scanning QR code.</h2>
+                    <h2 className="mt-4 text-center text-gray-300">
+                        Link Telegram Desktop or Telegram Web by scanning the QR code.
+                    </h2>
 
                     <button
                         onClick={handleScan}
@@ -39,6 +41,7 @@ export default function DevicesPage() {
                     >
                         Link Desktop Device
                     </button>
+
                     {scannedData && (
                         <p className="mt-4 text-center text-gray-300">
                             Scanned: <span className="font-mono">{scannedData}</span>
