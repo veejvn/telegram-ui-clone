@@ -199,13 +199,13 @@ export default function LoginForm() {
 
                 <div className="flex items-center justify-between text-sm">
                     <Link
-                        href="/auth/forgot-password"
+                        href="/forgot-password"
                         className="text-blue-600 hover:text-blue-800 transition-colors duration-200"
                     >
                         Forgot your password?
                     </Link>
                     <Link
-                        href="/auth/register"
+                        href="/register"
                         className="text-blue-600 hover:text-blue-800 transition-colors duration-200"
                     >
                         Create account
