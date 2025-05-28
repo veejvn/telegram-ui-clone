@@ -29,16 +29,16 @@ interface SettingItem {
 }
 
 const settings: SettingItem[] = [
-  { title: 'My Profile', icon: <User className="h-6 w-6 text-red-500"/>, path:'/setting/profile' },
-  { title: 'Saved Messages', icon: <Bookmark className="h-6 w-6 text-blue-500"/>, path:'/setting/saved-message' },
-  { title: 'Recent Calls', icon: <PhoneCall className="h-6 w-6 text-green-500" />, path:'/setting/recent-call' },
-  { title: 'Devices', icon: <Smartphone className="h-6 w-6 text-orange-500" />, extra: <span className="text-sm text-gray-400">Scan QR</span>, path:'/setting/device' },
-  { title: 'Chat Folders', icon: <Folder className="h-6 w-6 text-cyan-500" />, path:'/setting/chat-folder' },
-  { title: 'Notifications and Sounds', icon: <Bell className="h-6 w-6 text-red-500" />, path:'/setting/notification-and-sound' },
-  { title: 'Privacy and Security', icon: <Lock className="h-6 w-6 text-gray-400" />, path:'/setting/privacy-and-security' },
-  { title: 'Data and Storage', icon: <Database className="h-6 w-6 text-green-600" />, path:'/setting/data-and-storage' },
-  { title: 'Appearance', icon: <Palette className="h-6 w-6 text-blue-700" />, path:'/setting/appearance' },
-  { title: 'Language', icon: <Globe className="h-6 w-6 text-violet-600" />, extra: <span className="text-sm text-gray-400">English</span>, path:'/setting/language' },
+  { title: 'My Profile', icon: <User className="h-6 w-6 text-red-500" />, path: '/setting/profile' },
+  { title: 'Saved Messages', icon: <Bookmark className="h-6 w-6 text-blue-500" />, path: '/setting/saved-message' },
+  { title: 'Recent Calls', icon: <PhoneCall className="h-6 w-6 text-green-500" />, path: '/setting/recent-call' },
+  { title: 'Devices', icon: <Smartphone className="h-6 w-6 text-orange-500" />, extra: <span className="text-sm text-gray-400">Scan QR</span>, path: '/setting/device' },
+  { title: 'Chat Folders', icon: <Folder className="h-6 w-6 text-cyan-500" />, path: '/setting/chat-folder' },
+  { title: 'Notifications and Sounds', icon: <Bell className="h-6 w-6 text-red-500" />, path: '/setting/notification-and-sound' },
+  { title: 'Privacy and Security', icon: <Lock className="h-6 w-6 text-gray-400" />, path: '/setting/privacy-and-security' },
+  { title: 'Data and Storage', icon: <Database className="h-6 w-6 text-green-600" />, path: '/setting/data-and-storage' },
+  { title: 'Appearance', icon: <Palette className="h-6 w-6 text-blue-700" />, path: '/setting/appearance' },
+  { title: 'Language', icon: <Globe className="h-6 w-6 text-violet-600" />, extra: <span className="text-sm text-gray-400">English</span>, path: '/setting/language' },
 ];
 
 export default function SettingsPage() {
@@ -77,6 +77,8 @@ export default function SettingsPage() {
           </div>
         ))}
       </div>
+      {/* Toggles: Appearance & Power Saving */}
+
 
       {/* Settings List */}
       <div className="p-4 space-y-2">
