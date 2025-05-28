@@ -1,9 +1,9 @@
 "use client"
 
-import LoginForm from "@/app/components/auth/LoginForm"
+import ForgotPasswordForm from "@/app/components/auth/ForgotPasswordForm"
 import Image from 'next/image'
 
-export default function LoginPage() {
+export default function ForgotPasswordPage() {
     return (
         <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
             <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
@@ -17,7 +17,7 @@ export default function LoginPage() {
                         className="rounded-xl"
                     />
                 </div>
-                <LoginForm />
+                <ForgotPasswordForm />
             </div>
         </div>
     )
