@@ -1,160 +1,112 @@
 "use client"
 
-import { useState } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { MatrixAuthService } from "@/lib/matrix-auth"
-import { motion } from "framer-motion"
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/components/ui/use-toast';
+import { motion } from 'framer-motion';
+// import { matrixAuth } from '@/lib/matrix-auth'; // Tạm thời ẩn import matrixAuth
+// import { VerificationCodeForm } from '../../app/components/auth/VerificationCodeForm'; // Ẩn import cũ
+// import { VerificationCodeForm } from './VerificationCodeForm'; // Import VerificationCodeForm từ vị trí đúng
 
-export default function ForgotPasswordForm() {
-    const [isLoading, setIsLoading] = useState(false)
-    const [email, setEmail] = useState("")
-    const [isSubmitted, setIsSubmitted] = useState(false)
-    const [error, setError] = useState("")
+interface ForgotPasswordFormProps {
+    onEmailSubmit: (email: string) => void; // Add new prop
+}
+
+export function ForgotPasswordForm({ onEmailSubmit }: ForgotPasswordFormProps) {
+    const [email, setEmail] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    // const [showVerification, setShowVerification] = useState(false); // Remove state, parent handles this
+    const { toast } = useToast();
 
     const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        setIsLoading(true)
-        setError("")
+        e.preventDefault();
+        setIsLoading(true);
 
-        try {
-            const authService = new MatrixAuthService()
-            const response = await authService.forgotPassword(email)
+        // Mô phỏng việc gửi email và sau đó hiển thị form xác thực cho mục đích phát triển UI
+        setTimeout(() => {
+            setIsLoading(false);
+            toast({
+                title: "Thông báo",
+                description: "Đang mô phỏng gửi email. Chuyển sang bước xác thực.",
+            });
+            onEmailSubmit(email); // Call the prop here
+        }, 1000);
 
-            if (response.sid) {
-                setIsSubmitted(true)
-            } else {
-                setError("Failed to send reset email. Please try again.")
-            }
-        } catch (error: any) {
-            console.error("Failed to send reset email:", error)
-            setError(error.message || "Failed to send reset email. Please try again.")
-        } finally {
-            setIsLoading(false)
-        }
-    }
+        // Logic gốc (đã ẩn để tập trung vào UI)
+        // try {
+        //     await matrixAuth.requestPasswordRecovery(email);
+        //     toast({
+        //         title: "Thành công",
+        //         description: "Mã xác thực đã được gửi đến email của bạn.",
+        //     });
+        //     onEmailSubmit(email); // Call prop on success
+        // } catch (error) {
+        //     console.error("Gửi mã xác thực thất bại:", error);
+        //     toast({
+        //         title: "Lỗi",
+        //         description: "Gửi mã xác thực thất bại. Vui lòng thử lại.",
+        //         variant: "destructive",
+        //     });
+        // } finally {
+        //     setIsLoading(false);
+        // }
+    };
 
-    if (isSubmitted) {
-        return (
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="w-full max-w-md space-y-8 bg-white/50 backdrop-blur-lg p-8 rounded-2xl shadow-xl"
-            >
-                <div className="text-center space-y-2">
-                    <motion.h2
-                        initial={{ scale: 0.9 }}
-                        animate={{ scale: 1 }}
-                        className="text-4xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
-                    >
-                        Check your email
-                    </motion.h2>
-                    <p className="text-sm text-gray-600">
-                        We have sent a password reset link to {email}
-                    </p>
-                </div>
-                <div className="space-y-4">
-                    <p className="text-sm text-gray-600 text-center">
-                        Didn't receive the email? Check your spam folder or{" "}
-                        <button
-                            onClick={() => setIsSubmitted(false)}
-                            className="text-blue-600 hover:text-blue-800 transition-colors duration-200"
-                        >
-                            try again
-                        </button>
-                    </p>
-                    <Link
-                        href="/login"
-                        className="text-blue-600 hover:text-blue-800 transition-colors duration-200 block text-center"
-                    >
-                        Back to login
-                    </Link>
-                </div>
-            </motion.div>
-        )
-    }
+    // Remove handleVerificationSuccess and conditional rendering, parent handles this
 
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="w-full max-w-md space-y-8 bg-white/50 backdrop-blur-lg p-8 rounded-2xl shadow-xl"
+            transition={{ duration: 0.5 }}
         >
-            <div className="text-center space-y-2">
-                <motion.h2
-                    initial={{ scale: 0.9 }}
-                    animate={{ scale: 1 }}
-                    className="text-4xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
-                >
-                    Forgot your password?
-                </motion.h2>
-                <p className="text-sm text-gray-600">
-                    Enter your email address and we'll send you a link to reset your password
-                </p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-                <motion.div
-                    className="space-y-4"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                >
-                    <div className="space-y-2">
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                            Email
-                        </label>
-                        <Input
-                            id="email"
-                            name="email"
-                            type="email"
-                            required
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                            placeholder="john@example.com"
-                        />
-                    </div>
-                </motion.div>
-
-                {error && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-sm text-red-500 text-center bg-red-50 p-3 rounded-lg"
-                    >
-                        {error}
-                    </motion.div>
-                )}
-
-                <Button
-                    type="submit"
-                    className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg transition-all duration-200 transform hover:scale-[1.02]"
-                    disabled={isLoading}
-                >
-                    {isLoading ? (
-                        <span className="flex items-center justify-center">
-                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Sending reset link...
-                        </span>
-                    ) : (
-                        "Send reset link"
-                    )}
-                </Button>
-
-                <div className="text-center">
-                    <Link
-                        href="/auth/login"
-                        className="text-blue-600 hover:text-blue-800 transition-colors duration-200"
-                    >
-                        Back to login
-                    </Link>
-                </div>
-            </form>
+            <Card className="w-[400px] bg-white/95 backdrop-blur-sm shadow-lg border border-gray-200">
+                <CardHeader className="space-y-1">
+                    <CardTitle className="text-2xl font-bold text-center text-gray-900">Quên mật khẩu</CardTitle>
+                    <CardDescription className="text-center text-gray-600">
+                        Nhập địa chỉ email của bạn và chúng tôi sẽ gửi cho bạn một mã xác thực để đặt lại mật khẩu.
+                    </CardDescription>
+                </CardHeader>
+                <form onSubmit={handleSubmit}>
+                    <CardContent>
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email</Label>
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    placeholder="Nhập email của bạn"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                    className="h-11 bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                                />
+                            </div>
+                        </div>
+                    </CardContent>
+                    <CardFooter className="flex flex-col space-y-4">
+                        <Button
+                            type="submit"
+                            className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+                            disabled={isLoading}
+                        >
+                            {isLoading ? "Đang gửi..." : "Gửi mã xác thực"}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            className="w-full h-11 text-gray-600 hover:text-gray-900 hover:bg-gray-50 font-medium transition-colors"
+                            onClick={() => window.location.href = '/login'}
+                            disabled={isLoading} // Disable button while loading
+                        >
+                            Quay lại Đăng nhập
+                        </Button>
+                    </CardFooter>
+                </form>
+            </Card>
         </motion.div>
-    )
+    );
 } 

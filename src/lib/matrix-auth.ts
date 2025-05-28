@@ -21,11 +21,15 @@ export class MatrixAuthService {
     // Đăng ký tài khoản mới
     async register(username: string, password: string, email?: string, phone?: string) {
         try {
-            const response = await this.client.register(
-                username,
-                password,
-                null,
-                {
+            const response = await fetch(`${HOMESERVER_URL}/_matrix/client/v3/register`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password,
                     auth: {
                         type: "m.login.dummy"
                     },
@@ -38,16 +42,21 @@ export class MatrixAuthService {
                         phone_country: "VN",
                         phone_number: phone
                     })
-                }
-            )
+                })
+            });
 
-            // Nếu đăng ký thành công, tự động đăng nhập
-            if (response.access_token) {
-                localStorage.setItem("matrix_token", response.access_token)
-                localStorage.setItem("matrix_user_id", response.user_id)
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Registration failed');
             }
 
-            return response
+            if (data.access_token) {
+                localStorage.setItem("matrix_token", data.access_token)
+                localStorage.setItem("matrix_user_id", data.user_id)
+            }
+
+            return data;
         } catch (error) {
             console.error("Registration error:", error)
             throw error
@@ -149,61 +158,7 @@ export class MatrixAuthService {
         }
     }
 
-    // Bật/tắt 2FA
-    async toggle2FA(enabled: boolean) {
-        try {
-            if (enabled) {
-                // Tạo secret key cho 2FA
-                const response = await fetch(`${HOMESERVER_URL}/_matrix/client/v3/account/2fa/generate`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem("matrix_token")}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                const data = await response.json();
-                return data;
-            } else {
-                // Tắt 2FA
-                await fetch(`${HOMESERVER_URL}/_matrix/client/v3/account/2fa/disable`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem("matrix_token")}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-            }
-        } catch (error) {
-            console.error("Toggle 2FA failed:", error)
-            throw error
-        }
-    }
-
-    // Xác minh thiết bị
-    async verifyDevice(deviceId: string, code: string) {
-        try {
-            const response = await fetch(`${HOMESERVER_URL}/_matrix/client/v3/device/verify`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem("matrix_token")}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    device_id: deviceId,
-                    code: code
-                })
-            });
-
-            const data = await response.json();
-            return data;
-        } catch (error) {
-            console.error("Verify device failed:", error)
-            throw error
-        }
-    }
-
-    // Quên mật khẩu - Gửi email reset
+    // Quên mật khẩu
     async forgotPassword(email: string) {
         try {
             const response = await fetch(`${HOMESERVER_URL}/_matrix/client/v3/account/password/email/requestToken`, {
@@ -233,35 +188,14 @@ export class MatrixAuthService {
         }
     }
 
-    // Reset mật khẩu
+    // Đặt lại mật khẩu
     async resetPassword(newPassword: string, token: string) {
         try {
-            const response = await fetch(`${HOMESERVER_URL}/_matrix/client/v3/account/password`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    new_password: newPassword,
-                    auth: {
-                        type: 'm.login.email.identity',
-                        token: token,
-                        session: token
-                    }
-                }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || 'Failed to reset password');
-            }
-
-            return data;
+            const response = await this.client.setPassword(newPassword, token)
+            return response
         } catch (error) {
-            console.error("Reset password failed:", error);
-            throw error;
+            console.error("Reset password failed:", error)
+            throw error
         }
     }
 
@@ -276,52 +210,6 @@ export class MatrixAuthService {
             }
         } catch (error) {
             console.error("Update profile failed:", error)
-            throw error
-        }
-    }
-
-    // Cập nhật quyền riêng tư
-    async updatePrivacySettings(settings: {
-        whoCanSeeMyProfile?: 'everyone' | 'contacts' | 'nobody',
-        whoCanMessageMe?: 'everyone' | 'contacts' | 'nobody',
-        whoCanAddMeToGroups?: 'everyone' | 'contacts' | 'nobody'
-    }) {
-        try {
-            await this.client.setAccountData('m.privacy', settings)
-        } catch (error) {
-            console.error("Update privacy settings failed:", error)
-            throw error
-        }
-    }
-
-    // Chặn người dùng
-    async blockUser(userId: string) {
-        try {
-            await this.client.setIgnoredUsers([userId])
-        } catch (error) {
-            console.error("Block user failed:", error)
-            throw error
-        }
-    }
-
-    // Bỏ chặn người dùng
-    async unblockUser(userId: string) {
-        try {
-            const ignoredUsers = await this.client.getIgnoredUsers()
-            const newIgnoredUsers = ignoredUsers.filter(id => id !== userId)
-            await this.client.setIgnoredUsers(newIgnoredUsers)
-        } catch (error) {
-            console.error("Unblock user failed:", error)
-            throw error
-        }
-    }
-
-    // Lấy danh sách người dùng đã chặn
-    async getBlockedUsers() {
-        try {
-            return await this.client.getIgnoredUsers()
-        } catch (error) {
-            console.error("Get blocked users failed:", error)
             throw error
         }
     }

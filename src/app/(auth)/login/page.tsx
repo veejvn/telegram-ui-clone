@@ -10,7 +10,7 @@ export default function LoginPage() {
             <div className="relative w-full max-w-md px-4 py-8">
                 <div className="flex justify-center mb-8">
                     <Image
-                        src="/logo.png"
+                        src="/images/logo.png"
                         alt="Logo"
                         width={48}
                         height={48}
