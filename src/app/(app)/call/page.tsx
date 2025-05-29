@@ -1,18 +1,119 @@
-import { Fragment } from "react";
+'use client';
 
-const CallPage = () => {
+import { useState } from 'react';
+import { ContactList } from '@/components/call/ContactList';
+import { VoiceCall } from '@/components/call/VoiceCall';
+import { VideoCall } from '@/components/call/VideoCall';
+import { GroupCall } from '@/components/call/GroupCall';
+
+type CallType = 'voice' | 'video' | 'group';
+
+interface CallState {
+  type: CallType;
+  contactName: string;
+  participants?: Array<{
+    id: string;
+    name: string;
+    avatar?: string;
+    isMuted?: boolean;
+    isVideoOn?: boolean;
+    isSpeaking?: boolean;
+  }>;
+}
+
+// Mock data for group call
+const mockParticipants = [
+  {
+    id: '1',
+    name: 'John Doe',
+    avatar: 'https://github.com/shadcn.png',
+    isMuted: false,
+    isVideoOn: true,
+    isSpeaking: true
+  },
+  {
+    id: '2',
+    name: 'Jane Smith',
+    avatar: 'https://github.com/shadcn.png',
+    isMuted: true,
+    isVideoOn: false,
+    isSpeaking: false
+  },
+  {
+    id: '3',
+    name: 'Alice Johnson',
+    isMuted: false,
+    isVideoOn: true,
+    isSpeaking: false
+  },
+  {
+    id: '4',
+    name: 'Bob Wilson',
+    avatar: 'https://github.com/shadcn.png',
+    isMuted: false,
+    isVideoOn: false,
+    isSpeaking: true
+  }
+];
+
+export default function CallPage() {
+  const [activeCall, setActiveCall] = useState<CallState | null>(null);
+
+  const handleStartCall = (type: CallType, contactName: string) => {
+    if (type === 'group') {
+      setActiveCall({
+        type,
+        contactName: 'Group Call',
+        participants: mockParticipants
+      });
+    } else {
+      setActiveCall({ type, contactName });
+    }
+  };
+
+  const handleEndCall = () => {
+    setActiveCall(null);
+  };
+
+  const handleSwitchToVideo = () => {
+    if (activeCall) {
+      setActiveCall({ ...activeCall, type: 'video' });
+    }
+  };
+
+  if (activeCall?.type === 'voice') {
+    return (
+      <VoiceCall
+        contactName={activeCall.contactName}
+        onEndCall={handleEndCall}
+        onSwitchToVideo={handleSwitchToVideo}
+      />
+    );
+  }
+
+  if (activeCall?.type === 'video') {
+    return (
+      <VideoCall
+        contactName={activeCall.contactName}
+        onEndCall={handleEndCall}
+      />
+    );
+  }
+
+  if (activeCall?.type === 'group' && activeCall.participants) {
+    return (
+      <GroupCall
+        groupName={activeCall.contactName}
+        participants={activeCall.participants}
+        onEndCall={handleEndCall}
+        isVideoEnabled={true}
+      />
+    );
+  }
+
   return (
-    <Fragment>
-      <div className="bg-[#1a1a1a]">
-        <div className="flex items-center justify-center px-4 py-2">
-          <h1 className="text-lg font-semibold">Chats</h1>
-        </div>
-      </div>
-      <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
-        <p className="text-sm text-white">Your recent voice and video call</p>
-      </div>
-    </Fragment>
+    <div className="h-screen">
+      <ContactList onStartCall={handleStartCall} />
+    </div>
   );
-};
-
-export default CallPage;
+}
