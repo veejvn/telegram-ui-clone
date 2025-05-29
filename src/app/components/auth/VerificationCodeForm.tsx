@@ -85,7 +85,7 @@ export function VerificationCodeForm({ email, onSuccess, onBack }: VerificationC
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
         >
-            <Card className="w-[400px] bg-white/95 backdrop-blur-sm shadow-lg border border-gray-200">
+            <Card className="w-[380px] bg-white/95 backdrop-blur-sm shadow-lg border border-gray-200">
                 <CardHeader className="space-y-1">
                     <CardTitle className="text-2xl font-bold text-center text-gray-900">Verification Code</CardTitle>
                     <CardDescription className="text-center text-gray-600">

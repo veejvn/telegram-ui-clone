@@ -117,9 +117,12 @@ type ToastProps = React.ComponentPropsWithoutRef<typeof Toast>
 
 type ToasterProps = React.ComponentPropsWithoutRef<typeof ToastViewport>
 
+type ToastActionElement = React.ReactElement<typeof ToastAction>
+
 export {
     type ToastProps,
     type ToasterProps,
+    type ToastActionElement,
     ToastProvider,
     ToastViewport,
     Toast,

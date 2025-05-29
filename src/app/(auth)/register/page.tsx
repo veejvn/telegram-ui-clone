@@ -15,6 +15,8 @@ export default function RegisterPage() {
                         width={48}
                         height={48}
                         className="rounded-xl"
+                        loading="eager"
+                        priority
                     />
                 </div>
                 <RegisterForm />

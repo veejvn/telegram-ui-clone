@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { ForgotPasswordForm } from '../../components/auth/ForgotPasswordForm';
-import { VerificationCodeForm } from '../../components/auth/VerificationCodeForm';
-import { ResetPasswordForm } from '../../components/auth/ResetPasswordForm';
+import { ForgotPasswordForm } from '@/app/components/auth/ForgotPasswordForm';
+import { VerificationCodeForm } from '@/app/components/auth/VerificationCodeForm';
+import { ResetPasswordForm } from '@/app/components/auth/ResetPasswordForm';
 import { useRouter } from 'next/navigation';
 
 enum ForgotPasswordStep {
@@ -55,6 +55,8 @@ export default function ForgotPasswordPage() {
                         width={48}
                         height={48}
                         className="rounded-xl"
+                        loading="eager"
+                        priority
                     />
                 </div>
                 {renderStep()}

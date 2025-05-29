@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { motion } from 'framer-motion';
-// import { matrixAuth } from '@/lib/matrix-auth'; // Tạm thời ẩn import matrixAuth
+// import { matrixAuth } from '@/lib/matrix-auth'; // Temporarily comment out matrixAuth import
 // import { VerificationCodeForm } from '../../app/components/auth/VerificationCodeForm'; // Ẩn import cũ
 // import { VerificationCodeForm } from './VerificationCodeForm'; // Import VerificationCodeForm từ vị trí đúng
 
@@ -25,34 +25,17 @@ export function ForgotPasswordForm({ onEmailSubmit }: ForgotPasswordFormProps) {
         e.preventDefault();
         setIsLoading(true);
 
-        // Mô phỏng việc gửi email và sau đó hiển thị form xác thực cho mục đích phát triển UI
+        // Simulate sending email and then show verification form for UI development purposes
         setTimeout(() => {
             setIsLoading(false);
             toast({
-                title: "Thông báo",
-                description: "Đang mô phỏng gửi email. Chuyển sang bước xác thực.",
+                title: "Notification",
+                description: "Simulating email sending. Moving to verification step.",
             });
             onEmailSubmit(email); // Call the prop here
         }, 1000);
 
-        // Logic gốc (đã ẩn để tập trung vào UI)
-        // try {
-        //     await matrixAuth.requestPasswordRecovery(email);
-        //     toast({
-        //         title: "Thành công",
-        //         description: "Mã xác thực đã được gửi đến email của bạn.",
-        //     });
-        //     onEmailSubmit(email); // Call prop on success
-        // } catch (error) {
-        //     console.error("Gửi mã xác thực thất bại:", error);
-        //     toast({
-        //         title: "Lỗi",
-        //         description: "Gửi mã xác thực thất bại. Vui lòng thử lại.",
-        //         variant: "destructive",
-        //     });
-        // } finally {
-        //     setIsLoading(false);
-        // }
+
     };
 
     // Remove handleVerificationSuccess and conditional rendering, parent handles this
@@ -63,11 +46,11 @@ export function ForgotPasswordForm({ onEmailSubmit }: ForgotPasswordFormProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
         >
-            <Card className="w-[400px] bg-white/95 backdrop-blur-sm shadow-lg border border-gray-200">
+            <Card className="w-[380px] bg-white/95 backdrop-blur-sm shadow-lg border border-gray-200">
                 <CardHeader className="space-y-1">
-                    <CardTitle className="text-2xl font-bold text-center text-gray-900">Quên mật khẩu</CardTitle>
+                    <CardTitle className="text-2xl font-bold text-center text-gray-900">Forgot Password</CardTitle>
                     <CardDescription className="text-center text-gray-600">
-                        Nhập địa chỉ email của bạn và chúng tôi sẽ gửi cho bạn một mã xác thực để đặt lại mật khẩu.
+                        Enter your email address and we'll send you a verification code to reset your password.
                     </CardDescription>
                 </CardHeader>
                 <form onSubmit={handleSubmit}>
@@ -78,7 +61,7 @@ export function ForgotPasswordForm({ onEmailSubmit }: ForgotPasswordFormProps) {
                                 <Input
                                     id="email"
                                     type="email"
-                                    placeholder="Nhập email của bạn"
+                                    placeholder="Enter your email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     required
@@ -87,13 +70,13 @@ export function ForgotPasswordForm({ onEmailSubmit }: ForgotPasswordFormProps) {
                             </div>
                         </div>
                     </CardContent>
-                    <CardFooter className="flex flex-col space-y-4">
+                    <CardFooter className="flex flex-col space-y-2">
                         <Button
                             type="submit"
                             className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
                             disabled={isLoading}
                         >
-                            {isLoading ? "Đang gửi..." : "Gửi mã xác thực"}
+                            {isLoading ? "Sending..." : "Send Code"}
                         </Button>
                         <Button
                             type="button"
@@ -102,7 +85,7 @@ export function ForgotPasswordForm({ onEmailSubmit }: ForgotPasswordFormProps) {
                             onClick={() => window.location.href = '/login'}
                             disabled={isLoading} // Disable button while loading
                         >
-                            Quay lại Đăng nhập
+                            Back to Login
                         </Button>
                     </CardFooter>
                 </form>

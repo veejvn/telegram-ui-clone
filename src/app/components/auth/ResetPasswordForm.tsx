@@ -26,8 +26,8 @@ export function ResetPasswordForm({ onSuccess, onBack }: ResetPasswordFormProps)
 
         if (newPassword !== confirmPassword) {
             toast({
-                title: "Lỗi",
-                description: "Mật khẩu xác nhận không khớp.",
+                title: "Error",
+                description: "Passwords do not match.",
                 variant: "destructive",
             });
             return;
@@ -39,8 +39,8 @@ export function ResetPasswordForm({ onSuccess, onBack }: ResetPasswordFormProps)
         setTimeout(() => {
             setIsLoading(false);
             toast({
-                title: "Thành công",
-                description: "Mật khẩu đã được đặt lại (mô phỏng). Quay lại trang đăng nhập.",
+                title: "Success",
+                description: "Password has been reset (simulation). Returning to login page.",
             });
             onSuccess(); // Signal success to parent (which will redirect)
         }, 1000);
@@ -72,22 +72,22 @@ export function ResetPasswordForm({ onSuccess, onBack }: ResetPasswordFormProps)
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
         >
-            <Card className="w-[400px] bg-white/95 backdrop-blur-sm shadow-lg border border-gray-200">
+            <Card className="w-[380px] bg-white/95 backdrop-blur-sm shadow-lg border border-gray-200">
                 <CardHeader className="space-y-1">
-                    <CardTitle className="text-2xl font-bold text-center text-gray-900">Đặt lại mật khẩu</CardTitle>
+                    <CardTitle className="text-2xl font-bold text-center text-gray-900">Reset Password</CardTitle>
                     <CardDescription className="text-center text-gray-600">
-                        Nhập mật khẩu mới của bạn.
+                        Enter your new password.
                     </CardDescription>
                 </CardHeader>
                 <form onSubmit={handleSubmit}>
                     <CardContent>
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <Label htmlFor="newPassword" className="text-sm font-medium text-gray-700">Mật khẩu mới</Label>
+                                <Label htmlFor="newPassword" className="text-sm font-medium text-gray-700">New Password</Label>
                                 <Input
                                     id="newPassword"
                                     type="password"
-                                    placeholder="Nhập mật khẩu mới"
+                                    placeholder="Enter new password"
                                     value={newPassword}
                                     onChange={(e) => setNewPassword(e.target.value)}
                                     required
@@ -95,11 +95,11 @@ export function ResetPasswordForm({ onSuccess, onBack }: ResetPasswordFormProps)
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">Xác nhận mật khẩu mới</Label>
+                                <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">Confirm New Password</Label>
                                 <Input
                                     id="confirmPassword"
                                     type="password"
-                                    placeholder="Xác nhận mật khẩu mới"
+                                    placeholder="Confirm new password"
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
                                     required
@@ -114,7 +114,7 @@ export function ResetPasswordForm({ onSuccess, onBack }: ResetPasswordFormProps)
                             className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
                             disabled={isLoading}
                         >
-                            {isLoading ? "Đang đặt lại..." : "Đồng ý"}
+                            {isLoading ? "Resetting..." : "Confirm"}
                         </Button>
                         <Button
                             type="button"
@@ -123,7 +123,7 @@ export function ResetPasswordForm({ onSuccess, onBack }: ResetPasswordFormProps)
                             onClick={onBack}
                             disabled={isLoading}
                         >
-                            Quay lại
+                            Back
                         </Button>
                     </CardFooter>
                 </form>
