@@ -1,4 +1,8 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/ChatAvatar";
 import { CheckCheck } from "lucide-react";
 
 export const ChatListItem = () => {
