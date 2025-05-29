@@ -17,9 +17,9 @@ export default function SetUsernamePage() {
   return (
     <div className="min-h-screen bg-black text-white px-4 py-6">
       <div className="flex justify-between items-center mb-6">
-        <button onClick={() => router.back()} className="text-blue-500 text-sm">
+        <Button onClick={() => router.back()} className="text-blue-500 text-sm bg-transparent hover:underline">
           Cancel
-        </button>
+        </Button>
         <h1 className="text-lg font-semibold">Username</h1>
         <Button
           size="sm"

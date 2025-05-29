@@ -2,7 +2,6 @@
 import React, { useState, useRef } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { useRouter } from "next/navigation";
 import {
   Camera,
@@ -123,8 +122,8 @@ export default function SettingsPage() {
       </div>
 
       {/* Action Shortcuts */}
-      <div className="mx-4 mt-4 bg-zinc-900 rounded-2xl divide-y divide-zinc-700">
-        <div className="mx-4 mt-4 bg-zinc-900 rounded-2xl divide-y divide-zinc-700">
+      <div className="mx-4 bg-zinc-900 rounded-2xl divide-y divide-zinc-700">
+        <div className="mx-4 bg-zinc-900 rounded-2xl divide-y divide-zinc-700">
           {/* Set Profile Photo */}
           <div
             className="flex items-center justify-between px-4 py-3 cursor-pointer"
