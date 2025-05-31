@@ -41,7 +41,7 @@ export default function RecentCallsPage() {
                                 <PhoneCall className="h-5 w-5" />
                             </div>
                             <div>
-                                <div className="font-medium">{call.name}</div>
+                                <div className="text-white font-medium">{call.name}</div>
                                 <div className="text-sm text-gray-400">{call.time}</div>
                             </div>
                         </div>
