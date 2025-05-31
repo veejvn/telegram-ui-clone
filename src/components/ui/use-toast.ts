@@ -33,7 +33,7 @@ type Action =
     }
     | {
         type: typeof actionTypes.UPDATE_TOAST
-        toast: Partial<ToasterToast>
+        toast: Partial<Omit<ToasterToast, "id">> & { id: string }
     }
     | {
         type: typeof actionTypes.DISMISS_TOAST
@@ -51,21 +51,27 @@ interface State {
 const reducer = (state: State, action: Action) => {
     switch (action.type) {
         case actionTypes.ADD_TOAST:
-            return {
-                ...state,
-                toasts: [action.toast, ...state.toasts].slice(0, TOAST_LIMIT),
+            if ('toast' in action) {
+                return {
+                    ...state,
+                    toasts: [action.toast, ...state.toasts].slice(0, TOAST_LIMIT),
+                }
             }
+            return state;
 
         case actionTypes.UPDATE_TOAST:
-            return {
-                ...state,
-                toasts: state.toasts.map((t) =>
-                    t.id === action.toast.id ? { ...t, ...action.toast } : t
-                ),
+            if ('toast' in action && action.toast.id) {
+                return {
+                    ...state,
+                    toasts: state.toasts.map((t) =>
+                        t.id === action.toast.id ? { ...t, ...action.toast, id: t.id } : t
+                    ),
+                }
             }
+            return state;
 
-        case actionTypes.DISMISS_TOAST:
-            const { toastId } = action
+        case actionTypes.DISMISS_TOAST: {
+            const toastId = (action as { toastId?: ToasterToast["id"] }).toastId;
 
             // ! Side effects ! - clean up timeout
             if (toastId) {
@@ -78,9 +84,10 @@ const reducer = (state: State, action: Action) => {
                     t.id === toastId ? { ...t, open: false } : t
                 ),
             }
+        }
 
-        case actionTypes.REMOVE_TOAST:
-            const { toastId: removeToastId } = action
+        case actionTypes.REMOVE_TOAST: {
+            const removeToastId = (action as { toastId?: ToasterToast["id"] }).toastId;
 
             if (removeToastId) {
                 return {
@@ -93,6 +100,7 @@ const reducer = (state: State, action: Action) => {
                 ...state,
                 toasts: [],
             }
+        }
         default:
             return state
     }
@@ -114,7 +122,7 @@ type Toast = Omit<ToasterToast, "id">
 function toast({ ...props }: Toast) {
     const id = genId()
 
-    const update = (props: Partial<ToasterToast>) =>
+    const update = (props: Partial<Omit<ToasterToast, "id">>) =>
         dispatch({
             type: actionTypes.UPDATE_TOAST,
             toast: { ...props, id },
