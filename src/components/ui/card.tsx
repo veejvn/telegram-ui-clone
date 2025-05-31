@@ -1,13 +1,14 @@
 // src/components/ui/card.tsx
 import React from 'react';
+import { cn } from "@/lib/utils"
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
     children: React.ReactNode;
 }
 
-export function Card({ className = '', children, ...props }: CardProps) {
+function Card({ className = '', children, ...props }: CardProps) {
     return (
-        <div className={`rounded-2xl bg-zinc-800 ${className}`} {...props}>
+        <div className={cn("rounded-xl border bg-card text-card-foreground shadow", className)} {...props}>
             {children}
         </div>
     );
@@ -16,9 +17,9 @@ export function Card({ className = '', children, ...props }: CardProps) {
 interface CardHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
     children: React.ReactNode;
 }
-export function CardHeader({ className = '', children, ...props }: CardHeaderProps) {
+function CardHeader({ className = '', children, ...props }: CardHeaderProps) {
     return (
-        <div className={`px-4 py-3 border-b border-zinc-700 ${className}`} {...props}>
+        <div className={cn("flex flex-col space-y-1.5 p-6", className)} {...props}>
             {children}
         </div>
     );
@@ -27,21 +28,45 @@ export function CardHeader({ className = '', children, ...props }: CardHeaderPro
 interface CardTitleProps extends React.HTMLAttributes<HTMLHeadingElement> {
     children: React.ReactNode;
 }
-export function CardTitle({ className = '', children, ...props }: CardTitleProps) {
+function CardTitle({ className = '', children, ...props }: CardTitleProps) {
     return (
-        <h3 className={`text-sm font-medium text-gray-400 uppercase ${className}`} {...props}>
+        <h3 className={cn("text-2xl font-semibold leading-none tracking-tight", className)} {...props}>
             {children}
         </h3>
+    );
+}
+
+interface CardDescriptionProps extends React.HTMLAttributes<HTMLParagraphElement> {
+    children: React.ReactNode;
+}
+function CardDescription({ className = '', children, ...props }: CardDescriptionProps) {
+    return (
+        <p className={cn("text-sm text-muted-foreground", className)} {...props}>
+            {children}
+        </p>
     );
 }
 
 interface CardContentProps extends React.HTMLAttributes<HTMLDivElement> {
     children: React.ReactNode;
 }
-export function CardContent({ className = '', children, ...props }: CardContentProps) {
+function CardContent({ className = '', children, ...props }: CardContentProps) {
     return (
-        <div className={`p-4 ${className}`} {...props}>
+        <div className={cn("p-6 pt-0", className)} {...props}>
             {children}
         </div>
     );
 }
+
+interface CardFooterProps extends React.HTMLAttributes<HTMLDivElement> {
+    children: React.ReactNode;
+}
+function CardFooter({ className = '', children, ...props }: CardFooterProps) {
+    return (
+        <div className={cn("flex items-center p-6 pt-0", className)} {...props}>
+            {children}
+        </div>
+    );
+}
+
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
