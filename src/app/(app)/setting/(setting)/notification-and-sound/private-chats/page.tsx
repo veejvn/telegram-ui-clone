@@ -2,6 +2,7 @@
 "use client";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input";
 
 export default function PrivateChats() {
   const router = useRouter();
@@ -13,7 +14,7 @@ export default function PrivateChats() {
     <div className="min-h-screen bg-black text-white p-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <button onClick={() => router.back()} className="text-blue-400">
+        <button type="button" onClick={() => router.back()} className="text-blue-400">
           &lt; Back
         </button>
         <h1 className="text-xl font-semibold flex-1 text-center">
@@ -27,11 +28,13 @@ export default function PrivateChats() {
         <div className="flex justify-between items-center bg-[#18181b] p-4 rounded-xl">
           <span>Show Notifications</span>
           <label className="relative inline-flex items-center cursor-pointer">
-            <input
+            <Input
+              id="show-notifications"
               type="checkbox"
               checked={showNotifications}
               onChange={() => setShowNotifications(!showNotifications)}
               className="sr-only peer"
+              aria-label="Show Notifications"
             />
             <div className="w-11 h-6 bg-gray-400 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
           </label>
@@ -44,11 +47,13 @@ export default function PrivateChats() {
           <div className="flex justify-between items-center bg-[#18181b] p-4 rounded-xl mb-4">
             <span>Message Preview</span>
             <label className="relative inline-flex items-center cursor-pointer">
-              <input
+              <Input
+                id="message-preview"
                 type="checkbox"
                 checked={messagePreview}
                 onChange={() => setMessagePreview(!messagePreview)}
                 className="sr-only peer"
+                aria-label="Message Preview"
               />
               <div className="w-11 h-6 bg-gray-400 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
             </label>
@@ -57,6 +62,7 @@ export default function PrivateChats() {
           <div className="flex justify-between items-center bg-[#18181b] p-4 rounded-xl">
             <span>Sound</span>
             <button
+              type="button"
               className="flex items-center space-x-1 text-gray-400"
               onClick={() =>
                 router.push(
@@ -73,7 +79,7 @@ export default function PrivateChats() {
         {/* Add Exception */}
         <div className="mt-6">
           <h2 className="text-sm font-medium mb-4 text-gray-500">EXCEPTIONS</h2>
-          <button className="flex justify-between items-center bg-[#18181b] p-4 rounded-xl w-full">
+          <button type="button" className="flex justify-between items-center bg-[#18181b] p-4 rounded-xl w-full">
             <span className="text-blue-400">+ Add Exception</span>
           </button>
         </div>

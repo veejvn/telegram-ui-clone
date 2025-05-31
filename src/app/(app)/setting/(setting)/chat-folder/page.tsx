@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input";
 export default function FolderPage() {
   const [showFolderTags, setShowFolderTags] = useState(false);
   const router = useRouter();
@@ -9,13 +10,14 @@ export default function FolderPage() {
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <button
+          type="button"
           className="text-blue-400"
           onClick={() => router.push("/setting")}
         >
           &lt; Back
         </button>
         <h1 className="text-lg font-semibold">Folders</h1>
-        <button className="text-blue-400">Edit</button>
+        <button type="button" className="text-blue-400">Edit</button>
       </div>
 
       {/* Folder Icon */}
@@ -44,7 +46,7 @@ export default function FolderPage() {
       <div className="bg-[#1C1C1E] rounded-xl p-4 flex justify-between items-center">
         <span>Show Folder Tags</span>
         <label className="relative inline-flex items-center cursor-pointer">
-          <input
+          <Input
             type="checkbox"
             className="sr-only peer"
             checked={showFolderTags}

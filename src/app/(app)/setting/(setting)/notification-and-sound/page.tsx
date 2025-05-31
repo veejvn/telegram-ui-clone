@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bell, User, Users, MessageCircle, Heart } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 type NotificationToggleProps = {
   label: string;
@@ -22,7 +23,7 @@ const NotificationToggle = ({
       {description && <p className="text-gray-400 text-sm">{description}</p>}
     </div>
     <label className="relative inline-flex items-center cursor-pointer">
-      <input
+      <Input
         type="checkbox"
         className="sr-only peer"
         checked={enabled}
@@ -52,6 +53,7 @@ export default function NotificationSettings() {
     <div className="bg-black h-screen text-white p-6 space-y-6 overflow-y-auto">
       <div className="flex items-center mb-4">
         <button
+          type="button"
           className="text-blue-400 mr-4"
           onClick={() => router.push("/setting")}
         >
@@ -69,6 +71,7 @@ export default function NotificationSettings() {
         </p>
         {/* Private Chats */}
         <button
+          type="button"
           className="flex justify-between items-center p-4 bg-[#18181b] rounded-xl w-full focus:outline-none"
           onClick={() =>
             router.push("/setting/notification-and-sound/private-chats")
@@ -85,6 +88,7 @@ export default function NotificationSettings() {
         </button>
         {/* Group Chats */}
         <button
+          type="button"
           className="flex justify-between items-center p-4 bg-[#18181b] rounded-xl w-full focus:outline-none"
           onClick={() =>
             router.push("/setting/notification-and-sound/group-chats")
@@ -101,6 +105,7 @@ export default function NotificationSettings() {
         </button>
         {/* Channels */}
         <button
+          type="button"
           className="flex justify-between items-center p-4 bg-[#18181b] rounded-xl w-full focus:outline-none"
           onClick={() =>
             router.push("/setting/notification-and-sound/channels")
@@ -117,6 +122,7 @@ export default function NotificationSettings() {
         </button>
         {/* Stories */}
         <button
+          type="button"
           className="flex justify-between items-center p-4 bg-[#18181b] rounded-xl w-full focus:outline-none"
           onClick={() => router.push("/setting/notification-and-sound/stories")}
         >
@@ -131,6 +137,7 @@ export default function NotificationSettings() {
         </button>
         {/* Reactions */}
         <button
+          type="button"
           className="flex justify-between items-center p-4 bg-[#18181b] rounded-xl w-full focus:outline-none"
           onClick={() =>
             router.push("/setting/notification-and-sound/reactions")
@@ -220,7 +227,7 @@ export default function NotificationSettings() {
 
       {/* Reset */}
       <div className="pt-0">
-        <button className="text-red-500 font-semibold w-full py-3 rounded-xl bg-[#18181b] hover:bg-gray-900 transition text-left pl-4">
+        <button type="button" className="text-red-500 font-semibold w-full py-3 rounded-xl bg-[#18181b] hover:bg-gray-900 transition text-left pl-4">
           Reset All Notifications
         </button>
         <p className="text-gray-400 text-sm mt-1">
@@ -228,6 +235,7 @@ export default function NotificationSettings() {
           channels.
         </p>
       </div>
+      <div className="h-8"></div>
     </div>
   );
 }
