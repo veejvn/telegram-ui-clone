@@ -9,9 +9,7 @@ export default function AppLayout({
 }>) {
   const pathname = usePathname();
 
-  console.log("Current Path:", pathname); // Confirm path
-
-  const isChatDetailPage = /^\/chat\/[^/]+$/.test(pathname);
+  const isChatDetailPage = /^\/chat(\/.+)+$/.test(pathname);
   const shouldShowBottomNav = !isChatDetailPage;
 
   return (
@@ -25,4 +23,3 @@ export default function AppLayout({
     </main>
   );
 }
-

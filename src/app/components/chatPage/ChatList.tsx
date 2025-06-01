@@ -37,18 +37,7 @@ export const ChatList = () => {
       <Link href={`/chat/${id}`}>
         <ChatListItem />
       </Link>
-      <Separator className="w-[calc(100%-72px)] ml-[72px] opacity-30" />
-      <Link href={`/chat/${id}`}>
-        <ChatListItem />
-      </Link>
-      <Separator className="w-[calc(100%-72px)] ml-[72px] opacity-30" />
-      <Link href={`/chat/${id}`}>
-        <ChatListItem />
-      </Link>
-      <Separator className="w-[calc(100%-72px)] ml-[72px] opacity-30" />
-      <Link href={`/chat/${id}`}>
-        <ChatListItem />
-      </Link>
+
       <Separator className="opacity-30" />
     </>
   );
