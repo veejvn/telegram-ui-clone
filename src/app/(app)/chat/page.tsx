@@ -25,7 +25,7 @@ export default function ChatPage() {
           <SearchBar />
         </div>
 
-        <div className="flex flex-1 flex-col justify-between min-h-[calc(100vh-112px)] pb-8">
+        {/* <div className="flex flex-1 flex-col justify-between min-h-[calc(100vh-112px)] pb-8">
           <div className="flex flex-1 flex-col items-center justify-center text-center">
             <Image
               src="/images/chicken.png"
@@ -46,11 +46,11 @@ export default function ChatPage() {
               <Link href={"/chat/newMessage"}>New Message</Link>
             </Button>
           </div>
-        </div>
-
-        {/* <div className="flex flex-col px-2 pb-[64px] spacy-y-2">
-          <ChatList />
         </div> */}
+
+        <div className="flex flex-col px-2 pb-[64px] spacy-y-2">
+          <ChatList />
+        </div>
       </ScrollArea>
     </>
   );
