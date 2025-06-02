@@ -6,10 +6,8 @@ export default function SettingLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <main>
-      <div className="min-h-screen bg-black text-white flex flex-col">
+      <div className="flex flex-col">
         {children}
       </div>
-    </main>
   );
 }

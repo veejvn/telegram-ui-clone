@@ -7,7 +7,7 @@ export default function AppLayout({
 }>) {
   return (
     <main>
-      <div className="min-h-screen bg-black text-white flex flex-col">
+      <div className="min-h-screen flex flex-col">
         {children}
         <BottomNavigattion />
       </div>
