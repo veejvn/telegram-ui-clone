@@ -33,14 +33,14 @@ export function VoiceCall({ contactName, contactAvatar, onEndCall, onSwitchToVid
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-[#1c1c1e] to-black">
+        <div className="flex flex-col items-center justify-center min-h-screen bg-black">
             {/* Background Pattern */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-500/5 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-black via-black to-black" />
 
             <div className="relative flex flex-col items-center space-y-8 p-4">
                 {/* Avatar Section */}
                 <div className="relative">
-                    <Avatar className="w-40 h-40 border-4 border-primary/20">
+                    <Avatar className="w-40 h-40 border-4 border-[#0088CC]/20">
                         {contactAvatar ? (
                             <img
                                 src={contactAvatar}
@@ -48,43 +48,45 @@ export function VoiceCall({ contactName, contactAvatar, onEndCall, onSwitchToVid
                                 className="rounded-full object-cover"
                             />
                         ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                                <User className="w-20 h-20 text-primary/60" />
+                            <div className="w-full h-full bg-gradient-to-br from-[#0088CC]/20 to-[#0088CC]/10 flex items-center justify-center">
+                                <User className="w-20 h-20 text-[#0088CC]/60" />
                             </div>
                         )}
                     </Avatar>
 
                     {/* Ripple Effect */}
                     <div className="absolute -inset-4">
-                        <div className="w-48 h-48 rounded-full border-4 border-primary/20 animate-ping" />
+                        <div className="w-48 h-48 rounded-full border-4 border-[#0088CC]/20 animate-ping" />
                     </div>
                 </div>
 
                 {/* Call Info */}
                 <div className="text-center space-y-2 z-10">
                     <h2 className="text-2xl font-bold text-white">{contactName}</h2>
-                    <p className="text-primary/80 font-medium">{formatDuration(callDuration)}</p>
+                    <p className="text-[#0088CC] font-medium">{formatDuration(callDuration)}</p>
                 </div>
 
+                {/* Bottom Gradient */}
+                <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-black via-black/90 to-transparent" />
+
                 {/* Call Controls */}
-                <div className="flex items-center justify-center space-x-6 z-10">
+                <div className="relative flex items-center justify-center space-x-6 z-10">
                     <div className="flex flex-col items-center space-y-2">
                         <Button
                             size="lg"
                             variant="ghost"
                             className={cn(
-                                "rounded-full w-16 h-16 bg-white/10 hover:bg-white/20 transition-all duration-200",
-                                isMuted && "bg-red-500/50 hover:bg-red-600/50 text-white"
+                                "rounded-full w-16 h-16 bg-[#2C2C2E] hover:bg-[#3C3C3E] transition-all duration-200"
                             )}
                             onClick={() => setIsMuted(!isMuted)}
                         >
                             {isMuted ? (
-                                <MicOff className="h-8 w-8 text-white" />
+                                <MicOff className="h-8 w-8 text-red-500" />
                             ) : (
                                 <Mic className="h-8 w-8 text-white" />
                             )}
                         </Button>
-                        <span className="text-xs text-white/60">
+                        <span className="text-xs text-white/80">
                             {isMuted ? 'Unmute' : 'Mute'}
                         </span>
                     </div>
@@ -93,12 +95,12 @@ export function VoiceCall({ contactName, contactAvatar, onEndCall, onSwitchToVid
                         <Button
                             size="lg"
                             variant="destructive"
-                            className="rounded-full w-16 h-16 bg-red-500 hover:bg-red-600 transition-all duration-200 shadow-lg shadow-red-500/30"
+                            className="rounded-full w-16 h-16 bg-[#FF3B30] hover:bg-[#FF453A] transition-all duration-200"
                             onClick={onEndCall}
                         >
-                            <PhoneOff className="h-8 w-8" />
+                            <PhoneOff className="h-8 w-8 text-white" />
                         </Button>
-                        <span className="text-xs text-white/60">End</span>
+                        <span className="text-xs text-white/80">End</span>
                     </div>
 
                     <div className="flex flex-col items-center space-y-2">
@@ -106,18 +108,17 @@ export function VoiceCall({ contactName, contactAvatar, onEndCall, onSwitchToVid
                             size="lg"
                             variant="ghost"
                             className={cn(
-                                "rounded-full w-16 h-16 bg-white/10 hover:bg-white/20 transition-all duration-200",
-                                isSpeakerOn && "bg-primary/50 hover:bg-primary/70 text-white"
+                                "rounded-full w-16 h-16 bg-[#2C2C2E] hover:bg-[#3C3C3E] transition-all duration-200"
                             )}
                             onClick={() => setIsSpeakerOn(!isSpeakerOn)}
                         >
                             {isSpeakerOn ? (
                                 <Volume2 className="h-8 w-8 text-white" />
                             ) : (
-                                <VolumeX className="h-8 w-8 text-white" />
+                                <VolumeX className="h-8 w-8 text-red-500" />
                             )}
                         </Button>
-                        <span className="text-xs text-white/60">
+                        <span className="text-xs text-white/80">
                             {isSpeakerOn ? 'Speaker On' : 'Speaker Off'}
                         </span>
                     </div>
@@ -126,12 +127,12 @@ export function VoiceCall({ contactName, contactAvatar, onEndCall, onSwitchToVid
                         <Button
                             size="lg"
                             variant="ghost"
-                            className="rounded-full w-16 h-16 bg-white/10 hover:bg-white/20 transition-all duration-200"
+                            className="rounded-full w-16 h-16 bg-[#2C2C2E] hover:bg-[#3C3C3E] transition-all duration-200"
                             onClick={onSwitchToVideo}
                         >
                             <Video className="h-8 w-8 text-white" />
                         </Button>
-                        <span className="text-xs text-white/60">Switch to Video</span>
+                        <span className="text-xs text-white/80">Switch to Video</span>
                     </div>
                 </div>
             </div>

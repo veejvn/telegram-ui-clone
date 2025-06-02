@@ -1,9 +1,9 @@
 "use client";
+
 import React, { useState } from "react";
-import { Phone, Video, Info, Settings, MessageSquare, User } from "lucide-react";
+import { Phone, Video, Info } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import Link from "next/link";
-import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 interface CallHistory {
   id: string;
@@ -26,6 +26,11 @@ const callData: CallHistory[] = [
 export default function CallPage() {
   const [showCalls, setShowCalls] = useState(false);
   const recentCalls = showCalls ? callData : [];
+  const router = useRouter();
+
+  const handleContactClick = (id: string) => {
+    router.push(`/call/${id}`);
+  };
 
   return (
     <div className="flex flex-col h-screen bg-black text-white">
@@ -53,11 +58,17 @@ export default function CallPage() {
 
             <div>
               {recentCalls.map((call) => (
-                <div key={call.id} className="flex items-center justify-between px-4 py-2">
+                <div
+                  key={call.id}
+                  className="flex items-center justify-between px-4 py-2 cursor-pointer hover:bg-zinc-900"
+                  onClick={() => handleContactClick(call.id)}
+                >
                   <div className="flex items-center space-x-3">
                     <div className="relative">
                       <Avatar className="h-12 w-12 bg-[#0A84FF] rounded-full flex items-center justify-center">
-                        <AvatarFallback className="text-xl text-white">T</AvatarFallback>
+                        <AvatarFallback className="text-xl text-white">
+                          {call.name[0]}
+                        </AvatarFallback>
                       </Avatar>
                       <div className="absolute -left-1 top-0">
                         <Video className="w-4 h-4 text-white" />
@@ -66,7 +77,7 @@ export default function CallPage() {
                     <div>
                       <div className="font-medium text-white">{call.name}</div>
                       <div className="text-sm text-gray-500">
-                        Outgoing ({call.duration})
+                        {call.type} ({call.duration})
                       </div>
                     </div>
                   </div>
