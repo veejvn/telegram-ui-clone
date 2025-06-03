@@ -103,7 +103,7 @@ export default function SettingsPage() {
   return (
     <>
       {/* Header */}
-      <div className="relative bg-black">
+      <div className="relative">
         <div className="flex items-center justify-between px-4 pt-4">
           <QrCode className="h-6 w-6 text-blue-500" />
           <div className="absolute left-1/2 transform -translate-x-1/2 top-4">
@@ -111,7 +111,7 @@ export default function SettingsPage() {
               <AvatarFallback className="text-xl">You</AvatarFallback>
             </Avatar>
           </div>
-          <Button className="text-blue-500 bg-transparent" size="sm">
+          <Button className="text-blue-500 hover:bg-zinc-300 bg-white dark:bg-transparent border dark:hover:text-blue-700" size="sm">
             Edit
           </Button>
         </div>
@@ -122,44 +122,44 @@ export default function SettingsPage() {
       </div>
 
       {/* Action Shortcuts */}
-      <div className="mx-4 bg-zinc-900 rounded-2xl divide-y divide-zinc-700">
-        <div className="mx-4 bg-zinc-900 rounded-2xl divide-y divide-zinc-700">
-          {/* Set Profile Photo */}
-          <div
-            className="flex items-center justify-between px-4 py-3 cursor-pointer"
-            onClick={handleFileSelect}
-          >
-            <div className="flex items-center space-x-3">
-              <div className="bg-indigo-600 h-9 w-9 rounded-full flex items-center justify-center text-white">
-                <Camera className="h-5 w-5" />
-              </div>
-              <span className="text-base">Set Profile Photo</span>
+      <div className="mx-4 rounded-2xl border-2 divide-y-2">
+        {/* Set Profile Photo */}
+        <div
+          className="flex items-center justify-between px-4 py-3 cursor-pointer"
+          onClick={handleFileSelect}
+        >
+          <div className="flex items-center space-x-3">
+            <div className="bg-indigo-600 h-9 w-9 rounded-full flex items-center justify-center text-white">
+              <Camera className="h-5 w-5" />
             </div>
-            <ChevronRight className="h-5 w-5 text-gray-500" />
+            <span className="text-base">Set Profile Photo</span>
           </div>
+          <ChevronRight className="h-5 w-5 text-gray-500" />
+        </div>
 
-          {/* Set Username */}
-          <div
-            className="flex items-center justify-between px-4 py-3 cursor-pointer"
-            onClick={() => router.push("/setting/set-username")}
-          >
-            <div className="flex items-center space-x-3">
-              <div className="bg-indigo-600 h-9 w-9 rounded-full flex items-center justify-center text-white">
-                <AtSign className="h-5 w-5" />
-              </div>
-              <span className="text-base">Set Username</span>
+        {/* Set Username */}
+        <div
+          className="flex items-center justify-between px-4 py-3 cursor-pointer"
+          onClick={() => router.push("/setting/set-username")}
+        >
+          <div className="flex items-center space-x-3">
+            <div className="bg-indigo-600 h-9 w-9 rounded-full flex items-center justify-center text-white">
+              <AtSign className="h-5 w-5" />
             </div>
-            <ChevronRight className="h-5 w-5 text-gray-500" />
+            <span className="text-base">Set Username</span>
           </div>
+          <ChevronRight className="h-5 w-5 text-gray-500" />
         </div>
       </div>
+      {/* Toggles: Appearance & Power Saving */}
+
 
       {/* Settings List */}
       <div className="p-4 space-y-2">
         {settings.map((item) => (
           <Link
             key={item.title}
-            className="flex items-center justify-between bg-zinc-900 rounded-2xl px-4 py-3"
+            className="flex items-center justify-between border-2 rounded-2xl px-4 py-3"
             href={item.path || "#"}
           >
             <div className="flex items-center space-x-3">

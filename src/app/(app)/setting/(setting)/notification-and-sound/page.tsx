@@ -19,7 +19,7 @@ const NotificationToggle = ({
 }: NotificationToggleProps) => (
   <div className="flex items-start justify-between py-3">
     <div>
-      <p className="text-white font-medium">{label}</p>
+      <p className="font-medium">{label}</p>
       {description && <p className="text-gray-400 text-sm">{description}</p>}
     </div>
     <label className="relative inline-flex items-center cursor-pointer">
@@ -50,7 +50,7 @@ export default function NotificationSettings() {
   const [newContacts, setNewContacts] = useState(true);
   const router = useRouter();
   return (
-    <div className="bg-black h-screen text-white p-6 space-y-6 overflow-y-auto">
+    <div className="p-6 space-y-6 overflow-y-auto">
       <div className="flex items-center mb-4">
         <button
           type="button"
@@ -72,7 +72,7 @@ export default function NotificationSettings() {
         {/* Private Chats */}
         <button
           type="button"
-          className="flex justify-between items-center p-4 bg-[#18181b] rounded-xl w-full focus:outline-none"
+          className="flex justify-between items-center p-4 border rounded-xl w-full focus:outline-none"
           onClick={() =>
             router.push("/setting/notification-and-sound/private-chats")
           }
@@ -89,7 +89,7 @@ export default function NotificationSettings() {
         {/* Group Chats */}
         <button
           type="button"
-          className="flex justify-between items-center p-4 bg-[#18181b] rounded-xl w-full focus:outline-none"
+          className="flex justify-between items-center p-4 border rounded-xl w-full focus:outline-none"
           onClick={() =>
             router.push("/setting/notification-and-sound/group-chats")
           }
@@ -106,7 +106,7 @@ export default function NotificationSettings() {
         {/* Channels */}
         <button
           type="button"
-          className="flex justify-between items-center p-4 bg-[#18181b] rounded-xl w-full focus:outline-none"
+          className="flex justify-between items-center p-4 border rounded-xl w-full focus:outline-none"
           onClick={() =>
             router.push("/setting/notification-and-sound/channels")
           }
@@ -123,7 +123,7 @@ export default function NotificationSettings() {
         {/* Stories */}
         <button
           type="button"
-          className="flex justify-between items-center p-4 bg-[#18181b] rounded-xl w-full focus:outline-none"
+          className="flex justify-between items-center p-4 border rounded-xl w-full focus:outline-none"
           onClick={() => router.push("/setting/notification-and-sound/stories")}
         >
           <div className="flex items-center space-x-2">
@@ -138,7 +138,7 @@ export default function NotificationSettings() {
         {/* Reactions */}
         <button
           type="button"
-          className="flex justify-between items-center p-4 bg-[#18181b] rounded-xl w-full focus:outline-none"
+          className="flex justify-between items-center p-4 border rounded-xl w-full focus:outline-none"
           onClick={() =>
             router.push("/setting/notification-and-sound/reactions")
           }
@@ -158,7 +158,7 @@ export default function NotificationSettings() {
       <p className="text-gray-400 font-semibold uppercase text-sm px-1 mb-1 mt-4">
         IN-APP NOTIFICATIONS
       </p>
-      <div className="bg-[#18181b] p-4 rounded-xl space-y-3">
+      <div className="p-4 border rounded-xl divide-y space-y-3">
         <NotificationToggle
           label="In-App Sounds"
           enabled={inAppSounds}
@@ -179,7 +179,7 @@ export default function NotificationSettings() {
         />
       </div>
       {/* Names on Lock Screen */}
-      <div className="bg-[#18181b] p-4 rounded-xl space-y-3">
+      <div className="p-4 border rounded-xl space-y-3">
         <NotificationToggle
           label="Names on Lock Screen"
           enabled={lockScreenNames}
@@ -195,7 +195,7 @@ export default function NotificationSettings() {
       <p className="text-gray-400 font-semibold uppercase text-sm px-1 mb-1 mt-4">
         Badge Counter
       </p>
-      <div className="bg-[#18181b] p-4 rounded-xl space-y-3">
+      <div className="p-4 border divide-y rounded-xl space-y-3">
         <NotificationToggle
           label="Include Channels"
           enabled={includeChannels}
@@ -213,7 +213,7 @@ export default function NotificationSettings() {
         Switch off to show the number of unread chats instead of messages
       </p>
       {/* New Contacts */}
-      <div className="bg-[#18181b] p-4 rounded-xl space-y-3">
+      <div className="p-4 border rounded-xl space-y-3">
         <NotificationToggle
           label="New Contacts"
           enabled={newContacts}
@@ -227,7 +227,7 @@ export default function NotificationSettings() {
 
       {/* Reset */}
       <div className="pt-0">
-        <button type="button" className="text-red-500 font-semibold w-full py-3 rounded-xl bg-[#18181b] hover:bg-gray-900 transition text-left pl-4">
+        <button type="button" className="text-red-500 font-semibold w-full py-3 rounded-xl border transition text-left pl-4">
           Reset All Notifications
         </button>
         <p className="text-gray-400 text-sm mt-1">
