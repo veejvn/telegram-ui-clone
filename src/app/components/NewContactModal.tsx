@@ -46,27 +46,27 @@ const NewContactModal = ({ onAddContact }: NewContactModalProps) => {
   return (
     <>
       <Button
-        className="text-blue-500 bg-transparent hover:bg-transparent"
+        className="text-blue-500 border bg-transparent hover:bg-zinc-300"
         onClick={() => setOpen(true)}
       >
         <Plus className="h-5 w-5" />
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="bg-black text-white max-w-md p-6">
+        <DialogContent className="max-w-md p-6">
           <DialogTitle/>
           <DialogDescription/>
           <div className="flex justify-between items-center text-sm mb-4">
             <Button
               onClick={() => setOpen(false)}
-              className="text-blue-400 bg-transparent hover:bg-transparent px-0"
+              className="text-blue-400 bg-transparent hover:bg-zinc-300 dark:hover:bg-zinc-800 border dark:border-none px-1"
               type="button"
             >
               Cancel
             </Button>
             <h2 className="text-base font-semibold">New Contact</h2>
             <Button
-              className="text-white bg-transparent hover:bg-transparent px-0"
+              className="text-black bg-transparent hover:bg-zinc-300 dark:hover:bg-zinc-800 dark:text-white border dark:border-none px-1"
               onClick={handleCreate}
               type="button"
             >
@@ -75,20 +75,20 @@ const NewContactModal = ({ onAddContact }: NewContactModalProps) => {
           </div>
 
           <div className="grid grid-flow-col grid-rows-2 mb-4">
-            <div className="row-span-2 w-16 h-16 mt-3 mx-auto bg-gray-600 rounded-full flex items-center justify-center text-xl font-bold">
+            <div className="row-span-2 w-16 h-16 mt-3 mx-auto bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center text-xl font-bold">
               {firstName ? firstName[0].toUpperCase() : "C"}
             </div>
             <Input
               placeholder="First Name"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              className="col-span-1 mb-2 bg-zinc-900 text-white"
+              className="col-span-1 mb-2"
             />
             <Input
               placeholder="Last Name"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              className="col-span-1 mb-2 bg-zinc-900 text-white"
+              className="col-span-1 mb-2"
             />
           </div>
 
@@ -98,16 +98,16 @@ const NewContactModal = ({ onAddContact }: NewContactModalProps) => {
                 <Button
                   type="button"
                   size="icon"
-                  className="bg-red-500 text-white size-5 rounded-full flex-shrink-0"
+                  className="bg-red-500 text-white size-5 hover:bg-red-300 rounded-full flex-shrink-0"
                   onClick={() => handleRemovePhone(idx)}
                   disabled={phones.length === 1}
                   tabIndex={-1}
                 >
                   <CircleMinus className="size-full" />
                 </Button>
-                <span className="text-blue-400 text-sm w-16 select-none">di động</span>
+                <span className="text-blue-500  text-sm w-16 select-none">di động</span>
                 <Input
-                  className="flex-1 bg-zinc-900 text-white"
+                  className="flex-1"
                   placeholder="+"
                   value={phone}
                   onChange={(e) => handlePhoneChange(idx, e.target.value)}
@@ -119,7 +119,7 @@ const NewContactModal = ({ onAddContact }: NewContactModalProps) => {
               <Button
                 type="button"
                 size="icon"
-                className="bg-blue-500 text-white my-2 size-5 rounded-full flex-shrink-0"
+                className="bg-blue-500 hover:bg-blue-300 my-2 size-5 rounded-full flex-shrink-0"
                 onClick={handleAddPhone}
               >
                 <CirclePlus className="size-ful" />

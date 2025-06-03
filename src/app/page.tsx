@@ -1,14 +1,7 @@
-import { ModeToggle } from "@/components/mode-toggle";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  return (
-    <div className="min-h-screen flex flex-col">
-      <main className="flex-1 flex flex-col items-center justify-center text-center px-6">
-        <p className="text-sm">Home</p>
-        <div className="absolute bottom-4 right-4">
-          <ModeToggle />
-        </div>
-      </main>
-    </div>
-  );
+  // Khi vào trang chủ, sẽ tự động chuyển hướng đến trang chat
+  redirect("/chat");
+  return null; // Không cần render gì ở đây vì đã redirect
 }

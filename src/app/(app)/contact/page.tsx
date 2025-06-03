@@ -51,19 +51,19 @@ const ContactPage = () => {
 
   return (
     <>
-      <div className="bg-[#1a1a1a]">
+      <div className="">
         <div className="flex items-center justify-between px-4 py-2">
           <Popover>
             <PopoverTrigger asChild>
-              <Button className="text-blue-500 p-0 bg-transparent hover:bg-transparent">
+              <Button className="text-blue-500 border bg-transparent hover:bg-zinc-300">
                 Sort
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-44 bg-[#1a1a1a] text-white p-0 rounded-2xl ml-3">
+            <PopoverContent className="w-44 p-0 ml-3 rounded-2xl">
               <div className="flex flex-col">
                 <Button
-                  className={`flex items-center justify-between px-4 py-2 bg-[#1a1a1a] hover:bg-[#232323] transition text-left rounded-t-2xl ${
-                    sortBy === "lastSeen" ? "font-semibold text-white" : ""
+                  className={`flex items-center justify-between px-4 py-2 bg-white text-black hover:bg-zinc-300 text-left rounded-none rounded-t-2xl ${
+                    sortBy === "lastSeen" ? "font-bold" : ""
                   }`}
                   onClick={() => setSortBy("lastSeen")}
                 >
@@ -71,8 +71,8 @@ const ContactPage = () => {
                   {sortBy === "lastSeen" && <Check/>}
                 </Button>
                 <Button
-                  className={`flex items-center justify-between px-4 py-2 bg-[#1a1a1a] hover:bg-[#232323] transition text-left rounded-b-2xl ${
-                    sortBy === "name" ? "font-semibold text-white" : ""
+                  className={`flex items-center justify-between px-4 py-2 bg-white text-black hover:bg-zinc-300 text-left rounded-none rounded-b-2xl ${
+                    sortBy === "name" ? "font-bold" : ""
                   }`}
                   onClick={() => setSortBy("name")}
                 >
@@ -92,14 +92,13 @@ const ContactPage = () => {
       <div className="px-4 py-2">
         {contacts.length === 0 ? (
           <div className="flex flex-1 flex-col justify-center items-center px-6 text-center">
-            <div className="mt-10 mb-8">
+            <div className="size-30 mt-10 mb-8">
               <Image
                 src="/images/contact.png"
                 alt="Contacts Icon"
-                className="mx-auto"
                 width={120}
                 height={120}
-                style={{ height: "auto", width: "auto" }}
+                style={{ height: "120px", width: "auto" }}
                 loading="eager"
                 priority
               />
@@ -115,7 +114,7 @@ const ContactPage = () => {
                   Allow Access
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent className="w-56 h-40 bg-[#1a1a1a] text-white border-0 p-0">
+              <AlertDialogContent className="w-56 h-40 border-0 p-0">
                 <AlertDialogHeader className="pt-4">
                   <AlertDialogTitle className="text-base text-center">
                     Please Allow Access
@@ -124,13 +123,13 @@ const ContactPage = () => {
                     Telegram does not have access to your contacts
                   </AlertDialogDescription>
                 </AlertDialogHeader>
-                <AlertDialogFooter className="grid grid-cols-2 w-full border-t border-black gap-0">
-                  <AlertDialogCancel className="bg-[#1a1a1a] text-blue-500 hover:bg-transparent border-r border-black rounded-none">
+                <AlertDialogFooter className="grid grid-cols-2 w-full border-t gap-0">
+                  <AlertDialogCancel className="h-full text-blue-500 bg-white hover:bg-zinc-300 dark:bg-black border-r rounded-none rounded-bl-lg">
                     Not Now
                   </AlertDialogCancel>
                   <AlertDialogAction
                     onClick={() => handleSettingClick()}
-                    className="bg-[#1a1a1a] text-blue-500 hover:bg-transparent border-l border-black rounded-none"
+                    className="h-full text-blue-500 bg-white hover:bg-zinc-300 dark:bg-black border-l rounded-none rounded-br-lg"
                   >
                     Setting
                   </AlertDialogAction>
@@ -142,7 +141,7 @@ const ContactPage = () => {
             </Button>
           </div>
         ) : (
-          <ul className="divide-y divide-gray-800">
+          <ul className="divide-y divide-gray-400">
             {contacts.map((c, idx) => (
               <li key={idx} className="flex items-center gap-4 py-3">
                 <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-lg font-bold text-white">
