@@ -10,12 +10,12 @@ import { use } from "react";
 const mockContacts = [
     {
         id: "1",
-        name: "Thanh Thảo",
+        name: "Nguyen Van A",
         lastSeen: "last seen recently",
     },
     {
         id: "2",
-        name: "Jane Smith",
+        name: "Nguyen Van B",
         lastSeen: "last seen 1 hour ago",
     },
     {
@@ -47,14 +47,13 @@ export default function CallDetailPage({ params }: { params: Promise<{ id: strin
     };
 
     return (
-        <div className="flex flex-col h-screen bg-black">
+        <div className="flex flex-col h-screen">
             {/* Header */}
             <div className="p-4 border-b border-zinc-800">
                 <div className="flex items-center gap-4">
                     <Button
-                        variant="ghost"
+                        variant="outline"
                         size="icon"
-                        className="text-white"
                         onClick={handleBack}
                     >
                         <ArrowLeft className="h-6 w-6" />

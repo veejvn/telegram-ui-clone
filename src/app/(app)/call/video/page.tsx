@@ -9,7 +9,7 @@ export default function VideoCallPage() {
     const contactName = searchParams.get("contact") || "Unknown";
 
     const handleEndCall = () => {
-        router.push("/");
+        router.push("/call");
     };
 
     return (

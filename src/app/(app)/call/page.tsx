@@ -16,15 +16,22 @@ interface CallHistory {
 const callData: CallHistory[] = [
   {
     id: "1",
-    name: "Thanh Thảo",
+    name: "Nguyen Van A",
     type: "outgoing",
     timestamp: "Thu",
     duration: "2 sec"
   },
+  {
+    id: "2",
+    name: "Nguyen Van B",
+    type: "missed",
+    timestamp: "Tue",
+    duration: "10 sec"
+  },
 ];
 
 export default function CallPage() {
-  const [showCalls, setShowCalls] = useState(false);
+  const [showCalls, setShowCalls] = useState(true);
   const recentCalls = showCalls ? callData : [];
   const router = useRouter();
 
@@ -33,7 +40,7 @@ export default function CallPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-black text-white">
+    <>
       {/* Status Bar */}
       <div className="flex items-center justify-between px-4 pt-3 pb-2">
         <button
@@ -42,7 +49,7 @@ export default function CallPage() {
         >
           Edit
         </button>
-        <div className="flex space-x-4 bg-[#1C1C1E] rounded-lg px-2 py-1">
+        <div className="flex space-x-4 rounded-lg px-2 py-1">
           <span className="font-medium">All</span>
           <span className="text-gray-500">Missed</span>
         </div>
@@ -60,22 +67,22 @@ export default function CallPage() {
               {recentCalls.map((call) => (
                 <div
                   key={call.id}
-                  className="flex items-center justify-between px-4 py-2 cursor-pointer hover:bg-zinc-900"
+                  className="flex items-center justify-between px-4 py-2 cursor-pointer hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-colors"
                   onClick={() => handleContactClick(call.id)}
                 >
                   <div className="flex items-center space-x-3">
-                    <div className="relative">
+                    <div className="relative pl-3">
                       <Avatar className="h-12 w-12 bg-[#0A84FF] rounded-full flex items-center justify-center">
-                        <AvatarFallback className="text-xl text-white">
+                        <AvatarFallback className="text-xl">
                           {call.name[0]}
                         </AvatarFallback>
                       </Avatar>
                       <div className="absolute -left-1 top-0">
-                        <Video className="w-4 h-4 text-white" />
+                        <Video className="w-4 h-4" />
                       </div>
                     </div>
                     <div>
-                      <div className="font-medium text-white">{call.name}</div>
+                      <div className="font-medium">{call.name}</div>
                       <div className="text-sm text-gray-500">
                         {call.type} ({call.duration})
                       </div>
@@ -116,6 +123,6 @@ export default function CallPage() {
       <div className="pb-1 flex justify-center">
         <div className="w-32 h-1 bg-gray-500 rounded-full"></div>
       </div>
-    </div>
+    </>
   );
 }
