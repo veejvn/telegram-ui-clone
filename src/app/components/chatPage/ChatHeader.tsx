@@ -11,7 +11,7 @@ const ChatHeader = () => {
   return (
     <>
       <div
-        className="flex justify-between bg-[#1c1c1e]
+        className="flex justify-between bg-white dark:bg-[#1c1c1e]
       py-2 items-center px-2"
       >
         <Link

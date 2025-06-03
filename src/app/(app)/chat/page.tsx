@@ -9,21 +9,18 @@ import { ChatList } from "@/app/components/chatPage/ChatList";
 export default function ChatPage() {
   return (
     <>
-      <div
-        className="flex items-center justify-between px-4 py-2 bg-[#1a1a1a]
-          sticky top-0 z-10"
-      >
-        <span className="text-blue-500">Edit</span>
-        <h1 className="text-md font-semibold">Chats</h1>
-        <div className="flex gap-3">
-          <div className="text-blue-500">+</div>
-          <div className="text-blue-500">✏️</div>
+      <div className="sticky bg-white dark:bg-black top-0 z-10">
+        <div className="flex items-center justify-between px-4 py-2">
+          <span className="text-blue-500">Edit</span>
+          <h1 className="text-md font-semibold">Chats</h1>
+          <div className="flex gap-3">
+            <div className="text-blue-500">+</div>
+            <div className="text-blue-500">✏️</div>
+          </div>
         </div>
+        <SearchBar />
       </div>
       <ScrollArea>
-        <div className="bg-[#1a1a1a] border-none">
-          <SearchBar />
-        </div>
 
         {/* <div className="flex flex-1 flex-col justify-between min-h-[calc(100vh-112px)] pb-8">
           <div className="flex flex-1 flex-col items-center justify-center text-center">

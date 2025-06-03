@@ -9,7 +9,7 @@ export default function SearchBar() {
         <Input
           type="text"
           placeholder="Search"
-          className="pl-10 text-white border-none rounded-xl"
+          className="pl-10 text-white border rounded-xl"
         />
       </div>
     </div>

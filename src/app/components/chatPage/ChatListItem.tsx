@@ -7,7 +7,7 @@ import { CheckCheck } from "lucide-react";
 
 export const ChatListItem = () => {
   return (
-    <div className="flex px-2 py-3 hover:bg-slate-900">
+    <div className="flex px-2 py-3 hover:bg-zinc-300 dark:hover:bg-zinc-700">
       {/* Avatar */}
       <div className="w-[60px] flex justify-center items-center">
         <Avatar className="h-15 w-15">
