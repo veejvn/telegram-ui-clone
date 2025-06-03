@@ -15,15 +15,15 @@ export default function SetUsernamePage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white px-4 py-6">
+    <div className="min-h-screen px-4 py-6">
       <div className="flex justify-between items-center mb-6">
-        <Button onClick={() => router.back()} className="text-blue-500 text-sm bg-transparent hover:underline">
+        <Button onClick={() => router.back()} className="text-blue-500 text-sm bg-white hover:bg-zinc-300 border dark:bg-black dark:hover:bg-zinc-700">
           Cancel
         </Button>
         <h1 className="text-lg font-semibold">Username</h1>
         <Button
           size="sm"
-          className="bg-transparent text-blue-500 hover:underline"
+          className="text-blue-500 bg-white hover:bg-zinc-300 border dark:bg-black dark:hover:bg-zinc-700"
           onClick={handleSave}
         >
           Done
@@ -34,7 +34,7 @@ export default function SetUsernamePage() {
         <div>
           <label className="text-sm mb-1 block">USERNAME</label>
           <Input
-            className="bg-zinc-800 text-white border-none placeholder:text-gray-500"
+            className="border placeholder:text-gray-500"
             placeholder="Username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}

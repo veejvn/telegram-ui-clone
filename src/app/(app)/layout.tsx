@@ -13,13 +13,11 @@ export default function AppLayout({
   const shouldShowBottomNav = !isChatDetailPage;
 
   return (
-    <main className="min-h-screen bg-black text-white flex flex-col">
-      {children}
-      {shouldShowBottomNav && (
-        <div className="sticky bottom-0 z-50">
-          <BottomNavigattion />
-        </div>
-      )}
+    <main>
+      <div className="min-h-screen flex flex-col">
+        {children}
+        <BottomNavigattion />
+      </div>
     </main>
   );
 }
