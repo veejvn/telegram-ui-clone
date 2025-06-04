@@ -6,8 +6,7 @@ import {
   Plus,
   ChevronRight,
   Globe,
-  Compass,
-  ChevronLeft
+  Compass
 } from "lucide-react";
 import { RadioGroup } from "@headlessui/react";
 import { useRouter } from "next/navigation";
@@ -22,22 +21,23 @@ export default function AutoDownloadSettings() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-black text-white p-4 space-y-6 font-sans">
-      {/* Header */}
-      <div className="flex items-center space-x-2 mb-4">
-        <button
-          onClick={() => router.back()}
-          className="flex items-center space-x-2 text-blue-400 cursor-pointer"
-        >
-          <ChevronLeft className="text-blue-400" />
-          <span className="text-xl font-semibold">Back</span>
-        </button>
-      </div>
+    <div className="min-h-screen bg-[#f6f6f6] dark:bg-black text-black dark:text-white p-4 space-y-6 font-sans">
+       {/* Header */}
+    <div className="flex items-center justify-between mb-6">
+      <button
+        type="button"
+        onClick={() => router.back()}
+        className="text-blue-400"
+      >
+        &lt; Back
+      </button>
+      <div className="w-16" />
+    </div>
 
-      <h1 className="text-center text-2xl mb-2">Web Browser</h1>
+    <h1 className="text-center font-semibold text-2xl mb-4">Web Browser</h1>
 
       <div>
-        <p className="text-sm text-neutral-400 mb-2">OPEN LINKS IN</p>
+        <p className="text-sm text-zinc-400 dark:text-zinc-300 mb-2">OPEN LINKS IN</p>
         <RadioGroup
           value={selectedBrowser}
           onChange={setSelectedBrowser}
@@ -48,15 +48,15 @@ export default function AutoDownloadSettings() {
               key={browser.name}
               value={browser.name}
               className={({ checked }) =>
-                `flex items-center justify-between bg-neutral-900 p-4 rounded-xl ${
-                  checked ? "border border-blue-500" : ""
+                `flex items-center justify-between bg-white dark:bg-[#18181b] p-4 rounded-xl ${
+                  checked ? "border border-blue-500" : "border border-zinc-200 dark:border-zinc-700"
                 }`
               }
             >
               {({ checked }) => (
                 <div className="flex items-center space-x-3 w-full">
                   {browser.icon}
-                  <span className="text-sm font-medium flex-grow">
+                  <span className="text-sm font-medium flex-grow text-black dark:text-white">
                     {browser.name}
                   </span>
                   {checked && <CheckCircle className="text-blue-500" />}
@@ -67,27 +67,27 @@ export default function AutoDownloadSettings() {
         </RadioGroup>
       </div>
 
-      <div className="bg-neutral-900 rounded-xl p-4 flex items-center space-x-3">
+      <div className="bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-700 rounded-xl p-4 flex items-center space-x-3">
         <Trash2 className="text-blue-500" />
-        <span className="text-sm font-medium">Clear Cookies</span>
+        <span className="text-sm font-medium text-black dark:text-white">Clear Cookies</span>
       </div>
-      <p className="text-xs text-neutral-500">
+      <p className="text-xs text-zinc-500 dark:text-zinc-400">
         Delete all cookies in the Telegram in-app browser. This action will sign
         you out of most websites.
       </p>
 
       <div>
-        <p className="text-sm text-neutral-400 mb-2">
+        <p className="text-sm text-zinc-400 dark:text-zinc-300 mb-2">
           NEVER OPEN IN THE IN-APP BROWSER
         </p>
-        <div className="bg-neutral-900 rounded-xl p-4 flex items-center justify-between">
+        <div className="bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-700 rounded-xl p-4 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Plus className="text-blue-500" />
-            <span className="text-sm font-medium">Add Website</span>
+            <span className="text-sm font-medium text-black dark:text-white">Add Website</span>
           </div>
-          <ChevronRight className="text-neutral-600" />
+          <ChevronRight className="text-zinc-400 dark:text-zinc-600" />
         </div>
-        <p className="text-xs text-neutral-500 mt-2">
+        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2">
           These websites will be always opened in your default browser.
         </p>
       </div>

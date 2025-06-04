@@ -1,24 +1,24 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Upload, Download } from "lucide-react";
+import {  Upload, Download } from "lucide-react";
 
 export default function NetworkUsagePage() {
   const router = useRouter();
 
   return (
-    <div className="text-white bg-black min-h-screen p-4 px-4 sm:px-6 lg:px-8 space-y-6 pt-6 pb-24">
+    <div className="text-black dark:text-white bg-[#f6f6f6] dark:bg-black min-h-screen p-4 px-4 sm:px-6 lg:px-8 space-y-6 pt-6 pb-24">
       {/* Header */}
-      <div className="flex items-center space-x-2 mb-4">
+      <div className="flex items-center justify-between mb-6">
         <button
+          type="button"
           onClick={() => router.back()}
-          className="flex items-center space-x-2 text-blue-400 cursor-pointer"
+          className="text-blue-400"
         >
-          <ChevronLeft className="text-blue-400" />
-          <span className="text-xl font-semibold">Back</span>
+          &lt; Back
         </button>
+        <div className="w-16" />
       </div>
-
 
       {/* Chart Placeholder */}
       <div className="flex justify-center items-center mb-6">
@@ -28,7 +28,7 @@ export default function NetworkUsagePage() {
               cx="18"
               cy="18"
               r="16"
-              stroke="#3f3f46"
+              stroke="#e5e7eb"
               strokeWidth="4"
               fill="none"
             />
@@ -52,16 +52,15 @@ export default function NetworkUsagePage() {
               fill="none"
             />
           </svg>
-          <div className="absolute inset-0 flex items-center justify-center text-white text-sm font-bold">
+          <div className="absolute inset-0 flex items-center justify-center text-black dark:text-white text-sm font-bold">
             32.4 MB
           </div>
         </div>
       </div>
 
-      
-      <h1 className="text-center text-2xl mb-2">Stogare Usage</h1>
+      <h1 className="text-center font-semibold text-2xl mb-2">Data Usage</h1>
 
-      <p className="text-center text-sm text-zinc-400 mb-6">
+      <p className="text-center text-sm text-zinc-400 dark:text-zinc-300 mb-6">
         Your data usage since May 12, 2025 at 4:14 PM
       </p>
 
@@ -70,7 +69,7 @@ export default function NetworkUsagePage() {
         {["All", "Mobile", "Wi-Fi"].map((tab) => (
           <div
             key={tab}
-            className="text-sm px-3 py-1 bg-zinc-800 rounded-full text-white"
+            className="text-sm px-3 py-1 bg-zinc-200 dark:bg-zinc-800 rounded-full text-black dark:text-white"
           >
             {tab}
           </div>
@@ -89,31 +88,31 @@ export default function NetworkUsagePage() {
           { name: "Videos", value: "0 B", color: "bg-blue-600" },
           { name: "Voice Messages", value: "0 B", color: "bg-purple-600" },
         ].map((item) => (
-          <div key={item.name} className="flex justify-between items-center bg-zinc-900 p-3 rounded">
+          <div key={item.name} className="flex justify-between items-center bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-700 p-3 rounded">
             <div className="flex items-center space-x-3">
               <div className={`w-4 h-4 rounded ${item.color}`} />
-              <span>{item.name}</span>
+              <span className="text-black dark:text-white">{item.name}</span>
             </div>
-            <span className="text-sm text-zinc-300">{item.value}</span>
+            <span className="text-sm text-zinc-400 dark:text-zinc-300">{item.value}</span>
           </div>
         ))}
       </div>
 
       {/* Total Usage */}
       <div className="mt-6 space-y-3">
-        <div className="flex items-center justify-between bg-zinc-800 p-3 rounded">
+        <div className="flex items-center justify-between bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-700 p-3 rounded">
           <div className="flex items-center space-x-2">
             <Upload className="text-blue-400" size={18} />
-            <span>Data Sent</span>
+            <span className="text-black dark:text-white">Data Sent</span>
           </div>
-          <span className="text-sm text-zinc-300">541.7 KB</span>
+          <span className="text-sm text-zinc-400 dark:text-zinc-300">541.7 KB</span>
         </div>
-        <div className="flex items-center justify-between bg-zinc-800 p-3 rounded">
+        <div className="flex items-center justify-between bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-700 p-3 rounded">
           <div className="flex items-center space-x-2">
             <Download className="text-green-400" size={18} />
-            <span>Data Received</span>
+            <span className="text-black dark:text-white">Data Received</span>
           </div>
-          <span className="text-sm text-zinc-300">31.9 MB</span>
+          <span className="text-sm text-zinc-400 dark:text-zinc-300">31.9 MB</span>
         </div>
       </div>
 
