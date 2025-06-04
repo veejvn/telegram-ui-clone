@@ -12,7 +12,6 @@ import {
   User,
   Users,
   Megaphone,
-  ChevronLeft,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -31,13 +30,13 @@ const SettingItem = ({
 }) => (
   <div
     onClick={onClick}
-    className="flex items-center justify-between px-4 py-3 bg-zinc-800 rounded-lg mb-2 cursor-pointer"
+    className="flex items-center justify-between px-4 py-3 bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-700 rounded-lg mb-2 cursor-pointer"
   >
     <div className="flex items-center gap-3">
       {icon}
-      <span className="text-white">{title}</span>
+      <span className="text-black dark:text-white">{title}</span>
     </div>
-    <div className="flex items-center gap-1 text-zinc-300 text-sm">
+    <div className="flex items-center gap-1 text-zinc-400 dark:text-zinc-300 text-sm">
       {value && <span>{value}</span>}
       {showChevron && <ChevronRight size={18} />}
     </div>
@@ -52,18 +51,19 @@ export default function DataAndStoragePage() {
   const [raiseToListen, setRaiseToListen] = useState(true);
 
   return (
-    <div className="bg-black min-h-screen text-white px-4 sm:px-6 lg:px-8 space-y-6 pt-6 pb-24">
-      <div className="flex items-center space-x-2 mb-4">
+    <div className="bg-[#f6f6f6] dark:bg-black min-h-screen text-black dark:text-white px-4 pt-6 pb-24">
+      <div className="flex items-center justify-between mb-6">
         <button
+          type="button"
           onClick={() => router.back()}
-          className="flex items-center space-x-2 text-blue-400 cursor-pointer"
+          className="text-blue-400"
         >
-          <ChevronLeft className="text-blue-400" />
-          <span className="text-xl font-semibold">Back</span>
+          &lt; Back
         </button>
+        <div className="w-16" />
       </div>
 
-      <h1 className="text-xl sm:text-2xl font-semibold text-center">
+      <h1 className="text-xl sm:text-2xl font-semibold text-center mb-4">
         Data and Storage
       </h1>
 
@@ -125,12 +125,12 @@ export default function DataAndStoragePage() {
         />
         <SettingItem
           icon={
-            <div className="p-1">
-              <RotateCcw size={24} className="text-gray-300" />
+            <div className="p-1 opacity-40">
+              <RotateCcw size={24} />
             </div>
           }
           title={
-            <span className="text-gray-200">Reset Auto-Download Settings</span>
+            <span className="opacity-40">Reset Auto-Download Settings</span>
           }
           value=""
           showChevron={false}
@@ -178,14 +178,14 @@ export default function DataAndStoragePage() {
 
       {/* Use Less Data */}
       <div>
-        <div className="bg-zinc-800 rounded-lg px-4 sm:px-5 py-3">
+        <div className="bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-700 rounded-lg px-4 sm:px-5 py-3">
           <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-0">
             <span>Use Less Data for Calls</span>
             <Switch
               checked={useLessData}
               onChange={setUseLessData}
               className={`${
-                useLessData ? "bg-green-500" : "bg-zinc-600"
+                useLessData ? "bg-green-500" : "bg-zinc-400"
               } relative inline-flex h-6 sm:h-7 w-11 sm:w-12 items-center rounded-full transition-colors`}
             >
               <span
@@ -206,7 +206,7 @@ export default function DataAndStoragePage() {
 
       {/* Other */}
       <div>
-        <h2 className="text-sm text-zinc-400 mb-2">OTHER</h2>
+        <h2 className="text-sm text-zinc-400 mt-4 mb-2">OTHER</h2>
         <SettingItem
           icon={""}
           title="Open Links in"
@@ -219,12 +219,12 @@ export default function DataAndStoragePage() {
           onClick={() => router.push("/setting/data-and-storage/share-sheet")}
         />
 
-        <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-0 px-4 sm:px-5 py-3 bg-zinc-800 rounded-lg mb-2">
+        <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-0 px-4 sm:px-5 py-3 bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-700 rounded-lg mb-2">
           <span>Save Edited Photos</span>
           <div
             onClick={() => setSaveEditedPhotos(!saveEditedPhotos)}
             className={`w-11 sm:w-12 h-6 sm:h-7 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-300 ${
-              saveEditedPhotos ? "bg-green-500" : "bg-zinc-600"
+              saveEditedPhotos ? "bg-green-500" : "bg-zinc-400"
             }`}
           >
             <div
@@ -235,12 +235,12 @@ export default function DataAndStoragePage() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-0 px-4 sm:px-5 py-3 bg-zinc-800 rounded-lg mb-2">
+        <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-0 px-4 sm:px-5 py-3 bg-white border-zinc-200bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-700 rounded-lg mb-2">
           <span>Pause Music While Recording</span>
           <div
             onClick={() => setPauseMusic(!pauseMusic)}
             className={`w-11 sm:w-12 h-6 sm:h-7 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-300 ${
-              pauseMusic ? "bg-green-500" : "bg-zinc-600"
+              pauseMusic ? "bg-green-500" : "bg-zinc-400"
             }`}
           >
             <div
@@ -251,12 +251,12 @@ export default function DataAndStoragePage() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-0 px-4 sm:px-5 py-3 bg-zinc-800 rounded-lg mb-2">
+        <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-0 px-4 sm:px-5 py-3 bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-700 rounded-lg mb-2">
           <span>Raise to Listen</span>
           <div
             onClick={() => setRaiseToListen(!raiseToListen)}
             className={`w-11 sm:w-12 h-6 sm:h-7 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-300 ${
-              raiseToListen ? "bg-green-500" : "bg-zinc-600"
+              raiseToListen ? "bg-green-500" : "bg-zinc-400"
             }`}
           >
             <div

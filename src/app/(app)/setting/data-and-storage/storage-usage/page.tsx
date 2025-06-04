@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  ChevronLeft,
+  // ChevronLeft,
   // User,
   // Users,
   // Megaphone,
@@ -25,19 +25,20 @@ export default function StorageUsagePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white p-4 px-4 sm:px-6 lg:px-8 space-y-6 pt-6 pb-24">
+    <div className="bg-[#f6f6f6] dark:bg-black min-h-screen text-black dark:text-white px-4 pt-6 pb-24">
       {/* Header */}
-      <div className="flex items-center space-x-2 mb-4">
+      <div className="flex items-center justify-between mb-6">
         <button
+          type="button"
           onClick={() => router.back()}
-          className="flex items-center space-x-2 text-blue-400 cursor-pointer"
+          className="text-blue-400"
         >
-          <ChevronLeft className="text-blue-400" />
-          <span className="text-xl font-semibold">Back</span>
+          &lt; Back
         </button>
+        <div className="w-16" />
       </div>
 
-      {/* Total Usage Ring Chart (dummy) */}
+      {/* Total Usage Ring Chart */}
       <div className="flex justify-center my-6">
         <div className="relative w-52 h-52">
           <PieChart
@@ -60,53 +61,62 @@ export default function StorageUsagePage() {
           />
           {/* Middle Text */}
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-            <span className="text-lg font-bold text-white">14.0 MB</span>
+            <span className="text-lg font-bold text-black dark:text-white">
+              14.0 MB
+            </span>
           </div>
         </div>
       </div>
 
-      <h1 className="text-center text-2xl mb-2">Stogare Usage</h1>
+      <h1 className="text-center font-semibold text-2xl mb-2 text-black dark:text-white">
+        Storage Usage
+      </h1>
 
-      <p className="text-center text-sm text-zinc-400 mb-6">
+      <p className="text-center text-sm text-zinc-400 dark:text-zinc-300 mb-6">
         Telegram uses &lt;0.1% of your free disk space.
       </p>
 
       {/* Memory display bar */}
       <div className="w-full px-4 mb-4">
-        <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
-          <div className="bg-blue-500 h-full" style={{ width: "1%" }} />{" "}
-          {/* example takes 10% of memory */}
+        <div className="w-full bg-zinc-200 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
+          <div className="bg-blue-500 h-full" style={{ width: "1%" }} />
         </div>
       </div>
 
       {/* Breakdown list */}
-      <div className="rounded-xl bg-zinc-900 mb-4">
-        {usageData.map((item) => (
+      <div className="rounded-xl bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-700 mb-4">
+        {usageData.map((item, idx) => (
           <div
             key={item.label}
-            className="flex items-center justify-between px-4 py-3 border-b border-zinc-800"
+            className={`flex items-center justify-between px-4 py-3 ${
+              idx !== usageData.length - 1
+                ? "border-b border-zinc-200 dark:border-zinc-700"
+                : ""
+            }`}
           >
             <div className="flex items-center space-x-2">
               <div
-                className={`w-4 h-4 rounded-full flex items-center justify-center`}
+                className="w-4 h-4 rounded-full flex items-center justify-center"
                 style={{ backgroundColor: item.hex }}
               >
                 <Check size={10} className="text-white" />
               </div>
-              <span>
+              <span className="text-black dark:text-white">
                 {item.label} {item.percent}%
               </span>
             </div>
-            <span className="text-zinc-400">{item.size}</span>
+            <span className="text-zinc-400 dark:text-zinc-300">
+              {item.size}
+            </span>
           </div>
         ))}
-        <button className="w-full py-3 text-center text-sm bg-blue-500 font-medium rounded-b-xl">
-          Clear Entire Cache <span className="text-gray-300">14 MB</span>
+        <button className="w-full py-3 text-center text-sm bg-blue-500 font-medium rounded-b-xl text-white">
+          Clear Entire Cache <span className="text-blue-200">14 MB</span>
         </button>
       </div>
 
       {/* Description */}
-      <p className="text-sm text-center text-zinc-400 mb-4">
+      <p className="text-sm text-center text-zinc-400 dark:text-zinc-300 mb-4">
         All media will stay in the Telegram cloud and can be re-downloaded if
         you need them again.
       </p>
@@ -117,8 +127,10 @@ export default function StorageUsagePage() {
       }
 
       {/* Cache size slider */}
-      <div className="rounded-xl bg-zinc-900 p-4 mb-4">
-        <h2 className="text-sm text-zinc-400 mb-2">MAXIMUM CACHE SIZE</h2>
+      <div className="rounded-xl bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-700 p-4 mb-4">
+        <h2 className="text-sm text-zinc-400 dark:text-zinc-300 mb-2">
+          MAXIMUM CACHE SIZE
+        </h2>
         <input
           type="range"
           min={0}
@@ -127,13 +139,13 @@ export default function StorageUsagePage() {
           onChange={(e) => setSlider(+e.target.value)}
           className="w-full accent-blue-500"
         />
-        <div className="flex justify-between text-sm text-zinc-400 mt-2">
+        <div className="flex justify-between text-sm text-zinc-400 dark:text-zinc-300 mt-2">
           <span>5 GB</span>
           <span>20 GB</span>
           <span>50 GB</span>
           <span>No Limit</span>
         </div>
-        <p className="text-xs text-zinc-500 mt-2">
+        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2">
           If your cache size exceeds this limit, the oldest unused media will be
           removed from the device.
         </p>

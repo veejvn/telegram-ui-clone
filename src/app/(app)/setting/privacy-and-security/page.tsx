@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  ChevronLeft,
   ChevronRight,
   ShieldBan,
   ScanFace,
@@ -23,7 +22,7 @@ const privacyItemsTop = [
     value: "Off",
   },
   {
-    icon: <KeyRound className="text-orange-400" size={22} />, 
+    icon: <KeyRound className="text-orange-400" size={22} />,
     label: "Two-Step Verification",
     value: "Off",
   },
@@ -52,22 +51,25 @@ export default function PrivacyAndSecurityPage() {
   const router = useRouter();
 
   return (
-    <div className="bg-black min-h-screen text-white px-4 pt-6 pb-24">
+    <div className="bg-[#f6f6f6] dark:bg-black min-h-screen text-black dark:text-white px-4 pt-6 pb-24">
       {/* Header */}
-      <div className="flex items-center space-x-2 mb-4">
+      <div className="flex items-center justify-between mb-6">
         <button
+          type="button"
           onClick={() => router.back()}
-          className="flex items-center space-x-2 text-blue-400 cursor-pointer"
+          className="text-blue-400"
         >
-          <ChevronLeft className="text-blue-400" />
-          <span className="text-xl font-semibold">Back</span>
+          &lt; Back
         </button>
+        <div className="w-16" />
       </div>
 
-      <h1 className="text-center text-2xl mb-5 ">Privacy and Security</h1>
+      <h1 className="text-center text-black font-semibold dark:text-white text-2xl mb-4 ">
+        Privacy and Security
+      </h1>
 
       {/* Top Section */}
-      <div className="rounded-xl bg-zinc-900 mb-4 divide-y divide-zinc-800">
+      <div className="rounded-xl bg-white dark:bg-zinc-900 text-black dark:text-white mb-4 divide-y divide-gray-200 dark:divide-zinc-800">
         {privacyItemsTop.map((item) => (
           <div
             key={item.label}
@@ -86,7 +88,7 @@ export default function PrivacyAndSecurityPage() {
       </div>
 
       {/* Login Email */}
-      <div className="rounded-xl bg-zinc-900 mb-1">
+      <div className="rounded-xl bg-white dark:bg-zinc-900 text-black dark:text-white mb-4 divide-y divide-gray-200 dark:divide-zinc-800">
         <div className="flex items-center px-4 py-3 space-x-3">
           <AtSign className="text-blue-400" size={22} />
           <span>Login Email</span>
@@ -97,7 +99,7 @@ export default function PrivacyAndSecurityPage() {
       </p>
 
       {/* Privacy Section */}
-      <div className="rounded-xl bg-zinc-900 mb-4 divide-y divide-zinc-800">
+      <div className="rounded-xl bg-white dark:bg-zinc-900 text-black dark:text-white mb-4 divide-y divide-gray-200 dark:divide-zinc-800">
         <div className="text-xs text-zinc-400 px-4 pt-3 pb-1">PRIVACY</div>
         {privacyItems.map((item) => (
           <div
@@ -123,7 +125,7 @@ export default function PrivacyAndSecurityPage() {
       <div className="text-xs text-zinc-400 px-4 pt-3 pb-1">
         AUTOMATICALLY DELETE MY ACCOUNT
       </div>
-      <div className="rounded-xl bg-zinc-900 mb-1">
+      <div className="rounded-xl bg-white dark:bg-zinc-900 text-black dark:text-white mb-4 divide-y divide-gray-200 dark:divide-zinc-800">
         <div className="flex items-center justify-between px-4 py-3">
           <span>If Away For</span>
           <div className="flex items-center space-x-1 text-zinc-400 text-sm">
@@ -138,7 +140,7 @@ export default function PrivacyAndSecurityPage() {
       </p>
 
       {/* Data Settings */}
-      <div className="rounded-xl bg-zinc-900 mb-1">
+      <div className="rounded-xl bg-white dark:bg-zinc-900 text-black dark:text-white mb-4 divide-y divide-gray-200 dark:divide-zinc-800">
         <div className="flex items-center justify-between px-4 py-3">
           <span>Data Settings</span>
         </div>
