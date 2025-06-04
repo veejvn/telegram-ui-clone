@@ -10,13 +10,14 @@ export default function AppLayout({
   const pathname = usePathname();
 
   const isChatDetailPage = /^\/chat(\/.+)+$/.test(pathname);
-  const shouldShowBottomNav = !isChatDetailPage;
+  const isSettingPage = pathname.startsWith("/setting/");
+  const shouldShowBottomNav = !isChatDetailPage && !isSettingPage;
 
   return (
     <main>
       <div className="min-h-screen flex flex-col">
         {children}
-        <BottomNavigattion />
+        {shouldShowBottomNav && <BottomNavigattion />}
       </div>
     </main>
   );
