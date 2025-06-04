@@ -4,14 +4,14 @@ import { ArrowLeft, Search, Paperclip, Mic, Smile } from 'lucide-react';
 
 const SavedMessagePage = () => {
   return (
-    <div className="min-h-screen bg-[url('/bg-doodles.png')] bg-cover bg-center relative pb-20">
+    <div className="bg-[url('/bg-doodles.png')] bg-cover bg-center relative pb-20">
       {/* Top Bar */}
-      <div className="flex items-center justify-between p-4 bg-black/50">
+      <div className="flex items-center justify-between p-4 dark:bg-black/50">
         <button className="flex items-center space-x-1 text-blue-400">
           <ArrowLeft size={20} />
           <span>Back</span>
         </button>
-        <h1 className="text-white font-semibold">Saved Messages</h1>
+        <h1 className="dark:text-white font-semibold">Saved Messages</h1>
         <Search size={20} className="text-blue-400" />
       </div>
 
@@ -43,7 +43,7 @@ const SavedMessagePage = () => {
       <div className="fixed bottom-0 left-0 w-full bg-black/60 px-4 py-2">
         <div className="flex items-center bg-gray-800 rounded-full px-3 py-2">
           {/* Attach icon */}
-          <button className="text-gray-400 hover:text-gray-200">
+          <button className="text-gray-400 hover:text-gray-200" title="Attach file">
             <Paperclip size={20} />
           </button>
 
@@ -55,12 +55,12 @@ const SavedMessagePage = () => {
           />
 
           {/* Smile icon */}
-          <button className="text-gray-400 hover:text-gray-200 mr-2">
+          <button className="text-gray-400 hover:text-gray-200 mr-2" title='Add emoji'>
             <Smile size={20} />
           </button>
 
           {/* Mic icon */}
-          <button className="text-gray-400 hover:text-gray-200">
+          <button className="text-gray-400 hover:text-gray-200" title='Record voice message'>
             <Mic size={20} />
           </button>
         </div>
