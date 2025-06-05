@@ -5,8 +5,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MatrixAuthService } from "@/services/matrix-auth";
 import { motion } from "framer-motion";
+import { ERROR_MESSAGES, ErrorMessageValue } from "@/constants/error-messages";
+
+// Import MatrixAuthService trực tiếp từ lib/matrix
+import { MatrixAuthService } from "@/services/matrix-auth";
 
 export default function RegisterForm() {
   const router = useRouter();
@@ -16,16 +19,44 @@ export default function RegisterForm() {
     email: "",
     password: "",
     confirmPassword: "",
+    phone: "",
   });
-  const [error, setError] = useState("");
+  const [error, setError] = useState<ErrorMessageValue>(ERROR_MESSAGES.GENERAL.UNKNOWN_ERROR);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError("");
+    setError(ERROR_MESSAGES.GENERAL.UNKNOWN_ERROR);
+
+    // Validate input
+    if (!formData.username.trim()) {
+      setError(ERROR_MESSAGES.VALIDATION.REQUIRED_FIELD)
+      setIsLoading(false)
+      return
+    }
+    if (!formData.email.trim()) {
+      setError(ERROR_MESSAGES.VALIDATION.REQUIRED_FIELD)
+      setIsLoading(false)
+      return
+    }
+    if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+      setError(ERROR_MESSAGES.VALIDATION.INVALID_FORMAT)
+      setIsLoading(false)
+      return
+    }
+    if (!formData.password.trim()) {
+      setError(ERROR_MESSAGES.VALIDATION.REQUIRED_FIELD)
+      setIsLoading(false)
+      return
+    }
 
     if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
+      setError(ERROR_MESSAGES.VALIDATION.PASSWORD_MISMATCH)
+      setIsLoading(false)
+      return
+    }
+    if (/[^a-zA-Z0-9_\-.]/.test(formData.username)) {
+      setError(ERROR_MESSAGES.VALIDATION.INVALID_FORMAT)
       setIsLoading(false);
       return;
     }
@@ -38,15 +69,23 @@ export default function RegisterForm() {
         formData.email
       );
 
-      // Lưu token và thông tin người dùng
       localStorage.setItem("matrix_token", response.access_token);
       localStorage.setItem("matrix_user_id", response.user_id);
+      router.push(`/ (auth)/verify-email?email=${encodeURIComponent(formData.email)}`);
+    } catch (error: any) {
+      let errorMessage = ERROR_MESSAGES.GENERAL.UNKNOWN_ERROR;
 
-      // Chuyển hướng đến trang chủ
-      router.push("/");
-    } catch (error) {
-      console.error("Registration failed:", error);
-      setError("Registration failed. Please try again.");
+      if (error?.errcode === "M_USER_IN_USE") {
+        errorMessage = ERROR_MESSAGES.AUTH.EMAIL_EXISTS;
+      } else if (error?.errcode === "M_INVALID_USERNAME") {
+        errorMessage = ERROR_MESSAGES.VALIDATION.INVALID_FORMAT;
+      } else if (error?.errcode === "M_EXCLUSIVE") {
+        errorMessage = ERROR_MESSAGES.AUTH.EMAIL_EXISTS;
+      } else if (error?.message?.includes("Failed to fetch") || error?.message?.includes("NetworkError")) {
+        errorMessage = ERROR_MESSAGES.NETWORK.CONNECTION_ERROR;
+      }
+
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -79,7 +118,7 @@ export default function RegisterForm() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+      <form onSubmit={handleSubmit} className="mt-8 space-y-6" noValidate>
         <motion.div
           className="space-y-4"
           initial={{ opacity: 0 }}
@@ -98,8 +137,11 @@ export default function RegisterForm() {
               name="username"
               type="text"
               required
+              autoComplete="off"
               value={formData.username}
               onChange={handleChange}
+              onInvalid={e => e.currentTarget.setCustomValidity('Please fill out this field.')}
+              onInput={e => e.currentTarget.setCustomValidity('')}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
               placeholder="johndoe"
             />
@@ -117,10 +159,32 @@ export default function RegisterForm() {
               name="email"
               type="email"
               required
+              autoComplete="off"
               value={formData.email}
               onChange={handleChange}
+              onInvalid={e => e.currentTarget.setCustomValidity('Please fill out this field.')}
+              onInput={e => e.currentTarget.setCustomValidity('')}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
               placeholder="john@example.com"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+              Phone
+            </label>
+            <Input
+              id="phone"
+              name="phone"
+              type="tel"
+              required
+              autoComplete="off"
+              value={formData.phone}
+              onChange={handleChange}
+              onInvalid={e => e.currentTarget.setCustomValidity('Please fill out this field.')}
+              onInput={e => e.currentTarget.setCustomValidity('')}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+              placeholder="0123456789"
             />
           </div>
 
@@ -136,8 +200,11 @@ export default function RegisterForm() {
               name="password"
               type="password"
               required
+              autoComplete="off"
               value={formData.password}
               onChange={handleChange}
+              onInvalid={e => e.currentTarget.setCustomValidity('Please fill out this field.')}
+              onInput={e => e.currentTarget.setCustomValidity('')}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
               placeholder="••••••••"
             />
@@ -155,8 +222,11 @@ export default function RegisterForm() {
               name="confirmPassword"
               type="password"
               required
+              autoComplete="off"
               value={formData.confirmPassword}
               onChange={handleChange}
+              onInvalid={e => e.currentTarget.setCustomValidity('Please fill out this field.')}
+              onInput={e => e.currentTarget.setCustomValidity('')}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
               placeholder="••••••••"
             />
