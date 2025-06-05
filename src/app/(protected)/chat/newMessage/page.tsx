@@ -1,5 +1,5 @@
 "use client";
-import SearchBar from "@/app/components/SearchBar";
+import SearchBar from "@/components/layouts/SearchBar";
 import Link from "next/link";
 import { Users, UserPlus, Megaphone } from "lucide-react";
 import React from "react";

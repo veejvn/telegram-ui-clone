@@ -1,10 +1,10 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import SearchBar from "@/app/components/SearchBar";
+import SearchBar from "@/components/layouts/SearchBar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from "next/link";
-import { ChatList } from "@/app/components/chatPage/ChatList";
+import { ChatList } from "@/components/chat/ChatList";
 
 export default function ChatPage() {
   return (
@@ -21,7 +21,6 @@ export default function ChatPage() {
         <SearchBar />
       </div>
       <ScrollArea>
-
         {/* <div className="flex flex-1 flex-col justify-between min-h-[calc(100vh-112px)] pb-8">
           <div className="flex flex-1 flex-col items-center justify-center text-center">
             <Image

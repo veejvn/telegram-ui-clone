@@ -1,6 +1,6 @@
-import ChatComposer from "@/app/components/chatPage/ChatComposer";
-import ChatHeader from "@/app/components/chatPage/ChatHeader";
-import ChatMessages from "@/app/components/chatPage/ChatMessages";
+import ChatComposer from "@/components/chat/ChatComposer";
+import ChatHeader from "@/components/chat/ChatHeader";
+import ChatMessages from "@/components/chat/ChatMessages";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import React from "react";
 

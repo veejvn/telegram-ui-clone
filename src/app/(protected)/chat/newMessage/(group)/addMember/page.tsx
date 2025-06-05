@@ -1,5 +1,5 @@
 "use client";
-import AddMemberBar from "@/app/components/chatPage/AddMemberBar";
+import AddMemberBar from "@/components/chat/AddMemberBar";
 import {
   AlertDialog,
   AlertDialogAction,

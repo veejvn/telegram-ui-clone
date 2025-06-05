@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { AuthService, LoginCredentials } from '../services/auth';
-import { AuthState, User } from '../types/auth';
+import { AuthState, User } from '../../types/auth';
 
 const initialState: AuthState = {
     isAuthenticated: false,
