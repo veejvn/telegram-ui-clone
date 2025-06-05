@@ -16,6 +16,7 @@ export default function RegisterForm() {
         email: "",
         password: "",
         confirmPassword: "",
+        phone: "",
     })
     const [error, setError] = useState("")
 
@@ -24,8 +25,34 @@ export default function RegisterForm() {
         setIsLoading(true)
         setError("")
 
+        // Validate input
+        if (!formData.username.trim()) {
+            setError("Vui lòng nhập username.")
+            setIsLoading(false)
+            return
+        }
+        if (!formData.email.trim()) {
+            setError("Vui lòng nhập email.")
+            setIsLoading(false)
+            return
+        }
+        if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+            setError("Email không đúng định dạng.")
+            setIsLoading(false)
+            return
+        }
+        if (!formData.password.trim()) {
+            setError("Vui lòng nhập mật khẩu.")
+            setIsLoading(false)
+            return
+        }
         if (formData.password !== formData.confirmPassword) {
-            setError("Passwords do not match")
+            setError("Mật khẩu xác nhận không khớp.")
+            setIsLoading(false)
+            return
+        }
+        if (/[^a-zA-Z0-9_\-.]/.test(formData.username)) {
+            setError("Username không hợp lệ.")
             setIsLoading(false)
             return
         }
@@ -37,16 +64,21 @@ export default function RegisterForm() {
                 formData.password,
                 formData.email
             )
-
-            // Lưu token và thông tin người dùng
             localStorage.setItem("matrix_token", response.access_token)
             localStorage.setItem("matrix_user_id", response.user_id)
-
-            // Chuyển hướng đến trang chủ
-            router.push("/")
-        } catch (error) {
-            console.error("Registration failed:", error)
-            setError("Registration failed. Please try again.")
+            router.push(`/ (auth)/verify-email?email=${encodeURIComponent(formData.email)}`)
+        } catch (error: any) {
+            let message = "Có lỗi hệ thống, vui lòng thử lại sau."
+            if (error?.errcode === "M_USER_IN_USE") {
+                message = "Username đã tồn tại. Vui lòng chọn username khác."
+            } else if (error?.errcode === "M_INVALID_USERNAME") {
+                message = "Username không hợp lệ."
+            } else if (error?.errcode === "M_EXCLUSIVE") {
+                message = "Email đã được sử dụng cho tài khoản khác."
+            } else if (error?.message?.includes("Failed to fetch") || error?.message?.includes("NetworkError")) {
+                message = "Không thể kết nối đến máy chủ, vui lòng thử lại sau."
+            }
+            setError(message)
         } finally {
             setIsLoading(false)
         }
@@ -115,6 +147,22 @@ export default function RegisterForm() {
                             onChange={handleChange}
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                             placeholder="john@example.com"
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                            Phone
+                        </label>
+                        <Input
+                            id="phone"
+                            name="phone"
+                            type="tel"
+                            required
+                            value={formData.phone}
+                            onChange={handleChange}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                            placeholder="0123456789"
                         />
                     </div>
 

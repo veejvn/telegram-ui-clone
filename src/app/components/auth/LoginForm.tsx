@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { MatrixAuthService } from "@/lib/matrix-auth"
 import { motion } from "framer-motion"
+import { Eye, EyeOff } from 'lucide-react'
 
 type LoginMethod = "username" | "email" | "phone"
 
@@ -21,11 +22,38 @@ export default function LoginForm() {
         password: "",
     })
     const [error, setError] = useState("")
+    const [showPassword, setShowPassword] = useState(false)
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsLoading(true)
         setError("")
+
+        // Validate input
+        if (
+            (loginMethod === "username" && !formData.username.trim()) ||
+            (loginMethod === "email" && !formData.email.trim()) ||
+            (loginMethod === "phone" && !formData.phone.trim())
+        ) {
+            setError("Vui lòng nhập đầy đủ thông tin đăng nhập.")
+            setIsLoading(false)
+            return
+        }
+        if (!formData.password.trim()) {
+            setError("Vui lòng nhập mật khẩu.")
+            setIsLoading(false)
+            return
+        }
+        if (loginMethod === "email" && !/^\S+@\S+\.\S+$/.test(formData.email)) {
+            setError("Email không đúng định dạng.")
+            setIsLoading(false)
+            return
+        }
+        if (loginMethod === "username" && /[^a-zA-Z0-9_\-.]/.test(formData.username)) {
+            setError("Username không hợp lệ.")
+            setIsLoading(false)
+            return
+        }
 
         try {
             const authService = new MatrixAuthService()
@@ -43,15 +71,24 @@ export default function LoginForm() {
                     break
             }
 
-            // Lưu token và thông tin người dùng
             localStorage.setItem("matrix_token", response.access_token)
             localStorage.setItem("matrix_user_id", response.user_id)
-
-            // Chuyển hướng đến trang chủ
             router.push("/")
-        } catch (error) {
-            console.error("Login failed:", error)
-            setError("Invalid credentials. Please try again.")
+        } catch (error: any) {
+            // Mapping lỗi trả về từ Matrix
+            let message = "Có lỗi hệ thống, vui lòng thử lại sau."
+            if (error?.errcode === "M_FORBIDDEN" || error?.message?.includes("Invalid username/password")) {
+                message = "Tài khoản hoặc mật khẩu không đúng."
+            } else if (error?.errcode === "M_USER_DEACTIVATED") {
+                message = "Tài khoản đã bị vô hiệu hóa."
+            } else if (error?.errcode === "M_LIMIT_EXCEEDED") {
+                message = "Bạn đã đăng nhập sai quá nhiều lần, vui lòng thử lại sau."
+            } else if (error?.errcode === "M_UNKNOWN" && error?.message?.includes("Unsupported login identifier")) {
+                message = "Kiểu đăng nhập không được hỗ trợ trên máy chủ này. Vui lòng dùng username."
+            } else if (error?.message?.includes("Failed to fetch") || error?.message?.includes("NetworkError")) {
+                message = "Không thể kết nối đến máy chủ, vui lòng thử lại sau."
+            }
+            setError(message)
         } finally {
             setIsLoading(false)
         }
@@ -174,16 +211,27 @@ export default function LoginForm() {
                         <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                             Password
                         </label>
-                        <Input
-                            id="password"
-                            name="password"
-                            type="password"
-                            required
-                            value={formData.password}
-                            onChange={handleChange}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                            placeholder="••••••••"
-                        />
+                        <div className="relative">
+                            <Input
+                                id="password"
+                                name="password"
+                                type={showPassword ? "text" : "password"}
+                                required
+                                value={formData.password}
+                                onChange={handleChange}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 pr-10"
+                                placeholder="••••••••"
+                            />
+                            <button
+                                type="button"
+                                tabIndex={-1}
+                                onClick={() => setShowPassword(v => !v)}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-600 focus:outline-none"
+                                aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                            >
+                                {showPassword ? <Eye size={20} /> : <EyeOff size={20} />}
+                            </button>
+                        </div>
                     </div>
                 </motion.div>
 
