@@ -1,21 +1,29 @@
 "use client"
 
-import { createClient, MatrixClient } from "matrix-js-sdk"
+import { createClient } from "matrix-js-sdk/lib/matrix"
+import type { MatrixClient } from "matrix-js-sdk/lib/matrix"
+import { ERROR_MESSAGES } from "@/constants/error-messages"
 
 // Matrix homeserver URL - replace with your homeserver
 const HOMESERVER_URL = "https://matrix.org"
+
+let clientInstance: MatrixClient | null = null;
 
 export class MatrixAuthService {
     private client: MatrixClient
 
     constructor() {
         if (typeof window === 'undefined') {
-            throw new Error('MatrixAuthService can only be used in client components')
+            throw new Error(ERROR_MESSAGES.GENERAL.UNKNOWN_ERROR)
         }
 
-        this.client = createClient({
-            baseUrl: HOMESERVER_URL,
-        })
+        if (!clientInstance) {
+            clientInstance = createClient({
+                baseUrl: HOMESERVER_URL,
+            })
+        }
+
+        this.client = clientInstance
     }
 
     // Đăng ký tài khoản mới
@@ -48,7 +56,7 @@ export class MatrixAuthService {
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || 'Registration failed');
+                throw new Error(data.error || ERROR_MESSAGES.AUTH.INVALID_CREDENTIALS);
             }
 
             if (data.access_token) {
@@ -178,7 +186,7 @@ export class MatrixAuthService {
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || 'Failed to request password reset');
+                throw new Error(data.error || ERROR_MESSAGES.AUTH.INVALID_CREDENTIALS);
             }
 
             return data;
