@@ -11,7 +11,7 @@ import {
 import { PieChart } from "react-minimal-pie-chart";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import AutoRemoveSettings from "@/app/components/AutoRemoveSettings";
+import AutoRemoveSettings from "@/components/common/AutoRemoveSettings";
 
 export default function StorageUsagePage() {
   const router = useRouter();
@@ -122,9 +122,7 @@ export default function StorageUsagePage() {
       </p>
 
       {/* Auto-remove cached media */}
-      {
-      <AutoRemoveSettings />
-      }
+      {<AutoRemoveSettings />}
 
       {/* Cache size slider */}
       <div className="rounded-xl bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-700 p-4 mb-4">
@@ -138,6 +136,7 @@ export default function StorageUsagePage() {
           value={slider}
           onChange={(e) => setSlider(+e.target.value)}
           className="w-full accent-blue-500"
+          aria-label="Cache size slider"
         />
         <div className="flex justify-between text-sm text-zinc-400 dark:text-zinc-300 mt-2">
           <span>5 GB</span>

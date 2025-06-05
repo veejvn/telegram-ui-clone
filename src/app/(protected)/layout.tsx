@@ -1,5 +1,5 @@
 "use client";
-import BottomNavigattion from "@/app/components/BottomNavigation";
+import BottomNavigattion from "@/components/layouts/BottomNavigation";
 import { usePathname } from "next/navigation";
 
 export default function AppLayout({

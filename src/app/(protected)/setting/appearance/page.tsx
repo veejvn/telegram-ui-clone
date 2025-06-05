@@ -1,11 +1,11 @@
 // src/app/(app)/setting/appearance/page.tsx
-'use client';
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Card, CardContent } from '@/components/ui/card';
-import { Palette, ChevronLeft } from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
-import { ModeToggle } from '@/components/mode-toggle';
+"use client";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardContent } from "@/components/ui/card";
+import { Palette, ChevronLeft } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { ModeToggle } from "@/components/common/ModeToggle";
 
 export default function AppearancePage() {
   const router = useRouter();
@@ -33,7 +33,7 @@ export default function AppearancePage() {
             <span className="text-base">Dark Mode</span>
           </div>
           {/* <Switch checked={dark} onCheckedChange={setDark} /> */}
-          <ModeToggle/>
+          <ModeToggle />
         </CardContent>
       </Card>
     </div>
