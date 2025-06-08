@@ -1,24 +1,23 @@
-"use client";
-import BottomNavigattion from "@/components/layouts/BottomNavigation";
-import { usePathname } from "next/navigation";
+// src/app/(protected)/layout.tsx
+'use client';
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store/auth';
 
-export default function AppLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  const pathname = usePathname();
+export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const { isLogging } = useAuthStore();
 
-  const isChatDetailPage = /^\/chat(\/.+)+$/.test(pathname);
-  const isSettingPage = pathname.startsWith("/setting/");
-  const shouldShowBottomNav = !isChatDetailPage && !isSettingPage;
+  useEffect(() => {
+    if (!isLogging) {
+      router.replace('/login');
+    }
+  }, [isLogging, router]);
 
-  return (
-    <main>
-      <div className="min-h-screen flex flex-col">
-        {children}
-        {shouldShowBottomNav && <BottomNavigattion />}
-      </div>
-    </main>
-  );
+  // Trong khi chưa biết state (ví dụ hydration), bạn có thể hiển thị loading
+  if (!isLogging) {
+    return null; // hoặc <LoadingSpinner/>
+  }
+
+  return <>{children}</>;
 }

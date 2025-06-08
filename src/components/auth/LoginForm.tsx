@@ -1,78 +1,57 @@
-"use client";
+'use client'
+import React, { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { MatrixAuthService } from '@/services/matrix-auth'
+import { motion } from 'framer-motion'
+import Link from 'next/link'
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { MatrixAuthService } from "@/services/matrix-auth";
-import { motion } from "framer-motion";
+interface LoginFormProps {
+  onSuccess: (token: string) => void
+}
 
-type LoginMethod = "username" | "email" | "phone";
-
-export default function LoginForm() {
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-  const [loginMethod, setLoginMethod] = useState<LoginMethod>("username");
+export default function LoginForm({ onSuccess }: LoginFormProps) {
+  const [isLoading, setIsLoading] = useState(false)
+  const [loginMethod, setLoginMethod] = useState<'username' | 'email' | 'phone'>('username')
   const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-    phone: "",
-    password: "",
-  });
-  const [error, setError] = useState("");
+    username: '',
+    email: '',
+    phone: '',
+    password: '',
+  })
+  const [error, setError] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError("");
+    e.preventDefault()
+    setIsLoading(true)
+    setError('')
 
     try {
-      const authService = new MatrixAuthService();
-      let response;
+      const authService = new MatrixAuthService()
+      let response
 
-      switch (loginMethod) {
-        case "username":
-          response = await authService.login(
-            formData.username,
-            formData.password
-          );
-          break;
-        case "email":
-          response = await authService.loginWithEmail(
-            formData.email,
-            formData.password
-          );
-          break;
-        case "phone":
-          response = await authService.loginWithPhone(
-            formData.phone,
-            formData.password
-          );
-          break;
+      if (loginMethod === 'username') {
+        response = await authService.login(formData.username, formData.password)
+      } else if (loginMethod === 'email') {
+        response = await authService.loginWithEmail(formData.email, formData.password)
+      } else {
+        response = await authService.loginWithPhone(formData.phone, formData.password)
       }
 
-      // Lưu token và thông tin người dùng
-      localStorage.setItem("matrix_token", response.access_token);
-      localStorage.setItem("matrix_user_id", response.user_id);
-
-      // Chuyển hướng đến trang chủ
-      router.push("/");
-    } catch (error) {
-      console.error("Login failed:", error);
-      setError("Invalid credentials. Please try again.");
+      // gọi callback onSuccess với token
+      onSuccess(response.access_token)
+    } catch (err) {
+      console.error('Login failed:', err)
+      setError('Invalid credentials. Please try again.')
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+  }
 
   return (
     <motion.div
@@ -94,22 +73,22 @@ export default function LoginForm() {
 
       <div className="flex justify-center space-x-4 p-2 bg-gray-50 rounded-lg">
         <Button
-          variant={loginMethod === "username" ? "default" : "ghost"}
-          onClick={() => setLoginMethod("username")}
+          variant={loginMethod === 'username' ? 'default' : 'ghost'}
+          onClick={() => setLoginMethod('username')}
           className="transition-all duration-200"
         >
           Username
         </Button>
         <Button
-          variant={loginMethod === "email" ? "default" : "ghost"}
-          onClick={() => setLoginMethod("email")}
+          variant={loginMethod === 'email' ? 'default' : 'ghost'}
+          onClick={() => setLoginMethod('email')}
           className="transition-all duration-200"
         >
           Email
         </Button>
         <Button
-          variant={loginMethod === "phone" ? "default" : "ghost"}
-          onClick={() => setLoginMethod("phone")}
+          variant={loginMethod === 'phone' ? 'default' : 'ghost'}
+          onClick={() => setLoginMethod('phone')}
           className="transition-all duration-200"
         >
           Phone
@@ -123,12 +102,9 @@ export default function LoginForm() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
-          {loginMethod === "username" && (
+          {loginMethod === 'username' && (
             <div className="space-y-2">
-              <label
-                htmlFor="username"
-                className="block text-sm font-medium text-gray-700"
-              >
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
                 Username
               </label>
               <Input
@@ -138,18 +114,14 @@ export default function LoginForm() {
                 required
                 value={formData.username}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                 placeholder="johndoe"
               />
             </div>
           )}
 
-          {loginMethod === "email" && (
+          {loginMethod === 'email' && (
             <div className="space-y-2">
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700"
-              >
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Email
               </label>
               <Input
@@ -159,18 +131,14 @@ export default function LoginForm() {
                 required
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                 placeholder="john@example.com"
               />
             </div>
           )}
 
-          {loginMethod === "phone" && (
+          {loginMethod === 'phone' && (
             <div className="space-y-2">
-              <label
-                htmlFor="phone"
-                className="block text-sm font-medium text-gray-700"
-              >
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
                 Phone Number
               </label>
               <Input
@@ -180,17 +148,13 @@ export default function LoginForm() {
                 required
                 value={formData.phone}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                 placeholder="+84 123 456 789"
               />
             </div>
           )}
 
           <div className="space-y-2">
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700"
-            >
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
               Password
             </label>
             <Input
@@ -200,7 +164,6 @@ export default function LoginForm() {
               required
               value={formData.password}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
               placeholder="••••••••"
             />
           </div>
@@ -217,16 +180,10 @@ export default function LoginForm() {
         )}
 
         <div className="flex items-center justify-between text-sm">
-          <Link
-            href="/forgot-password"
-            className="text-blue-600 hover:text-blue-800 transition-colors duration-200"
-          >
+          <Link href="/forgot-password" className="text-blue-600 hover:text-blue-800">
             Forgot your password?
           </Link>
-          <Link
-            href="/register"
-            className="text-blue-600 hover:text-blue-800 transition-colors duration-200"
-          >
+          <Link href="/register" className="text-blue-600 hover:text-blue-800">
             Create account
           </Link>
         </div>
@@ -244,27 +201,20 @@ export default function LoginForm() {
                 fill="none"
                 viewBox="0 0 24 24"
               >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
                 <path
-                  className="opacity-75"
                   fill="currentColor"
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
+                  className="opacity-75"
+                />
               </svg>
               Signing in...
             </span>
           ) : (
-            "Sign in"
+            'Sign in'
           )}
         </Button>
       </form>
     </motion.div>
-  );
+  )
 }

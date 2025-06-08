@@ -1,26 +1,30 @@
-"use client";
-
-import LoginForm from "@/components/auth/LoginForm";
-import Image from "next/image";
+'use client'
+import React, { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuthStore } from '@/store/auth'
+import LoginForm from '@/components/auth/LoginForm'
 
 export default function LoginPage() {
+  const router = useRouter()
+  const isLogging = useAuthStore(state => state.isLogging)
+  const login = useAuthStore(state => state.login)
+
+  // Nếu đã login thì chuyển thẳng vào trang chat
+  useEffect(() => {
+    if (isLogging) {
+      router.replace('/chat')
+    }
+  }, [isLogging, router])
+
+  // Callback khi login thành công
+  const handleSuccess = (token: string) => {
+    login(token)
+    router.replace('/chat')
+  }
+
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
-      <div className="relative w-full max-w-md px-4 py-8">
-        <div className="flex justify-center mb-8">
-          <Image
-            src="/images/logo.png"
-            alt="Logo"
-            width={48}
-            height={48}
-            className="rounded-xl"
-            loading="eager"
-            priority
-          />
-        </div>
-        <LoginForm />
-      </div>
+    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <LoginForm onSuccess={handleSuccess} />
     </div>
-  );
+  )
 }
