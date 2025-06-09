@@ -1,12 +1,13 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { getLS } from '@/tools/localStorage.tool';
 
 export const useAuthProtection = () => {
     const router = useRouter();
 
     useEffect(() => {
         // Kiểm tra token trong localStorage
-        const token = localStorage.getItem('matrix_token');
+        const token = getLS('access_token');
 
         // Nếu không có token, chuyển hướng đến trang login
         if (!token) {

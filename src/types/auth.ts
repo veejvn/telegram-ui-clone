@@ -17,3 +17,15 @@ export interface LoginResponse {
     user?: User;
     error?: string;
 } 
+
+export interface LoginFormData {
+    username: string;
+    password: string;
+}
+
+export interface RegisterFormData {
+    username: string;
+    password: string;
+    email: string;
+}
+

@@ -41,7 +41,7 @@ type ErrorMessages = {
 export const ERROR_MESSAGES: ErrorMessages = {
     // Authentication errors
     AUTH: {
-        INVALID_CREDENTIALS: 'Invalid email or password',
+        INVALID_CREDENTIALS: 'Invalid username or password',
         USER_NOT_FOUND: 'User not found',
         EMAIL_EXISTS: 'Email already exists',
         WEAK_PASSWORD: 'Password must be at least 8 characters',

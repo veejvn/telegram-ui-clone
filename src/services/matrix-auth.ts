@@ -1,11 +1,13 @@
 "use client"
 
-import { createClient } from "matrix-js-sdk/lib/matrix"
-import type { MatrixClient } from "matrix-js-sdk/lib/matrix"
+import { MatrixClient, createClient} from "matrix-js-sdk"; 
 import { ERROR_MESSAGES } from "@/constants/error-messages"
+import { LoginFormData, RegisterFormData } from "@/types/auth";
+import { setLS } from "@/tools/localStorage.tool";
 
 // Matrix homeserver URL - replace with your homeserver
-const HOMESERVER_URL = "https://matrix.org"
+const HOMESERVER_URL: string = process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
+const SERVER_URL: string = process.env.NEXT_PUBLIC_SERVER_URL ?? "http://localhost:3000";
 
 let clientInstance: MatrixClient | null = null;
 
@@ -26,45 +28,70 @@ export class MatrixAuthService {
         this.client = clientInstance
     }
 
-    // Đăng ký tài khoản mới
-    async register(username: string, password: string, email?: string, phone?: string) {
+    async sendEmailVerification(email: string) : Promise<any> {
+
+        const clientSecret = Math.random().toString(36).substring(2, 10);
+        const sendAttempt = 1;
         try {
-            const response = await fetch(`${HOMESERVER_URL}/_matrix/client/v3/register`, {
+            const response = await fetch(`${HOMESERVER_URL}/_matrix/client/v3/register/email/requestToken`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json'
                 },
                 body: JSON.stringify({
-                    username: username,
-                    password: password,
-                    auth: {
-                        type: "m.login.dummy"
-                    },
-                    ...(email && {
-                        bind_email: true,
-                        email: email
-                    }),
-                    ...(phone && {
-                        bind_msisdn: true,
-                        phone_country: "VN",
-                        phone_number: phone
-                    })
+                    client_secret: clientSecret,
+                    email: email,
+                    send_attempt: sendAttempt,
+                    next_link: `${SERVER_URL}/verify-email` // URL callback sau khi verify
                 })
             });
 
             const data = await response.json();
-
+            
             if (!response.ok) {
-                throw new Error(data.error || ERROR_MESSAGES.AUTH.INVALID_CREDENTIALS);
+                throw new Error(data.error || 'Failed to send verification email');
             }
 
-            if (data.access_token) {
-                localStorage.setItem("matrix_token", data.access_token)
-                localStorage.setItem("matrix_user_id", data.user_id)
-            }
+            return {
+                sid: data.sid,
+                client_secret: clientSecret
+            };
+        } catch (error) {
+            console.error("Send email verification error:", error);
+            throw error;
+        }
+    }
 
-            return data;
+    // Đăng ký tài khoản mới
+    async register({ username, password, email} : RegisterFormData) : Promise<any> {
+        try {
+
+            //Gửi yêu cầu xác thực email
+            const emailResponse = await this.sendEmailVerification(email);
+            const { sid, client_secret } = emailResponse;
+
+            const registerResponse = await this.client.registerRequest({
+                username,
+                password,
+                auth: {
+                    type: "m.login.email.identity",
+                    threepid_creds: {
+                        sid: sid,
+                        client_secret: client_secret,
+                    }
+                },
+                initial_device_display_name: "Web Client"
+            })
+
+            if (registerResponse.access_token) {
+                setLS("access_token", registerResponse.access_token);
+                setLS("user_id", registerResponse.user_id);
+                this.client = createClient({
+                    baseUrl: HOMESERVER_URL,
+                    accessToken: registerResponse.access_token,
+                    userId: registerResponse.user_id
+                });
+            }
         } catch (error) {
             console.error("Registration error:", error)
             throw error
@@ -72,16 +99,13 @@ export class MatrixAuthService {
     }
 
     // Đăng nhập
-    async login(username: string, password: string) {
+    async login({username , password} : LoginFormData) : Promise<any> {
         try {
-            const response = await this.client.login("m.login.password", {
+            const response = await this.client.loginRequest({
+                type: "m.login.password",
                 user: username,
                 password: password,
             })
-
-            localStorage.setItem("matrix_token", response.access_token)
-            localStorage.setItem("matrix_user_id", response.user_id)
-
             return response
         } catch (error) {
             console.error("Login error:", error)
