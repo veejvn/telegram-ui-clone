@@ -4,13 +4,26 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { MatrixAuthService } from '@/services/matrix-auth';
+import { useRouter } from 'next/navigation';
 
 export default function TelegramProfile() {
+  const router = useRouter();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [bio, setBio] = useState('');
   const [dob, setDob] = useState('');
   const [phone] = useState('+84');
+
+  const handleLogout = async () => {
+    try {
+      const authService = new MatrixAuthService();
+      await authService.logout()
+      router.push('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   return (
     <div className="dark:bg-black dark:text-white flex justify-center items-center">
@@ -78,9 +91,9 @@ export default function TelegramProfile() {
               You can connect multiple accounts with different phone numbers.
             </p>
 
-            <button className="w-full dark:bg-zinc-800 rounded-lg p-3 text-red-500 text-sm text-center mt-2">
+            <Button onClick={handleLogout} className="w-full bg-zinc-200 dark:bg-zinc-800 rounded-lg p-3 text-red-500 text-sm text-center mt-2">
               Log Out
-            </button>
+            </Button>
           </div>
         </CardContent>
       </Card>

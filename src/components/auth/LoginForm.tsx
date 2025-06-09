@@ -18,9 +18,7 @@ export default function LoginForm() {
   const handleSubmit = async (data : LoginFormData) => {
     try {
       const authService = new MatrixAuthService();
-      const response = await authService.login(data);
-      setLS("access_token", response.access_token);
-      setLS("user_id", response.user_id);
+      await authService.login(data);
       router.push("/chat");
     } catch (error: any) {
       let errorMessage: string = ERROR_MESSAGES.GENERAL.UNKNOWN_ERROR;

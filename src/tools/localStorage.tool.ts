@@ -26,4 +26,12 @@ function getLS(key: string, defaultValue: any = null): any {
   }
 }
 
-export { getLS, setLS };
+function removeLS(key: string): void {
+  try {
+    localStorage.removeItem(key);
+  } catch (error) {
+    console.error(`Error removing localStorage key '${key}':`, error);
+  }
+}
+
+export { getLS, setLS, removeLS };

@@ -6,13 +6,6 @@ const registerSchema = Joi.object({
         .messages({
             'string.email': 'Username must be a valid email address',
             'any.required': 'Username is required',
-        }),
-    email: Joi.string()
-        .email({ tlds: { allow: false } })
-        .required()
-        .messages({
-            'string.email': 'Email must be a valid email address',
-            'any.required': 'Email is required',
         }), 
     password: Joi.string()
         .min(8)

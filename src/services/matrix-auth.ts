@@ -1,18 +1,18 @@
 "use client"
 
-import { MatrixClient, createClient} from "matrix-js-sdk"; 
+import * as sdk from "matrix-js-sdk"; 
 import { ERROR_MESSAGES } from "@/constants/error-messages"
 import { LoginFormData, RegisterFormData } from "@/types/auth";
-import { setLS } from "@/tools/localStorage.tool";
+import { getLS, removeLS, setLS } from "@/tools/localStorage.tool";
 
 // Matrix homeserver URL - replace with your homeserver
 const HOMESERVER_URL: string = process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
 const SERVER_URL: string = process.env.NEXT_PUBLIC_SERVER_URL ?? "http://localhost:3000";
 
-let clientInstance: MatrixClient | null = null;
+let clientInstance: sdk.MatrixClient | null = null;
 
 export class MatrixAuthService {
-    private client: MatrixClient
+    private client: sdk.MatrixClient
 
     constructor() {
         if (typeof window === 'undefined') {
@@ -20,7 +20,7 @@ export class MatrixAuthService {
         }
 
         if (!clientInstance) {
-            clientInstance = createClient({
+            clientInstance = sdk.createClient({
                 baseUrl: HOMESERVER_URL,
             })
         }
@@ -63,22 +63,13 @@ export class MatrixAuthService {
     }
 
     // Đăng ký tài khoản mới
-    async register({ username, password, email} : RegisterFormData) : Promise<any> {
+    async register({ username, password} : RegisterFormData) : Promise<any> {
         try {
-
-            //Gửi yêu cầu xác thực email
-            const emailResponse = await this.sendEmailVerification(email);
-            const { sid, client_secret } = emailResponse;
-
             const registerResponse = await this.client.registerRequest({
                 username,
                 password,
                 auth: {
-                    type: "m.login.email.identity",
-                    threepid_creds: {
-                        sid: sid,
-                        client_secret: client_secret,
-                    }
+                    type: "m.login.dummy",
                 },
                 initial_device_display_name: "Web Client"
             })
@@ -86,12 +77,13 @@ export class MatrixAuthService {
             if (registerResponse.access_token) {
                 setLS("access_token", registerResponse.access_token);
                 setLS("user_id", registerResponse.user_id);
-                this.client = createClient({
+                this.client = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: registerResponse.access_token,
                     userId: registerResponse.user_id
                 });
             }
+            return registerResponse;
         } catch (error) {
             console.error("Registration error:", error)
             throw error
@@ -101,12 +93,22 @@ export class MatrixAuthService {
     // Đăng nhập
     async login({username , password} : LoginFormData) : Promise<any> {
         try {
-            const response = await this.client.loginRequest({
+            const loginResponse = await this.client.loginRequest({
                 type: "m.login.password",
                 user: username,
                 password: password,
             })
-            return response
+            if (loginResponse.access_token) {
+                setLS("access_token", loginResponse.access_token);
+                setLS("user_id", loginResponse.user_id);
+                this.client = sdk.createClient({
+                    baseUrl: HOMESERVER_URL,
+                    accessToken: loginResponse.access_token,
+                    userId: loginResponse.user_id
+                });
+                console.log("Login successful:", loginResponse);
+            }
+            return loginResponse;
         } catch (error) {
             console.error("Login error:", error)
             throw error
@@ -116,7 +118,7 @@ export class MatrixAuthService {
     // Đăng nhập bằng email
     async loginWithEmail(email: string, password: string) {
         try {
-            const response = await this.client.login("m.login.password", {
+            const loginResponse = await this.client.login("m.login.password", {
                 identifier: {
                     type: "m.id.thirdparty",
                     medium: "email",
@@ -125,10 +127,17 @@ export class MatrixAuthService {
                 password: password,
             })
 
-            localStorage.setItem("matrix_token", response.access_token)
-            localStorage.setItem("matrix_user_id", response.user_id)
+            if (loginResponse.access_token) {
+                setLS("access_token", loginResponse.access_token);
+                setLS("user_id", loginResponse.user_id);
+                this.client = sdk.createClient({
+                    baseUrl: HOMESERVER_URL,
+                    accessToken: loginResponse.access_token,
+                    userId: loginResponse.user_id
+                });
+            }
 
-            return response
+            return loginResponse
         } catch (error) {
             console.error("Login with email error:", error)
             throw error
@@ -138,7 +147,7 @@ export class MatrixAuthService {
     // Đăng nhập bằng số điện thoại
     async loginWithPhone(phone: string, password: string) {
         try {
-            const response = await this.client.login("m.login.password", {
+            const loginResponse = await this.client.login("m.login.password", {
                 identifier: {
                     type: "m.id.phone",
                     country: "VN",
@@ -147,10 +156,17 @@ export class MatrixAuthService {
                 password: password,
             })
 
-            localStorage.setItem("matrix_token", response.access_token)
-            localStorage.setItem("matrix_user_id", response.user_id)
+            if (loginResponse.access_token) {
+                setLS("access_token", loginResponse.access_token);
+                setLS("user_id", loginResponse.user_id);
+                this.client = sdk.createClient({
+                    baseUrl: HOMESERVER_URL,
+                    accessToken: loginResponse.access_token,
+                    userId: loginResponse.user_id
+                });
+            }
 
-            return response
+            return loginResponse
         } catch (error) {
             console.error("Login with phone error:", error)
             throw error
@@ -160,9 +176,22 @@ export class MatrixAuthService {
     // Đăng xuất
     async logout() {
         try {
+            const accessToken = getLS("access_token");
+            const userId = getLS("user_id");
+            if (!accessToken || !userId) {
+                throw new Error("No access token found. Please login first.");
+            }
+            if (!this.client.getAccessToken()) {
+                this.client = sdk.createClient({
+                    baseUrl: HOMESERVER_URL,
+                    accessToken: accessToken,
+                    userId: userId
+                });
+            }
             await this.client.logout()
-            localStorage.removeItem("matrix_token")
-            localStorage.removeItem("matrix_user_id")
+            removeLS("access_token");
+            removeLS("user_id");
+            clientInstance = null;
         } catch (error) {
             console.error("Logout failed:", error)
             throw error
@@ -248,14 +277,14 @@ export class MatrixAuthService {
 
     // Kiểm tra trạng thái đăng nhập
     isLoggedIn() {
-        return !!localStorage.getItem("matrix_token")
+        return !! getLS("access_token") && !! getLS("user_id");
     }
 
     // Lấy thông tin người dùng hiện tại
     getCurrentUser() {
         return {
-            userId: localStorage.getItem("matrix_user_id"),
-            token: localStorage.getItem("matrix_token")
+            userId: getLS("user_id"),
+            token: getLS("access_token"),
         }
     }
 } 

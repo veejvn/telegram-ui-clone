@@ -17,10 +17,10 @@ export default function RegisterForm() {
   const handleSubmit = async (data: RegisterFormData) => {
     try {
       const authService = new MatrixAuthService();
-      await authService.register(
-        data
-      );
-      router.push("/chat");
+      const response = await authService.register(data);
+      if (response?.access_token) {
+        router.push("/chat");
+      }
     } catch (error: any) {
       let errorMessage = ERROR_MESSAGES.GENERAL.UNKNOWN_ERROR;
 
@@ -63,12 +63,6 @@ export default function RegisterForm() {
           label="Username"
           type="text"
           placeholder="johndoe"
-        />
-        <Field
-          name="email"
-          label="Email"
-          type="email"
-          placeholder="abc@gmail.com"
         />
         <Field
           name="password"

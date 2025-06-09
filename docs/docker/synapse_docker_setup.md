@@ -71,7 +71,7 @@ suppress_key_server_warning: true
 Chạy lệnh sau để khởi động Synapse:
 
 ```bash
-docker run -d   --name synapse   -v "$(pwd)/data:/data"   -p 8008:8008   matrixdotorg/synapse:latest
+docker run -d --name synapse -v "$(pwd)/data:/data" -p 8008:8008 matrixdotorg/synapse:latest
 ```
 
 > 🔥 Synapse sẽ chạy tại: `http://localhost:8008`

@@ -1,13 +1,51 @@
 "use client"
 
-import { useState, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useRef, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useRegistrationStore } from "@/stores/useRegistrationStore";
+import { MatrixAuthService } from "@/services/matrix-auth";
+import { Input } from "@/components/ui/input";
 
 export default function VerifyEmailPage() {
+    const router = useRouter();
     const [otp, setOtp] = useState(["", "", "", "", "", ""]);
     const inputs = useRef<(HTMLInputElement | null)[]>([]);
     const searchParams = useSearchParams();
     const email = searchParams.get("email") || "your@email.com";
+    // const sid = searchParams.get('sid');
+    // const { registrationData, clearRegistrationData } = useRegistrationStore();
+
+    // console.log("Registration Data:", registrationData);
+    // console.log("SID:", sid);
+
+    // useEffect(() => {
+    //     const completeRegistration = async () => {
+    //         try {
+    //             if (!sid || !registrationData?.client_secret) {
+    //                 router.push('/register?error=invalid_verification');
+    //                 return;
+    //             }
+
+    //             const authService = new MatrixAuthService();
+    //             await authService.register({
+    //                 username: registrationData.username,
+    //                 password: registrationData.password,
+    //                 sid,
+    //                 client_secret: registrationData.client_secret
+    //             });
+    //             clearRegistrationData();
+    //             router.push('/chat');
+    //             console.log('Registration completed successfully');
+    //         } catch (error) {
+    //             console.error('Registration completion failed:', error);
+    //             router.push('/register?error=registration_failed');
+    //         }
+    //     };
+
+    //     if (sid && registrationData) {
+    //         completeRegistration();
+    //     }
+    // }, [sid, registrationData, router, clearRegistrationData]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
         const value = e.target.value.replace(/[^0-9]/g, "");
@@ -29,7 +67,7 @@ export default function VerifyEmailPage() {
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-white px-2 sm:px-0">
             <div className="mb-6 mt-2 flex flex-col items-center">
-                <span role="img" aria-label="email" style={{ fontSize: 56 }}>📧</span>
+                <span className="text-6xl" role="img" aria-label="email">📧</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-black mb-2 text-center tracking-tight">Check Your Email</h2>
             <p className="text-gray-500 mb-2 text-center text-base sm:text-base font-medium">
@@ -40,7 +78,7 @@ export default function VerifyEmailPage() {
             </div>
             <div className="flex gap-2 sm:gap-4 mb-10">
                 {otp.map((digit, idx) => (
-                    <input
+                    <Input
                         key={idx}
                         ref={el => { inputs.current[idx] = el; }}
                         type="text"

@@ -43,7 +43,7 @@ export const ERROR_MESSAGES: ErrorMessages = {
     AUTH: {
         INVALID_CREDENTIALS: 'Invalid username or password',
         USER_NOT_FOUND: 'User not found',
-        EMAIL_EXISTS: 'Email already exists',
+        EMAIL_EXISTS: 'Username already exists',
         WEAK_PASSWORD: 'Password must be at least 8 characters',
         INVALID_EMAIL: 'Invalid email format',
         SESSION_EXPIRED: 'Session has expired',
