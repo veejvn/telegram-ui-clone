@@ -3,6 +3,9 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth';
+import BottomNavigattion from "@/components/layouts/BottomNavigation";
+import { usePathname } from "next/navigation";
+import { useAuthProtection } from "@/hooks/useAuthProtection";
 
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -18,6 +21,18 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   if (!isLogging) {
     return null; // hoặc <LoadingSpinner/>
   }
+  const pathname = usePathname();
 
-  return <>{children}</>;
+  const isChatDetailPage = /^\/chat(\/.+)+$/.test(pathname);
+  const isSettingPage = pathname.startsWith("/setting/");
+  const shouldShowBottomNav = !isChatDetailPage && !isSettingPage;
+
+  return (
+    <main>
+      <div className="min-h-screen flex flex-col">
+        {children}
+        {shouldShowBottomNav && <BottomNavigattion />}
+      </div>
+    </main>
+  );
 }

@@ -1,57 +1,47 @@
-'use client'
-import React, { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { MatrixAuthService } from '@/services/matrix-auth'
-import { motion } from 'framer-motion'
-import Link from 'next/link'
+"use client";
 
-interface LoginFormProps {
-  onSuccess: (token: string) => void
-}
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { ERROR_MESSAGES, ErrorMessageValue } from "@/constants/error-messages";
+import { MatrixAuthService } from "@/services/matrix-auth";
+import { setLS } from "@/tools/localStorage.tool";
+import { ErrorMessage, Field, Form, SubmitButton } from "@/components/Form";
+import loginSchema from "@/validations/loginSchema";
+import type { LoginFormData } from "@/types/auth";
 
-export default function LoginForm({ onSuccess }: LoginFormProps) {
-  const [isLoading, setIsLoading] = useState(false)
-  const [loginMethod, setLoginMethod] = useState<'username' | 'email' | 'phone'>('username')
-  const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    phone: '',
-    password: '',
-  })
-  const [error, setError] = useState('')
+export default function LoginForm() {
+  const router = useRouter();
+  const [error, setError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError('')
-
+  const handleSubmit = async (data : LoginFormData) => {
     try {
-      const authService = new MatrixAuthService()
-      let response
+      const authService = new MatrixAuthService();
+      await authService.login(data);
+      router.push("/chat");
+    } catch (error: any) {
+      let errorMessage: string = ERROR_MESSAGES.GENERAL.UNKNOWN_ERROR;
 
-      if (loginMethod === 'username') {
-        response = await authService.login(formData.username, formData.password)
-      } else if (loginMethod === 'email') {
-        response = await authService.loginWithEmail(formData.email, formData.password)
-      } else {
-        response = await authService.loginWithPhone(formData.phone, formData.password)
+      if (
+        error?.errcode === "M_FORBIDDEN" ||
+        error?.message?.includes("Invalid username/password")
+      ) {
+        errorMessage = ERROR_MESSAGES.AUTH.INVALID_CREDENTIALS;
+      } else if (error?.errcode === "M_USER_DEACTIVATED") {
+        errorMessage = ERROR_MESSAGES.AUTH.UNAUTHORIZED;
+      } else if (error?.errcode === "M_LIMIT_EXCEEDED") {
+        errorMessage = ERROR_MESSAGES.NETWORK.TIMEOUT;
+      } else if (
+        error?.message?.includes("Failed to fetch") ||
+        error?.message?.includes("NetworkError")
+      ) {
+        errorMessage = ERROR_MESSAGES.NETWORK.CONNECTION_ERROR;
       }
 
-      // gọi callback onSuccess với token
-      onSuccess(response.access_token)
-    } catch (err) {
-      console.error('Login failed:', err)
-      setError('Invalid credentials. Please try again.')
-    } finally {
-      setIsLoading(false)
+      setError(errorMessage);
     }
-  }
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
+  };
 
   return (
     <motion.div
@@ -71,150 +61,33 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         <p className="text-sm text-gray-600">We're excited to see you again!</p>
       </div>
 
-      <div className="flex justify-center space-x-4 p-2 bg-gray-50 rounded-lg">
-        <Button
-          variant={loginMethod === 'username' ? 'default' : 'ghost'}
-          onClick={() => setLoginMethod('username')}
-          className="transition-all duration-200"
-        >
-          Username
-        </Button>
-        <Button
-          variant={loginMethod === 'email' ? 'default' : 'ghost'}
-          onClick={() => setLoginMethod('email')}
-          className="transition-all duration-200"
-        >
-          Email
-        </Button>
-        <Button
-          variant={loginMethod === 'phone' ? 'default' : 'ghost'}
-          onClick={() => setLoginMethod('phone')}
-          className="transition-all duration-200"
-        >
-          Phone
-        </Button>
-      </div>
-
-      <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-        <motion.div
-          className="space-y-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-        >
-          {loginMethod === 'username' && (
-            <div className="space-y-2">
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                Username
-              </label>
-              <Input
-                id="username"
-                name="username"
-                type="text"
-                required
-                value={formData.username}
-                onChange={handleChange}
-                placeholder="johndoe"
-              />
-            </div>
-          )}
-
-          {loginMethod === 'email' && (
-            <div className="space-y-2">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email
-              </label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                required
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="john@example.com"
-              />
-            </div>
-          )}
-
-          {loginMethod === 'phone' && (
-            <div className="space-y-2">
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                Phone Number
-              </label>
-              <Input
-                id="phone"
-                name="phone"
-                type="tel"
-                required
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="+84 123 456 789"
-              />
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Password
-            </label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              required
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="••••••••"
-            />
-          </div>
-        </motion.div>
-
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-sm text-red-500 text-center bg-red-50 p-3 rounded-lg"
+      <Form<LoginFormData> schema={loginSchema} onSubmit={handleSubmit}>
+        <Field
+          name="username"
+          label="Username"
+          type="text"
+          placeholder="johndoe"
+        />
+        <Field
+          name="password"
+          label="Password"
+          type="password"
+          placeholder="••••••••"
+        />
+        <ErrorMessage message={error}></ErrorMessage>
+        <div className="flex items-center justify-between text-sm my-5">
+          <Link
+            href="/forgot-password"
+            className="text-blue-600 hover:text-blue-800 transition-colors duration-200"
           >
-            {error}
-          </motion.div>
-        )}
-
-        <div className="flex items-center justify-between text-sm">
-          <Link href="/forgot-password" className="text-blue-600 hover:text-blue-800">
             Forgot your password?
           </Link>
           <Link href="/register" className="text-blue-600 hover:text-blue-800">
             Create account
           </Link>
         </div>
-
-        <Button
-          type="submit"
-          className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg transition-all duration-200 transform hover:scale-[1.02]"
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <span className="flex items-center justify-center">
-              <svg
-                className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
-                <path
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  className="opacity-75"
-                />
-              </svg>
-              Signing in...
-            </span>
-          ) : (
-            'Sign in'
-          )}
-        </Button>
-      </form>
+        <SubmitButton>Sign In</SubmitButton>
+      </Form>
     </motion.div>
   )
 }
