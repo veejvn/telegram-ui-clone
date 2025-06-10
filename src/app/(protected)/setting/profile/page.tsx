@@ -1,27 +1,40 @@
 "use client";
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { MatrixAuthService } from '@/services/matrix-auth';
-import { useRouter } from 'next/navigation';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { MatrixAuthService } from "@/services/matrixAuthService";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/stores/useAuthStore";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function TelegramProfile() {
   const router = useRouter();
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [bio, setBio] = useState('');
-  const [dob, setDob] = useState('');
-  const [phone] = useState('+84');
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [bio, setBio] = useState("");
+  const [dob, setDob] = useState("");
+  const [phone] = useState("+84");
+  const logout = useAuthStore((state) => state.logout);
 
   const handleLogout = async () => {
     try {
       const authService = new MatrixAuthService();
-      await authService.logout()
-      router.push('/login');
+      await authService.logout();
+      logout();
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
     }
   };
 
@@ -53,7 +66,9 @@ export default function TelegramProfile() {
             onChange={(e) => setLastName(e.target.value)}
             placeholder="Last Name"
           />
-          <p className="text-xs text-zinc-400">Enter your name and add an optional profile photo.</p>
+          <p className="text-xs text-zinc-400">
+            Enter your name and add an optional profile photo.
+          </p>
 
           <Input
             className="dark:bg-zinc-800 border-none dark:text-white placeholder-zinc-500"
@@ -61,13 +76,19 @@ export default function TelegramProfile() {
             onChange={(e) => setBio(e.target.value)}
             placeholder="Bio"
           />
-          <p className="text-xs text-zinc-400">You can add a few lines about yourself. Choose who can see your bio in <span className='text-blue-400 underline'>Settings</span>.</p>
+          <p className="text-xs text-zinc-400">
+            You can add a few lines about yourself. Choose who can see your bio
+            in <span className="text-blue-400 underline">Settings</span>.
+          </p>
 
           <div className="dark:bg-zinc-800 rounded-lg p-3 flex justify-between items-center">
             <p className="text-sm">Date of Birth</p>
             <button className="text-sm text-blue-400">Add</button>
           </div>
-          <p className="text-xs text-zinc-400">Only your contacts can see your birthday. <span className="text-blue-400 cursor-pointer">Change</span></p>
+          <p className="text-xs text-zinc-400">
+            Only your contacts can see your birthday.{" "}
+            <span className="text-blue-400 cursor-pointer">Change</span>
+          </p>
 
           <div className="dark:bg-zinc-800 rounded-lg p-3 flex justify-between items-center">
             <p className="text-sm">Change Number</p>
@@ -91,9 +112,36 @@ export default function TelegramProfile() {
               You can connect multiple accounts with different phone numbers.
             </p>
 
-            <Button onClick={handleLogout} className="w-full bg-zinc-200 dark:bg-zinc-800 rounded-lg p-3 text-red-500 text-sm text-center mt-2">
-              Log Out
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger className="w-full bg-zinc-200 dark:bg-zinc-800 rounded-lg p-3 text-red-500 text-sm text-center mt-2">
+                Log Out
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    Are you sure you want to log out?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    You will need to log in again to access your account.
+                    <br />
+                    <br />
+                    If you have multiple accounts, you can switch between them
+                    without logging out.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel className="bg-zinc-300 text-black dark:bg-zinc-700 dark:text-white">
+                    Cancel
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleLogout}
+                    className="bg-zinc-300 text-red-500 dark:bg-zinc-700"
+                  >
+                    Log Out
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </CardContent>
       </Card>

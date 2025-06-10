@@ -5,21 +5,24 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ERROR_MESSAGES, ErrorMessageValue } from "@/constants/error-messages";
-import { MatrixAuthService } from "@/services/matrix-auth";
+import { MatrixAuthService } from "@/services/matrixAuthService";
 import { setLS } from "@/tools/localStorage.tool";
 import { ErrorMessage, Field, Form, SubmitButton } from "@/components/Form";
 import loginSchema from "@/validations/loginSchema";
-import type { LoginFormData } from "@/types/auth";
+import type { LoginFormData, LoginFormProps } from "@/types/auth";
+import { on } from "events";
 
-export default function LoginForm() {
+export default function LoginForm({ onSuccess }: LoginFormProps) {
   const router = useRouter();
   const [error, setError] = useState("");
 
-  const handleSubmit = async (data : LoginFormData) => {
+  const handleSubmit = async (data: LoginFormData) => {
     try {
       const authService = new MatrixAuthService();
-      await authService.login(data);
-      router.push("/chat");
+      const response = await authService.login(data);
+      if (response?.access_token) {
+        onSuccess(response.access_token);
+      }
     } catch (error: any) {
       let errorMessage: string = ERROR_MESSAGES.GENERAL.UNKNOWN_ERROR;
 
@@ -48,7 +51,7 @@ export default function LoginForm() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="w-full max-w-md space-y-8 bg-white/50 backdrop-blur-lg p-8 rounded-2xl shadow-xl"
+      className="w-full max-w-md space-y-8 bg-white/50 backdrop-blur-lg p-8 rounded-2xl shadow-xl dark:bg-gray-800/50 dark:backdrop-blur-lg"
     >
       <div className="text-center space-y-2">
         <motion.h2
@@ -89,5 +92,5 @@ export default function LoginForm() {
         <SubmitButton>Sign In</SubmitButton>
       </Form>
     </motion.div>
-  )
+  );
 }

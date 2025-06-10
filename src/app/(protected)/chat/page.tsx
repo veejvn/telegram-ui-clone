@@ -8,7 +8,7 @@ import { ChatList } from "@/components/chat/ChatList";
 
 export default function ChatPage() {
   return (
-    <>
+    <div>
       <div className="sticky bg-white dark:bg-black top-0 z-10">
         <div className="flex items-center justify-between px-4 py-2">
           <span className="text-blue-500">Edit</span>
@@ -20,7 +20,7 @@ export default function ChatPage() {
         </div>
         <SearchBar />
       </div>
-      <ScrollArea>
+      <ScrollArea tabIndex={-1}>
         {/* <div className="flex flex-1 flex-col justify-between min-h-[calc(100vh-112px)] pb-8">
           <div className="flex flex-1 flex-col items-center justify-center text-center">
             <Image
@@ -48,6 +48,6 @@ export default function ChatPage() {
           <ChatList />
         </div>
       </ScrollArea>
-    </>
+    </div>
   );
 }

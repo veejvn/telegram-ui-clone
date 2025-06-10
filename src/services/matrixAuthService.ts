@@ -6,7 +6,8 @@ import { LoginFormData, RegisterFormData } from "@/types/auth";
 import { getLS, removeLS, setLS } from "@/tools/localStorage.tool";
 
 // Matrix homeserver URL - replace with your homeserver
-const HOMESERVER_URL: string = process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
+//const HOMESERVER_URL: string = process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
+const HOMESERVER_URL: string = "https://matrix.org";
 const SERVER_URL: string = process.env.NEXT_PUBLIC_SERVER_URL ?? "http://localhost:3000";
 
 let clientInstance: sdk.MatrixClient | null = null;
@@ -106,7 +107,6 @@ export class MatrixAuthService {
                     accessToken: loginResponse.access_token,
                     userId: loginResponse.user_id
                 });
-                console.log("Login successful:", loginResponse);
             }
             return loginResponse;
         } catch (error) {
@@ -174,7 +174,7 @@ export class MatrixAuthService {
     }
 
     // Đăng xuất
-    async logout() {
+    async logout() : Promise<void> {
         try {
             const accessToken = getLS("access_token");
             const userId = getLS("user_id");
