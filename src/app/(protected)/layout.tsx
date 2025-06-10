@@ -1,19 +1,41 @@
 "use client";
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/stores/useAuthStore";
 import BottomNavigattion from "@/components/layouts/BottomNavigation";
 import { usePathname } from "next/navigation";
-import { useAuthProtection } from "@/hooks/useAuthProtection";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
+import { ROUTES } from "@/constants/routes";
 
-export default function AppLayout({
+export default function ProtectedLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
-  const pathname = usePathname();
-  useAuthProtection();
+}) {
+  const router = useRouter();
+  const { isLogging } = useAuthStore();
+  const [isReady, setIsReady] = useState(false);
 
-  const isChatDetailPage = /^\/chat(\/.+)+$/.test(pathname);
-  const isSettingPage = pathname.startsWith("/setting/");
+  useEffect(() => {
+    setIsReady(true);
+    if (!isLogging) {
+      router.replace(ROUTES.LOGIN);
+    }
+  }, [isLogging, router]);
+
+  const pathname = usePathname();
+  const isChatDetailPage = pathname ? /^\/chat(\/.+)+$/.test(pathname) : false;
+  const isSettingPage = pathname ? pathname.startsWith("/setting/") : false;
   const shouldShowBottomNav = !isChatDetailPage && !isSettingPage;
+
+  // Không render gì cho đến khi component được mounted trên client
+  if (!isReady || !isLogging) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner />
+      </div>
+    );
+  }
 
   return (
     <main>

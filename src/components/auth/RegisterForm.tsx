@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ERROR_MESSAGES, ErrorMessageValue } from "@/constants/error-messages";
-import { MatrixAuthService } from "@/services/matrix-auth";
+import { MatrixAuthService } from "@/services/matrixAuthService";
 import { ErrorMessage, Field, Form, SubmitButton } from "@/components/Form";
 import registerSchema from "@/validations/registerSchema";
 import { RegisterFormData } from "@/types/auth";
@@ -30,7 +30,10 @@ export default function RegisterForm() {
         errorMessage = ERROR_MESSAGES.VALIDATION.INVALID_FORMAT;
       } else if (error?.errcode === "M_EXCLUSIVE") {
         errorMessage = ERROR_MESSAGES.AUTH.EMAIL_EXISTS;
-      } else if (error?.message?.includes("Failed to fetch") || error?.message?.includes("NetworkError")) {
+      } else if (
+        error?.message?.includes("Failed to fetch") ||
+        error?.message?.includes("NetworkError")
+      ) {
         errorMessage = ERROR_MESSAGES.NETWORK.CONNECTION_ERROR;
       }
 
@@ -88,7 +91,9 @@ export default function RegisterForm() {
           </p>
         </div>
         <ErrorMessage message={error}></ErrorMessage>
-        <SubmitButton loadingText="Creating account...">Create account</SubmitButton>
+        <SubmitButton loadingText="Creating account...">
+          Create account
+        </SubmitButton>
       </Form>
     </motion.div>
   );

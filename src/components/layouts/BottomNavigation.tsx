@@ -21,7 +21,7 @@ const BottomNavigattion = () => {
           <span className="text-xs">Calls</span>
         </div>
       </Link>
-      <Link href={"/chat"}>
+      <Link href={"/chat"} scroll={false}>
         <div className="flex flex-col items-center">
           <MessageCircle />
           <span className="text-xs">Chats</span>

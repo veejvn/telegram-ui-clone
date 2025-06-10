@@ -25,5 +25,9 @@ export interface LoginFormData {
 
 export interface RegisterFormData {
     username: string;
-    password: string;}
+    password: string;
+}
 
+export interface LoginFormProps {
+  onSuccess: (token: string) => void
+}
