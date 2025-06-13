@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
+import * as sdk from "matrix-js-sdk";
 import { Trash2, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import ContactService from "@/services/contactService";
+import { useClientStore } from "@/stores/useMatrixStore";
 
 interface Contact {
   firstName: string;
@@ -33,11 +36,19 @@ interface Contact {
 
 const ContactPage = () => {
   const [sortBy, setSortBy] = useState<"lastSeen" | "name">("name");
-  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [contacts, setContacts] = useState<sdk.Room[]>([]);
+  const client = useClientStore.getState().client;
 
-  const handleAddContact = (contact: Contact) => {
-    setContacts((prev) => [...prev, contact]);
-  };
+  useEffect(() => {
+    const loadContacts = async () => {
+      if (!client) return;
+      const rooms = await ContactService.getDirectMessageRooms(client);
+      setContacts(rooms);
+    };
+    loadContacts();
+  }, [client]);
+
+  const handleAddContact = (contact: Contact) => {};
 
   const handleDeleteContact = (idx: number) => {
     setContacts((prev) => prev.filter((_, i) => i !== idx));
@@ -142,29 +153,14 @@ const ContactPage = () => {
           </div>
         ) : (
           <ul className="divide-y divide-gray-400">
-            {contacts.map((c, idx) => (
-              <li key={idx} className="flex items-center gap-4 py-3">
-                <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-lg font-bold text-white">
-                  {(c.firstName?.[0] || c.lastName?.[0] || "C").toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-base truncate">
-                    {c.firstName} {c.lastName}
-                  </div>
-                  <div className="text-sm text-gray-400 truncate">
-                    {c.phones.filter(Boolean).join(", ")}
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  size="icon"
-                  className="bg-transparent hover:bg-transparent"
-                  onClick={() => handleDeleteContact(idx)}
-                >
-                  <Trash2 className="w-5 h-5 text-red-400" />
-                </Button>
-              </li>
-            ))}
+            {contacts.map(room => {
+              const other = client
+                ? room
+                    .getJoinedMembers()
+                    .find((m) => m.userId !== client.getUserId())
+                : undefined;
+              return <li key={room.roomId}>{other?.userId || "Không xác định"}</li>;
+            })}
           </ul>
         )}
       </div>
