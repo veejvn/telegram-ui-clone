@@ -4,6 +4,7 @@ import * as sdk from "matrix-js-sdk";
 import { ERROR_MESSAGES } from "@/constants/error-messages"
 import { LoginFormData, RegisterFormData } from "@/types/auth";
 import { getLS, removeLS, setLS } from "@/tools/localStorage.tool";
+import { ILoginResponse } from "@/types/matrix";
 
 // Matrix homeserver URL - replace with your homeserver
 //const HOMESERVER_URL: string = process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
@@ -76,8 +77,8 @@ export class MatrixAuthService {
             })
 
             if (registerResponse.access_token) {
-                setLS("access_token", registerResponse.access_token);
-                setLS("user_id", registerResponse.user_id);
+                setLS("matrix_access_token", registerResponse.access_token);
+                setLS("matrix_user_id", registerResponse.user_id);
                 this.client = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: registerResponse.access_token,
@@ -92,7 +93,7 @@ export class MatrixAuthService {
     }
 
     // Đăng nhập
-    async login({username , password} : LoginFormData) : Promise<any> {
+    async login({username , password} : LoginFormData) : Promise<ILoginResponse> {
         try {
             const loginResponse = await this.client.loginRequest({
                 type: "m.login.password",
@@ -100,16 +101,28 @@ export class MatrixAuthService {
                 password: password,
             })
             if (loginResponse.access_token) {
-                setLS("access_token", loginResponse.access_token);
-                setLS("user_id", loginResponse.user_id);
+                setLS("matrix_access_token", loginResponse.access_token);
+                setLS("matrix_user_id", loginResponse.user_id);
                 this.client = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: loginResponse.access_token,
-                    userId: loginResponse.user_id
+                    userId: loginResponse.user_id,
                 });
             }
-            return loginResponse;
-        } catch (error) {
+
+            await new Promise<void>((resolve) => {
+                this.client.once("sync" as any, (state: string) => {
+                    if (state === "PREPARED") {
+                        resolve();
+                    }
+                });
+                this.client.startClient();
+            });
+            return {
+                success: true,
+                client: this.client,
+            };
+        } catch (error: any) {
             console.error("Login error:", error)
             throw error
         }
@@ -128,8 +141,8 @@ export class MatrixAuthService {
             })
 
             if (loginResponse.access_token) {
-                setLS("access_token", loginResponse.access_token);
-                setLS("user_id", loginResponse.user_id);
+                setLS("matrix_access_token", loginResponse.access_token);
+                setLS("matrix_user_id", loginResponse.user_id);
                 this.client = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: loginResponse.access_token,
@@ -157,8 +170,8 @@ export class MatrixAuthService {
             })
 
             if (loginResponse.access_token) {
-                setLS("access_token", loginResponse.access_token);
-                setLS("user_id", loginResponse.user_id);
+                setLS("matrix_access_token", loginResponse.access_token);
+                setLS("matrix_user_id", loginResponse.user_id);
                 this.client = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: loginResponse.access_token,
@@ -176,8 +189,8 @@ export class MatrixAuthService {
     // Đăng xuất
     async logout() : Promise<void> {
         try {
-            const accessToken = getLS("access_token");
-            const userId = getLS("user_id");
+            const accessToken = getLS("matrix_access_token");
+            const userId = getLS("matrix_user_id");
             if (!accessToken || !userId) {
                 throw new Error("No access token found. Please login first.");
             }
@@ -189,8 +202,8 @@ export class MatrixAuthService {
                 });
             }
             await this.client.logout()
-            removeLS("access_token");
-            removeLS("user_id");
+            removeLS("matrix_access_token");
+            removeLS("matrix_user_id");
             clientInstance = null;
         } catch (error) {
             console.error("Logout failed:", error)
@@ -277,14 +290,14 @@ export class MatrixAuthService {
 
     // Kiểm tra trạng thái đăng nhập
     isLoggedIn() {
-        return !! getLS("access_token") && !! getLS("user_id");
+        return !! getLS("matrix_access_token") && !! getLS("matrix_user_id");
     }
 
     // Lấy thông tin người dùng hiện tại
     getCurrentUser() {
         return {
-            userId: getLS("user_id"),
-            token: getLS("access_token"),
+            token: getLS("matrix_access_token"),
+            userId: getLS("matrix_user_id"),
         }
     }
 } 

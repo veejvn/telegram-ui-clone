@@ -6,6 +6,7 @@ import BottomNavigattion from "@/components/layouts/BottomNavigation";
 import { usePathname } from "next/navigation";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 import { ROUTES } from "@/constants/routes";
+import { useClientStore } from "@/stores/useMatrixStore";
 
 export default function ProtectedLayout({
   children,
@@ -15,13 +16,15 @@ export default function ProtectedLayout({
   const router = useRouter();
   const { isLogging } = useAuthStore();
   const [isReady, setIsReady] = useState(false);
+  const restoreClient = useClientStore((state) => state.restoreClient);
 
   useEffect(() => {
+    restoreClient();
     setIsReady(true);
     if (!isLogging) {
       router.replace(ROUTES.LOGIN);
     }
-  }, [isLogging, router]);
+  }, [isLogging, router, restoreClient]);
 
   const pathname = usePathname();
   const isChatDetailPage = pathname ? /^\/chat(\/.+)+$/.test(pathname) : false;

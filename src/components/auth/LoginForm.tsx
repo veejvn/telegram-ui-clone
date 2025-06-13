@@ -11,17 +11,21 @@ import { ErrorMessage, Field, Form, SubmitButton } from "@/components/Form";
 import loginSchema from "@/validations/loginSchema";
 import type { LoginFormData, LoginFormProps } from "@/types/auth";
 import { on } from "events";
+import { useClientStore } from "@/stores/useMatrixStore";
+import { IClientState } from "@/types/matrix";
 
 export default function LoginForm({ onSuccess }: LoginFormProps) {
   const router = useRouter();
   const [error, setError] = useState("");
+  const setClient = useClientStore((state: IClientState) => state.setClient);
 
   const handleSubmit = async (data: LoginFormData) => {
     try {
       const authService = new MatrixAuthService();
-      const response = await authService.login(data);
-      if (response?.access_token) {
-        onSuccess(response.access_token);
+      const { success, client } = await authService.login(data);
+      if (success && client) {
+        setClient(client);
+        onSuccess(client?.getAccessToken() || "");
       }
     } catch (error: any) {
       let errorMessage: string = ERROR_MESSAGES.GENERAL.UNKNOWN_ERROR;
