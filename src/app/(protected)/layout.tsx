@@ -10,6 +10,7 @@ import { getLS } from "@/tools/localStorage.tool";
 
 export const MatrixClientContext = createContext<sdk.MatrixClient | null>(null);
 export const useMatrixClient = () => useContext(MatrixClientContext);
+import { useClientStore } from "@/stores/useMatrixStore";
 
 export default function ProtectedLayout({
   children,
@@ -20,13 +21,15 @@ export default function ProtectedLayout({
   const { isLogging } = useAuthStore();
   const [isReady, setIsReady] = useState(false);
   const [client, setClient] = useState<sdk.MatrixClient | null>(null);
+  const restoreClient = useClientStore((state) => state.restoreClient);
 
   useEffect(() => {
+    restoreClient();
     setIsReady(true);
     if (!isLogging) {
       router.replace(ROUTES.LOGIN);
     }
-  }, [isLogging, router]);
+  }, [isLogging, router, restoreClient]);
 
   useEffect(() => {
     const accessToken = getLS("access_token");

@@ -10,7 +10,7 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>((set) => {
-    const storedToken = typeof window !== 'undefined' ? getLS("access_token") : null
+    const storedToken = typeof window !== 'undefined' ? getLS("matrix_access_token") : null
 
     return {
         isLogging: !!storedToken,
