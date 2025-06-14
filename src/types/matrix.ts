@@ -11,5 +11,5 @@ export interface IClientState {
 
 export interface ILoginResponse {
   success: boolean;
-  client?: ReturnType<typeof sdk.createClient>;
+  token: string
 }

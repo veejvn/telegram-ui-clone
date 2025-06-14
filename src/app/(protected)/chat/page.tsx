@@ -5,7 +5,6 @@ import SearchBar from "@/components/layouts/SearchBar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from "next/link";
 import { ChatList } from "@/components/chat/ChatList";
-import { useClientStore } from "@/stores/useMatrixStore";
 
 export default function ChatPage() {
   return (
