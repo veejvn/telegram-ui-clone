@@ -1,12 +1,13 @@
 "use client";
-import React, { useState, useEffect, forwardRef } from "react";
-import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Input } from "@/components/ui/input";
 import SearchContent from "@/components/layouts/SearchContent";
 import { searchMatrixUsers } from "@/services/matrixUserSearch";
-import { useMatrixClient } from "@/app/(protected)/layout"; // Import hook lấy client
+import { useMatrixClient } from "@/contexts/MatrixClientProvider"; // Import hook lấy client
 
-const SearchBar = forwardRef<HTMLInputElement, {}>(function SearchBar(_, ref) {
+const SearchBar = 
+  () => {
   const client = useMatrixClient(); // Lấy client từ context
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
@@ -17,7 +18,6 @@ const SearchBar = forwardRef<HTMLInputElement, {}>(function SearchBar(_, ref) {
       setLoading(true);
       searchMatrixUsers(client, searchTerm)
         .then((res) => {
-          console.log("Kết quả search:", res);
           setSearchResults(res);
         })
         .finally(() => setLoading(false));
@@ -33,7 +33,6 @@ const SearchBar = forwardRef<HTMLInputElement, {}>(function SearchBar(_, ref) {
         <div className="relative border rounded-xl bg-white dark:bg-neutral-900">
           <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400 dark:text-gray-500" />
           <Input
-            ref={ref}
             type="text"
             placeholder="Search user..."
             className="pl-10 border rounded-xl bg-white text-black placeholder:text-gray-400 dark:bg-neutral-900 dark:text-white dark:placeholder:text-gray-400 focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-600"
@@ -49,6 +48,6 @@ const SearchBar = forwardRef<HTMLInputElement, {}>(function SearchBar(_, ref) {
       )}
     </div>
   );
-});
+};
 
 export default SearchBar;

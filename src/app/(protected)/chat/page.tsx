@@ -1,20 +1,12 @@
 "use client";
-import { useState, useRef } from "react";
-import { useMatrixClient } from "@/app/(protected)/layout";
-import { searchMatrixUsers } from "@/services/matrixUserSearch";
+import { Button } from "@/components/ui/button";
+import Image from "next/image";
 import SearchBar from "@/components/layouts/SearchBar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import Link from "next/link";
 import { ChatList } from "@/components/chat/ChatList";
-import { useClientStore } from "@/stores/useMatrixStore";
 
 export default function ChatPage() {
-  const client = useMatrixClient();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  const searchInputRef = useRef<HTMLInputElement>(null);
-
   return (
     <div>
       <div className="sticky bg-white dark:bg-black top-0 z-10">
@@ -26,16 +18,34 @@ export default function ChatPage() {
             <div className="text-blue-500">✏️</div>
           </div>
         </div>
-        <SearchBar ref={searchInputRef} />
+        <SearchBar />
       </div>
       <ScrollArea tabIndex={-1}>
-        <div className="flex flex-col w-full pb-[64px]">
-          <ChatList
-            searchTerm={searchTerm}
-            searchResults={searchResults}
-            loading={loading}
-            searchInputRef={searchInputRef}
-          />
+        {/* <div className="flex flex-1 flex-col justify-between min-h-[calc(100vh-112px)] pb-8">
+          <div className="flex flex-1 flex-col items-center justify-center text-center">
+            <Image
+              src="/images/chicken.png"
+              width={200}
+              height={200}
+              alt="no conversations"
+              className=""
+            />
+            <p className="text-sm text-white whitespace-pre-line">
+              You have no{"\n"}conversations yet.
+            </p>
+          </div>
+          <div className="w-full pb-6 px-15">
+            <Button
+              className="w-full bg-blue-500 hover:bg-blue-600 
+            text-white text-base rounded-lg py-6 cursor-pointer"
+            >
+              <Link href={"/chat/newMessage"}>New Message</Link>
+            </Button>
+          </div>
+        </div> */}
+
+        <div className="flex flex-col px-2 pb-[64px] spacy-y-2">
+          <ChatList />
         </div>
       </ScrollArea>
     </div>
