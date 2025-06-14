@@ -61,91 +61,25 @@ function SearchDropdownPortal({
     document.body
   );
 }
-
 export const ChatList = ({
   searchTerm = "",
-  searchResults = [],
-  loading = false,
-  searchInputRef,
 }: {
   searchTerm?: string;
   searchResults?: any[];
   loading?: boolean;
   searchInputRef?: React.RefObject<HTMLInputElement | null>;
 }) => {
-  const anchorRef = useRef<HTMLDivElement>(null);
-  const [showDropdown, setShowDropdown] = useState(true);
-
-  useEffect(() => {
-    if (searchTerm && searchTerm.length > 1) {
-      setShowDropdown(true);
-    }
-  }, [searchTerm]);
-
-  useEffect(() => {
-    if (!searchInputRef?.current) return;
-    const handleFocus = () => {
-      if (searchTerm && searchTerm.length > 1) setShowDropdown(true);
-    };
-    const input = searchInputRef.current;
-    input.addEventListener("focus", handleFocus);
-    return () => input.removeEventListener("focus", handleFocus);
-  }, [searchInputRef, searchTerm]);
-
   return (
     <div className="relative">
-      <div ref={anchorRef}></div>
-      {searchTerm && searchTerm.length > 1 && showDropdown && (
-        <SearchDropdownPortal
-          anchorRef={anchorRef}
-          inputRef={searchInputRef}
-          onClose={() => setShowDropdown(false)}
-        >
-          <div className="max-h-[600px] overflow-y-auto">
-            {loading && (
-              <div className="p-4 text-gray-400 dark:text-gray-500 text-center">
-                Đang tìm kiếm...
-              </div>
-            )}
-            {!loading && searchResults.length === 0 && (
-              <div className="p-4 text-gray-400 dark:text-gray-500 text-center">
-                Không tìm thấy người dùng nào.
-              </div>
-            )}
-            {searchResults.map((user, idx) => (
-              <div
-                key={user.user_id || idx}
-                className="flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-[#232323] transition"
-              >
-                <div className="w-10 h-10 rounded-full bg-purple-400 flex items-center justify-center font-bold text-white text-lg">
-                  {(user.display_name &&
-                    user.display_name.charAt(0).toUpperCase()) ||
-                    (user.user_id && user.user_id.charAt(1).toUpperCase()) ||
-                    "?"}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-gray-900 dark:text-gray-100 truncate">
-                    {user.display_name || "Không có tên"}
-                  </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                    {user.user_id}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </SearchDropdownPortal>
-      )}
       {searchTerm.length < 2 && (
         <>
+          <Separator className="w-[calc(100%-72px)] ml-[72px] opacity-30" />
           <Link href={`/chat/1`}>
             <ChatListItem />
           </Link>
-          <Separator className="w-[calc(100%-72px)] ml-[72px] opacity-30" />
           <Link href={`/chat/2`}>
             <ChatListItem />
           </Link>
-          <Separator className="w-[calc(100%-72px)] ml-[72px] opacity-30" />
           <Link href={`/chat/3`}>
             <ChatListItem />
           </Link>
@@ -169,7 +103,6 @@ export const ChatList = ({
           <Link href={`/chat/8`}>
             <ChatListItem />
           </Link>
-
           <Separator className="opacity-30" />
         </>
       )}

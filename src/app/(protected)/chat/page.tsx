@@ -15,23 +15,6 @@ export default function ChatPage() {
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSearch = (value: string) => {
-    setSearchTerm(value);
-    if (value.length < 2) {
-      setSearchResults([]);
-      return;
-    }
-    setLoading(true);
-    if (client) {
-      searchMatrixUsers(client, value)
-        .then((users) => setSearchResults(users))
-        .finally(() => setLoading(false));
-    } else {
-      setSearchResults([]);
-      setLoading(false);
-    }
-  };
-
   return (
     <div>
       <div className="sticky bg-white dark:bg-black top-0 z-10">
@@ -43,11 +26,7 @@ export default function ChatPage() {
             <div className="text-blue-500">✏️</div>
           </div>
         </div>
-        <SearchBar
-          ref={searchInputRef}
-          value={searchTerm}
-          onChange={handleSearch}
-        />
+        <SearchBar ref={searchInputRef} />
       </div>
       <ScrollArea tabIndex={-1}>
         <div className="flex flex-col w-full pb-[64px]">
