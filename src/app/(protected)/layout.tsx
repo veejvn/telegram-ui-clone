@@ -20,8 +20,9 @@ export default function ProtectedLayout({
   const router = useRouter();
   const { isLogging } = useAuthStore();
   const [isReady, setIsReady] = useState(false);
-  const [client, setClient] = useState<sdk.MatrixClient | null>(null);
+  //const [client, setClient] = useState<sdk.MatrixClient | null>(null);
   const restoreClient = useClientStore((state) => state.restoreClient);
+  const client = useClientStore.getState().client;
 
   useEffect(() => {
     restoreClient();
@@ -41,7 +42,7 @@ export default function ProtectedLayout({
       userId,
     });
     matrixClient.startClient();
-    setClient(matrixClient);
+    //setClient(matrixClient);
   }, [isLogging]);
 
   const pathname = usePathname();
