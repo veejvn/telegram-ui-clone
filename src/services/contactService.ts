@@ -3,10 +3,12 @@
 import * as sdk from 'matrix-js-sdk'
 
 const ContactService = {
-  async getDirectMessageRooms(client: sdk.MatrixClient) : Promise<sdk.Room[]> {
+  async getDirectMessageRooms(client: sdk.MatrixClient): Promise<sdk.Room[]> {
+    const directRoomIds = Object.values(client.getAccountData('m.direct' as keyof sdk.AccountDataEvents)?.getContent() || {})
+      .flat() as string[];
     return client.getRooms().filter(room =>
       room.getMyMembership() === 'join' &&
-      room.getJoinedMembers().length === 2
+      directRoomIds.includes(room.roomId)
     )
   },
   

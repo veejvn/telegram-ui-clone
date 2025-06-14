@@ -38,6 +38,7 @@ const ContactPage = () => {
   const [sortBy, setSortBy] = useState<"lastSeen" | "name">("name");
   const [contacts, setContacts] = useState<sdk.Room[]>([]);
   const client = useClientStore.getState().client;
+  console.log(client?.getRooms())
 
   useEffect(() => {
     const loadContacts = async () => {

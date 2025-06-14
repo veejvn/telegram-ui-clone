@@ -16,15 +16,17 @@ export default function ProtectedLayout({
   const router = useRouter();
   const { isLogging } = useAuthStore();
   const [isReady, setIsReady] = useState(false);
+  const client = useClientStore.getState().client;
   const restoreClient = useClientStore((state) => state.restoreClient);
 
   useEffect(() => {
-    restoreClient();
+    if(!client)
+      restoreClient();
     setIsReady(true);
     if (!isLogging) {
       router.replace(ROUTES.LOGIN);
     }
-  }, [isLogging, router, restoreClient]);
+  }, [isLogging, router, restoreClient, client]);
 
   const pathname = usePathname();
   const isChatDetailPage = pathname ? /^\/chat(\/.+)+$/.test(pathname) : false;
