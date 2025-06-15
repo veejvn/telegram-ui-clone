@@ -2,12 +2,14 @@
 
 import { useRef, useState, useEffect } from "react";
 import { Eclipse, Mic, Paperclip } from "lucide-react";
-import { sendMessage } from "@/services/chatServices";
+import { sendMessage } from "@/services/chatService";
+import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 
 const ChatComposer = ({ roomId }: { roomId: string }) => {
   const [text, setText] = useState("");
   const [isMultiLine, setIsMultiLine] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const client = useMatrixClient();
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -18,9 +20,9 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
 
   const handleSend = () => {
     const trimmed = text.trim();
-    if (!trimmed) return;
+    if (!trimmed || !client) return;
 
-    sendMessage(roomId, trimmed)
+    sendMessage(roomId, trimmed, client)
       .then((res) => {
         if (res.success) {
           console.log("Sent Message: ", text);

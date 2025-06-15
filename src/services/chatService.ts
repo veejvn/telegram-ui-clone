@@ -1,8 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+"use client"
+
 import { useClientStore } from "@/stores/useClientStore";
 import { MatrixAuthService } from "./matrixAuthService";
 import * as sdk from "matrix-js-sdk";
 import { Message } from "@/stores/useChatStore";
+import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 
 const authServie = new MatrixAuthService();
 
@@ -10,17 +13,17 @@ const { userId, token } = authServie.getCurrentUser();
 
 const getClient = async (): Promise<sdk.MatrixClient | null> => {
   const store = useClientStore.getState();
-
+  
   if (store.client) return store.client;
-
+  
   if (!token || !userId) return null;
-
+  
   const authedClient = sdk.createClient({
     baseUrl: "https://matrix.org",
     accessToken: token,
     userId: userId,
   });
-
+  
   store.setClient(authedClient);
 
   await new Promise<void>((resolve) => {
@@ -32,14 +35,12 @@ const getClient = async (): Promise<sdk.MatrixClient | null> => {
 
   return authedClient;
 };
-
-export const getUserRooms = async (): Promise<{
+ 
+export const getUserRooms = async (client: sdk.MatrixClient): Promise<{
   success: boolean;
   err?: any;
   rooms?: sdk.Room[];
 }> => {
-  const client = await getClient();
-
   if (!client) {
     return {
       success: false,
@@ -68,12 +69,12 @@ export const getUserRooms = async (): Promise<{
 
 export const sendMessage = async (
   roomId: string,
-  message: string
+  message: string,
+  client: sdk.MatrixClient
 ): Promise<{
   success: boolean;
   err?: any;
 }> => {
-  const client = useClientStore.getState().client;
   if (!client) {
     return {
       success: false,
@@ -93,13 +94,13 @@ export const sendMessage = async (
 };
 
 export const getTimeline = async (
-  roomId: string
+  roomId: string,
+  client: sdk.MatrixClient
 ): Promise<{
   success: boolean;
   err?: any;
   timeline?: Message[];
 }> => {
-  const client = useClientStore.getState().client;
   if (!client) {
     return {
       success: false,
@@ -108,7 +109,7 @@ export const getTimeline = async (
   }
 
   try {
-    const messages = client?.getRoom(roomId)?.timeline.slice(-20) || [];
+    const messages = client?.getRoom(roomId)?.getLiveTimeline().getEvents().slice(-20) || [];
     if (messages) {
       const res: Message[] = [];
       messages.map((event) => {
@@ -116,6 +117,7 @@ export const getTimeline = async (
           const sender = event.getSender() ?? "Unknown";
           const content = event.getContent();
           const text = content.body;
+          const senderDisplayName = event.sender?.name ?? sender;
 
           const timestamp = event.getTs(); // -> timestamp dạng milliseconds (Unix time)
 
@@ -123,8 +125,7 @@ export const getTimeline = async (
 
           const eventId = event.getId() || "";
 
-          console.log(`[${time}] ${sender}: ${text}`);
-          res.push({ eventId, time, sender, text });
+          res.push({ eventId, time, senderDisplayName, sender, text });
         }
       });
       return {

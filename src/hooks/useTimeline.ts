@@ -1,35 +1,36 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client"
 
-import { getTimeline } from "@/services/chatServices";
+import { useMatrixClient } from "@/contexts/MatrixClientProvider";
+import { getTimeline } from "@/services/chatService";
 import { useChatStore } from "@/stores/useChatStore";
 import { useClientStore } from "@/stores/useClientStore";
-import { MatrixEvent } from "matrix-js-sdk";
+import * as sdk from "matrix-js-sdk";
 import { useEffect } from "react";
 
 export const useTimeline = (roomId: string) => {
   const addMessage = useChatStore((state) => state.addMessage);
   const setMessage = useChatStore((state) => state.setMessages);
+  const client = useMatrixClient();
 
   useEffect(() => {
-    const client = useClientStore.getState().client;
     if (!client || !roomId) return;
 
     let isMounted = true;
 
-    getTimeline(roomId).then((res) => {
+    getTimeline(roomId, client).then((res) => {
       if (res.success && res.timeline && isMounted) {
         setMessage(roomId, res.timeline);
       }
     });
 
-    const onTimeline = (event: MatrixEvent, room: any, toStart: boolean) => {
+    const onTimeline = (event: sdk.MatrixEvent, room: any, toStart: boolean) => {
       if (toStart || room.roomId !== roomId) return;
       if (event.getType() !== "m.room.message") return;
 
       addMessage(roomId, {
         eventId: event.getId() ?? " ",
         sender: event.getSender(),
+        senderDisplayName: event.sender?.name ?? event.getSender(),
         text: event.getContent().body,
         time: new Date(event.getTs()).toLocaleString(),
       });

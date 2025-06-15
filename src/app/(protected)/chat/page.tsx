@@ -1,19 +1,24 @@
 "use client";
+
 import SearchBar from "@/components/layouts/SearchBar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from "next/link";
 import { ChatList } from "@/components/chat/ChatList";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { getUserRooms } from "@/services/chatServices";
+import { getUserRooms } from "@/services/chatService";
 import { useClientStore } from "@/stores/useClientStore";
 import * as sdk from "matrix-js-sdk";
+import { useMatrixClient } from "@/contexts/MatrixClientProvider";
+import { useRoomStore } from "@/stores/useRoomStore";
 
 export default function ChatPage() {
   const [rooms, setRooms] = useState<sdk.Room[]>([]);
-  const client = useClientStore.getState().client;
+  const client = useMatrixClient();
+
   useEffect(() => {
-    getUserRooms()
+    if (!client) return;
+    getUserRooms(client)
       .then((res) => {
         if (res.success && res.rooms) {
           setRooms(res.rooms);

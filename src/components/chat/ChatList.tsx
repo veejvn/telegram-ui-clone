@@ -1,3 +1,5 @@
+"use client"
+
 import { Separator } from "@/components/ui/ChatSeparator";
 import { ChatListItem } from "./ChatListItem";
 

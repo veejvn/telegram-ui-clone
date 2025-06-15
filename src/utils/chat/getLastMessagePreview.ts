@@ -12,7 +12,7 @@ export const getLastMessagePreview = (
   time: string;
   sender?: string;
 } => {
-  const timeline = room.timeline;
+  const timeline = room.getLiveTimeline().getEvents();
   const lastEvent = timeline[timeline.length - 1];
 
   let text = "";
@@ -45,7 +45,8 @@ export const getLastMessagePreview = (
     timestamp = lastEvent.getTs();
     senderId = lastEvent.getSender() || "";
   } else {
-    const creationEvent = room.currentState.getStateEvents("m.room.create", "");
+    const state = room.getLiveTimeline().getState(sdk.EventTimeline.FORWARDS);
+    const creationEvent = state?.getStateEvents("m.room.create", "");
     timestamp = creationEvent?.getTs?.() || Date.now();
     text = "Room created";
   }

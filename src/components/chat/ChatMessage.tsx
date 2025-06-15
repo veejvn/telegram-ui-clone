@@ -23,9 +23,13 @@ const ChatMessage = ({ msg }: { msg: Message }) => {
   }, [msg]);
 
   return (
-    <div className={`flex ${isSender ? "justify-end" : "justify-start"}`}>
-      <div
-        className={`rounded-lg px-3 py-2 my-1 max-w-[90%] w-fit 
+    <div className={`flex ${isSender ? "justify-end" : "justify-start"} my-2`}>
+      <div className="flex flex-col max-w-[90%] w-fit">
+        <div className={`flex text-lg text-black mb-1 ml-1 ${isSender && "justify-end"}`}>
+          {msg.senderDisplayName}
+        </div>
+        <div
+          className={`rounded-lg px-3 py-2
         ${
           theme === "dark"
             ? isSender
@@ -36,24 +40,24 @@ const ChatMessage = ({ msg }: { msg: Message }) => {
             : "text-black bg-white border border-gray-300"
         }
         `}
-      >
-        <p className="whitespace-pre-wrap break-words leading-snug">
-          {msg.text}
-        </p>
-
-        <div
-          className={`flex items-center gap-1 text-xs justify-end ${
-            theme === "dark"
-              ? isSender
-                ? "text-white"
-                : "text-gray-400"
-              : isSender
-              ? "text-green-500"
-              : "text-gray-400"
-          }`}
         >
-          {formatMsgTime(msg.time)}
-          {isSender && <CheckCheck size={14} />}
+          <p className="whitespace-pre-wrap break-words leading-snug">
+            {msg.text}
+          </p>
+          <div
+            className={`flex items-center gap-1 text-xs ${
+              theme === "dark"
+                ? isSender
+                  ? "text-white justify-end"
+                  : "text-gray-400"
+                : isSender
+                ? "text-green-500 justify-end"
+                : "text-gray-400"
+            }`}
+          >
+            {formatMsgTime(msg.time)}
+            {isSender && <CheckCheck size={14} />}
+          </div>
         </div>
       </div>
     </div>

@@ -3,6 +3,7 @@ import { create } from "zustand";
 export type Message = {
   eventId: string;
   time: string;
+  senderDisplayName: string | undefined,
   sender: string | undefined;
   text: string;
 };

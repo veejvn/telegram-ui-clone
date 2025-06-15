@@ -10,10 +10,11 @@ import * as sdk from "matrix-js-sdk";
 import { useTheme } from "next-themes";
 import React, { useEffect, useState } from "react";
 import { useClientStore } from "@/stores/useClientStore";
+import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 
 export const ChatListItem = ({ room }: { room: sdk.Room }) => {
   const themes = useTheme();
-  const client = useClientStore((state) => state.client);
+  const client = useMatrixClient();
 
   // ⚡️ trigger render
   const [_, setRefresh] = useState(0);

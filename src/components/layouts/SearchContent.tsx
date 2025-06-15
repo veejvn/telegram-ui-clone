@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import ContactService from "@/services/contactService";
 import { useToast } from "@/contexts/ToastProvider";
+import { useRouter } from "next/navigation";
 
 type SearchContentProps = {
   loading: boolean;
@@ -30,10 +31,13 @@ const SearchContent = ({ loading, searchResults }: SearchContentProps) => {
 
   const client = useMatrixClient();
   const { showToast } = useToast();
+  const router = useRouter();
 
   const handleAddContact = async (client : sdk.MatrixClient, user_id: string) =>{
     try{
       const room = await ContactService.addContact(client, user_id);
+      if(room)
+        router.push(`/chat/${room.roomId}`);
     }catch(error: any){
       showToast(`${error}`, "error");
     }

@@ -3,40 +3,89 @@ import ChatComposer from "@/components/chat/ChatComposer";
 import ChatHeader from "@/components/chat/ChatHeader";
 import ChatMessages from "@/components/chat/ChatMessages";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useClientStore } from "@/stores/useClientStore";
 import { useTheme } from "next-themes";
 import { useParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import * as sdk from "matrix-js-sdk";
-import { setupAuthedClient } from "@/lib/matrix";
+import { useMatrixClient } from "@/contexts/MatrixClientProvider";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
 
 const Page = () => {
   const { theme } = useTheme();
   const param = useParams();
   const roomId = param.id?.slice(0, 19) + ":matrix.org";
 
-  const client = useClientStore.getState().client;
+  const client = useMatrixClient();
   const [room, setRoom] = useState<sdk.Room | null>();
+  const [joining, setJoining] = useState(false);
 
   useEffect(() => {
-    const init = async () => {
-      let currentClient = client;
+    if (!client) return;
 
-      if (!currentClient) {
-        const authed = await setupAuthedClient();
-        if (!authed) return;
-        currentClient = authed;
-      }
-
-      const foundRoom = currentClient.getRoom(roomId);
-      if (foundRoom) {
-        setRoom(foundRoom);
-      }
-    };
-    init();
+    const foundRoom = client.getRoom(roomId);
+    if (foundRoom) {
+      setRoom(foundRoom);
+    }
   }, [roomId, client]);
 
-  return room ? (
+  if (!room) return null;
+
+  // Kiểm tra trạng thái invite
+  const isInvite = room?.getMyMembership() === "invite";
+
+  const handleJoin = async () => {
+    if (!client) return;
+    setJoining(true);
+    try {
+      await client.joinRoom(roomId);
+      // Sau khi join, reload lại room
+      const joinedRoom = client.getRoom(roomId);
+      setRoom(joinedRoom);
+    } catch (e) {
+      alert("Không thể tham gia phòng!");
+    }
+    setJoining(false);
+  };
+
+  const handleReject = async () => {
+    if (!client) return;
+    setJoining(true);
+    try {
+      await client.leave(roomId);
+      setRoom(null);
+    } catch (e) {
+      alert("Không thể từ chối lời mời!");
+    }
+    setJoining(false);
+  };
+
+  if (isInvite) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <div className="mb-4 text-lg font-semibold">
+          Bạn được mời vào phòng: {room.name || roomId}
+        </div>
+        <div className="flex gap-4">
+          <button
+            className="px-4 py-2 bg-blue-500 text-white rounded"
+            onClick={handleJoin}
+            disabled={joining}
+          >
+            Chấp nhận
+          </button>
+          <button
+            className="px-4 py-2 bg-gray-300 text-black rounded"
+            onClick={handleReject}
+            disabled={joining}
+          >
+            Từ chối
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
     <div className="relative h-screen overflow-hidden">
       {/* Background cố định */}
       <div
@@ -66,11 +115,10 @@ const Page = () => {
         <ScrollArea className="flex-1 min-h-0 px-4 space-y-1">
           <ChatMessages roomId={roomId} />
         </ScrollArea>
-
         <ChatComposer roomId={roomId} />
       </div>
     </div>
-  ) : null;
+  );
 };
 
 export default Page;
