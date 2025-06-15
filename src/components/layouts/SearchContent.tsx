@@ -1,3 +1,12 @@
+"use client"
+
+import * as sdk from "matrix-js-sdk"
+import { UserRoundPlus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useMatrixClient } from "@/contexts/MatrixClientProvider";
+import ContactService from "@/services/contactService";
+import { useToast } from "@/contexts/ToastProvider";
+
 type SearchContentProps = {
   loading: boolean;
   searchResults: any[];
@@ -18,6 +27,18 @@ const SearchContent = ({ loading, searchResults }: SearchContentProps) => {
       </div>
     );
   }
+
+  const client = useMatrixClient();
+  const { showToast } = useToast();
+
+  const handleAddContact = async (client : sdk.MatrixClient, user_id: string) =>{
+    try{
+      const room = await ContactService.addContact(client, user_id);
+    }catch(error: any){
+      showToast(`${error}`, "error");
+    }
+  } 
+
   return (
     <div className="max-h-[400px] overflow-y-auto bg-white dark:bg-[#181818] rounded-xl shadow-lg border border-gray-200 dark:border-[#232323] max-w-[1300px] mx-auto">
       {searchResults.map((user, idx) => (
@@ -38,6 +59,14 @@ const SearchContent = ({ loading, searchResults }: SearchContentProps) => {
               {user.user_id}
             </div>
           </div>
+          <Button
+            onClick={() => client && handleAddContact(client, user.user_id)}
+            size="lg"
+            className="bg-white hover:bg-zinc-300 text-blue-500"
+            disabled={!client}
+          >
+            <UserRoundPlus />
+          </Button>
         </div>
       ))}
     </div>

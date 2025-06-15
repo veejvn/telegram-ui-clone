@@ -26,7 +26,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import ContactService from "@/services/contactService";
-import { useClientStore } from "@/stores/useMatrixStore";
+import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 
 interface Contact {
   firstName: string;
@@ -37,12 +37,12 @@ interface Contact {
 const ContactPage = () => {
   const [sortBy, setSortBy] = useState<"lastSeen" | "name">("name");
   const [contacts, setContacts] = useState<sdk.Room[]>([]);
-  const client = useClientStore.getState().client;
-  console.log(client?.getRooms())
+  const client = useMatrixClient();
+  const router = useRouter();
 
   useEffect(() => {
+    if (!client) return;
     const loadContacts = async () => {
-      if (!client) return;
       const rooms = await ContactService.getDirectMessageRooms(client);
       setContacts(rooms);
     };
@@ -51,11 +51,6 @@ const ContactPage = () => {
 
   const handleAddContact = (contact: Contact) => {};
 
-  const handleDeleteContact = (idx: number) => {
-    setContacts((prev) => prev.filter((_, i) => i !== idx));
-  };
-
-  const router = useRouter();
 
   const handleSettingClick = () => {
     router.push("/setting");
@@ -156,11 +151,23 @@ const ContactPage = () => {
           <ul className="divide-y divide-gray-400">
             {contacts.map(room => {
               const other = client
-                ? room
-                    .getJoinedMembers()
-                    .find((m) => m.userId !== client.getUserId())
+                ? room.getJoinedMembers().find((m) => m.userId !== client.getUserId())
                 : undefined;
-              return <li key={room.roomId}>{other?.userId || "Không xác định"}</li>;
+              return (
+                <li
+                  key={room.roomId}
+                  className="flex items-center gap-3 py-3 px-2 hover:bg-blue-50 dark:hover:bg-zinc-800 transition-colors rounded-lg cursor-pointer"
+                >
+                  <Avatar className="flex items-center justify-center w-10 h-10 text-base bg-zinc-300">
+                      {other?.name?.[0]?.toUpperCase() || other?.userId?.[1]?.toUpperCase() || "?"}
+                  </Avatar>
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <span className="font-medium truncate">{other?.name || other?.userId}</span>
+                    <span className="text-xs text-gray-500 truncate">{other?.userId}</span>
+                  </div>
+                  {/* Bạn có thể thêm nút chat hoặc menu ở đây */}
+                </li>
+              );
             })}
           </ul>
         )}
