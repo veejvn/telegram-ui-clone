@@ -5,6 +5,7 @@ import { ERROR_MESSAGES } from "@/constants/error-messages"
 import { LoginFormData, RegisterFormData } from "@/types/auth";
 import { getLS, removeLS, setLS } from "@/tools/localStorage.tool";
 import { ILoginResponse } from "@/types/matrix";
+import { useClientStore } from "@/stores/useMatrixStore";
 
 // Matrix homeserver URL - replace with your homeserver
 //const HOMESERVER_URL: string = process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
@@ -15,6 +16,7 @@ let clientInstance: sdk.MatrixClient | null = null;
 
 export class MatrixAuthService {
     private client: sdk.MatrixClient
+    setClient = useClientStore.getState().setClient;
 
     constructor() {
         if (typeof window === 'undefined') {
@@ -79,13 +81,10 @@ export class MatrixAuthService {
             if (registerResponse.access_token) {
                 setLS("matrix_access_token", registerResponse.access_token);
                 setLS("matrix_user_id", registerResponse.user_id);
-                this.client = sdk.createClient({
-                    baseUrl: HOMESERVER_URL,
-                    accessToken: registerResponse.access_token,
-                    userId: registerResponse.user_id
-                });
             }
-            return registerResponse;
+            return {
+                success: true
+            };
         } catch (error) {
             console.error("Registration error:", error)
             throw error
@@ -103,24 +102,10 @@ export class MatrixAuthService {
             if (loginResponse.access_token) {
                 setLS("matrix_access_token", loginResponse.access_token);
                 setLS("matrix_user_id", loginResponse.user_id);
-                this.client = sdk.createClient({
-                    baseUrl: HOMESERVER_URL,
-                    accessToken: loginResponse.access_token,
-                    userId: loginResponse.user_id,
-                });
             }
-
-            await new Promise<void>((resolve) => {
-                this.client.once("sync" as any, (state: string) => {
-                    if (state === "PREPARED") {
-                        resolve();
-                    }
-                });
-                this.client.startClient();
-            });
             return {
                 success: true,
-                client: this.client,
+                token: loginResponse.access_token
             };
         } catch (error: any) {
             console.error("Login error:", error)

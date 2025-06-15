@@ -14,7 +14,6 @@ export default function LoginPage() {
   // Callback khi login thành công
   const handleSuccess = (token: string) => {
     login(token);
-    //router.replace(ROUTES.CHAT);
   };
 
   return (

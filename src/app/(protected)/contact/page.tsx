@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
+import * as sdk from "matrix-js-sdk";
 import { Trash2, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import ContactService from "@/services/contactService";
+import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 
 interface Contact {
   firstName: string;
@@ -33,17 +36,21 @@ interface Contact {
 
 const ContactPage = () => {
   const [sortBy, setSortBy] = useState<"lastSeen" | "name">("name");
-  const [contacts, setContacts] = useState<Contact[]>([]);
-
-  const handleAddContact = (contact: Contact) => {
-    setContacts((prev) => [...prev, contact]);
-  };
-
-  const handleDeleteContact = (idx: number) => {
-    setContacts((prev) => prev.filter((_, i) => i !== idx));
-  };
-
+  const [contacts, setContacts] = useState<sdk.Room[]>([]);
+  const client = useMatrixClient();
   const router = useRouter();
+
+  useEffect(() => {
+    if (!client) return;
+    const loadContacts = async () => {
+      const rooms = await ContactService.getDirectMessageRooms(client);
+      setContacts(rooms);
+    };
+    loadContacts();
+  }, [client]);
+
+  const handleAddContact = (contact: Contact) => {};
+
 
   const handleSettingClick = () => {
     router.push("/setting");
@@ -142,29 +149,26 @@ const ContactPage = () => {
           </div>
         ) : (
           <ul className="divide-y divide-gray-400">
-            {contacts.map((c, idx) => (
-              <li key={idx} className="flex items-center gap-4 py-3">
-                <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-lg font-bold text-white">
-                  {(c.firstName?.[0] || c.lastName?.[0] || "C").toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-base truncate">
-                    {c.firstName} {c.lastName}
-                  </div>
-                  <div className="text-sm text-gray-400 truncate">
-                    {c.phones.filter(Boolean).join(", ")}
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  size="icon"
-                  className="bg-transparent hover:bg-transparent"
-                  onClick={() => handleDeleteContact(idx)}
+            {contacts.map(room => {
+              const other = client
+                ? room.getJoinedMembers().find((m) => m.userId !== client.getUserId())
+                : undefined;
+              return (
+                <li
+                  key={room.roomId}
+                  className="flex items-center gap-3 py-3 px-2 hover:bg-blue-50 dark:hover:bg-zinc-800 transition-colors rounded-lg cursor-pointer"
                 >
-                  <Trash2 className="w-5 h-5 text-red-400" />
-                </Button>
-              </li>
-            ))}
+                  <Avatar className="flex items-center justify-center w-10 h-10 text-base bg-zinc-300">
+                      {other?.name?.[0]?.toUpperCase() || other?.userId?.[1]?.toUpperCase() || "?"}
+                  </Avatar>
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <span className="font-medium truncate">{other?.name || other?.userId}</span>
+                    <span className="text-xs text-gray-500 truncate">{other?.userId}</span>
+                  </div>
+                  {/* Bạn có thể thêm nút chat hoặc menu ở đây */}
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

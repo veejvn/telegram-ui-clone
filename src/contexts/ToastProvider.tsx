@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback } from 'react';
-import Toast, { ToastType } from './Toast';
+import Toast, { ToastType } from '@/components/common/Toast';
 import { ERROR_MESSAGES } from '@/constants/error-messages';
 
 interface ToastContextType {
