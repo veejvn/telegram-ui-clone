@@ -12,6 +12,7 @@ export const useMatrixClient = () => useContext(MatrixClientContext);
 
 export function MatrixClientProvider({ children }: { children: React.ReactNode }) {
   const [client, setClient] = useState<sdk.MatrixClient | null>(null);
+  const [isSynced, setIsSynced] = useState(false);
   const startedRef = useRef(false);
 
   useEffect(() => {
@@ -37,16 +38,29 @@ export function MatrixClientProvider({ children }: { children: React.ReactNode }
       client.startClient();
       startedRef.current = true;
     }
-    return () => {
-      if (client && startedRef.current) {
-        client.stopClient();
-        startedRef.current = false;
+    // Lắng nghe sự kiện sync
+    if (client) {
+      const onSync = (state: string) => {
+        if (state === "PREPARED") 
+          setIsSynced(true);
+      };
+      client.on("sync" as any, onSync);
+      // Nếu đã sync trước đó (hot reload)
+      if (client.getSyncState && client.getSyncState() === "PREPARED") {
+        setIsSynced(true);
       }
-    };
+      return () => {
+        client.removeListener("sync" as any, onSync);
+        if (startedRef.current) {
+          client.stopClient();
+          startedRef.current = false;
+        }
+      };
+    }
   }, [client]);
 
   return (
-    <MatrixClientContext.Provider value={client}>
+    <MatrixClientContext.Provider value={isSynced ? client : null}>
       {children}
     </MatrixClientContext.Provider>
   );

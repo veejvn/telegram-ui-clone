@@ -6,8 +6,7 @@ import SearchContent from "@/components/layouts/SearchContent";
 import { searchMatrixUsers } from "@/services/matrixUserSearch";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider"; // Import hook lấy client
 
-const SearchBar = 
-  () => {
+const SearchBar = () => {
   const client = useMatrixClient(); // Lấy client từ context
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);

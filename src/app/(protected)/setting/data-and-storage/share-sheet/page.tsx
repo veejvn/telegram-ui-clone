@@ -49,6 +49,7 @@ export default function AutoDownloadSettings() {
                     setToggles({ ...toggles, [typedKey]: !toggles[typedKey] })
                   }
                   className="sr-only peer"
+                  aria-label="checkbox"
                 />
                 <div
                   className={`w-11 h-6 rounded-full transition-colors duration-200 ${
