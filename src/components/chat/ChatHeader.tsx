@@ -6,8 +6,16 @@ import {
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import React from "react";
+import * as sdk from "matrix-js-sdk";
 
-const ChatHeader = () => {
+const ChatHeader = ({ room }: { room: sdk.Room }) => {
+  const avatarUrl = room.getAvatarUrl(
+    "https://matrix.org", // baseUrl
+    60, // width
+    60, // height
+    "crop", // resize method
+    false // fallback
+  );
   return (
     <>
       <div
@@ -23,15 +31,21 @@ const ChatHeader = () => {
           <p>Back</p>
         </Link>
         <div className="text-center">
-          <h1 className="font-semibold text-base">Nhóm</h1>
-          <p className="text-sm text-muted-foreground">1 member</p>
+          <h1 className="font-semibold text-base">{room.name}</h1>
+          {/* <p className="text-sm text-muted-foreground">1 member</p> */}
         </div>
         <div>
           <Avatar className="h-10 w-10">
-            <AvatarImage src="" alt="Nhom" />
-            <AvatarFallback className="bg-purple-400 text-white text-xl font-bold">
-              N
-            </AvatarFallback>
+            {avatarUrl ? (
+              <AvatarImage src="" alt="avatar" />
+            ) : (
+              <>
+                <AvatarImage src="" alt="Unknow" />
+                <AvatarFallback className="bg-purple-400 text-white text-xl font-bold">
+                  {room.name.slice(0, 1)}
+                </AvatarFallback>
+              </>
+            )}
           </Avatar>
         </div>
       </div>
