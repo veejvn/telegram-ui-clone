@@ -10,11 +10,16 @@ import { getUserRooms } from "@/services/chatService";
 import { useClientStore } from "@/stores/useClientStore";
 import * as sdk from "matrix-js-sdk";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
+import ChatEditButton from "@/components/chat/ChatEditButton";
+import ChatActionBar from "@/components/chat/ChatActionBar";
 import { useRoomStore } from "@/stores/useRoomStore";
+
 
 export default function ChatPage() {
   const [rooms, setRooms] = useState<sdk.Room[]>([]);
   const client = useMatrixClient();
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
 
   useEffect(() => {
     if (!client) return;
@@ -31,11 +36,48 @@ export default function ChatPage() {
       });
   }, [client]);
 
+  const handleSelectRoom = (roomId: string) => {
+    setSelectedRooms((prev) =>
+      prev.includes(roomId)
+        ? prev.filter((id) => id !== roomId)
+        : [...prev, roomId]
+    );
+  };
+
+  const handleReadAll = () => {
+    alert("Read All: " + selectedRooms.join(", "));
+  };
+  const handleArchive = () => {
+    alert("Archive: " + selectedRooms.join(", "));
+  };
+const handleDelete = async () => {
+  if (!client) return;
+  await Promise.all(
+    selectedRooms.map(async roomId => {
+      try {
+        await client.leave(roomId);
+        console.log("Đã rời khỏi room:", roomId);
+      } catch (err) {
+        console.error("Lỗi khi rời khỏi room:", roomId, err);
+      }
+    })
+  );
+  setRooms(prevRooms => prevRooms.filter(room => !selectedRooms.includes(room.roomId)));
+  setSelectedRooms([]);
+  setIsEditMode(false);
+};
+
+  const handleDone = () => {
+    setIsEditMode(false);
+    setSelectedRooms([]);
+  };
+
   return (
     <div>
       <div className="sticky bg-white dark:bg-black top-0 z-10">
         <div className="flex items-center justify-between px-4 py-2">
-          <span className="text-blue-500">Edit</span>
+          {/* <span className="text-blue-500">Edit</span> */}
+          <ChatEditButton onEdit={() => setIsEditMode(true)} />
           <h1 className="text-md font-semibold">Chats</h1>
           <div className="flex gap-3">
             <div className="text-blue-500">+</div>
@@ -71,9 +113,24 @@ export default function ChatPage() {
       ) : (
         <ScrollArea tabIndex={-1}>
           <div className="flex flex-col px-2 pb-[64px] spacy-y-2">
-            <ChatList rooms={rooms} />
+            <ChatList
+                  rooms={rooms}
+                  isEditMode={isEditMode}
+                  selectedRooms={selectedRooms}
+                  onSelectRoom={handleSelectRoom}
+                />
           </div>
         </ScrollArea>
+      )}
+
+      {isEditMode && (
+        <ChatActionBar
+          selectedCount={selectedRooms.length}
+          onReadAll={handleReadAll}
+          onArchive={handleArchive}
+          onDelete={handleDelete}
+          onDone={handleDone}
+        />
       )}
     </div>
   );

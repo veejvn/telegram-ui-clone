@@ -12,7 +12,19 @@ import React, { useEffect, useState } from "react";
 import { useClientStore } from "@/stores/useClientStore";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 
-export const ChatListItem = ({ room }: { room: sdk.Room }) => {
+interface ChatListItemProps {
+  room: sdk.Room;
+  isEditMode?: boolean;
+  checked?: boolean;
+  onSelect?: () => void;
+}
+
+export const ChatListItem = ({
+  room,
+  isEditMode = false,
+  checked = false,
+  onSelect,
+}: ChatListItemProps) => {
   const themes = useTheme();
   const client = useMatrixClient();
 
@@ -47,7 +59,17 @@ export const ChatListItem = ({ room }: { room: sdk.Room }) => {
   const { content, time, sender } = getLastMessagePreview(room);
 
   return (
-    <div className="flex px-2 py-2">
+    <div className="flex px-2 py-2 items-center">
+      {isEditMode && (
+  <input
+    type="checkbox"
+    className="mr-3 w-5 h-5"
+    checked={checked}
+    onChange={onSelect}
+    onClick={e => e.stopPropagation()}
+  />
+)}
+
       <div className="w-[60px] flex justify-center items-center">
         <Avatar className="h-15 w-15">
           {avatarUrl ? (
