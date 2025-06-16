@@ -9,12 +9,14 @@ import React, { useEffect, useState } from "react";
 import * as sdk from "matrix-js-sdk";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
-
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import Link from "next/link";
 const Page = () => {
   const { theme } = useTheme();
   const param = useParams();
   const roomId = param.id?.slice(0, 19) + ":matrix.org";
-
+  const router = useRouter();
   const client = useMatrixClient();
   const [room, setRoom] = useState<sdk.Room | null>();
   const [joining, setJoining] = useState(false);
@@ -42,7 +44,17 @@ const Page = () => {
       const joinedRoom = client.getRoom(roomId);
       setRoom(joinedRoom);
     } catch (e) {
-      alert("Không thể tham gia phòng!");
+      console.error("Lỗi khi join phòng:", e); // Log toàn bộ lỗi
+      if (e && typeof e === "object" && "data" in e) {
+        console.error("Chi tiết lỗi từ server:", e.data);
+      }
+      toast.error("Không thể tham gia phòng!", {
+        action: {
+          label: "OK",
+          onClick: () => router.push("/chat"),
+        },
+        duration: 5000,
+      });
     }
     setJoining(false);
   };
@@ -58,7 +70,6 @@ const Page = () => {
     }
     setJoining(false);
   };
-
   if (isInvite) {
     return (
       <div className="flex flex-col items-center justify-center h-screen">
@@ -75,7 +86,7 @@ const Page = () => {
           </button>
           <button
             className="px-4 py-2 bg-gray-300 text-black rounded"
-            onClick={handleReject}
+            onClick={() => router.push("/chat")}
             disabled={joining}
           >
             Từ chối
