@@ -58,10 +58,6 @@ const ChatPage = () => {
       const joinedRoom = client.getRoom(roomId);
       setRoom(joinedRoom);
     } catch (e) {
-      console.error("Lỗi khi join phòng:", e); // Log toàn bộ lỗi
-      if (e && typeof e === "object" && "data" in e) {
-        console.error("Chi tiết lỗi từ server:", e.data);
-      }
       toast.error("Không thể tham gia phòng!", {
         action: {
           label: "OK",
@@ -80,7 +76,13 @@ const ChatPage = () => {
       await client.leave(roomId);
       setRoom(null);
     } catch (e) {
-      alert("Không thể từ chối lời mời!");
+      toast.error("Không thể từ chối mời lời mời", {
+        action: {
+          label: "OK",
+          onClick: () => router.push("/chat"),
+        },
+        duration: 5000,
+      });
     }
     setJoining(false);
   };
@@ -100,7 +102,7 @@ const ChatPage = () => {
           </button>
           <button
             className="px-4 py-2 bg-gray-300 text-black rounded"
-            onClick={() => router.push("/chat")}
+            onClick={handleReject}
             disabled={joining}
           >
             Từ chối
