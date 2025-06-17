@@ -49,22 +49,24 @@ export default function ChatsPage() {
   const handleArchive = () => {
     alert("Archive: " + selectedRooms.join(", "));
   };
-const handleDelete = async () => {
-  if (!client) return;
-  await Promise.all(
-    selectedRooms.map(async roomId => {
-      try {
-        await client.leave(roomId);
-        console.log("Đã rời khỏi room:", roomId);
-      } catch (err) {
-        console.error("Lỗi khi rời khỏi room:", roomId, err);
-      }
-    })
-  );
-  setRooms(prevRooms => prevRooms.filter(room => !selectedRooms.includes(room.roomId)));
-  setSelectedRooms([]);
-  setIsEditMode(false);
-};
+  const handleDelete = async () => {
+    if (!client) return;
+    await Promise.all(
+      selectedRooms.map(async (roomId) => {
+        try {
+          await client.leave(roomId);
+          console.log("Đã rời khỏi room:", roomId);
+        } catch (err) {
+          console.error("Lỗi khi rời khỏi room:", roomId, err);
+        }
+      })
+    );
+    setRooms((prevRooms) =>
+      prevRooms.filter((room) => !selectedRooms.includes(room.roomId))
+    );
+    setSelectedRooms([]);
+    setIsEditMode(false);
+  };
 
   const handleDone = () => {
     setIsEditMode(false);
@@ -113,11 +115,11 @@ const handleDelete = async () => {
         <ScrollArea tabIndex={-1}>
           <div className="flex flex-col px-2 pb-[64px] spacy-y-2">
             <ChatList
-                  rooms={rooms}
-                  isEditMode={isEditMode}
-                  selectedRooms={selectedRooms}
-                  onSelectRoom={handleSelectRoom}
-                />
+              rooms={rooms}
+              isEditMode={isEditMode}
+              selectedRooms={selectedRooms}
+              onSelectRoom={handleSelectRoom}
+            />
           </div>
         </ScrollArea>
       )}
