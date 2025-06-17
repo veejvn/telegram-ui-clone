@@ -10,6 +10,9 @@ import * as sdk from "matrix-js-sdk";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 import { sendReadReceipt } from "@/utils/chat/sendReceipt";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import Link from "next/link";
 
 const ChatPage = () => {
   const { theme } = useTheme();
@@ -20,6 +23,7 @@ const ChatPage = () => {
 
   const client = useMatrixClient();
   const roomId = param.id?.slice(0, 19) + ":matrix.org";
+  const router = useRouter();
 
   useEffect(() => {
     if (!client) return;
@@ -54,7 +58,13 @@ const ChatPage = () => {
       const joinedRoom = client.getRoom(roomId);
       setRoom(joinedRoom);
     } catch (e) {
-      alert("Không thể tham gia phòng!");
+      toast.error("Không thể tham gia phòng!", {
+        action: {
+          label: "OK",
+          onClick: () => router.push("/chat"),
+        },
+        duration: 5000,
+      });
     }
     setJoining(false);
   };
@@ -66,11 +76,16 @@ const ChatPage = () => {
       await client.leave(roomId);
       setRoom(null);
     } catch (e) {
-      alert("Không thể từ chối lời mời!");
+      toast.error("Không thể từ chối mời lời mời", {
+        action: {
+          label: "OK",
+          onClick: () => router.push("/chat"),
+        },
+        duration: 5000,
+      });
     }
     setJoining(false);
   };
-
   if (isInvite) {
     return (
       <div className="flex flex-col items-center justify-center h-screen">
