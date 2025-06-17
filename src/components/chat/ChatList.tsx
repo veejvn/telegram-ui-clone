@@ -2,6 +2,7 @@
 
 import { Separator } from "@/components/ui/ChatSeparator";
 import { ChatListItem } from "./ChatListItem";
+
 import Link from "next/link";
 import * as sdk from "matrix-js-sdk";
 

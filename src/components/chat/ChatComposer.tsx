@@ -1,15 +1,19 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { Eclipse, Mic, Paperclip } from "lucide-react";
+import { Eclipse, Mic, Paperclip, Smile } from "lucide-react";
 import { sendMessage } from "@/services/chatService";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
+import { useTheme } from "next-themes";
+import EmojiPicker, { Theme as EmojiTheme } from "emoji-picker-react";
 
 const ChatComposer = ({ roomId }: { roomId: string }) => {
   const [text, setText] = useState("");
   const [isMultiLine, setIsMultiLine] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const client = useMatrixClient();
+  const theme = useTheme();
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -34,6 +38,11 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
       .catch((res) => {
         console.log(res.error.Message);
       });
+    setShowEmojiPicker((prev) => (!prev))
+  };
+
+  const handleEmojiClick = (emojiData: any) => {
+    setText((prev) => prev + emojiData.emoji);
   };
 
   useEffect(() => {
@@ -47,14 +56,14 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   }, [text]);
 
   return (
-    <div className="flex justify-between items-center bg-white dark:bg-[#1c1c1e] px-2.5 py-2 lg:py-3">
+    <div className="relative flex justify-between items-center bg-white dark:bg-[#1c1c1e] px-2.5 py-2 lg:py-3">
       <Paperclip
         className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
         size={30}
       />
 
       <div
-        className={`outline-2 p-1.5 mx-1.5 ${
+        className={`outline-2 p-1.5 mx-1.5 relative ${
           isMultiLine ? "rounded-2xl" : "rounded-full"
         } flex items-center justify-between w-full bg-[#f0f0f0] dark:bg-[#2b2b2d]`}
       >
@@ -69,11 +78,31 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
           style={{ lineHeight: "1.5rem" }}
         />
 
-        <Eclipse
+        <Smile
+          onClick={() => setShowEmojiPicker((prev) => !prev)}
           className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
           size={30}
         />
+
+        {/* <Eclipse
+          className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
+          size={30}
+        /> */}
+
+        {showEmojiPicker && (
+          <div className="absolute bottom-12 left-6 z-50">
+            <EmojiPicker
+              width={300}
+              height={350}
+              onEmojiClick={handleEmojiClick}
+              theme={
+                theme.theme === "dark" ? EmojiTheme.DARK : EmojiTheme.LIGHT
+              }
+            />
+          </div>
+        )}
       </div>
+      
       {text.trim() ? (
         <svg
           xmlns="http://www.w3.org/2000/svg"

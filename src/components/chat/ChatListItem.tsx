@@ -83,6 +83,7 @@ export const ChatListItem = ({
     checked={checked}
     onChange={onSelect}
     onClick={e => e.stopPropagation()}
+    aria-label="checkbox"
   />
 )}
 
