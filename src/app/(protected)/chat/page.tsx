@@ -12,7 +12,7 @@ import * as sdk from "matrix-js-sdk";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useRoomStore } from "@/stores/useRoomStore";
 
-export default function ChatPage() {
+export default function ChatsPage() {
   const [rooms, setRooms] = useState<sdk.Room[]>([]);
   const client = useMatrixClient();
 
