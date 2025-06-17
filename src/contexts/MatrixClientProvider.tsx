@@ -40,7 +40,12 @@ export function MatrixClientProvider({
       client.startClient();
 
       await waitForClientReady(client);
-      
+
+      try {
+        await client.setPresence({ presence: "online" });
+      } catch (e) {
+        console.warn("Set presence error:", e);
+      }
       if (isMounted) setClient(client);
     };
 
@@ -53,6 +58,24 @@ export function MatrixClientProvider({
       }
     };
   }, []);
+
+  // useEffect(() => {
+  //   if (!client) return;
+
+  //   const onPresence = (event: any, member: any) => {
+  //     // Khi có sự kiện presence mới, bạn có thể trigger cập nhật UI hoặc log
+  //     // Ví dụ: console.log trạng thái mới
+  //     console.log(
+  //       `Presence update: ${member.userId} - ${(member as any).presence}, lastActiveAgo: ${(member as any).lastActiveAgo}`
+  //     );
+  //   };
+
+  //   client.on("RoomMember.presence" as any, onPresence);
+
+  //   return () => {
+  //     client.removeListener("RoomMember.presence" as any, onPresence);
+  //   };
+  // }, [client]);
 
   return (
     <MatrixClientContext.Provider value={client}>

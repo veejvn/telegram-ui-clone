@@ -2,7 +2,7 @@
 import { MatrixAuthService } from "@/services/matrixAuthService";
 import { Message } from "@/stores/useChatStore";
 import { formatMsgTime } from "@/utils/chat/formatMsgTime";
-import { CheckCheck } from "lucide-react";
+import { Check, CheckCheck, Eye } from "lucide-react";
 import { useTheme } from "next-themes";
 import React, { useEffect, useState } from "react";
 
@@ -22,12 +22,18 @@ const ChatMessage = ({ msg }: { msg: Message }) => {
     }
   }, [msg]);
 
+  //console.log(msg);
+
   return (
     <div className={`flex ${isSender ? "justify-end" : "justify-start"} my-2`}>
       <div className="flex flex-col max-w-[90%] w-fit">
-        <div className={`flex text-lg text-black mb-1 ml-1 ${isSender && "justify-end"}`}>
+        {/* <div
+          className={`flex text-lg text-black mb-1 ml-1 ${
+            isSender && "justify-end"
+          }`}
+        >
           {msg.senderDisplayName}
-        </div>
+        </div> */}
         <div
           className={`rounded-lg px-3 py-2
         ${
@@ -56,7 +62,9 @@ const ChatMessage = ({ msg }: { msg: Message }) => {
             }`}
           >
             {formatMsgTime(msg.time)}
-            {isSender && <CheckCheck size={14} />}
+            {isSender && (
+              msg.status === "read" ? <CheckCheck size={14}/> : <Check size={14}/>
+            )}
           </div>
         </div>
       </div>

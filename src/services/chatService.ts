@@ -1,41 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
-import { useClientStore } from "@/stores/useClientStore";
-import { MatrixAuthService } from "./matrixAuthService";
 import * as sdk from "matrix-js-sdk";
-import { Message } from "@/stores/useChatStore";
-import { useMatrixClient } from "@/contexts/MatrixClientProvider";
+import { Message, useChatStore } from "@/stores/useChatStore";
 
-const authServie = new MatrixAuthService();
-
-const { userId, token } = authServie.getCurrentUser();
-
-const getClient = async (): Promise<sdk.MatrixClient | null> => {
-  const store = useClientStore.getState();
-  
-  if (store.client) return store.client;
-  
-  if (!token || !userId) return null;
-  
-  const authedClient = sdk.createClient({
-    baseUrl: "https://matrix.org",
-    accessToken: token,
-    userId: userId,
-  });
-  
-  store.setClient(authedClient);
-
-  await new Promise<void>((resolve) => {
-    authedClient.once("sync" as any, (state: string) => {
-      if (state === "PREPARED") resolve();
-    });
-    authedClient.startClient();
-  });
-
-  return authedClient;
-};
- 
 export const getUserRooms = async (client: sdk.MatrixClient): Promise<{
   success: boolean;
   err?: any;
@@ -109,25 +77,56 @@ export const getTimeline = async (
   }
 
   try {
-    const messages = client?.getRoom(roomId)?.getLiveTimeline().getEvents().slice(-20) || [];
+    const room = client.getRoom(roomId);
+    if(!room) return { success: false}
+
+    const userId = client.getUserId()
+    const messages = room.getLiveTimeline().getEvents().slice(-20) || [];
+
+    // 1. Tìm eventId cuối cùng đã được đọc (có receipt "m.read" từ user khác)
+    let lastReadEventId: string | null = null;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const event = messages[i];
+      if (event.getType() === "m.room.message") {
+        const receipts = room.getReceiptsForEvent(event) as any[] | undefined;
+        if (receipts && receipts.length > 0) {
+          const otherReceipt = receipts.find(
+            (r) => r.userId !== userId && r.type === "m.read"
+          );
+          if (otherReceipt) {
+            lastReadEventId = event.getId() || null;
+            break;
+          }
+        }
+      }
+    }
+
+    let lastReadIndex = -1;
+    if (lastReadEventId) {
+      lastReadIndex = messages.findIndex(e => e.getId() === lastReadEventId);
+    }
+
     if (messages) {
       const res: Message[] = [];
-      messages.map((event) => {
+      messages.map((event, idx) => {
         if (event.getType() === "m.room.message") {
+          let status: "sent" | "delivered" | "read" = "sent";
           const sender = event.getSender() ?? "Unknown";
           const content = event.getContent();
           const text = content.body;
           const senderDisplayName = event.sender?.name ?? sender;
-
           const timestamp = event.getTs(); // -> timestamp dạng milliseconds (Unix time)
-
           const time = new Date(timestamp).toLocaleString(); // chuyển sang định dạng dễ đọc
-
           const eventId = event.getId() || "";
 
-          res.push({ eventId, time, senderDisplayName, sender, text });
+          if(sender === userId && lastReadIndex !== -1 && idx <= lastReadIndex){
+            status = "read";
+          }
+
+          res.push({ eventId, time, senderDisplayName, sender, text, status });
         }
       });
+
       return {
         success: true,
         timeline: res,
