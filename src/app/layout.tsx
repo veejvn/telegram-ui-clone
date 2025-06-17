@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Providers from "@/app/provider";
+import CallOverlay from "@/components/call/CallOverlay"; // Thêm dòng này
 
 const inter = Inter({
   subsets: ["vietnamese"],
@@ -20,7 +21,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} antialiased`}>
-        <Providers>{children}</Providers>
+        <Providers>
+          <CallOverlay />  {/*  Luôn lắng nghe sự kiện call */}
+          {children}
+        </Providers>
       </body>
     </html>
   );

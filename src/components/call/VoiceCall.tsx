@@ -17,6 +17,8 @@ export function VoiceCall({ contactName, contactAvatar, onEndCall, onSwitchToVid
     const [isMuted, setIsMuted] = useState(false);
     const [isSpeakerOn, setIsSpeakerOn] = useState(false);
     const [callDuration, setCallDuration] = useState(0);
+    const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+
 
     useEffect(() => {
         const timer = setInterval(() => {
