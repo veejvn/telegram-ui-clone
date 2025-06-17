@@ -5,19 +5,25 @@ import ChatMessages from "@/components/chat/ChatMessages";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTheme } from "next-themes";
 import { useParams } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import * as sdk from "matrix-js-sdk";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
+import { sendReadReceipt } from "@/utils/chat/sendReceipt";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import Link from "next/link";
 
-const Page = () => {
+const ChatPage = () => {
   const { theme } = useTheme();
+  const [joining, setJoining] = useState(false);
+  const [room, setRoom] = useState<sdk.Room | null>();
   const param = useParams();
-  const roomId = param.id?.slice(0, 19) + ":matrix.org";
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const client = useMatrixClient();
-  const [room, setRoom] = useState<sdk.Room | null>();
-  const [joining, setJoining] = useState(false);
+  const roomId = param.id?.slice(0, 19) + ":matrix.org";
+  const router = useRouter();
 
   useEffect(() => {
     if (!client) return;
@@ -28,8 +34,18 @@ const Page = () => {
     }
   }, [roomId, client]);
 
+  
+  useEffect(() => {
+    if (!client || !room) return;
+    // Lấy event cuối cùng trong room (nếu có)
+    const events = room.getLiveTimeline().getEvents();
+    const lastEvent = events.length > 0 ? events[events.length - 1] : null;
+    if (lastEvent) {
+      sendReadReceipt(client, lastEvent);
+    }
+  }, [room, client]);
+  
   if (!room) return null;
-
   // Kiểm tra trạng thái invite
   const isInvite = room?.getMyMembership() === "invite";
 
@@ -42,7 +58,13 @@ const Page = () => {
       const joinedRoom = client.getRoom(roomId);
       setRoom(joinedRoom);
     } catch (e) {
-      alert("Không thể tham gia phòng!");
+      toast.error("Không thể tham gia phòng!", {
+        action: {
+          label: "OK",
+          onClick: () => router.push("/chat"),
+        },
+        duration: 5000,
+      });
     }
     setJoining(false);
   };
@@ -54,11 +76,16 @@ const Page = () => {
       await client.leave(roomId);
       setRoom(null);
     } catch (e) {
-      alert("Không thể từ chối lời mời!");
+      toast.error("Không thể từ chối mời lời mời", {
+        action: {
+          label: "OK",
+          onClick: () => router.push("/chat"),
+        },
+        duration: 5000,
+      });
     }
     setJoining(false);
   };
-
   if (isInvite) {
     return (
       <div className="flex flex-col items-center justify-center h-screen">
@@ -113,7 +140,7 @@ const Page = () => {
 
         {/* Chat content scrollable */}
         <ScrollArea className="flex-1 min-h-0 px-4 space-y-1">
-          <ChatMessages roomId={roomId} />
+          <ChatMessages roomId={roomId} messagesEndRef={messagesEndRef}/>
         </ScrollArea>
         <ChatComposer roomId={roomId} />
       </div>
@@ -121,4 +148,4 @@ const Page = () => {
   );
 };
 
-export default Page;
+export default ChatPage;

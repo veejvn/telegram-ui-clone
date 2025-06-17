@@ -14,8 +14,7 @@ import ChatEditButton from "@/components/chat/ChatEditButton";
 import ChatActionBar from "@/components/chat/ChatActionBar";
 import { useRoomStore } from "@/stores/useRoomStore";
 
-
-export default function ChatPage() {
+export default function ChatsPage() {
   const [rooms, setRooms] = useState<sdk.Room[]>([]);
   const client = useMatrixClient();
   const [isEditMode, setIsEditMode] = useState(false);
