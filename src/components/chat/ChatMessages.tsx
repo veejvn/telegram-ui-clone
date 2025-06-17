@@ -1,14 +1,27 @@
-import React from "react";
+"use client";
+
+import React, { useEffect } from "react";
 import ChatMessage from "./ChatMessage";
 import { useTimeline } from "@/hooks/useTimeline";
 import { useChatStore } from "@/stores/useChatStore";
 
-const ChatMessages = ({ roomId }: { roomId: string }) => {
+type ChatMessagesProps = {
+  roomId: string;
+  messagesEndRef: React.RefObject<HTMLDivElement | null>;
+};
+
+const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
   useTimeline(roomId);
 
   const messagesByRoom = useChatStore((state) => state.messagesByRoom);
 
   const messages = messagesByRoom[roomId] ?? [];
+
+  useEffect(() => {
+    if (messagesEndRef?.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "auto" });
+    }
+  }, [messages]);
 
   return (
     <>
@@ -22,8 +35,12 @@ const ChatMessages = ({ roomId }: { roomId: string }) => {
           </p>
         </div> */}
         {messages.map((msg) => (
-          <ChatMessage key={msg.eventId} msg={msg} />
+          <div key={msg.eventId}>
+            <ChatMessage  msg={msg} />
+            <div ref={messagesEndRef} />
+          </div>
         ))}
+        {/* <div className="flex justify-end text-red-500">{lastMessage.status}</div> */}
       </div>
     </>
   );

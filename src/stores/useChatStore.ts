@@ -1,17 +1,21 @@
 import { create } from "zustand";
 
+type MessageStatus = "sending" | "sent" | "delivered" | "read";
+
 export type Message = {
   eventId: string;
   time: string;
-  senderDisplayName: string | undefined,
+  senderDisplayName?: string | undefined,
   sender: string | undefined;
   text: string;
+  status: MessageStatus;
 };
 
 type ChatStore = {
   messagesByRoom: Record<string, Message[]>;
   addMessage: (roomId: string, msg: Message) => void;
   setMessages: (roomId: string, msgs: Message[]) => void;
+  updateMessageStatus: (roomId: string, localId: string | null, eventId: string, status: MessageStatus) => void;
 };
 
 export const useChatStore = create<ChatStore>((set, get) => ({
@@ -35,4 +39,18 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       },
     });
   },
+
+  updateMessageStatus: (roomId, localId, eventId, status) => {
+    const messages = get().messagesByRoom[roomId] || [];
+    return {
+      messagesByRoom: {
+        ...get().messagesByRoom,
+        [roomId]: messages.map(msg =>
+          (msg.eventId === localId || msg.eventId === eventId)
+            ? { ...msg, eventId, status }
+            : msg
+        ),
+      },
+    };
+  }
 }));

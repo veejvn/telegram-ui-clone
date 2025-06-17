@@ -11,6 +11,7 @@ import { useTheme } from "next-themes";
 import React, { useEffect, useState } from "react";
 import { useClientStore } from "@/stores/useClientStore";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
+import { getLastSeen } from "@/utils/chat/getLastSeen";
 
 export const ChatListItem = ({ room }: { room: sdk.Room }) => {
   const themes = useTheme();
@@ -31,9 +32,18 @@ export const ChatListItem = ({ room }: { room: sdk.Room }) => {
       }
     };
 
+    const onPresence = (event: any, member: any) => {
+      // Nếu presence của thành viên còn lại thay đổi, cập nhật UI
+      if (room.getJoinedMembers().some(m => m.userId === member.userId)) {
+        setRefresh(prev => prev + 1);
+      }
+    };
+
     client.on("Room.timeline" as any, onTimeline);
+    client.on("RoomMember.presence" as any, onPresence);
     return () => {
       client.removeListener("Room.timeline" as any, onTimeline);
+      client.removeListener("RoomMember.presence" as any, onPresence);
     };
   }, [client, room.roomId]);
 
@@ -44,7 +54,13 @@ export const ChatListItem = ({ room }: { room: sdk.Room }) => {
     "crop",
     false
   );
+
   const { content, time, sender } = getLastMessagePreview(room);
+
+  const lastSeenDate = client ? getLastSeen(room, client) : null;
+  const lastSeenText = lastSeenDate
+    ? `Online ${Math.floor((Date.now() - lastSeenDate.getTime()) / 60000)} phút trước`
+    : "Không rõ lần cuối online";
 
   return (
     <div className="flex px-2 py-2">
@@ -65,6 +81,7 @@ export const ChatListItem = ({ room }: { room: sdk.Room }) => {
 
       <div className="flex-1 ps-2.5">
         <h1 className="text-[18px] mb-0.5">{room.name}</h1>
+        <p className="text-xs text-muted-foreground">{lastSeenText}</p>
         <p className="text-sm ">{sender}</p>
         <p className="text-sm text-muted-foreground">{content}</p>
       </div>
