@@ -38,6 +38,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
       .catch((res) => {
         console.log(res.error.Message);
       });
+    setShowEmojiPicker((prev) => (!prev))
   };
 
   const handleEmojiClick = (emojiData: any) => {
@@ -77,22 +78,16 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
           style={{ lineHeight: "1.5rem" }}
         />
 
-        {/* {text.trim() && ( */}
-          <Smile
-            onClick={() => setShowEmojiPicker((prev) => !prev)}
-            className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
-            size={30}
-          />
-        {/* )} */}
+        <Smile
+          onClick={() => setShowEmojiPicker((prev) => !prev)}
+          className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
+          size={30}
+        />
 
         {/* <Eclipse
           className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
           size={30}
         /> */}
-
-        {/* {!text.trim() && (
-          <Eclipse className="text-[#858585] cursor-default" size={30} />
-        )} */}
 
         {showEmojiPicker && (
           <div className="absolute bottom-12 left-6 z-50">
