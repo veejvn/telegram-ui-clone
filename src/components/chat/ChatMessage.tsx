@@ -3,7 +3,7 @@ import { MatrixAuthService } from "@/services/matrixAuthService";
 import { Message } from "@/stores/useChatStore";
 import { formatMsgTime } from "@/utils/chat/formatMsgTime";
 import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
-import { CheckCheck } from "lucide-react";
+import { Check, CheckCheck, Eye } from "lucide-react";
 import { useTheme } from "next-themes";
 import React, { useEffect, useState } from "react";
 
@@ -23,16 +23,18 @@ const ChatMessage = ({ msg }: { msg: Message }) => {
     }
   }, [msg]);
 
+  //console.log(msg);
+
   return (
     <div className={`flex ${isSender ? "justify-end" : "justify-start"} my-2`}>
       <div className="flex flex-col max-w-[90%] w-fit">
-        <div
+        {/* <div
           className={`flex text-lg text-black mb-1 ml-1 ${
             isSender && "justify-end"
           }`}
         >
           {msg.senderDisplayName}
-        </div>
+        </div> */}
         {!isOnlyEmojis(msg.text) ? (
           <div
             className={`rounded-lg px-3 py-2
@@ -62,7 +64,9 @@ const ChatMessage = ({ msg }: { msg: Message }) => {
               }`}
             >
               {formatMsgTime(msg.time)}
-              {isSender && <CheckCheck size={17} />}
+              {isSender && (
+                msg.status === "read" ? <CheckCheck size={14}/> : <Check size={14}/>
+              )}
             </div>
           </div>
         ) : (
@@ -90,7 +94,9 @@ const ChatMessage = ({ msg }: { msg: Message }) => {
               px-2 py-0.5 mt-3.5 flex gap-1 rounded-full"
               >
                 {formatMsgTime(msg.time)}
-                {isSender && <CheckCheck size={17} />}
+                {isSender && (
+                  msg.status === "read" ? <CheckCheck size={14}/> : <Check size={14}/>
+                )}
               </p>
             </div>
           </div>
