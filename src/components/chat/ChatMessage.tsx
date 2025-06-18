@@ -5,6 +5,7 @@ import { formatMsgTime } from "@/utils/chat/formatMsgTime";
 import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
 import { Check, CheckCheck, Eye } from "lucide-react";
 import { useTheme } from "next-themes";
+import Image from "next/image";
 import React, { useEffect, useState } from "react";
 
 const authServie = new MatrixAuthService();
@@ -23,7 +24,7 @@ const ChatMessage = ({ msg }: { msg: Message }) => {
     }
   }, [msg]);
 
-  //console.log(msg);
+  console.log(msg)
 
   return (
     <div className={`flex ${isSender ? "justify-end" : "justify-start"} my-2`}>
@@ -38,16 +39,16 @@ const ChatMessage = ({ msg }: { msg: Message }) => {
         {!isOnlyEmojis(msg.text) ? (
           <div
             className={`rounded-lg px-3 py-2
-        ${
-          theme === "dark"
-            ? isSender
-              ? "text-white bg-[#6f42c1]"
-              : "text-white bg-[#282434]"
-            : isSender
-            ? "text-black bg-[#DCF8C6]"
-            : "text-black bg-white border border-gray-300"
-        }
-        `}
+          ${
+            theme === "dark"
+              ? isSender
+                ? "text-white bg-[#6f42c1]"
+                : "text-white bg-[#282434]"
+              : isSender
+              ? "text-black bg-[#DCF8C6]"
+              : "text-black bg-white border border-gray-300"
+          }
+          `}
           >
             <p className="whitespace-pre-wrap break-words leading-snug">
               {msg.text}
@@ -69,38 +70,39 @@ const ChatMessage = ({ msg }: { msg: Message }) => {
               )}
             </div>
           </div>
-        ) : (
-          <div className={`rounded-lg py-2`}>
-            <p
-              className="whitespace-pre-wrap break-words 
-            leading-snug text-end text-7xl"
-            >
-              {msg.text}
-            </p>
-            <div
-              className={`flex items-center gap-1 text-xs ${
-                theme === "dark"
-                  ? isSender
+          ) : (
+            <div className={`rounded-lg py-2`}>
+              <p
+                className="whitespace-pre-wrap break-words 
+              leading-snug text-end text-7xl"
+              >
+                {msg.text}
+              </p>
+              <div
+                className={`flex items-center gap-1 text-xs ${
+                  theme === "dark"
+                    ? isSender
+                      ? "text-white justify-end"
+                      : "text-white"
+                    : isSender
                     ? "text-white justify-end"
                     : "text-white"
-                  : isSender
-                  ? "text-white justify-end"
-                  : "text-white"
-              }`}
-            >
-              <p
-                className="backdrop-blur-sm backdrop-brightness-70 
-                overflow-hidden items-center
-              px-2 py-0.5 mt-3.5 flex gap-1 rounded-full"
+                }`}
               >
-                {formatMsgTime(msg.time)}
-                {isSender && (
-                  msg.status === "read" ? <CheckCheck size={14}/> : <Check size={14}/>
-                )}
-              </p>
+                <p
+                  className="backdrop-blur-sm backdrop-brightness-70 
+                  overflow-hidden items-center
+                px-2 py-0.5 mt-3.5 flex gap-1 rounded-full"
+                >
+                  {formatMsgTime(msg.time)}
+                  {isSender && (
+                    msg.status === "read" ? <CheckCheck size={14}/> : <Check size={14}/>
+                  )}
+                </p>
+              </div>
             </div>
-          </div>
-        )}
+          )
+        }
       </div>
     </div>
   );

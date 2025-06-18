@@ -1,9 +1,10 @@
-import { MatrixClient } from "matrix-js-sdk";
+"use client"
+import * as sdk from "matrix-js-sdk";
 import { create } from "zustand";
 
 export interface IClientState {
-  client: MatrixClient | null;
-  setClient: (client: MatrixClient) => void;
+  client: sdk.MatrixClient | null;
+  setClient: (client: sdk.MatrixClient) => void;
   clearCLient: () => void;
 }
 

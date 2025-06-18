@@ -3,7 +3,6 @@ import React, { useEffect, useState} from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { ROUTES } from "@/constants/routes";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { useClientStore } from "@/stores/useMatrixStore";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 import BottomNavigattion from "@/components/layouts/BottomNavigation";
 import { MatrixClientProvider } from "@/contexts/MatrixClientProvider";

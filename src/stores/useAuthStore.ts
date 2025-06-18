@@ -1,4 +1,3 @@
-// src/store/auth.ts
 import { getLS } from '@/tools/localStorage.tool'
 import { create } from 'zustand'
 

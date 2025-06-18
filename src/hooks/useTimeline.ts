@@ -10,7 +10,7 @@ import { sendReadReceipt } from "@/utils/chat/sendReceipt";
 export const useTimeline = (roomId: string) => {
   const addMessage = useChatStore((state) => state.addMessage);
   const setMessage = useChatStore((state) => state.setMessages);
-  const updateMessageStatus = useChatStore((state) => state.updateMessageStatus)
+  const updateLastSeen = useChatStore((state) => state.updateLastSeen);
   const client = useMatrixClient();
 
   useEffect(() => {
@@ -27,16 +27,51 @@ export const useTimeline = (roomId: string) => {
     const onTimeline = (event: sdk.MatrixEvent, room: any, toStart: boolean) => {
       if (toStart || room.roomId !== roomId) return;
       if (event.getType() !== "m.room.message") return;
-
-      addMessage(roomId, {
-        eventId: event.getId() ?? " ",
-        sender: event.getSender(),
-        senderDisplayName: event.sender?.name ?? event.getSender(),
-        text: event.getContent().body,
-        time: new Date(event.getTs()).toLocaleString(),
-        status: "sent"
-      });
+      
       const userId = client.getUserId();
+      const sender = event.getSender();
+      const ts = event.getTs();
+      const content = event.getContent();
+
+      // addMessage(roomId, {
+      //   eventId: event.getId() ?? " ",
+      //   sender: event.getSender(),
+      //   senderDisplayName: event.sender?.name ?? event.getSender(),
+      //   text: event.getContent().body,
+      //   time: new Date(event.getTs()).toLocaleString(),
+      //   status: "sent"
+      // });
+
+      if (content.msgtype === "m.image") {
+        // Tin nhắn là hình ảnh
+        addMessage(roomId, {
+          eventId: event.getId() ?? " ",
+          sender: sender,
+          senderDisplayName: event.sender?.name ?? sender,
+          imageUrl: client.mxcUrlToHttp(content.url, 800, 800, "scale"), // Tạo URL từ mxc
+          text: content.body,
+          time: new Date(ts).toLocaleString(),
+          status: "sent",
+          type: "image",
+        });
+        console.log("Có ảnh")
+      } else if (content.msgtype === "m.text") {
+        // Tin nhắn văn bản
+        addMessage(roomId, {
+          eventId: event.getId() ?? " ",
+          sender: sender,
+          senderDisplayName: event.sender?.name ?? sender,
+          text: content.body,
+          time: new Date(ts).toLocaleString(),
+          status: "sent",
+          type: "text",
+        });
+      }
+
+      if (sender && sender !== userId) {
+        updateLastSeen(roomId, sender, ts);
+      }
+
       if(event.getSender() !== userId){
         const events = room.getLiveTimeline().getEvents();
         const lastEvent = events.length > 0 ? events[events.length - 1] : null;
@@ -58,38 +93,6 @@ export const useTimeline = (roomId: string) => {
       if (res.success && res.timeline) {
         setMessage(roomId, res.timeline);
       }
-
-      // // Lấy tất cả tin nhắn của mình trong phòng
-      // const myMessages = (useChatStore.getState().messagesByRoom[roomId] || [])
-      //   .filter((msg) => msg.sender === userId);
-
-      // myMessages.forEach((msg) => {
-      //   //Tìm MatrixEvent tương ứng với eventId
-      //   const matrixEvent = room.getLiveTimeline().getEvents().find(
-      //     (e: any) => typeof e.getId === "function" && e.getId() === msg.eventId
-      //   );
-      //   if (!matrixEvent) return;
-      //   // Lấy tất cả receipt cho eventId này
-      //   const receipts = room.getReceiptsForEvent(matrixEvent) as any[] | undefined;
-      //   //console.log(receipts);
-      //   if (receipts && receipts.length > 0) {
-      //     receipts.forEach((receipt) => {
-      //       if (receipt.userId === userId) return; // bỏ qua chính mình
-      //       if (receipt.type === "m.read" || receipt.type === "m.delivered") {
-      //         const newStatus = receipt.type === "m.read" ? "read" : "delivered";
-      //         if (msg.status !== newStatus) {
-      //           updateMessageStatus(
-      //             roomId,
-      //             null,
-      //             msg.eventId,
-      //             newStatus
-      //           );
-      //           console.log("update message status")
-      //         }
-      //       }
-      //     });
-      //   }
-      // });
     };
 
     client.on("Room.receipt" as any, onReceipt);

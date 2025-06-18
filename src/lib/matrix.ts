@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client"
 import { MatrixAuthService } from "@/services/matrixAuthService";
 import { useClientStore } from "@/stores/useClientStore";
 import * as sdk from "matrix-js-sdk";
