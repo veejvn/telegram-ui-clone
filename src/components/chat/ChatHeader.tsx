@@ -9,8 +9,9 @@ import React from "react";
 import * as sdk from "matrix-js-sdk";
 
 const ChatHeader = ({ room }: { room: sdk.Room }) => {
+  const HOMESERVER_URL: string = process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
   const avatarUrl = room.getAvatarUrl(
-    "https://matrix.org", // baseUrl
+    HOMESERVER_URL, // baseUrl
     60, // width
     60, // height
     "crop", // resize method

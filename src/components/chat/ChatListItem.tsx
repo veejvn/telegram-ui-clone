@@ -9,7 +9,6 @@ import { CheckCheck } from "lucide-react";
 import * as sdk from "matrix-js-sdk";
 import { useTheme } from "next-themes";
 import React, { useEffect, useState } from "react";
-import { useClientStore } from "@/stores/useClientStore";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { getLastSeen } from "@/utils/chat/getLastSeen";
 
@@ -28,6 +27,7 @@ export const ChatListItem = ({
 }: ChatListItemProps) => {
   const themes = useTheme();
   const client = useMatrixClient();
+  const HOMESERVER_URL: string = process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
 
   // ⚡️ trigger render
   const [_, setRefresh] = useState(0);
@@ -60,7 +60,7 @@ export const ChatListItem = ({
   }, [client, room.roomId]);
 
   const avatarUrl = room.getAvatarUrl(
-    "https://matrix.org",
+    HOMESERVER_URL,
     60,
     60,
     "crop",
