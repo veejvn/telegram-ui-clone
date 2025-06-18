@@ -5,18 +5,14 @@ import { ERROR_MESSAGES } from "@/constants/error-messages"
 import { LoginFormData, RegisterFormData } from "@/types/auth";
 import { getLS, removeLS, setLS } from "@/tools/localStorage.tool";
 import { ILoginResponse } from "@/types/matrix";
-import { useClientStore } from "@/stores/useMatrixStore";
 
-// Matrix homeserver URL - replace with your homeserver
-//const HOMESERVER_URL: string = process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
-const HOMESERVER_URL: string = "https://matrix.org";
+const HOMESERVER_URL: string = process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
 const SERVER_URL: string = process.env.NEXT_PUBLIC_SERVER_URL ?? "http://localhost:3000";
 
 let clientInstance: sdk.MatrixClient | null = null;
 
 export class MatrixAuthService {
     private client: sdk.MatrixClient
-    setClient = useClientStore.getState().setClient;
 
     constructor() {
         if (typeof window === 'undefined') {

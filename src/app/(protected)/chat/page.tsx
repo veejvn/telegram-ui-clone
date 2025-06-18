@@ -7,12 +7,10 @@ import { ChatList } from "@/components/chat/ChatList";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { getUserRooms } from "@/services/chatService";
-import { useClientStore } from "@/stores/useClientStore";
 import * as sdk from "matrix-js-sdk";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import ChatEditButton from "@/components/chat/ChatEditButton";
 import ChatActionBar from "@/components/chat/ChatActionBar";
-import { useRoomStore } from "@/stores/useRoomStore";
 
 export default function ChatsPage() {
   const [rooms, setRooms] = useState<sdk.Room[]>([]);
