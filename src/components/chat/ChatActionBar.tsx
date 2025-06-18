@@ -3,20 +3,15 @@ export default function ChatActionBar({
   onReadAll,
   onArchive,
   onDelete,
-  onDone,
 }: {
   selectedCount: number;
   onReadAll: () => void;
   onArchive: () => void;
   onDelete: () => void;
-  onDone: () => void;
 }) {
   return (
-    <div className="fixed bottom-0 left-0 w-full bg-white border-t flex justify-between items-center px-4 py-3 z-50">
-      <button className="text-blue-500 font-semibold" onClick={onDone}>
-        Done
-      </button>
-      <div className="flex gap-8">
+    <div className="fixed bottom-0 left-0 w-full bg-white border-t flex justify-center items-center px-4 py-3 z-50">
+      <div className="flex w-full max-w-xs justify-between">
         <button
           className={`text-blue-500 font-semibold ${selectedCount < 2 ? "opacity-50" : ""}`}
           disabled={selectedCount < 2}
