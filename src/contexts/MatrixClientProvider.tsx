@@ -11,7 +11,8 @@ import * as sdk from "matrix-js-sdk";
 import { getLS } from "@/tools/localStorage.tool";
 import { waitForClientReady } from "@/lib/matrix";
 
-const HOMESERVER_URL = process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
+const HOMESERVER_URL =
+  process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
 
 export const MatrixClientContext = createContext<sdk.MatrixClient | null>(null);
 
