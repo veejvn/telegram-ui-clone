@@ -12,7 +12,16 @@ export default function LoginPage() {
   const login = useAuthStore((state) => state.login);
 
   // Callback khi login thành công
-  const handleSuccess = (token: string) => {
+  const handleSuccess = (token: string, rememberMe?: boolean) => {
+    if (typeof window !== 'undefined') {
+      if (rememberMe) {
+        localStorage.setItem('matrix_access_token', token);
+        sessionStorage.removeItem('matrix_access_token');
+      } else {
+        sessionStorage.setItem('matrix_access_token', token);
+        localStorage.removeItem('matrix_access_token');
+      }
+    }
     login(token);
   };
 

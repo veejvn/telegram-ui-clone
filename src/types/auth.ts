@@ -16,11 +16,12 @@ export interface LoginResponse {
     success: boolean;
     user?: User;
     error?: string;
-} 
+}
 
 export interface LoginFormData {
     username: string;
     password: string;
+    rememberMe?: boolean;
 }
 
 export interface RegisterFormData {
@@ -29,5 +30,5 @@ export interface RegisterFormData {
 }
 
 export interface LoginFormProps {
-  onSuccess: (token: string) => void
+    onSuccess: (token: string) => void
 }

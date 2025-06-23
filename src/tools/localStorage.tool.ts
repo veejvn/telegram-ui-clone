@@ -1,7 +1,7 @@
 function setLS(key: string, value: any): any {
   if (typeof value === 'undefined' || value === null) {
-      console.warn(`Attempted to set localStorage key '${key}' with undefined or null value.`);
-      return value;
+    console.warn(`Attempted to set localStorage key '${key}' with undefined or null value.`);
+    return value;
   }
   try {
     localStorage.setItem(key, JSON.stringify(value));
@@ -19,7 +19,12 @@ function getLS(key: string, defaultValue: any = null): any {
       localStorage.setItem(key, JSON.stringify(defaultValue));
       return defaultValue;
     }
-    return JSON.parse(storedValue);
+    // Nếu là JSON, parse, còn không thì trả về chuỗi
+    try {
+      return JSON.parse(storedValue);
+    } catch {
+      return storedValue;
+    }
   } catch (error) {
     console.error(`Error getting localStorage key '${key}':`, error);
     return defaultValue;
