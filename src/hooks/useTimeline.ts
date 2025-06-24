@@ -45,9 +45,11 @@ export const useTimeline = (roomId: string) => {
       if (content.msgtype === "m.image") {
         type = "image";
         const mxcUrl = content.url;
+        console.log('Original MXC URL:', mxcUrl);
         if (mxcUrl) {
-          imageUrl = client.mxcUrlToHttp(mxcUrl);
+          imageUrl =  client.mxcUrlToHttp(mxcUrl, 800, 600, 'scale', true);
         }
+        console.log('Generated HTTP URL:', imageUrl);
       } else if (content.msgtype === "m.video") {
         type = "video";
         if (content.url) {

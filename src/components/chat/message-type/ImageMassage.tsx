@@ -12,7 +12,7 @@ const ImageMessage = ({ msg, isSender }: MessagePros) => {
     isSender ? "text-white justify-end" : "text-white"
   );
 
-  console.log(msg)
+  //console.log(msg)
 
   return (
     <div className={`rounded-lg py-2`}>

@@ -127,11 +127,11 @@ export const getTimeline = async (
 
           if (content.msgtype === "m.image") {
             type = "image";
-            if (content.url) {
-              //console.log(content.url, client.getHomeserverUrl(), client.getUserId())
-              // const mxcUrl = content.url;
-              // imageUrl = getHttpUrlFromMxc(mxcUrl, client);
-              imageUrl = client.mxcUrlToHttp(content.url, 800, 800, "scale");
+            const mxcUrl = content.url;
+            console.log('Original MXC URL:', mxcUrl);
+            if (mxcUrl) {
+              imageUrl =  client.mxcUrlToHttp(mxcUrl, 800, 600, 'scale', true);
+              console.log(imageUrl);
             }
           } else if (content.msgtype === "m.video") {
             type = "video";
@@ -219,28 +219,19 @@ function readFileAsArrayBuffer(file: File): Promise<ArrayBuffer> {
 }
 
 const getImageDimensions = (file : File) : Promise<any>=> {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        resolve({ width: img.width, height: img.height });
-        URL.revokeObjectURL(img.src);
-      };
-      img.onerror = () => {
-        resolve({ width: 0, height: 0 });
-        URL.revokeObjectURL(img.src);
-      };
-      img.src = URL.createObjectURL(file);
-    });
-  };
-
-function getHttpUrlFromMxc(mxcUrl: string, client: sdk.MatrixClient): string | null {
-  const [, serverName, mediaId] = mxcUrl.match(/^mxc:\/\/([^/]+)\/(.+)$/) || [];
-  if (!serverName || !mediaId) return null;
-
-  const accessToken = client.getAccessToken();
-  return `https://matrix.org/_matrix/media/v3/download/${serverName}/${mediaId}?access_token=${accessToken}`;
-}
-
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      resolve({ width: img.width, height: img.height });
+      URL.revokeObjectURL(img.src);
+    };
+    img.onerror = () => {
+      resolve({ width: 0, height: 0 });
+      URL.revokeObjectURL(img.src);
+    };
+    img.src = URL.createObjectURL(file);
+  });
+};
 
 export const sendReadReceipt = async (client: sdk.MatrixClient, event: any) => {
     if (!client || !event || typeof event.getId !== "function" || typeof event.getRoomId !== "function" 
