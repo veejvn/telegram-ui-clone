@@ -1,3 +1,4 @@
+"use client"
 import { MatrixAuthService } from "@/services/matrixAuthService";
 import * as sdk from "matrix-js-sdk";
 import { formatTime } from "./formatTimeString";

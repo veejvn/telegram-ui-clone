@@ -10,7 +10,6 @@ import * as sdk from "matrix-js-sdk";
 import { useTheme } from "next-themes";
 import React, { useEffect, useState } from "react";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
-import { getLastSeen } from "@/utils/chat/getLastSeen";
 
 interface ChatListItemProps {
   room: sdk.Room;
@@ -69,24 +68,18 @@ export const ChatListItem = ({
 
   const { content, time, sender } = getLastMessagePreview(room);
 
-  const lastSeenDate = client ? getLastSeen(room, client) : null;
-  const lastSeenText = lastSeenDate
-    ? `Online ${Math.floor((Date.now() - lastSeenDate.getTime()) / 60000)} phút trước`
-    : "Không rõ lần cuối online";
-
   return (
     <div className="flex px-2 py-2 items-center">
       {isEditMode && (
-  <input
-    type="checkbox"
-    className="mr-3 w-5 h-5"
-    checked={checked}
-    onChange={onSelect}
-    onClick={e => e.stopPropagation()}
-    aria-label="checkbox"
-  />
-)}
-
+      <input
+        type="checkbox"
+        className="mr-3 w-5 h-5"
+        checked={checked}
+        onChange={onSelect}
+        onClick={e => e.stopPropagation()}
+        aria-label="checkbox"
+      />
+    )}
       <div className="w-[60px] flex justify-center items-center">
         <Avatar className="h-15 w-15">
           {avatarUrl ? (
@@ -104,7 +97,6 @@ export const ChatListItem = ({
 
       <div className="flex-1 ps-2.5">
         <h1 className="text-[18px] mb-0.5">{room.name}</h1>
-        <p className="text-xs text-muted-foreground">{lastSeenText}</p>
         <p className="text-sm ">{sender}</p>
         <p className="text-sm text-muted-foreground">{content}</p>
       </div>
