@@ -3,24 +3,27 @@ import { create } from 'zustand'
 
 interface AuthState {
     isLogging: boolean
-    accessToken?: string
-    login: (accessToken: string) => void
+    accessToken: string | null
+    userId: string | null,
+    login: (accessToken: string, userId: string) => void
     logout: () => void
 }
 
 export const useAuthStore = create<AuthState>((set) => {
     const storedToken = typeof window !== 'undefined' ? getLS("matrix_access_token") : null
+    const storedUserId = typeof window !== 'undefined' ? getLS("matrix_user_id") : null
 
     return {
         isLogging: !!storedToken,
         accessToken: storedToken ?? undefined,
+        userId: storedUserId,
 
-        login: (accessToken) => {
-            set({ isLogging: true, accessToken })
+        login: (accessToken, userId) => {
+            set({ isLogging: true, accessToken, userId })
         },
 
         logout: () => {
-            set({ isLogging: false, accessToken: undefined })
+            set({ isLogging: false, accessToken: null, userId: null })
         },
     }
 })

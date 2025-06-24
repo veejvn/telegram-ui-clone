@@ -79,7 +79,7 @@ export const getTimeline = async (
     const userId = client.getUserId()
     const messages = room.getLiveTimeline().getEvents().slice(-20) || [];
 
-    // 1. Tìm eventId cuối cùng đã được đọc (có receipt "m.read" từ user khác)
+    // Tìm eventId cuối cùng đã được đọc (có receipt "m.read" từ user khác)
     let lastReadEventId: string | null = null;
     for (let i = messages.length - 1; i >= 0; i--) {
       const event = messages[i];
@@ -128,6 +128,9 @@ export const getTimeline = async (
           if (content.msgtype === "m.image") {
             type = "image";
             if (content.url) {
+              //console.log(content.url, client.getHomeserverUrl(), client.getUserId())
+              // const mxcUrl = content.url;
+              // imageUrl = getHttpUrlFromMxc(mxcUrl, client);
               imageUrl = client.mxcUrlToHttp(content.url, 800, 800, "scale");
             }
           } else if (content.msgtype === "m.video") {
@@ -171,40 +174,80 @@ export async function sendImageMessage(
   roomId: string,
   file: File
 ) {
-  const reader = new FileReader();
+  try {
+    const content = await readFileAsArrayBuffer(file);
 
+    const uploadResponse = await client.uploadContent(content, {
+      name: file.name,
+      type: file.type,
+    });
+
+    const dimentions = await getImageDimensions(file);
+
+    const imageMessage = {
+      msgtype: "m.image",
+      body: file.name,
+      url: uploadResponse,
+      info: {
+        mimetype: file.type,
+        size: file.size,
+        w: dimentions.width,
+        h: dimentions.height,
+      },
+    };
+
+    await client.sendMessage(roomId, imageMessage as any);
+  } catch (err) {
+    console.error("sendImageMessage error:", err);
+    throw err;
+  }
+}
+
+function readFileAsArrayBuffer(file: File): Promise<ArrayBuffer> {
   return new Promise((resolve, reject) => {
-    reader.onload = async () => {
-      try {
-        const content = reader.result as ArrayBuffer;
-
-        const uploadRes = await client.uploadContent(content, {
-          name: file.name,
-          type: file.type,
-        });
-
-        const imageMessage = {
-          msgtype: "m.image",
-          body: file.name,
-          url: uploadRes.content_uri,
-          info: {
-            mimetype: file.type,
-            size: file.size,
-            w: 500,
-            h: 500,
-          },
-        };
-        const event = await client.sendMessage(roomId, imageMessage as any);
-        resolve(event);
-      } catch (err) {
-        reject(err);
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (reader.result) {
+        resolve(reader.result as ArrayBuffer);
+      } else {
+        reject(new Error("Empty result from FileReader"));
       }
     };
-
-    reader.onerror = () => {
-      reject(new Error("File read error"));
-    };
-
+    reader.onerror = () => reject(reader.error || new Error("Failed to read file"));
     reader.readAsArrayBuffer(file);
   });
 }
+
+const getImageDimensions = (file : File) : Promise<any>=> {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        resolve({ width: img.width, height: img.height });
+        URL.revokeObjectURL(img.src);
+      };
+      img.onerror = () => {
+        resolve({ width: 0, height: 0 });
+        URL.revokeObjectURL(img.src);
+      };
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+function getHttpUrlFromMxc(mxcUrl: string, client: sdk.MatrixClient): string | null {
+  const [, serverName, mediaId] = mxcUrl.match(/^mxc:\/\/([^/]+)\/(.+)$/) || [];
+  if (!serverName || !mediaId) return null;
+
+  const accessToken = client.getAccessToken();
+  return `https://matrix.org/_matrix/media/v3/download/${serverName}/${mediaId}?access_token=${accessToken}`;
+}
+
+
+export const sendReadReceipt = async (client: sdk.MatrixClient, event: any) => {
+    if (!client || !event || typeof event.getId !== "function" || typeof event.getRoomId !== "function" 
+      || !event.getId() || !event.getRoomId()) return;
+    try {
+      await client.sendReadReceipt(event);
+    } catch (err) {
+      console.error("Failed to send read receipt:", err);
+    }
+};

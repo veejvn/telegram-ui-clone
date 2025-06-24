@@ -11,6 +11,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   const [text, setText] = useState("");
   const [isMultiLine, setIsMultiLine] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const client = useMatrixClient();
@@ -18,6 +19,9 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
+      if(textareaRef.current){
+        textareaRef.current.value = ""
+      }
       e.preventDefault();
       handleSend();
     }
@@ -31,7 +35,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
       .then((res) => {
         if (res.success) {
           console.log("Sent Message: ", text);
-          setText("");
+          //setText("");
         } else {
           console.log("Send Failed !");
         }
@@ -47,9 +51,9 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     setText((prev) => prev + emojiData.emoji);
   };
 
-  const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChangeFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !client) return;
+    if (!file || !client || file.type.startsWith('image/')) return;
 
     try {
       await sendImageMessage(client, roomId, file);
@@ -82,7 +86,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
         ref={inputRef}
         type="file"
         accept="image/*"
-        onChange={handleChange}
+        onChange={handleChangeFile}
         className="hidden"
         aria-label="file"
       />
@@ -101,16 +105,18 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
           className="flex-1 h-auto resize-none bg-transparent outline-none px-3 max-h-[6rem] overflow-y-auto text-lg text-black dark:text-white scrollbar-thin"
         />
 
-        <Smile
+        {/* <Smile
           onClick={() => setShowEmojiPicker((prev) => !prev)}
           className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
           size={30}
+        /> */}
+
+        <Eclipse
+          onClick={() => setShowEmojiPicker((prev) => !prev)}
+          className="text-[#858585] cursor-default"
+          size={30}
         />
 
-        {/* <Eclipse
-          className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
-          size={30}
-        /> */}
 
         {showEmojiPicker && (
           <div className="absolute bottom-12 left-6 z-50">

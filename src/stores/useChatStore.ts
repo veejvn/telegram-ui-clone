@@ -62,6 +62,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       },
     };
   },
+  
   updateLastSeen: (roomId, userId, timestamp) => {
     set((state) => {
       const roomLastSeen = state.lastSeenByRoom[roomId] || {};
