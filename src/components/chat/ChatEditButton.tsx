@@ -1,12 +1,12 @@
-import { useState, useRef, useEffect } from "react";
+import React from "react";
 
-export default function ChatEditButton({ onEdit }: { onEdit: () => void }) {
+export default function ChatEditButton({ isEditMode, onEdit, onDone }) {
   return (
     <button
-      className="text-blue-500 px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-gray-800"
-      onClick={onEdit}
+      className="text-blue-500 font-medium w-10 cursor-pointer"
+      onClick={isEditMode ? onDone : onEdit}
     >
-      Edit
+      {isEditMode ? "Done" : "Edit"}
     </button>
   );
 }

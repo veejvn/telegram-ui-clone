@@ -26,6 +26,7 @@ export const ChatListItem = ({
 }: ChatListItemProps) => {
   const themes = useTheme();
   const client = useMatrixClient();
+  const HOMESERVER_URL: string = process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
 
   // ⚡️ trigger render
   const [_, setRefresh] = useState(0);
@@ -58,7 +59,7 @@ export const ChatListItem = ({
   }, [client, room.roomId]);
 
   const avatarUrl = room.getAvatarUrl(
-    "https://matrix.org",
+    HOMESERVER_URL,
     60,
     60,
     "crop",

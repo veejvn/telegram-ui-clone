@@ -1,4 +1,5 @@
 "use client"
+
 import { MatrixAuthService } from "@/services/matrixAuthService";
 import { useClientStore } from "@/stores/useClientStore";
 import * as sdk from "matrix-js-sdk";
@@ -39,11 +40,12 @@ export const waitForClientReady = (client: sdk.MatrixClient): Promise<void> => {
 export const setupAuthedClient = async (): Promise<typeof client | null> => {
   const authServie = new MatrixAuthService();
   const { userId, token } = authServie.getCurrentUser();
+  const HOMESERVER_URL: string = process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
 
   if (!token || !userId) return null;
 
   const client = sdk.createClient({
-    baseUrl: "https://matrix.org",
+    baseUrl: HOMESERVER_URL,
     accessToken: token,
     userId: userId,
   });

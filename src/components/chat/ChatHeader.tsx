@@ -14,6 +14,7 @@ import { formatRelativeTime } from "@/utils/chat/formatRelativeTime";
 import { useChatStore } from "@/stores/useChatStore";
 
 const ChatHeader = ({ room }: { room: sdk.Room }) => {
+  const HOMESERVER_URL: string = process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
   const client = useMatrixClient();
   const lastSeenByRoom = useChatStore((state) => state.lastSeenByRoom);
   const myUserId = client?.getUserId();
@@ -22,7 +23,7 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
   const lastSeenMap = lastSeenByRoom[roomId] || {};
 
   const avatarUrl = room.getAvatarUrl(
-    "https://matrix.org", // baseUrl
+    HOMESERVER_URL, // baseUrl
     60, // width
     60, // height
     "crop", // resize method

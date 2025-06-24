@@ -6,7 +6,6 @@ export interface IClientState {
   client: sdk.MatrixClient | null;
   setClient: (client: sdk.MatrixClient) => void;
   clearCLient: () => void;
-  restoreClient: () => void;
 }
 
 export interface ILoginResponse {

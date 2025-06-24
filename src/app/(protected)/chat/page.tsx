@@ -75,8 +75,11 @@ export default function ChatsPage() {
     <div>
       <div className="sticky bg-white dark:bg-black top-0 z-10">
         <div className="flex items-center justify-between px-4 py-2">
-          {/* <span className="text-blue-500">Edit</span> */}
-          <ChatEditButton onEdit={() => setIsEditMode(true)} />
+           <ChatEditButton
+              isEditMode={isEditMode}
+              onEdit={() => setIsEditMode(true)}
+              onDone={handleDone}
+            />
           <h1 className="text-md font-semibold">Chats</h1>
           <div className="flex gap-3">
             <div className="text-blue-500">+</div>
@@ -128,7 +131,6 @@ export default function ChatsPage() {
           onReadAll={handleReadAll}
           onArchive={handleArchive}
           onDelete={handleDelete}
-          onDone={handleDone}
         />
       )}
     </div>
