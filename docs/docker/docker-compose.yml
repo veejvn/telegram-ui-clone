@@ -1,0 +1,13 @@
+version: '3.7'
+
+services:
+  synapse:
+    image: matrixdotorg/synapse:latest
+    container_name: synapse
+    volumes:
+      - ./data:/data
+    environment:
+      - SYNAPSE_SERVER_NAME=localhost
+      - SYNAPSE_REPORT_STATS=yes
+    ports:
+      - "8008:8008"
