@@ -64,17 +64,14 @@ export class MatrixAuthService {
 
     // Đăng ký tài khoản mới
     async register({ username, password }: RegisterFormData): Promise<any> {
+        // Kiểm tra xem username có hợp lệ không (chỉ cho phép chữ cái, số, dấu gạch dưới)
+        if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+            throw new Error("Username can only contain letters, numbers, and underscores");
+        }
+        if (username.length < 3 || username.length > 20) {
+            throw new Error("Username must be between 3 and 20 characters");
+        }
         try {
-            // Kiểm tra xem username có hợp lệ không (chỉ cho phép chữ cái, số, dấu gạch dưới)
-            if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-                throw new Error("Username chỉ được chứa chữ cái, số và dấu gạch dưới");
-            }
-
-            // Kiểm tra độ dài username
-            if (username.length < 3 || username.length > 20) {
-                throw new Error("Username phải có độ dài từ 3-20 ký tự");
-            }
-
             const registerResponse = await this.client.registerRequest({
                 username,
                 password,
@@ -82,44 +79,23 @@ export class MatrixAuthService {
                     type: "m.login.dummy",
                 },
                 initial_device_display_name: "Web Client"
-            })
-
+            });
             if (registerResponse.access_token) {
                 setLS("matrix_access_token", registerResponse.access_token);
                 setLS("matrix_user_id", registerResponse.user_id);
-
-                // Tạo client mới với token đã đăng ký
                 clientInstance = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: registerResponse.access_token,
                     userId: registerResponse.user_id
                 });
             }
-
             return {
                 success: true,
                 token: registerResponse.access_token,
                 userId: registerResponse.user_id
             };
-        } catch (error: any) {
-            console.error("Registration error:", error)
-
-            // Xử lý các lỗi cụ thể từ Matrix server
-            if (error.errcode === "M_USER_IN_USE") {
-                throw new Error("Username đã được sử dụng");
-            } else if (error.errcode === "M_INVALID_USERNAME") {
-                throw new Error("Username không hợp lệ");
-            } else if (error.errcode === "M_EXCLUSIVE") {
-                throw new Error("Username đã tồn tại");
-            } else if (error.errcode === "M_FORBIDDEN") {
-                throw new Error("Đăng ký bị từ chối bởi server");
-            } else if (error.errcode === "M_UNKNOWN") {
-                throw new Error("Lỗi không xác định từ server");
-            } else if (error.message) {
-                throw new Error(error.message);
-            } else {
-                throw new Error("Có lỗi xảy ra khi đăng ký");
-            }
+        } catch (error) {
+            throw error;
         }
     }
 
