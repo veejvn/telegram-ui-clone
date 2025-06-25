@@ -42,6 +42,7 @@
     "react-minimal-pie-chart": "^9.1.0",
     "react-native": "^0.79.2",
     "react-native-web": "^0.20.0",
+    "react-swipeable-list": "^1.10.0",
     "sonner": "^2.0.5",
     "tailwind-merge": "^3.3.0",
     "tailwind-variants": "^1.0.0",

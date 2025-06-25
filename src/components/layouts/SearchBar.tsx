@@ -1,27 +1,50 @@
 "use client";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import SearchContent from "@/components/layouts/SearchContent";
 import { searchMatrixUsers } from "@/services/matrixUserSearch";
-import { useMatrixClient } from "@/contexts/MatrixClientProvider"; // Import hook lấy client
+import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 
 const SearchBar = () => {
-  const client = useMatrixClient(); // Lấy client từ context
+  const client = useMatrixClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [messageResults, setMessageResults] = useState<any[]>([]);
 
   useEffect(() => {
+    const removeVietnameseTones = (str: string) =>
+      str
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+
     if (searchTerm.length > 1 && client) {
       setLoading(true);
-      searchMatrixUsers(client, searchTerm)
+      const noToneTerm = removeVietnameseTones(searchTerm);
+
+      searchMatrixUsers(client, searchTerm).then((res) =>
+        setSearchResults(res)
+      );
+
+      client
+        .searchMessageText({ query: searchTerm })
         .then((res) => {
-          setSearchResults(res);
+          const rawResults = res?.search_categories?.room_events?.results || [];
+          const filteredMessages = rawResults.filter((msg: any) => {
+            const content = msg?.result?.content?.body || "";
+            return (
+              content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              removeVietnameseTones(content).includes(noToneTerm)
+            );
+          });
+          setMessageResults(filteredMessages);
         })
         .finally(() => setLoading(false));
     } else {
       setSearchResults([]);
+      setMessageResults([]);
       setLoading(false);
     }
   }, [searchTerm, client]);
@@ -30,19 +53,38 @@ const SearchBar = () => {
     <div className="relative">
       <div className="px-4 py-2">
         <div className="relative border rounded-xl bg-white dark:bg-neutral-900">
+          {/* Icon search trái */}
           <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400 dark:text-gray-500" />
+
+          {/* Input */}
           <Input
             type="text"
             placeholder="Search user..."
-            className="pl-10 border rounded-xl bg-white text-black placeholder:text-gray-400 dark:bg-neutral-900 dark:text-white dark:placeholder:text-gray-400 focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-600"
+            className="pl-10 pr-10 border rounded-xl bg-white text-black placeholder:text-gray-400 dark:bg-neutral-900 dark:text-white dark:placeholder:text-gray-400 focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-600"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+
+          {/* Nút clear bên phải */}
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+            >
+              <X size={18} />
+            </button>
+          )}
         </div>
       </div>
+
       {searchTerm.length > 1 && (
         <div className="absolute left-0 right-0 z-20">
-          <SearchContent loading={loading} searchResults={searchResults} />
+          <SearchContent
+            loading={loading}
+            searchResults={searchResults}
+            messageResults={messageResults}
+            searchTerm={searchTerm}
+          />
         </div>
       )}
     </div>
