@@ -4,12 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ERROR_MESSAGES, ErrorMessageValue } from "@/constants/error-messages";
+import { ERROR_MESSAGES } from "@/constants/error-messages";
 import { MatrixAuthService } from "@/services/matrixAuthService";
 import { ErrorMessage, Field, Form, SubmitButton } from "@/components/Form";
 import registerSchema from "@/validations/registerSchema";
-import { RegisterFormData } from "@/types/auth";
-import { useAuthStore } from "@/stores/useAuthStore";
+import type { RegisterFormData } from "@/types/auth";
 import { toast } from "sonner";
 import ServerStatus from "./ServerStatus";
 
@@ -18,7 +17,6 @@ const HOMESERVER_URL = process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matri
 export default function RegisterForm() {
   const router = useRouter();
   const [error, setError] = useState("");
-  const login = useAuthStore((state) => state.login);
 
   const handleSubmit = async (data: RegisterFormData) => {
     setError("");
@@ -65,11 +63,7 @@ export default function RegisterForm() {
       } else if (error?.message) {
         errorMessage = error.message;
       }
-
       setError(errorMessage);
-      toast.error(errorMessage, {
-        duration: 5000,
-      });
     }
   };
 

@@ -5,11 +5,14 @@ import { ERROR_MESSAGES } from "@/constants/error-messages"
 import { LoginFormData, RegisterFormData } from "@/types/auth";
 import { getLS, removeLS, setLS } from "@/tools/localStorage.tool";
 import { ILoginResponse } from "@/types/matrix";
+import { useUserStore } from "@/stores/useUserStore";
 
 const HOMESERVER_URL: string = process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
 const SERVER_URL: string = process.env.NEXT_PUBLIC_SERVER_URL ?? "http://localhost:3000";
 
 let clientInstance: sdk.MatrixClient | null = null;
+
+const clearUser = useUserStore.getState().clearUser
 
 export class MatrixAuthService {
     private client: sdk.MatrixClient
@@ -64,13 +67,6 @@ export class MatrixAuthService {
 
     // Đăng ký tài khoản mới
     async register({ username, password }: RegisterFormData): Promise<any> {
-        // Kiểm tra xem username có hợp lệ không (chỉ cho phép chữ cái, số, dấu gạch dưới)
-        if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-            throw new Error("Username can only contain letters, numbers, and underscores");
-        }
-        if (username.length < 3 || username.length > 20) {
-            throw new Error("Username must be between 3 and 20 characters");
-        }
         try {
             const registerResponse = await this.client.registerRequest({
                 username,
@@ -83,10 +79,12 @@ export class MatrixAuthService {
             if (registerResponse.access_token) {
                 setLS("matrix_access_token", registerResponse.access_token);
                 setLS("matrix_user_id", registerResponse.user_id);
+                setLS("matrix_device_id", registerResponse.device_id);
                 clientInstance = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: registerResponse.access_token,
-                    userId: registerResponse.user_id
+                    userId: registerResponse.user_id,
+                    deviceId: registerResponse.device_id
                 });
             }
             return {
@@ -110,11 +108,19 @@ export class MatrixAuthService {
             if (loginResponse.access_token) {
                 setLS("matrix_access_token", loginResponse.access_token);
                 setLS("matrix_user_id", loginResponse.user_id);
+                setLS("matrix_device_id", loginResponse.device_id);
+                clientInstance = sdk.createClient({
+                    baseUrl: HOMESERVER_URL,
+                    accessToken: loginResponse.access_token,
+                    userId: loginResponse.user_id,
+                    deviceId: loginResponse.device_id
+                });
             }
             return {
                 success: true,
                 token: loginResponse.access_token,
-                userId: loginResponse.user_id
+                userId: loginResponse.user_id,
+                deviceId: loginResponse.device_id
             };
         } catch (error: any) {
             console.error("Login error:", error)
@@ -198,6 +204,8 @@ export class MatrixAuthService {
             await this.client.logout()
             removeLS("matrix_access_token");
             removeLS("matrix_user_id");
+            removeLS("matrix_device_id");
+            clearUser();
             clientInstance = null;
         } catch (error) {
             console.error("Logout failed:", error)
@@ -300,19 +308,6 @@ export class MatrixAuthService {
         } catch (error) {
             console.error("Update profile failed:", error)
             throw error
-        }
-    }
-
-    // Kiểm tra trạng thái đăng nhập
-    isLoggedIn() {
-        return !!getLS("matrix_access_token") && !!getLS("matrix_user_id");
-    }
-
-    // Lấy thông tin người dùng hiện tại
-    getCurrentUser() {
-        return {
-            token: getLS("matrix_access_token"),
-            userId: getLS("matrix_user_id"),
         }
     }
 } 

@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import Image from "next/image";
-
+import { ForgotPasswordForm } from "@/components/auth/ForgotPasswordForm";
+import { VerificationCodeForm } from "@/components/auth/VerificationCodeForm";
+import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm";
 import { useRouter } from "next/navigation";
 import { MatrixAuthService } from "@/services/matrixAuthService";
 

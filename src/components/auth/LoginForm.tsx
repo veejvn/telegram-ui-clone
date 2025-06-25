@@ -17,9 +17,9 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
   const handleSubmit = async (data: LoginFormData) => {
     try {
       const authService = new MatrixAuthService();
-      const { success, token, userId } = await authService.login(data);
+      const { success, token, userId, deviceId } = await authService.login(data);
       if (success && token) {
-        onSuccess(token, userId);
+        onSuccess(token, userId, deviceId);
       }
     } catch (error: any) {
       let errorMessage: string = ERROR_MESSAGES.GENERAL.UNKNOWN_ERROR;
