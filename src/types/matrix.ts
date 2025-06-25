@@ -12,4 +12,5 @@ export interface ILoginResponse {
   success: boolean;
   token: string;
   userId: string;
+  deviceId: string;
 }
