@@ -12,8 +12,8 @@ export default function LoginPage() {
   const login = useAuthStore((state) => state.login);
 
   // Callback khi login thành công
-  const handleSuccess = (token: string) => {
-    login(token);
+  const handleSuccess = (token: string, userId: string) => {
+    login(token, userId);
   };
 
   return (

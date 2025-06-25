@@ -101,7 +101,8 @@ export class MatrixAuthService {
             }
             return {
                 success: true,
-                token: loginResponse.access_token
+                token: loginResponse.access_token,
+                userId: loginResponse.user_id
             };
         } catch (error: any) {
             console.error("Login error:", error)

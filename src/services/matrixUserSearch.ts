@@ -1,7 +1,8 @@
-import { MatrixClient } from "matrix-js-sdk";
+"use client"
+import * as sdk from "matrix-js-sdk";
 
 export async function searchMatrixUsers(
-  client: MatrixClient,
+  client: sdk.MatrixClient,
   searchTerm: string
 ) {
   const res = await client.searchUserDirectory({
