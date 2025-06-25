@@ -25,12 +25,11 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   const handleSend = () => {
     const trimmed = text.trim();
     if (!trimmed || !client) return;
-
+    setText("");
     sendMessage(roomId, trimmed, client)
       .then((res) => {
         if (res.success) {
           console.log("Sent Message: ", text);
-          setText("");
         } else {
           console.log("Send Failed !");
         }
@@ -38,7 +37,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
       .catch((res) => {
         console.log(res.error.Message);
       });
-    setShowEmojiPicker((prev) => (!prev))
+    setShowEmojiPicker((prev) => !prev);
   };
 
   const handleEmojiClick = (emojiData: any) => {
@@ -102,7 +101,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
           </div>
         )}
       </div>
-      
+
       {text.trim() ? (
         <svg
           xmlns="http://www.w3.org/2000/svg"

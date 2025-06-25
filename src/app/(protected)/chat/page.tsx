@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import SearchBar from "@/components/layouts/SearchBar";
@@ -75,11 +76,11 @@ export default function ChatsPage() {
     <div>
       <div className="sticky bg-white dark:bg-black top-0 z-10">
         <div className="flex items-center justify-between px-4 py-2">
-           <ChatEditButton
-              isEditMode={isEditMode}
-              onEdit={() => setIsEditMode(true)}
-              onDone={handleDone}
-            />
+          <ChatEditButton
+            isEditMode={isEditMode}
+            onEdit={() => setIsEditMode(true)}
+            onDone={handleDone}
+          />
           <h1 className="text-md font-semibold">Chats</h1>
           <div className="flex gap-3">
             <div className="text-blue-500">+</div>

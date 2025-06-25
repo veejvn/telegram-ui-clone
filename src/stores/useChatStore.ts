@@ -1,11 +1,12 @@
 import { create } from "zustand";
 
-type MessageStatus = "sending" | "sent" | "delivered" | "read";
+export type MessageStatus = "sending" | "sent" | "delivered" | "read";
 
 export type Message = {
   eventId: string;
   time: string;
-  senderDisplayName?: string | undefined,
+  timestamp?: number;
+  senderDisplayName?: string | undefined;
   sender: string | undefined;
   text: string;
   status: MessageStatus;
@@ -13,25 +14,44 @@ export type Message = {
 
 type ChatStore = {
   messagesByRoom: Record<string, Message[]>;
+  isLoadingMoreByRoom: Record<string, boolean>;
+  hasMoreByRoom: Record<string, boolean>;
+  oldestEventIdByRoom: Record<string, string | null>;
+
   addMessage: (roomId: string, msg: Message) => void;
   setMessages: (roomId: string, msgs: Message[]) => void;
-  updateMessageStatus: (roomId: string, localId: string | null, eventId: string, status: MessageStatus) => void;
+  prependMessages: (roomId: string, msgs: Message[]) => void;
+
+  setIsLoadingMore: (roomId: string, isLoading: boolean) => void;
+  setHasMore: (roomId: string, hasMore: boolean) => void;
+  setOldestEventId: (roomId: string, eventId: string | null) => void;
+
+  updateMessageStatus: (
+    roomId: string,
+    localId: string | null,
+    eventId: string,
+    status: MessageStatus
+  ) => void;
 };
 
 export const useChatStore = create<ChatStore>((set, get) => ({
   messagesByRoom: {},
+  isLoadingMoreByRoom: {},
+  hasMoreByRoom: {},
+  oldestEventIdByRoom: {},
 
   addMessage: (roomId, msg) => {
     const current = get().messagesByRoom[roomId] || [];
-
     if (current.some((m) => m.eventId === msg.eventId)) return;
-
     set({
-      messagesByRoom: { ...get().messagesByRoom, [roomId]: [...current, msg] },
+      messagesByRoom: {
+        ...get().messagesByRoom,
+        [roomId]: [...current, msg],
+      },
     });
   },
 
-  setMessages(roomId, msgs) {
+  setMessages: (roomId, msgs) => {
     set({
       messagesByRoom: {
         ...get().messagesByRoom,
@@ -40,17 +60,58 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     });
   },
 
-  updateMessageStatus: (roomId, localId, eventId, status) => {
-    const messages = get().messagesByRoom[roomId] || [];
-    return {
+  prependMessages: (roomId, msgs) => {
+    const current = get().messagesByRoom[roomId] || [];
+    const merged = [...msgs, ...current].filter(
+      (msg, index, self) =>
+        index === self.findIndex((m) => m.eventId === msg.eventId)
+    );
+    set({
       messagesByRoom: {
         ...get().messagesByRoom,
-        [roomId]: messages.map(msg =>
-          (msg.eventId === localId || msg.eventId === eventId)
+        [roomId]: merged,
+      },
+    });
+  },
+
+  setIsLoadingMore: (roomId, isLoading) => {
+    set({
+      isLoadingMoreByRoom: {
+        ...get().isLoadingMoreByRoom,
+        [roomId]: isLoading,
+      },
+    });
+  },
+
+  setHasMore: (roomId, hasMore) => {
+    set({
+      hasMoreByRoom: {
+        ...get().hasMoreByRoom,
+        [roomId]: hasMore,
+      },
+    });
+  },
+
+  setOldestEventId: (roomId, eventId) => {
+    set({
+      oldestEventIdByRoom: {
+        ...get().oldestEventIdByRoom,
+        [roomId]: eventId,
+      },
+    });
+  },
+
+  updateMessageStatus: (roomId, localId, eventId, status) => {
+    const messages = get().messagesByRoom[roomId] || [];
+    set({
+      messagesByRoom: {
+        ...get().messagesByRoom,
+        [roomId]: messages.map((msg) =>
+          msg.eventId === localId || msg.eventId === eventId
             ? { ...msg, eventId, status }
             : msg
         ),
       },
-    };
-  }
+    });
+  },
 }));

@@ -86,8 +86,11 @@ export const getTimeline = async (
     const room = client.getRoom(roomId);
     if (!room) return { success: false };
 
+    // ✅ Load thêm event nếu chưa đủ
+    await client.scrollback(room, 100);
+
     const userId = client.getUserId();
-    const messages = room.getLiveTimeline().getEvents().slice(-20) || [];
+    const messages = room.getLiveTimeline().getEvents() || [];
 
     // 1. Tìm eventId cuối cùng đã được đọc (có receipt "m.read" từ user khác)
     let lastReadEventId: string | null = null;
@@ -133,7 +136,15 @@ export const getTimeline = async (
             status = "read";
           }
 
-          res.push({ eventId, time, senderDisplayName, sender, text, status });
+          res.push({
+            eventId,
+            time,
+            timestamp,
+            senderDisplayName,
+            sender,
+            text,
+            status,
+          });
         }
       });
 
@@ -262,4 +273,24 @@ export const getUserInfoInPrivateRoom = async (
     console.error("❌ Error in getUserInfoInPrivateRoom:", error);
     return { success: false, err: error };
   }
+};
+
+export const getOlderMessages = async (
+  roomId: string,
+  client: sdk.MatrixClient,
+  limit = 20
+) => {
+  const room = client.getRoom(roomId);
+  if (!room) return [];
+
+  // 👇 Kiểm tra có thể scrollback không
+  const canBackPaginate = !!room
+    .getLiveTimeline()
+    .getPaginationToken(sdk.EventTimeline.BACKWARDS);
+  if (!canBackPaginate) return [];
+
+  await client.scrollback(room, limit);
+
+  const timeline = room.getLiveTimeline();
+  return timeline.getEvents();
 };

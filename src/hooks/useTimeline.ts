@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import * as sdk from "matrix-js-sdk";
 import { useEffect } from "react";
@@ -10,7 +10,6 @@ import { sendReadReceipt } from "@/utils/chat/sendReceipt";
 export const useTimeline = (roomId: string) => {
   const addMessage = useChatStore((state) => state.addMessage);
   const setMessage = useChatStore((state) => state.setMessages);
-  const updateMessageStatus = useChatStore((state) => state.updateMessageStatus)
   const client = useMatrixClient();
 
   useEffect(() => {
@@ -24,7 +23,11 @@ export const useTimeline = (roomId: string) => {
       }
     });
 
-    const onTimeline = (event: sdk.MatrixEvent, room: any, toStart: boolean) => {
+    const onTimeline = (
+      event: sdk.MatrixEvent,
+      room: any,
+      toStart: boolean
+    ) => {
       if (toStart || room.roomId !== roomId) return;
       if (event.getType() !== "m.room.message") return;
 
@@ -34,10 +37,10 @@ export const useTimeline = (roomId: string) => {
         senderDisplayName: event.sender?.name ?? event.getSender(),
         text: event.getContent().body,
         time: new Date(event.getTs()).toLocaleString(),
-        status: "sent"
+        status: "sent",
       });
       const userId = client.getUserId();
-      if(event.getSender() !== userId){
+      if (event.getSender() !== userId) {
         const events = room.getLiveTimeline().getEvents();
         const lastEvent = events.length > 0 ? events[events.length - 1] : null;
         if (lastEvent) {
