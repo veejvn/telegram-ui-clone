@@ -40,8 +40,8 @@ export default function EditProfilePage() {
     };
 
     return (
-        <div className="min-h-screen dark:bg-black dark:text-white flex justify-center items-center px-4 py-6">
-            <Card className="w-full max-w-md dark:bg-zinc-900 border-none shadow-lg">
+        <div className="min-h-screen dark:bg-black dark:text-white flex justify-center items-center">
+            <Card className="w-full max-w-md dark:bg-zinc-900 border-none shadow-lg rounded-none">
                 {/* Header */}
                 <div className="flex justify-between items-center mb-4 px-4">
                     <button
