@@ -1,29 +1,33 @@
 import { create } from "zustand";
-import { MatrixClient } from "matrix-js-sdk";
-import { startCall, endCall } from "@/services/callService";
+import { callService } from "@/services/callService";
 
 interface VoiceCallState {
     isCalling: boolean;
     localStream: MediaStream | null;
     startCall: (
-        client: MatrixClient,
-        calleeId: string,
+        roomId: string,
         onRemoteStream?: (stream: MediaStream) => void
     ) => Promise<void>;
     endCall: () => void;
 }
 
-export const useVoiceCall = create<VoiceCallState>((set) => ({
+export const useVoiceCall = create<VoiceCallState>((set, get) => ({
     isCalling: false,
     localStream: null,
 
-    startCall: async (client, calleeId, onRemoteStream) => {
+    startCall: async (roomId, onRemoteStream) => {
         set({ isCalling: true });
+
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             set({ localStream: stream });
 
-            await startCall(client, calleeId, false, undefined, onRemoteStream);
+            // Lắng nghe sự kiện remote stream nếu cần
+            if (onRemoteStream) {
+                callService.once("remote-stream", onRemoteStream);
+            }
+
+            await callService.placeCall(roomId, "voice");
         } catch (error) {
             console.error("Lỗi khi gọi thoại:", error);
             set({ isCalling: false, localStream: null });
@@ -31,12 +35,12 @@ export const useVoiceCall = create<VoiceCallState>((set) => ({
     },
 
     endCall: () => {
-        endCall();
+        callService.hangup();
         set({ isCalling: false });
 
-        // Tắt stream
-        const current = useVoiceCall.getState().localStream;
-        current?.getTracks().forEach((t) => t.stop());
+        // Dừng stream local
+        const stream = get().localStream;
+        stream?.getTracks().forEach((t) => t.stop());
         set({ localStream: null });
     },
 }));

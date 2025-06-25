@@ -1,40 +1,28 @@
-"use client";
+// src/app/(protected)/call/video/page.tsx
+'use client';
 
-import { useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { VideoCall } from "@/components/call/VideoCall";
-import { useVideoCall } from "@/stores/useVideocall";
-import { useClientStore } from "@/stores/useMatrixStore";
+import { useRouter, useSearchParams } from 'next/navigation';
+import CallContainer from '@/components/call/CallContainer';
 
 export default function VideoCallPage() {
     const router = useRouter();
-    const searchParams = useSearchParams();
+    const params = useSearchParams();
+    const calleeId = params.get('calleeId');
+    const contact = params.get('contact') || 'Unknown';
 
-    const calleeId = searchParams.get("calleeId");
-    const contactName = searchParams.get("contact") || calleeId?.split(":")[0].replace("@", "") || "Unknown";
+    if (!calleeId) {
+        return <p className="p-4 text-red-500">Thiếu thông tin cuộc gọi (calleeId)</p>;
+    }
 
-    const { client } = useClientStore();
-    const { startCall, endCall } = useVideoCall();
-
-    useEffect(() => {
-        if (client && calleeId) {
-            startCall(client, calleeId);
-        }
-
-        return () => {
-            endCall();
-        };
-    }, [client, calleeId]);
-
-    const handleEndCall = () => {
-        endCall();
-        router.replace("/call");
+    const handleTerminate = () => {
+        router.replace('/chat');
     };
 
     return (
-        <VideoCall
-            contactName={contactName}
-            onEndCall={handleEndCall}
+        <CallContainer
+            roomId={calleeId}
+            type="video"
+            onTerminate={handleTerminate}
         />
     );
 }

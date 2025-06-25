@@ -1,7 +1,7 @@
 "use client";
 
 import { useIncomingCall } from "@/stores/useIncomingCall";
-import { IncomingCall } from "@/components/call/IncomingCall";
+import IncomingCall from '@/components/call/IncomingCall';
 
 export default function CallOverlay() {
     const { visible, callerId, acceptCall, rejectCall } = useIncomingCall();
