@@ -1,6 +1,6 @@
 "use client"
 
-import * as sdk from "matrix-js-sdk"; 
+import * as sdk from "matrix-js-sdk";
 import { ERROR_MESSAGES } from "@/constants/error-messages"
 import { LoginFormData, RegisterFormData } from "@/types/auth";
 import { getLS, removeLS, setLS } from "@/tools/localStorage.tool";
@@ -28,7 +28,7 @@ export class MatrixAuthService {
         this.client = clientInstance
     }
 
-    async sendEmailVerification(email: string) : Promise<any> {
+    async sendEmailVerification(email: string): Promise<any> {
 
         const clientSecret = Math.random().toString(36).substring(2, 10);
         const sendAttempt = 1;
@@ -47,7 +47,7 @@ export class MatrixAuthService {
             });
 
             const data = await response.json();
-            
+
             if (!response.ok) {
                 throw new Error(data.error || 'Failed to send verification email');
             }
@@ -63,8 +63,18 @@ export class MatrixAuthService {
     }
 
     // Đăng ký tài khoản mới
-    async register({ username, password} : RegisterFormData) : Promise<any> {
+    async register({ username, password }: RegisterFormData): Promise<any> {
         try {
+            // Kiểm tra xem username có hợp lệ không (chỉ cho phép chữ cái, số, dấu gạch dưới)
+            if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+                throw new Error("Username chỉ được chứa chữ cái, số và dấu gạch dưới");
+            }
+
+            // Kiểm tra độ dài username
+            if (username.length < 3 || username.length > 20) {
+                throw new Error("Username phải có độ dài từ 3-20 ký tự");
+            }
+
             const registerResponse = await this.client.registerRequest({
                 username,
                 password,
@@ -77,18 +87,44 @@ export class MatrixAuthService {
             if (registerResponse.access_token) {
                 setLS("matrix_access_token", registerResponse.access_token);
                 setLS("matrix_user_id", registerResponse.user_id);
+
+                // Tạo client mới với token đã đăng ký
+                clientInstance = sdk.createClient({
+                    baseUrl: HOMESERVER_URL,
+                    accessToken: registerResponse.access_token,
+                    userId: registerResponse.user_id
+                });
             }
+
             return {
-                success: true
+                success: true,
+                token: registerResponse.access_token,
+                userId: registerResponse.user_id
             };
-        } catch (error) {
+        } catch (error: any) {
             console.error("Registration error:", error)
-            throw error
+
+            // Xử lý các lỗi cụ thể từ Matrix server
+            if (error.errcode === "M_USER_IN_USE") {
+                throw new Error("Username đã được sử dụng");
+            } else if (error.errcode === "M_INVALID_USERNAME") {
+                throw new Error("Username không hợp lệ");
+            } else if (error.errcode === "M_EXCLUSIVE") {
+                throw new Error("Username đã tồn tại");
+            } else if (error.errcode === "M_FORBIDDEN") {
+                throw new Error("Đăng ký bị từ chối bởi server");
+            } else if (error.errcode === "M_UNKNOWN") {
+                throw new Error("Lỗi không xác định từ server");
+            } else if (error.message) {
+                throw new Error(error.message);
+            } else {
+                throw new Error("Có lỗi xảy ra khi đăng ký");
+            }
         }
     }
 
     // Đăng nhập
-    async login({username , password} : LoginFormData) : Promise<ILoginResponse> {
+    async login({ username, password }: LoginFormData): Promise<ILoginResponse> {
         try {
             const loginResponse = await this.client.loginRequest({
                 type: "m.login.password",
@@ -169,7 +205,7 @@ export class MatrixAuthService {
     }
 
     // Đăng xuất
-    async logout() : Promise<void> {
+    async logout(): Promise<void> {
         try {
             const accessToken = getLS("matrix_access_token");
             const userId = getLS("matrix_user_id");
@@ -245,13 +281,34 @@ export class MatrixAuthService {
     }
 
     // Đặt lại mật khẩu
-    async resetPassword(newPassword: string, token: string) {
+    async resetPassword(newPassword: string, opts: { sid: string, client_secret: string, code: string, email: string }) {
         try {
-            const response = await this.client.setPassword(newPassword, token)
-            return response
+            const response = await fetch(`${HOMESERVER_URL}/_matrix/client/v3/account/password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    new_password: newPassword,
+                    auth: {
+                        type: 'm.login.email.identity',
+                        threepid_creds: {
+                            sid: opts.sid,
+                            client_secret: opts.client_secret,
+                        },
+                        // session: opts.session, // Nếu server yêu cầu
+                    },
+                }),
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to reset password');
+            }
+            return data;
         } catch (error) {
-            console.error("Reset password failed:", error)
-            throw error
+            console.error("Reset password failed:", error);
+            throw error;
         }
     }
 
@@ -272,7 +329,7 @@ export class MatrixAuthService {
 
     // Kiểm tra trạng thái đăng nhập
     isLoggedIn() {
-        return !! getLS("matrix_access_token") && !! getLS("matrix_user_id");
+        return !!getLS("matrix_access_token") && !!getLS("matrix_user_id");
     }
 
     // Lấy thông tin người dùng hiện tại

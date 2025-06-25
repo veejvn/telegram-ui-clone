@@ -77,12 +77,6 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         />
         <ErrorMessage message={error}></ErrorMessage>
         <div className="flex items-center justify-between text-sm my-5">
-          <Link
-            href="/forgot-password"
-            className="text-blue-600 hover:text-blue-800 transition-colors duration-200"
-          >
-            Forgot your password?
-          </Link>
           <Link href="/register" className="text-blue-600 hover:text-blue-800">
             Create account
           </Link>
