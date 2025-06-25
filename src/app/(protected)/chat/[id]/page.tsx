@@ -33,7 +33,6 @@ const ChatPage = () => {
     }
   }, [roomId, client]);
 
-  
   useEffect(() => {
     if (!client || !room) return;
     // Lấy event cuối cùng trong room (nếu có)
@@ -43,7 +42,7 @@ const ChatPage = () => {
       sendReadReceipt(client, lastEvent);
     }
   }, [room, client]);
-  
+
   if (!room) return null;
   // Kiểm tra trạng thái invite
   const isInvite = room?.getMyMembership() === "invite";
@@ -129,7 +128,7 @@ const ChatPage = () => {
 
         {/* Chat content scrollable */}
         <ScrollArea className="flex-1 min-h-0 px-4 space-y-1">
-          <ChatMessages roomId={roomId} messagesEndRef={messagesEndRef}/>
+          <ChatMessages roomId={roomId} messagesEndRef={messagesEndRef} />
         </ScrollArea>
         <ChatComposer roomId={roomId} />
       </div>

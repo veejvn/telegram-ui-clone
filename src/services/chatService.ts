@@ -1,11 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-"use client"
+"use client";
 
 import * as sdk from "matrix-js-sdk";
 import { Message, MessageStatus, MessageType } from "@/stores/useChatStore";
 import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
+import { MatrixAuthService } from "./matrixAuthService";
+import { useMatrixClient } from "@/contexts/MatrixClientProvider";
+import { useAuthStore } from "@/stores/useAuthStore";
 
-export const getUserRooms = async (client: sdk.MatrixClient): Promise<{
+const authService = new MatrixAuthService();
+
+export const getUserRooms = async (
+  client: sdk.MatrixClient
+): Promise<{
   success: boolean;
   err?: any;
   rooms?: sdk.Room[];
@@ -74,9 +81,9 @@ export const getTimeline = async (
 
   try {
     const room = client.getRoom(roomId);
-    if(!room) return { success: false}
+    if (!room) return { success: false };
 
-    const userId = client.getUserId()
+    const userId = client.getUserId();
     const messages = room.getLiveTimeline().getEvents().slice(-20) || [];
 
     // Tìm eventId cuối cùng đã được đọc (có receipt "m.read" từ user khác)
@@ -99,7 +106,7 @@ export const getTimeline = async (
 
     let lastReadIndex = -1;
     if (lastReadEventId) {
-      lastReadIndex = messages.findIndex(e => e.getId() === lastReadEventId);
+      lastReadIndex = messages.findIndex((e) => e.getId() === lastReadEventId);
     }
 
     if (messages) {
@@ -165,6 +172,118 @@ export const getTimeline = async (
       };
     }
   } catch (error) {
+    return { success: false, err: error };
+  }
+};
+
+export const getRoom = async (
+  roomId: string | undefined
+): Promise<{
+  success: boolean;
+  err?: any;
+  room?: sdk.Room;
+}> => {
+  const client = useMatrixClient();
+  if (!client) {
+    return {
+      success: false,
+      err: "User not authenticated or session invalid.",
+    };
+  }
+
+  try {
+    const result: sdk.Room | null = await client.getRoom(roomId);
+
+    if (result) {
+      console.clear();
+      console.log(
+        "%cGet room successful, room: " + result.name,
+        "color: green"
+      );
+
+      return {
+        success: true,
+        room: result,
+      };
+    } else {
+      console.clear();
+      console.log("Get room failed !");
+      return {
+        success: false,
+        err: "Invalid room, check room_id !",
+      };
+    }
+  } catch (error) {
+    return { success: false, err: error };
+  }
+};
+
+export const getUserInfoInPrivateRoom = async (
+  roomId: string,
+  client: sdk.MatrixClient
+): Promise<{
+  success: boolean;
+  err?: any;
+  user?: sdk.User;
+}> => {
+  if (!client) {
+    return {
+      success: false,
+      err: "Matrix client is not initialized.",
+    };
+  }
+
+  if (!roomId) {
+    return {
+      success: false,
+      err: "Invalid roomId.",
+    };
+  }
+
+  try {
+    const userId = useAuthStore.getState().userId;
+
+    const room = client.getRoom(roomId);
+
+    if (!room) {
+      return {
+        success: false,
+        err: `Room not found: ${roomId}`,
+      };
+    }
+
+    const allMembers = room.getMembers();
+    const otherMember = allMembers.find(
+      (member: sdk.RoomMember) => member.userId !== userId
+    );
+
+    if (!otherMember) {
+      return {
+        success: false,
+        err: "No other member found in the room.",
+      };
+    }
+
+    const user = client.getUser(otherMember.userId);
+
+    if (!user) {
+      return {
+        success: false,
+        err: "Could not fetch user via client.getUser().",
+      };
+    }
+
+    console.log(
+      "%c✅ Fetched user: " + user.displayName,
+      "color: green; font-weight: bold;"
+    );
+
+    return {
+      success: true,
+      user,
+    };
+  } catch (error) {
+    console.error("❌ Error in getUserInfoInPrivateRoom:", error);
     return { success: false, err: error };
   }
 };
