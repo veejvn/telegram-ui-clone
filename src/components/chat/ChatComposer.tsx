@@ -6,6 +6,7 @@ import { sendMessage } from "@/services/chatService";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useTheme } from "next-themes";
 import EmojiPicker, { Theme as EmojiTheme } from "emoji-picker-react";
+import { useChatStore } from "@/stores/useChatStore";
 
 const ChatComposer = ({ roomId }: { roomId: string }) => {
   const [text, setText] = useState("");
@@ -14,7 +15,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const client = useMatrixClient();
   const theme = useTheme();
-
+  const { addMessage } = useChatStore.getState();
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -25,19 +26,36 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   const handleSend = () => {
     const trimmed = text.trim();
     if (!trimmed || !client) return;
+
+    const localId = "local_" + Date.now(); // Fake ID tạm thời
+    const userId = client.getUserId();
+    const now = new Date();
+
+    // 🧠 Hiển thị ngay trên UI (thêm vào store)
+    addMessage(roomId, {
+      eventId: localId,
+      sender: userId ?? undefined,
+      senderDisplayName: userId ?? undefined,
+      text: trimmed,
+      time: now.toLocaleString(),
+      timestamp: now.getTime(),
+      status: "sent",
+    });
+
+    // 🧹 Reset UI
     setText("");
+    setShowEmojiPicker(false);
+
+    // 🔁 Gửi lên Matrix
     sendMessage(roomId, trimmed, client)
       .then((res) => {
-        if (res.success) {
-          console.log("Sent Message: ", text);
-        } else {
-          console.log("Send Failed !");
+        if (!res.success) {
+          console.log("Send Failed!");
         }
       })
-      .catch((res) => {
-        console.log(res.error.Message);
+      .catch((err) => {
+        console.log("Send Error:", err);
       });
-    setShowEmojiPicker((prev) => !prev);
   };
 
   const handleEmojiClick = (emojiData: any) => {

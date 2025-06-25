@@ -64,16 +64,19 @@ const ChatMessage = ({ msg }: { msg: Message }) => {
               }`}
             >
               {formatMsgTime(msg.time)}
-              {isSender && (
-                msg.status === "read" ? <CheckCheck size={14}/> : <Check size={14}/>
-              )}
+              {isSender &&
+                (msg.status === "read" ? (
+                  <CheckCheck size={14} />
+                ) : (
+                  <Check size={14} />
+                ))}
             </div>
           </div>
         ) : (
           <div className={`rounded-lg py-2`}>
             <p
               className="whitespace-pre-wrap break-words 
-            leading-snug text-end text-7xl"
+            leading-snug text-start text-7xl"
             >
               {msg.text}
             </p>
@@ -94,9 +97,12 @@ const ChatMessage = ({ msg }: { msg: Message }) => {
               px-2 py-0.5 mt-3.5 flex gap-1 rounded-full"
               >
                 {formatMsgTime(msg.time)}
-                {isSender && (
-                  msg.status === "read" ? <CheckCheck size={14}/> : <Check size={14}/>
-                )}
+                {isSender &&
+                  (msg.status === "read" ? (
+                    <CheckCheck size={14} />
+                  ) : (
+                    <Check size={14} />
+                  ))}
               </p>
             </div>
           </div>

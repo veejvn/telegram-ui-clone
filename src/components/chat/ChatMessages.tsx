@@ -19,7 +19,7 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
   const client = useMatrixClient();
 
   const messagesByRoom = useChatStore((state) => state.messagesByRoom);
-  const { setMessages, prependMessages, setOldestEventId } = useChatStore();
+  const { prependMessages, setOldestEventId } = useChatStore();
   const messages = messagesByRoom[roomId] ?? [];
 
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -30,18 +30,12 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
   const containerRef = React.useRef<HTMLDivElement | null>(null);
   const prevScrollHeightRef = React.useRef<number | null>(null);
 
-  // 1. Khởi tạo timeline và trạng thái hasMore
   useEffect(() => {
-    if (!client || !roomId) return;
-
-    setHasMoreByRoom((prev) => ({ ...prev, [roomId]: true })); // SỬA LỖI: Khởi tạo hasMore
-
-    getTimeline(roomId, client).then((res) => {
-      if (res.success && res.timeline) {
-        setMessages(roomId, res.timeline);
-      }
-    });
-  }, [client, roomId, setMessages]);
+    setHasMoreByRoom((prev) => ({
+      ...prev,
+      [roomId]: true,
+    }));
+  }, [roomId]);
 
   // 2. Tự động cuộn xuống khi có tin nhắn mới
   useEffect(() => {
