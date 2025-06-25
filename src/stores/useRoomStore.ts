@@ -1,3 +1,5 @@
+"use client"
+
 import * as sdk from "matrix-js-sdk";
 import { create } from "zustand";
 

@@ -4,10 +4,10 @@ import { useParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import * as sdk from "matrix-js-sdk";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
-import { getUserInfoInPrivateRoom } from "@/services/chatService";
+import { getRoom, getUserInfoInPrivateRoom } from "@/services/chatService";
 import PrivateInfoHeader from "@/components/chat/PrivateInfoHeader";
 
-export default function Page() {
+export default function InfoPage() {
   const params = useParams();
   const roomId = decodeURIComponent(params.id as string);
   const client = useMatrixClient();

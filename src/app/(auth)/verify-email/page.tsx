@@ -2,8 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useRegistrationStore } from "@/stores/useRegistrationStore";
-import { MatrixAuthService } from "@/services/matrixAuthService";
 import { Input } from "@/components/ui/input";
 
 export default function VerifyEmailPage() {
