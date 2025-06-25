@@ -10,5 +10,7 @@ export interface IClientState {
 
 export interface ILoginResponse {
   success: boolean;
-  token: string
+  token: string;
+  userId: string;
+  deviceId: string;
 }

@@ -8,11 +8,10 @@ import { useParams } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import * as sdk from "matrix-js-sdk";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
-import LoadingSpinner from "@/components/common/LoadingSpinner";
-import { sendReadReceipt } from "@/utils/chat/sendReceipt";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import Link from "next/link";
+import styles from "./page.module.css";
+import { sendReadReceipt } from "@/services/chatService";
 
 const ChatPage = () => {
   const { theme } = useTheme();
@@ -34,7 +33,6 @@ const ChatPage = () => {
     }
   }, [roomId, client]);
 
-  
   useEffect(() => {
     if (!client || !room) return;
     // Lấy event cuối cùng trong room (nếu có)
@@ -44,7 +42,7 @@ const ChatPage = () => {
       sendReadReceipt(client, lastEvent);
     }
   }, [room, client]);
-  
+
   if (!room) return null;
   // Kiểm tra trạng thái invite
   const isInvite = room?.getMyMembership() === "invite";
@@ -114,20 +112,10 @@ const ChatPage = () => {
 
   return (
     <div className="relative h-screen overflow-hidden">
-      {/* Background cố định */}
       <div
-        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
-        style={
-          theme === "dark"
-            ? {
-                backgroundImage:
-                  "url('https://i.pinimg.com/736x/7d/87/0e/7d870e07f3d5e3c4172c40e6f15e1498.jpg')",
-              }
-            : {
-                backgroundImage:
-                  "url('https://i.pinimg.com/736x/3d/8c/2f/3d8c2f2c82c1c9ef1e27be645cd1aa17.jpg')",
-              }
-        }
+        className={`fixed inset-0 z-0 bg-cover bg-center bg-no-repeat ${
+          theme === "dark" ? styles["chat-bg-dark"] : styles["chat-bg-light"]
+        }`}
         aria-hidden="true"
       />
 
@@ -140,7 +128,7 @@ const ChatPage = () => {
 
         {/* Chat content scrollable */}
         <ScrollArea className="flex-1 min-h-0 px-4 space-y-1">
-          <ChatMessages roomId={roomId} messagesEndRef={messagesEndRef}/>
+          <ChatMessages roomId={roomId} messagesEndRef={messagesEndRef} />
         </ScrollArea>
         <ChatComposer roomId={roomId} />
       </div>

@@ -6,6 +6,7 @@ import { ForgotPasswordForm } from "@/components/auth/ForgotPasswordForm";
 import { VerificationCodeForm } from "@/components/auth/VerificationCodeForm";
 import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm";
 import { useRouter } from "next/navigation";
+import { MatrixAuthService } from "@/services/matrixAuthService";
 
 enum ForgotPasswordStep {
   EnterEmail,
@@ -16,14 +17,27 @@ enum ForgotPasswordStep {
 export default function ForgotPasswordPage() {
   const [currentStep, setCurrentStep] = useState(ForgotPasswordStep.EnterEmail);
   const [email, setEmail] = useState("");
+  const [sid, setSid] = useState<string | null>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [otpCode, setOtpCode] = useState<string | null>(null);
   const router = useRouter();
 
-  const handleEmailSubmit = (submittedEmail: string) => {
-    setEmail(submittedEmail);
-    setCurrentStep(ForgotPasswordStep.EnterCode);
+  const handleEmailSubmit = async (submittedEmail: string) => {
+    // Gọi API gửi email OTP
+    try {
+      const matrixAuth = new MatrixAuthService();
+      const result = await matrixAuth.forgotPassword(submittedEmail);
+      setEmail(submittedEmail);
+      setSid(result.sid);
+      setClientSecret(result.client_secret);
+      setCurrentStep(ForgotPasswordStep.EnterCode);
+    } catch (error) {
+      // Có thể show toast ở đây nếu muốn
+    }
   };
 
-  const handleVerificationSuccess = () => {
+  const handleVerificationSuccess = (code: string) => {
+    setOtpCode(code);
     setCurrentStep(ForgotPasswordStep.ResetPassword);
   };
 
@@ -46,6 +60,10 @@ export default function ForgotPasswordPage() {
       case ForgotPasswordStep.ResetPassword:
         return (
           <ResetPasswordForm
+            email={email}
+            sid={sid}
+            clientSecret={clientSecret}
+            otpCode={otpCode}
             onSuccess={handlePasswordResetSuccess}
             onBack={() => setCurrentStep(ForgotPasswordStep.EnterCode)}
           />

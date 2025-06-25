@@ -20,6 +20,8 @@ import {
   Globe,
 } from "lucide-react";
 import Link from "next/link";
+import { useUserStore } from "@/stores/useUserStore";
+import { getInitials } from "@/utils/getInitials";
 
 interface SettingItem {
   title: string;
@@ -84,9 +86,10 @@ const settings: SettingItem[] = [
 ];
 
 export default function SettingsPage() {
-  const [toggles] = useState<Record<string, boolean>>({});
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useUserStore.getState()
+  const displayName = user ? user.displayName : "Your Name"
 
   const handleFileSelect = () => {
     fileInputRef.current?.click();
@@ -108,15 +111,18 @@ export default function SettingsPage() {
           <QrCode className="h-6 w-6 text-blue-500" />
           <div className="absolute left-1/2 transform -translate-x-1/2 top-4">
             <Avatar className="h-20 w-20">
-              <AvatarFallback className="text-xl">You</AvatarFallback>
+              <AvatarFallback className="text-xl">{getInitials(displayName)}</AvatarFallback>
             </Avatar>
           </div>
-          <Button className="text-blue-500 hover:bg-zinc-300 bg-white dark:bg-transparent border dark:hover:text-blue-700" size="sm">
+          <Button
+            className="text-blue-500 hover:bg-zinc-300 bg-white dark:bg-transparent border dark:hover:text-blue-700"
+            size="sm"
+          >
             Edit
           </Button>
         </div>
         <div className="mt-16 text-center px-4 pb-4">
-          <h1 className="text-2xl font-semibold">Your Name</h1>
+          <h1 className="text-2xl font-semibold">{displayName}</h1>
           <p className="text-sm text-gray-400">+84 12345689</p>
         </div>
       </div>
@@ -151,8 +157,6 @@ export default function SettingsPage() {
           <ChevronRight className="h-5 w-5 text-gray-500" />
         </div>
       </div>
-      {/* Toggles: Appearance & Power Saving */}
-
 
       {/* Settings List */}
       <div className="p-4 space-y-2">
