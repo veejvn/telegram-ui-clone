@@ -3,12 +3,13 @@ import { Check, CheckCheck } from "lucide-react";
 import { MessagePros } from "@/types/chat";
 import { formatMsgTime } from "@/utils/chat/formatMsgTime";
 
-const TextMessage = ({ msg, isSender }: MessagePros) => {
+const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
   const textClass = clsx(
     "rounded-lg px-3 py-2",
     isSender
       ? "text-black bg-[#DCF8C6] dark:text-white dark:bg-[#6f42c1]"
-      : "text-black bg-white border border-gray-300 dark:text-white dark:bg-[#282434]"
+      : "text-black bg-white border border-gray-300 dark:text-white dark:bg-[#282434]",
+    animate && "flash-background"
   );
 
   const timeClass = clsx(

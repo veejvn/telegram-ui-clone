@@ -4,7 +4,7 @@ import React, { useEffect, useLayoutEffect, useState, useRef } from "react";
 import ChatMessage from "./ChatMessage";
 import { useTimeline } from "@/hooks/useTimeline";
 import { MessageStatus, useChatStore } from "@/stores/useChatStore";
-import { getOlderMessages, getTimeline } from "@/services/chatService";
+import { getOlderMessages } from "@/services/chatService";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { convertEventsToMessages } from "@/utils/chat/convertEventsToMessages";
 import { groupMessagesByDate } from "@/utils/chat/groupMessagesByDate";
@@ -22,16 +22,14 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
   const messagesByRoom = useChatStore((state) => state.messagesByRoom);
   const { prependMessages, setOldestEventId } = useChatStore();
   const messages = messagesByRoom[roomId] ?? [];
-
+  const grouped = groupMessagesByDate(messages);
 
   const searchParams = useSearchParams();
   const highlightId = searchParams.get("highlight");
   const firstHighlightedRef = useRef<HTMLDivElement | null>(null);
 
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [hasMoreByRoom, setHasMoreByRoom] = useState<{
-    [roomId: string]: boolean;
-  }>({});
+  const [hasMoreByRoom, setHasMoreByRoom] = useState<{[roomId: string]: boolean;}>({});
 
   const containerRef = React.useRef<HTMLDivElement | null>(null);
   const prevScrollHeightRef = React.useRef<number | null>(null);
@@ -92,8 +90,6 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
     }
   };
 
-  const grouped = groupMessagesByDate(messages);
-
   useEffect(() => {
     if (highlightId && firstHighlightedRef.current) {
       firstHighlightedRef.current.scrollIntoView({
@@ -108,10 +104,10 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
   return (
     <>
       <div
-        className="py-1 flex flex-col"
+        className="py-1 flex flex-col h-full overflow-y-auto"
         ref={containerRef}
         onScroll={handleScroll}
-        style={{ overflowY: "auto", height: "100%" }}
+        // style={{ overflowY: "auto", height: "100%" }}
       >
         {Object.entries(grouped).map(([dateLabel, msgs]) => (
           <div key={dateLabel}>
@@ -141,7 +137,6 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
         {isLoadingMore && (
           <div className="text-center text-gray-400">Loading more...</div>
         )}
-        {/* <div className="flex justify-end text-red-500">{lastMessage.status}</div> */}
       </div>
     </>
   );
