@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import * as sdk from "matrix-js-sdk";
 import { useEffect } from "react";
@@ -24,32 +24,36 @@ export const useTimeline = (roomId: string) => {
       }
     });
 
-    const onTimeline = (event: sdk.MatrixEvent, room: any, toStart: boolean) => {
+    const onTimeline = (
+      event: sdk.MatrixEvent,
+      room: any,
+      toStart: boolean
+    ) => {
       if (toStart || room.roomId !== roomId) return;
       if (event.getType() !== "m.room.message") return;
-      
+
       const content = event.getContent();
       const userId = client.getUserId();
       const sender = event.getSender();
-      const senderDisplayName = event.sender?.name ?? sender
+      const senderDisplayName = event.sender?.name ?? sender;
       const text = content.body;
       const ts = event.getTs();
-      const time = new Date(ts).toLocaleString()
+      const time = new Date(ts).toLocaleString();
 
-      let imageUrl : string | null = null
+      let imageUrl: string | null = null;
       let videoUrl: string | null = null;
       let fileUrl: string | null = null;
       let fileName: string | null = null;
-      let type : MessageType = "text"
+      let type: MessageType = "text";
 
       if (content.msgtype === "m.image") {
         type = "image";
         const mxcUrl = content.url;
-        console.log('Original MXC URL:', mxcUrl);
+        console.log("Original MXC URL:", mxcUrl);
         if (mxcUrl) {
-          imageUrl =  client.mxcUrlToHttp(mxcUrl, 800, 600, 'scale', true);
+          imageUrl = client.mxcUrlToHttp(mxcUrl, 800, 600, "scale", true);
         }
-        console.log('Generated HTTP URL:', imageUrl);
+        console.log("Generated HTTP URL:", imageUrl);
       } else if (content.msgtype === "m.video") {
         type = "video";
         if (content.url) {
@@ -66,9 +70,9 @@ export const useTimeline = (roomId: string) => {
       } else {
         type = "text";
       }
-      
+
       addMessage(roomId, {
-        eventId: userId ?? "",
+        eventId: event.getId() ?? "",
         sender,
         senderDisplayName,
         text,
@@ -80,8 +84,8 @@ export const useTimeline = (roomId: string) => {
         status: "sent",
         type,
       });
-      
-      if(sender && sender !== userId){
+
+      if (sender && sender !== userId) {
         updateLastSeen(roomId, sender, ts);
         const events = room.getLiveTimeline().getEvents();
         const lastEvent = events.length > 0 ? events[events.length - 1] : null;
