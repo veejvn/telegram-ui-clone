@@ -47,7 +47,7 @@ export default function Page() {
         <h3 className="text-sm font-semibold text-black mb-2">Posts</h3>
         <div className="bg-gray-100 rounded-xl flex flex-col items-center justify-center py-12 text-center">
           <img
-            src="/no-posts-placeholder.png"
+            src="/images/no-post-yet.png"
             alt="No posts"
             className="w-24 h-24 mb-4"
           />
