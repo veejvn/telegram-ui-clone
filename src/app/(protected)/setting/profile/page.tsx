@@ -5,11 +5,61 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useUserStore } from "@/stores/useUserStore";
 import { getInitials } from "@/utils/getInitials";
+import { useMatrixClient } from "@/contexts/MatrixClientProvider";
+import { useAuthStore } from "@/stores/useAuthStore";
+import React, { useEffect, useState } from "react";
 
 export default function MyProfilePage() {
   const router = useRouter();
   const user = useUserStore.getState().user;
   const displayName = user ? user.displayName : "Your Name";
+
+  // Thêm logic lấy avatar từ Matrix giống trang Setting
+  const client = useMatrixClient();
+  const userId = useAuthStore.getState().userId;
+  const [avatarUrl, setAvatarUrl] = useState<string>(
+    "https://avatars.githubusercontent.com/u/583231?v=4"
+  ); // fallback mặc định
+
+  useEffect(() => {
+    if (!client || !userId) return;
+
+    const fetchAvatar = async () => {
+      try {
+        const profile = await client.getProfileInfo(userId);
+        if (profile && profile.avatar_url) {
+          const httpUrl =
+            client.mxcUrlToHttp(profile.avatar_url, 96, 96, "crop") ?? "";
+          const isValid =
+            /^https?:\/\//.test(httpUrl) &&
+            !httpUrl.includes("M_NOT_FOUND");
+          if (isValid) {
+            // Kiểm tra HEAD để chắc chắn link tồn tại
+            try {
+              const res = await fetch(httpUrl, { method: "HEAD" });
+              if (res.ok) {
+                setAvatarUrl(`/api/matrix-image?url=${encodeURIComponent(httpUrl)}`);
+                return;
+              }
+            } catch {
+              // Nếu fetch lỗi, sẽ fallback
+            }
+          }
+        }
+        setAvatarUrl("https://avatars.githubusercontent.com/u/583231?v=4");
+      } catch {
+        setAvatarUrl("https://avatars.githubusercontent.com/u/583231?v=4");
+      }
+    };
+    fetchAvatar();
+
+    // Lắng nghe realtime nếu cần
+    const userObj = client.getUser?.(userId) as any;
+    if (!userObj) return;
+    const handler = () => fetchAvatar();
+    userObj.on?.("User.avatarUrl", handler);
+    return () => userObj.off?.("User.avatarUrl", handler);
+  }, [client, userId]);
 
   return (
     <div className="bg-white text-black min-h-screen px-4 pt-6 pb-10">
@@ -32,9 +82,19 @@ export default function MyProfilePage() {
       {/* Profile Info */}
       <div className="flex flex-col items-center space-y-2 mb-6">
         <Avatar className="w-20 h-20 bg-purple-600 text-white text-2xl">
-          <AvatarFallback>
-            {getInitials(displayName)}
-          </AvatarFallback>
+          <img
+            src={avatarUrl}
+            alt="avatar"
+            className="w-20 h-20 rounded-full object-cover"
+            width={80}
+            height={80}
+            loading="lazy"
+            onError={(e) => {
+              // Nếu link ảnh bị lỗi, fallback về ảnh mặc định
+              (e.currentTarget as HTMLImageElement).src =
+                "https://avatars.githubusercontent.com/u/583231?v=4";
+            }}
+          />
         </Avatar>
         <h2 className="text-xl font-semibold">{displayName}</h2>
         <span className="text-gray-500 text-sm">{user?.status}</span>
