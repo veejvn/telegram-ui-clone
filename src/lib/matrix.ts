@@ -1,7 +1,5 @@
 "use client"
 
-import { MatrixAuthService } from "@/services/matrixAuthService";
-import { useClientStore } from "@/stores/useClientStore";
 import * as sdk from "matrix-js-sdk";
 
 /**
@@ -37,23 +35,23 @@ export const waitForClientReady = (client: sdk.MatrixClient): Promise<void> => {
  *
  * @returns {Promise<typeof client | null>} The authenticated Matrix client instance, or `null` if authentication fails.
  */
-export const setupAuthedClient = async (): Promise<typeof client | null> => {
-  const authServie = new MatrixAuthService();
-  const { userId, token } = authServie.getCurrentUser();
-  const HOMESERVER_URL: string = process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
+// export const setupAuthedClient = async (): Promise<typeof client | null> => {
+//   const authServie = new MatrixAuthService();
+//   const { userId, token } = authServie.getCurrentUser();
+//   const HOMESERVER_URL: string = process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
 
-  if (!token || !userId) return null;
+//   if (!token || !userId) return null;
 
-  const client = sdk.createClient({
-    baseUrl: HOMESERVER_URL,
-    accessToken: token,
-    userId: userId,
-  });
+//   const client = sdk.createClient({
+//     baseUrl: HOMESERVER_URL,
+//     accessToken: token,
+//     userId: userId,
+//   });
 
-  client.startClient();
+//   client.startClient();
 
-  await waitForClientReady(client);
-  useClientStore.getState().setClient(client);
+//   await waitForClientReady(client);
+//   useClientStore.getState().setClient(client);
 
-  return client;
-};
+//   return client;
+// };

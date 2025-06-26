@@ -29,5 +29,5 @@ export interface RegisterFormData {
 }
 
 export interface LoginFormProps {
-  onSuccess: (token: string, userId: string) => void
+  onSuccess: (token: string, userId: string, deviceId: string) => void
 }

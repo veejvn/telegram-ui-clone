@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import SearchBar from "@/components/layouts/SearchBar";
@@ -127,8 +128,7 @@ export default function ChatsPage() {
         </div>
         <SearchBar />
       </div>
-
-      {rooms.length === 0 ? (
+      {!rooms || rooms.length == 0 ? (
         <div className="flex flex-1 flex-col justify-between min-h-[calc(100vh-112px)] pb-8">
           <div className="flex flex-1 flex-col items-center justify-center text-center">
             <img

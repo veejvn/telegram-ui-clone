@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 import ChatComposer from "@/components/chat/ChatComposer";
 import ChatHeader from "@/components/chat/ChatHeader";
@@ -8,6 +9,7 @@ import { useParams } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import * as sdk from "matrix-js-sdk";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
+
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import styles from "./page.module.css";
@@ -33,7 +35,6 @@ const ChatPage = () => {
     }
   }, [roomId, client]);
 
-  
   useEffect(() => {
     if (!client || !room) return;
     // Lấy event cuối cùng trong room (nếu có)
@@ -43,7 +44,7 @@ const ChatPage = () => {
       sendReadReceipt(client, lastEvent);
     }
   }, [room, client]);
-  
+
   if (!room) return null;
   // Kiểm tra trạng thái invite
   const isInvite = room?.getMyMembership() === "invite";
@@ -129,7 +130,7 @@ const ChatPage = () => {
 
         {/* Chat content scrollable */}
         <ScrollArea className="flex-1 min-h-0 px-4 space-y-1">
-          <ChatMessages roomId={roomId} messagesEndRef={messagesEndRef}/>
+          <ChatMessages roomId={roomId} messagesEndRef={messagesEndRef} />
         </ScrollArea>
         <ChatComposer roomId={roomId} />
       </div>

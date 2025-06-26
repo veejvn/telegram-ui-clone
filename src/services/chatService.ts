@@ -1,11 +1,20 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-"use client"
+"use client";
 
 import * as sdk from "matrix-js-sdk";
 import { Message, MessageStatus, MessageType } from "@/stores/useChatStore";
 import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
+import { MatrixAuthService } from "./matrixAuthService";
+import { useMatrixClient } from "@/contexts/MatrixClientProvider";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { useClientStore } from "@/stores/useClientStore";
 
-export const getUserRooms = async (client: sdk.MatrixClient): Promise<{
+const authService = new MatrixAuthService();
+
+export const getUserRooms = async (
+  client: sdk.MatrixClient
+): Promise<{
   success: boolean;
   err?: any;
   rooms?: sdk.Room[];
@@ -74,12 +83,15 @@ export const getTimeline = async (
 
   try {
     const room = client.getRoom(roomId);
-    if(!room) return { success: false}
+    if (!room) return { success: false };
 
-    const userId = client.getUserId()
-    const messages = room.getLiveTimeline().getEvents().slice(-20) || [];
+    // ✅ Load thêm 100 sự kiện cũ nếu chưa có
+    await client.scrollback(room, 100);
 
-    // Tìm eventId cuối cùng đã được đọc (có receipt "m.read" từ user khác)
+    const userId = client.getUserId();
+    const messages = room.getLiveTimeline().getEvents() || [];
+
+    // ✅ Tìm eventId cuối cùng được user khác read (receipt "m.read")
     let lastReadEventId: string | null = null;
     for (let i = messages.length - 1; i >= 0; i--) {
       const event = messages[i];
@@ -99,72 +111,209 @@ export const getTimeline = async (
 
     let lastReadIndex = -1;
     if (lastReadEventId) {
-      lastReadIndex = messages.findIndex(e => e.getId() === lastReadEventId);
+      lastReadIndex = messages.findIndex((e) => e.getId() === lastReadEventId);
     }
 
-    if (messages) {
-      const res: Message[] = [];
-      messages.map((event, idx) => {
-        if (event.getType() === "m.room.message") {
-          const sender = event.getSender() ?? "Unknown";
-          const content = event.getContent();
-          const text = content.body ?? "";
-          const senderDisplayName = event.sender?.name ?? sender;
-          const timestamp = event.getTs(); // -> timestamp dạng milliseconds (Unix time)
-          const time = new Date(timestamp).toLocaleString(); // chuyển sang định dạng dễ đọc
-          const eventId = event.getId() || "";
-          
-          let status: MessageStatus = "sent";
-          if(sender === userId && lastReadIndex !== -1 && idx <= lastReadIndex){
-            status = "read";
-          }
+    // ✅ Parse message
+    const parsedMessages: Message[] = messages
+      .filter((e) => e.getType() === "m.room.message")
+      .map((event, idx) => {
+        const content = event.getContent();
+        const sender = event.getSender() ?? "Unknown";
+        const senderDisplayName = event.sender?.name ?? sender;
+        const timestamp = event.getTs();
+        const time = new Date(timestamp).toLocaleString();
+        const eventId = event.getId() || "";
+        const text = content.body ?? "";
 
-          let imageUrl : string | null = null
-          let videoUrl: string | null = null;
-          let fileUrl: string | null = null;
-          let fileName: string | null = null;
-          let type : MessageType = "text"
-
-          if (content.msgtype === "m.image") {
-            type = "image";
-            const mxcUrl = content.url;
-            console.log('Original MXC URL:', mxcUrl);
-            if (mxcUrl) {
-              imageUrl =  client.mxcUrlToHttp(mxcUrl, 800, 600, 'scale', true);
-              console.log(imageUrl);
-            }
-          } else if (content.msgtype === "m.video") {
-            type = "video";
-            if (content.url) {
-              videoUrl = client.mxcUrlToHttp(content.url);
-            }
-          } else if (content.msgtype === "m.file") {
-            type = "file";
-            if (content.url) {
-              fileUrl = client.mxcUrlToHttp(content.url);
-              fileName = content.body ?? "file";
-            }
-          } else if (isOnlyEmojis(text)) {
-            type = "emoji";
-          } else {
-            type = "text";
-          }
-
-          res.push({ eventId, time, senderDisplayName, sender, text, imageUrl, videoUrl, fileUrl, fileName, status, type });
+        let status: MessageStatus = "sent";
+        if (sender === userId && lastReadIndex !== -1 && idx <= lastReadIndex) {
+          status = "read";
         }
+
+        let imageUrl: string | null = null;
+        let videoUrl: string | null = null;
+        let fileUrl: string | null = null;
+        let fileName: string | null = null;
+        let type: MessageType = "text";
+
+        if (content.msgtype === "m.image") {
+          type = "image";
+          const mxcUrl = content.url;
+          if (mxcUrl) {
+            imageUrl = client.mxcUrlToHttp(mxcUrl, 800, 600, "scale", true);
+          }
+        } else if (content.msgtype === "m.video") {
+          type = "video";
+          if (content.url) {
+            videoUrl = client.mxcUrlToHttp(content.url);
+          }
+        } else if (content.msgtype === "m.file") {
+          type = "file";
+          if (content.url) {
+            fileUrl = client.mxcUrlToHttp(content.url);
+            fileName = content.body ?? "file";
+          }
+        } else if (isOnlyEmojis(text)) {
+          type = "emoji";
+        }
+
+        return {
+          eventId,
+          sender,
+          senderDisplayName,
+          text,
+          time,
+          timestamp,
+          imageUrl,
+          videoUrl,
+          fileUrl,
+          fileName,
+          status,
+          type,
+        };
       });
+
+    return {
+      success: true,
+      timeline: parsedMessages,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      err: error,
+    };
+  }
+};
+
+export const getOlderMessages = async (
+  roomId: string,
+  client: sdk.MatrixClient,
+  limit = 20
+) => {
+  const room = client.getRoom(roomId);
+  if (!room) return [];
+
+  // 👇 Kiểm tra có thể scrollback không
+  const canBackPaginate = !!room
+    .getLiveTimeline()
+    .getPaginationToken(sdk.EventTimeline.BACKWARDS);
+  if (!canBackPaginate) return [];
+
+  await client.scrollback(room, limit);
+
+  const timeline = room.getLiveTimeline();
+  return timeline.getEvents();
+};
+
+export const getRoom = async (
+  roomId: string | undefined
+): Promise<{
+  success: boolean;
+  err?: any;
+  room?: sdk.Room;
+}> => {
+  const client = useMatrixClient();
+  if (!client) {
+    return {
+      success: false,
+      err: "User not authenticated or session invalid.",
+    };
+  }
+
+  try {
+    const result: sdk.Room | null = await client.getRoom(roomId);
+
+    if (result) {
+      console.clear();
+      console.log(
+        "%cGet room successful, room: " + result.name,
+        "color: green"
+      );
 
       return {
         success: true,
-        timeline: res,
+        room: result,
       };
     } else {
+      console.clear();
+      console.log("Get room failed !");
       return {
         success: false,
-        err: "Failed to load timeline message",
+        err: "Invalid room, check room_id !",
       };
     }
   } catch (error) {
+    return { success: false, err: error };
+  }
+};
+
+export const getUserInfoInPrivateRoom = async (
+  roomId: string,
+  client: sdk.MatrixClient
+): Promise<{
+  success: boolean;
+  err?: any;
+  user?: sdk.User;
+}> => {
+  if (!client) {
+    return {
+      success: false,
+      err: "Matrix client is not initialized.",
+    };
+  }
+
+  if (!roomId) {
+    return {
+      success: false,
+      err: "Invalid roomId.",
+    };
+  }
+
+  try {
+    const userId = useAuthStore.getState().userId;
+
+    const room = client.getRoom(roomId);
+
+    if (!room) {
+      return {
+        success: false,
+        err: `Room not found: ${roomId}`,
+      };
+    }
+
+    const allMembers = room.getMembers();
+    const otherMember = allMembers.find(
+      (member: sdk.RoomMember) => member.userId !== userId
+    );
+
+    if (!otherMember) {
+      return {
+        success: false,
+        err: "No other member found in the room.",
+      };
+    }
+
+    const user = client.getUser(otherMember.userId);
+
+    if (!user) {
+      return {
+        success: false,
+        err: "Could not fetch user via client.getUser().",
+      };
+    }
+
+    console.log(
+      "%c✅ Fetched user: " + user.displayName,
+      "color: green; font-weight: bold;"
+    );
+
+    return {
+      success: true,
+      user,
+    };
+  } catch (error) {
+    console.error("❌ Error in getUserInfoInPrivateRoom:", error);
     return { success: false, err: error };
   }
 };
@@ -213,12 +362,13 @@ function readFileAsArrayBuffer(file: File): Promise<ArrayBuffer> {
         reject(new Error("Empty result from FileReader"));
       }
     };
-    reader.onerror = () => reject(reader.error || new Error("Failed to read file"));
+    reader.onerror = () =>
+      reject(reader.error || new Error("Failed to read file"));
     reader.readAsArrayBuffer(file);
   });
 }
 
-const getImageDimensions = (file : File) : Promise<any>=> {
+const getImageDimensions = (file: File): Promise<any> => {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
@@ -234,11 +384,18 @@ const getImageDimensions = (file : File) : Promise<any>=> {
 };
 
 export const sendReadReceipt = async (client: sdk.MatrixClient, event: any) => {
-    if (!client || !event || typeof event.getId !== "function" || typeof event.getRoomId !== "function" 
-      || !event.getId() || !event.getRoomId()) return;
-    try {
-      await client.sendReadReceipt(event);
-    } catch (err) {
-      console.error("Failed to send read receipt:", err);
-    }
+  if (
+    !client ||
+    !event ||
+    typeof event.getId !== "function" ||
+    typeof event.getRoomId !== "function" ||
+    !event.getId() ||
+    !event.getRoomId()
+  )
+    return;
+  try {
+    await client.sendReadReceipt(event);
+  } catch (err) {
+    console.error("Failed to send read receipt:", err);
+  }
 };
