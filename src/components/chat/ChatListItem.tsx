@@ -47,7 +47,6 @@ export const ChatListItem = ({
     };
 
     const onPresence = (event: any, member: any) => {
-      // Nếu presence của thành viên còn lại thay đổi, cập nhật UI
       if (room.getJoinedMembers().some((m) => m.userId === member.userId)) {
         setRefresh((prev) => prev + 1);
       }
@@ -102,7 +101,7 @@ export const ChatListItem = ({
         <div className="flex items-center gap-1">
           <h1 className="text-[18px] mb-0.5">{room.name}</h1>
           {isMuted && (
-            <VolumeX className="w-4 h-4 text-zinc-400" /> // icon nhỏ cạnh tên
+            <VolumeX className="w-4 h-4 text-zinc-400" />
           )}
         </div>
         <p className="text-sm ">{sender}</p>

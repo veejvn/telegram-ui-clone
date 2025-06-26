@@ -11,6 +11,7 @@ import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import ChatEditButton from "@/components/chat/ChatEditButton";
 import ChatActionBar from "@/components/chat/ChatActionBar";
 import DeleteChatModal from "@/components/chat/DeleteChatModal";
+import { getUserRooms } from "@/services/chatService";
 
 export default function ChatsPage() {
   const [rooms, setRooms] = useState<sdk.Room[]>([]);
@@ -21,12 +22,17 @@ export default function ChatsPage() {
 
   useEffect(() => {
     if (!client) return;
-    const joinedRooms = client.getRooms().filter((room) => {
-      const membership = room.getMyMembership();
-      const isEmptyRoom = room.name?.toLowerCase().startsWith("empty room");
-      return membership === "join" && !isEmptyRoom;
-    });
-    setRooms(joinedRooms);
+    getUserRooms(client)
+      .then((res) => {
+        if (res.success && res.rooms) {
+          setRooms(res.rooms);
+        } else {
+          console.error("Failed to fetch user rooms or rooms are undefined.");
+        }
+      })
+      .catch((error) => {
+        console.error("An error occurred while fetching user rooms:", error);
+      });
   }, [client]);
 
   const handleSelectRoom = (roomId: string) => {
@@ -50,14 +56,19 @@ export default function ChatsPage() {
   };
 
   const refreshRooms = () => {
-    if (!client) return;
-    const joinedRooms = client.getRooms().filter((room) => {
-      const membership = room.getMyMembership();
-      const isEmptyRoom = room.name?.toLowerCase().startsWith("empty room");
-      return membership === "join" && !isEmptyRoom;
+  if (!client) return;
+  getUserRooms(client)
+    .then((res) => {
+      if (res.success && res.rooms) {
+        setRooms(res.rooms);
+      } else {
+        console.error("Failed to fetch user rooms or rooms are undefined.");
+      }
+    })
+    .catch((error) => {
+      console.error("An error occurred while fetching user rooms:", error);
     });
-    setRooms(joinedRooms);
-  };
+};
 
   const handleDeleteMine = async () => {
     if (!client) return;
