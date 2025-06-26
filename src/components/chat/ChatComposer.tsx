@@ -6,6 +6,7 @@ import { sendImageMessage, sendMessage } from "@/services/chatService";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useTheme } from "next-themes";
 import EmojiPicker, { Theme as EmojiTheme } from "emoji-picker-react";
+import { useChatStore } from "@/stores/useChatStore";
 
 const ChatComposer = ({ roomId }: { roomId: string }) => {
   const [text, setText] = useState("");
@@ -16,11 +17,11 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const client = useMatrixClient();
   const theme = useTheme();
-
+  const { addMessage } = useChatStore.getState();
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
-      if(textareaRef.current){
-        textareaRef.current.value = ""
+      if (textareaRef.current) {
+        textareaRef.current.value = "";
       }
       e.preventDefault();
       handleSend();
@@ -31,20 +32,37 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     const trimmed = text.trim();
     if (!trimmed || !client) return;
 
-    sendMessage(roomId, trimmed, client)
-      .then((res) => {
-        if (res.success) {
-          console.log("Sent Message: ", text);
-          //setText("");
-        } else {
-          console.log("Send Failed !");
-        }
-      })
-      .catch((res) => {
-        console.log(res.error.Message);
-      });
-    if(showEmojiPicker)
-      setShowEmojiPicker((prev) => (!prev))
+    const localId = "local_" + Date.now(); // Fake ID tạm thời
+    const userId = client.getUserId();
+    const now = new Date();
+
+    // 🧠 Hiển thị ngay trên UI (thêm vào store)
+    addMessage(roomId, {
+      eventId: localId,
+      sender: userId ?? undefined,
+      senderDisplayName: userId ?? undefined,
+      text: trimmed,
+      time: now.toLocaleString(),
+      timestamp: now.getTime(),
+      status: "sent",
+    });
+
+    // 🧹 Reset UI
+    setText("");
+    setShowEmojiPicker(false);
+
+    // 🔁 Gửi lên Matrix
+    setTimeout(() => {
+      sendMessage(roomId, trimmed, client)
+        .then((res) => {
+          if (!res.success) {
+            console.log("Send Failed!");
+          }
+        })
+        .catch((err) => {
+          console.log("Send Error:", err);
+        });
+    }, 1000);
   };
 
   const handleEmojiClick = (emojiData: any) => {
@@ -53,7 +71,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
 
   const handleChangeFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !client || file.type.startsWith('image/')) return;
+    if (!file || !client || file.type.startsWith("image/")) return;
 
     try {
       await sendImageMessage(client, roomId, file);
@@ -104,19 +122,19 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
           rows={1}
           className="flex-1 h-auto resize-none bg-transparent outline-none px-3 max-h-[6rem] overflow-y-auto text-lg text-black dark:text-white scrollbar-thin"
         />
-
-        {/* <Smile
-          onClick={() => setShowEmojiPicker((prev) => !prev)}
-          className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
-          size={30}
-        /> */}
-
-        <Eclipse
-          onClick={() => setShowEmojiPicker((prev) => !prev)}
-          className="text-[#858585] cursor-default"
-          size={30}
-        />
-
+        {text.trim() ? (
+          <Smile
+            onClick={() => setShowEmojiPicker((prev) => !prev)}
+            className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
+            size={30}
+          />
+        ) : (
+          <Eclipse
+            // onClick={() => setShowEmojiPicker((prev) => !prev)}
+            className="text-[#858585] cursor-default"
+            size={30}
+          />
+        )}
 
         {showEmojiPicker && (
           <div className="absolute bottom-12 left-6 z-50">
@@ -131,7 +149,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
           </div>
         )}
       </div>
-      
+
       {text.trim() ? (
         <svg
           xmlns="http://www.w3.org/2000/svg"
