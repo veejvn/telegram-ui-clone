@@ -75,6 +75,7 @@ const ChatPage = () => {
     try {
       await client.leave(roomId);
       setRoom(null);
+      router.push("/chat")
     } catch (e) {
       toast.error("Không thể từ chối mời lời mời", {
         action: {

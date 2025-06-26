@@ -120,11 +120,16 @@ export const ChatList = ({
                       isEditMode={isEditMode}
                       checked={selectedRooms.includes(room.roomId)}
                       onSelect={() => onSelectRoom?.(room.roomId)}
+                      isMuted={mutedRooms.includes(room.roomId)}
                     />
                   ) : (
                     <Link href={`/chat/${room.roomId}`}>
                       <div className="block w-full cursor-pointer">
-                        <ChatListItem room={room} />
+                        <ChatListItem
+                          room={room}
+                          isMuted={mutedRooms.includes(room.roomId)}
+                        />{" "}
+                        {/* THÊM Ở ĐÂY */}
                       </div>
                     </Link>
                   )}
