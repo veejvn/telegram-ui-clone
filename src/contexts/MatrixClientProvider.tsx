@@ -29,18 +29,21 @@ export function MatrixClientProvider({
     const setupClient = async () => {
       const accessToken = getLS("matrix_access_token");
       const userId = getLS("matrix_user_id");
-      if (!accessToken || !userId) return;
+      const deviceId = getLS("matrix_device_id"); // <-- thêm dòng này
+
+      if (!accessToken || !userId || !deviceId) return;
 
       const client = sdk.createClient({
         baseUrl: HOMESERVER_URL,
         accessToken,
         userId,
+        deviceId,
       });
 
       client.startClient();
 
       await waitForClientReady(client);
-      
+
       if (isMounted) setClient(client);
     };
 

@@ -1,11 +1,9 @@
-// src/components/call/CallContainer.tsx
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import useCallStore from '@/stores/useCallStore';
 import useCallHistoryStore, { CallStatus } from '@/stores/useCallHistoryStore';
-import OutgoingCall from './OutgoingCall';
-import IncomingCall from './IncomingCall';
 import { VoiceCall } from './VoiceCall';
 import { VideoCall } from './VideoCall';
 
@@ -24,90 +22,76 @@ export default function CallContainer({
         state,
         incoming,
         placeCall,
-        answerCall,
         hangup,
         callDuration,
     } = useCallStore();
 
     const addHistory = useCallHistoryStore((s) => s.addCall);
+    const router = useRouter();
+    const params = useSearchParams();
+    const contactName = params.get('contact') ?? roomId;
 
-    // Khi mount lần đầu, nếu là caller thì placeCall
+    // Tránh add lịch sử 2 lần cho 1 call
+    const [historyAdded, setHistoryAdded] = useState(false);
+
+    // Add lịch sử duy nhất khi state là 'ended'
+    useEffect(() => {
+        if (state === 'ended' && !historyAdded) {
+            let status: CallStatus = 'accepted';
+            if (incoming && callDuration === 0) status = 'missed';
+            else if (!incoming && callDuration === 0) status = 'rejected';
+
+            addHistory({
+                calleeId: incoming?.callerId ?? roomId,
+                calleeName: contactName,
+                type,
+                status,
+                duration: callDuration,
+            });
+
+            setHistoryAdded(true);
+            onTerminate();
+        }
+    }, [state, historyAdded, incoming, callDuration, addHistory, onTerminate, roomId, type, contactName]);
+
+    // Chỉ gọi mới nếu là caller và state là 'idle'
     useEffect(() => {
         if (state === 'idle') {
             placeCall(roomId, type);
         }
     }, [state, roomId, type, placeCall]);
 
-    // Khi call vừa kết thúc, lưu lịch sử rồi exit
+    // Khi unmount component thì cleanup flag này (đề phòng reuse lại)
     useEffect(() => {
-        if (state === 'ended') {
-            let status: CallStatus = 'accepted';
+        return () => setHistoryAdded(false);
+    }, []);
 
-            // nếu là incoming mà không accept (duration=0) → missed
-            if (incoming && callDuration === 0) {
-                status = 'missed';
-            }
-            // nếu là caller huỷ ngay (duration=0) → rejected
-            else if (!incoming && callDuration === 0) {
-                status = 'rejected';
-            }
-
-            addHistory({
-                calleeId: incoming?.callerId ?? roomId,
-                type,
-                status,
-                duration: callDuration,
-            });
-
-            onTerminate();
-        }
-    }, [state]);
-
-    // Outgoing (caller đang ringing)
-    if (state === 'ringing') {
+    // Render VoiceCall hoặc VideoCall UI tuỳ loại
+    if (type === 'voice') {
         return (
-            <OutgoingCall
-                roomId={roomId}
-                type={type}
-                onCancel={onTerminate}
-            />
-        );
-    }
-
-    // Incoming (callee thấy màn hình đổ chuông)
-    if (state === 'incoming' && incoming) {
-        return (
-            <IncomingCall
-                callerName={incoming.callerId}
-                onAccept={() => answerCall()}
-                onReject={() => {
-                    hangup();
-                    onTerminate();
-                }}
-            />
-        );
-    }
-
-    // Connecting/Connected → show VoiceCall hoặc VideoCall
-    if (state === 'connecting' || state === 'connected') {
-        const contactName = incoming?.callerId ?? roomId;
-        return type === 'voice' ? (
             <VoiceCall
                 contactName={contactName}
+                callState={state}
+                callDuration={callDuration}
                 onEndCall={() => {
                     hangup();
                     onTerminate();
                 }}
                 onSwitchToVideo={() => {
-                    // chuyển sang video
                     hangup();
                     onTerminate();
-                    // bạn có thể đưa router.push(...) vào onTerminate callback để điều hướng
+                    router.replace(
+                        `/call/video?calleeId=${encodeURIComponent(roomId)}&contact=${encodeURIComponent(contactName)}`
+                    );
                 }}
             />
-        ) : (
+        );
+    } else {
+        return (
             <VideoCall
                 contactName={contactName}
+                callState={state}
+                callDuration={callDuration}
                 onEndCall={() => {
                     hangup();
                     onTerminate();
@@ -115,7 +99,4 @@ export default function CallContainer({
             />
         );
     }
-
-    // Các state khác (idle, error, ended) → render null
-    return null;
 }

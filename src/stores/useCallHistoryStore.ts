@@ -7,6 +7,7 @@ export interface CallRecord {
     id: string
     calleeId: string
     type: CallType
+    calleeName?: string;     // <-- Thêm dòng này!
     status: CallStatus
     duration: number    // giây
     timestamp: number   // ms từ 1970
@@ -26,13 +27,14 @@ function uuid() {
 const useCallHistoryStore = create<CallHistoryStore>((set) => ({
     history: [],
 
-    addCall: ({ calleeId, type, status, duration }) =>
+    addCall: ({ calleeId, calleeName, type, status, duration }) =>
         set((s) => ({
             history: [
                 {
                     id: uuid(),
                     calleeId,
                     type,
+                    calleeName,     // <-- Thêm dòng này!
                     status,
                     duration,
                     timestamp: Date.now(),

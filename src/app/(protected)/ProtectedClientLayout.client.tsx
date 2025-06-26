@@ -8,6 +8,7 @@ import { ROUTES } from '@/constants/routes';
 import { useAuthStore } from '@/stores/useAuthStore';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import BottomNavigation from '@/components/layouts/BottomNavigation';
+import IncomingCallHandler from "@/components/call/IncomingCallHandler";
 
 // Dynamic import client-only MatrixClientProvider
 const MatrixClientProvider = dynamic(
@@ -49,6 +50,7 @@ export default function ProtectedClientLayout({
 
     return (
         <MatrixClientProvider>
+            <IncomingCallHandler />
             <main className="min-h-screen flex flex-col">
                 {children}
                 {shouldShowBottomNav && <BottomNavigation />}

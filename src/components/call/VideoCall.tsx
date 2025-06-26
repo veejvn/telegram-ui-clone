@@ -7,16 +7,25 @@ import useCallStore from '@/stores/useCallStore';
 
 interface VideoCallProps {
     contactName: string;
+    callState?: string;       // <-- Đã thêm
+    callDuration?: number;    // <-- Đã thêm
     onEndCall: () => void;
 }
 
-export function VideoCall({ contactName, onEndCall }: VideoCallProps) {
-    const { localStream, remoteStream, state, hangup } = useCallStore();
+export function VideoCall({
+    contactName,
+    callState,
+    callDuration,
+    onEndCall,
+}: VideoCallProps) {
+    const { localStream, remoteStream, state: storeState, hangup } = useCallStore();
 
+    // Ưu tiên lấy state/duration từ props nếu có
+    const state = callState ?? storeState;
     const [micOn, setMicOn] = useState(true);
     const [cameraOn, setCameraOn] = useState(true);
     const [speakerOn, setSpeakerOn] = useState(true);
-    const [callDuration, setCallDuration] = useState(0);
+    const [internalDuration, setInternalDuration] = useState(0);
 
     const localVideoRef = useRef<HTMLVideoElement>(null);
     const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -28,39 +37,39 @@ export function VideoCall({ contactName, onEndCall }: VideoCallProps) {
         }
     }, [localStream]);
 
-    // Attach remote stream to background video
+    // Attach remote stream when connected
     useEffect(() => {
-        if (remoteStream && remoteVideoRef.current) {
+        if (state === 'connected' && remoteStream && remoteVideoRef.current) {
             remoteVideoRef.current.srcObject = remoteStream;
         }
-    }, [remoteStream]);
+    }, [remoteStream, state]);
 
-    // Control mic track
+    // Control mic
     useEffect(() => {
         if (localStream) {
             localStream.getAudioTracks().forEach((t) => (t.enabled = micOn));
         }
     }, [micOn, localStream]);
 
-    // Control camera track
+    // Control camera
     useEffect(() => {
         if (localStream) {
             localStream.getVideoTracks().forEach((t) => (t.enabled = cameraOn));
         }
     }, [cameraOn, localStream]);
 
-    // Control speaker (mute/unmute remote)
+    // Control speaker
     useEffect(() => {
         if (remoteVideoRef.current) {
             remoteVideoRef.current.muted = !speakerOn;
         }
     }, [speakerOn]);
 
-    // Call duration timer starts when connected
+    // Timer
     useEffect(() => {
-        let timer: number;
+        let timer: number | undefined;
         if (state === 'connected') {
-            timer = window.setInterval(() => setCallDuration((t) => t + 1), 1000);
+            timer = window.setInterval(() => setInternalDuration((t) => t + 1), 1000);
         }
         return () => {
             if (timer) window.clearInterval(timer);
@@ -68,11 +77,9 @@ export function VideoCall({ contactName, onEndCall }: VideoCallProps) {
     }, [state]);
 
     const formatDuration = (seconds: number) => {
-        const minutes = Math.floor(seconds / 60)
-            .toString()
-            .padStart(2, '0');
-        const secs = (seconds % 60).toString().padStart(2, '0');
-        return `${minutes}:${secs}`;
+        const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+        const s = (seconds % 60).toString().padStart(2, '0');
+        return `${m}:${s}`;
     };
 
     const handleEnd = () => {
@@ -82,15 +89,21 @@ export function VideoCall({ contactName, onEndCall }: VideoCallProps) {
 
     return (
         <div className="relative w-full h-screen dark:bg-[#1C1C1E] dark:text-white overflow-hidden">
-            {/* Remote video */}
-            <video
-                ref={remoteVideoRef}
-                autoPlay
-                playsInline
-                className="absolute inset-0 w-full h-full object-cover opacity-80"
-            />
+            {/* Remote video or loading fallback */}
+            {state === 'connected' ? (
+                <video
+                    ref={remoteVideoRef}
+                    autoPlay
+                    playsInline
+                    className="absolute inset-0 w-full h-full object-cover opacity-80"
+                />
+            ) : (
+                <div className="absolute inset-0 bg-black flex items-center justify-center text-white text-xl font-medium">
+                    Đang chờ đối phương chấp nhận...
+                </div>
+            )}
 
-            {/* Local video (PiP) */}
+            {/* Local PiP video */}
             <div className="absolute top-4 right-4 w-32 aspect-[3/4] rounded-2xl overflow-hidden border border-white/20 shadow-lg">
                 <video
                     ref={localVideoRef}
@@ -112,71 +125,48 @@ export function VideoCall({ contactName, onEndCall }: VideoCallProps) {
                 <div className="flex items-center gap-2 mt-1">
                     <div className="w-2 h-2 rounded-full bg-[#0088CC]" />
                     <span className="text-sm dark:text-gray-300">
-                        {formatDuration(callDuration)}
+                        {{
+                            ringing: 'Đang kết nối...',
+                            connecting: 'Đang kết nối...',
+                            incoming: 'Cuộc gọi đến...',
+                            connected: formatDuration(callDuration ?? internalDuration),
+                            ended: 'Cuộc gọi đã kết thúc',
+                            error: 'Lỗi cuộc gọi',
+                            idle: '',
+                        }[state]}
                     </span>
                 </div>
             </div>
 
-            {/* Call Controls */}
+            {/* Controls */}
             <div className="absolute bottom-24 inset-x-0 pb-6 pt-20 bg-gradient-to-t dark:from-[#1C1C1E] dark:via-[#1C1C1E]/80 dark:to-transparent">
                 <div className="flex justify-center gap-8">
                     {/* Mic */}
-                    <div className="flex flex-col items-center">
-                        <button
-                            onClick={() => setMicOn((v) => !v)}
-                            className={cn(
-                                'w-14 h-14 rounded-full flex items-center justify-center transition-colors mb-2 border',
-                                micOn ? 'dark:bg-[#2C2C2E] dark:hover:bg-[#3C3C3E]' : 'bg-red-500/80 hover:bg-red-600/80'
-                            )}
-                        >
-                            {micOn ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
-                        </button>
-                        <span className="text-xs dark:text-white/80">
-                            {micOn ? 'Mute' : 'Unmute'}
-                        </span>
-                    </div>
-
+                    <ControlButton
+                        onClick={() => setMicOn((v) => !v)}
+                        active={micOn}
+                        icon={micOn ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
+                        label={micOn ? 'Mute' : 'Unmute'}
+                    />
                     {/* Camera */}
-                    <div className="flex flex-col items-center">
-                        <button
-                            onClick={() => setCameraOn((v) => !v)}
-                            className={cn(
-                                'w-14 h-14 rounded-full flex items-center justify-center transition-colors mb-2 border',
-                                cameraOn ? 'dark:bg-[#2C2C2E] dark:hover:bg-[#3C3C3E]' : 'bg-red-500/80 hover:bg-red-600/80'
-                            )}
-                        >
-                            {cameraOn ? <Video className="w-6 h-6" /> : <VideoOff className="w-6 h-6" />}
-                        </button>
-                        <span className="text-xs dark:text-white/80">
-                            {cameraOn ? 'Stop Video' : 'Start Video'}
-                        </span>
-                    </div>
-
+                    <ControlButton
+                        onClick={() => setCameraOn((v) => !v)}
+                        active={cameraOn}
+                        icon={cameraOn ? <Video className="w-6 h-6" /> : <VideoOff className="w-6 h-6" />}
+                        label={cameraOn ? 'Stop Video' : 'Start Video'}
+                    />
                     {/* Speaker */}
-                    <div className="flex flex-col items-center">
-                        <button
-                            onClick={() => setSpeakerOn((v) => !v)}
-                            className={cn(
-                                'w-14 h-14 rounded-full flex items-center justify-center transition-colors mb-2 border',
-                                speakerOn
-                                    ? 'dark:bg-[#2C2C2E] dark:hover:bg-[#3C3C3E]'
-                                    : 'bg-red-500/80 hover:bg-red-600/80'
-                            )}
-                        >
-                            {speakerOn ? <Volume2 className="w-6 h-6" /> : <VolumeX className="w-6 h-6" />}
-                        </button>
-                        <span className="text-xs dark:text-white/80">
-                            {speakerOn ? 'Speaker' : 'Muted'}
-                        </span>
-                    </div>
-
-                    {/* End Call */}
+                    <ControlButton
+                        onClick={() => setSpeakerOn((v) => !v)}
+                        active={speakerOn}
+                        icon={speakerOn ? <Volume2 className="w-6 h-6" /> : <VolumeX className="w-6 h-6" />}
+                        label={speakerOn ? 'Speaker' : 'Muted'}
+                    />
+                    {/* End */}
                     <div className="flex flex-col items-center">
                         <button
                             onClick={handleEnd}
                             className="w-14 h-14 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition-colors mb-2"
-                            title="End Call"
-                            aria-label="End Call"
                         >
                             <PhoneOff className="w-6 h-6" />
                         </button>
@@ -184,6 +174,36 @@ export function VideoCall({ contactName, onEndCall }: VideoCallProps) {
                     </div>
                 </div>
             </div>
+        </div>
+    );
+}
+
+// 📦 Reusable control button
+function ControlButton({
+    onClick,
+    active,
+    icon,
+    label,
+}: {
+    onClick: () => void;
+    active: boolean;
+    icon: React.ReactNode;
+    label: string;
+}) {
+    return (
+        <div className="flex flex-col items-center">
+            <button
+                onClick={onClick}
+                className={cn(
+                    'w-14 h-14 rounded-full flex items-center justify-center transition-colors mb-2 border',
+                    active
+                        ? 'dark:bg-[#2C2C2E] dark:hover:bg-[#3C3C3E]'
+                        : 'bg-red-500/80 hover:bg-red-600/80'
+                )}
+            >
+                {icon}
+            </button>
+            <span className="text-xs dark:text-white/80">{label}</span>
         </div>
     );
 }

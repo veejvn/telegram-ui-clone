@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import ContactService from "@/services/contactService";
-import { callService } from "@/services/callService";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useRouter } from "next/navigation";
+import useCallStore from "@/stores/useCallStore"; // Thêm import này phía trên
 
 interface Contact {
     id: string;
@@ -19,8 +19,8 @@ export default function NewCallPage() {
     const client = useMatrixClient();
     const [contacts, setContacts] = useState<Contact[]>([]);
     const [search, setSearch] = useState("");
-    const [isCalling, setIsCalling] = useState(false);
     const router = useRouter();
+    const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
 
     useEffect(() => {
         if (!client) return;
@@ -46,31 +46,11 @@ export default function NewCallPage() {
     }, [client]);
 
     const handleStartCall = async (c: Contact) => {
-        if (!client) return;
-
-        setIsCalling(true);
-        try {
-            await callService.placeCall(c.roomId, 'voice');
-
-            callService.once('connected', () => {
-                router.push(
-                    `/call/voice?calleeId=${encodeURIComponent(c.id)}&contact=${encodeURIComponent(c.name)}`
-                );
-            });
-
-            callService.once('call-error', (err: Error) => {
-                console.error('Lỗi khi thực hiện cuộc gọi:', err);
-                setIsCalling(false);
-            });
-
-            callService.once('call-ended', () => {
-                setIsCalling(false);
-            });
-
-        } catch (err) {
-            console.error('Lỗi khi thực hiện cuộc gọi:', err);
-            setIsCalling(false);
-        }
+        // 🟢 Reset call state trước khi gọi
+        useCallStore.getState().reset();
+        router.push(
+            `/call/voice?calleeId=${encodeURIComponent(c.roomId)}&contact=${encodeURIComponent(c.name)}`
+        );
     };
 
     const filtered = contacts
@@ -107,7 +87,7 @@ export default function NewCallPage() {
                             <div
                                 key={c.id}
                                 className="px-4 py-2 flex items-center gap-3 hover:bg-zinc-900 cursor-pointer"
-                                onClick={() => handleStartCall(c)}
+                                onClick={() => setSelectedContact(c)}
                             >
                                 <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center text-sm font-semibold">
                                     {c.name.charAt(0).toUpperCase()}
@@ -119,14 +99,42 @@ export default function NewCallPage() {
                         ))
                     )}
                 </ScrollArea>
-            </div>
 
-            {isCalling && (
-                <div className="absolute inset-0 bg-black bg-opacity-80 flex items-center justify-center text-white text-sm z-50">
-                    Đang kết nối cuộc gọi...
-                </div>
-            )}
+// Popup chọn loại call
+                {selectedContact && (
+                    <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center">
+                        <div className="bg-white rounded-xl p-6 flex flex-col gap-4 w-80">
+                            <h2 className="font-bold text-lg text-center text-black">Chọn loại cuộc gọi</h2>
+                            <button
+                                className="p-3 rounded bg-blue-100 hover:bg-blue-200 flex items-center justify-center gap-2"
+                                onClick={() => {
+                                    useCallStore.getState().reset();
+                                    router.push(`/call/voice?calleeId=${encodeURIComponent(selectedContact.roomId)}&contact=${encodeURIComponent(selectedContact.name)}`);
+                                    setSelectedContact(null);
+                                }}
+                            >
+                                <span className="text-blue-500 font-semibold">Gọi thoại</span>
+                            </button>
+                            <button
+                                className="p-3 rounded bg-green-100 hover:bg-green-200 flex items-center justify-center gap-2"
+                                onClick={() => {
+                                    useCallStore.getState().reset();
+                                    router.push(`/call/video?calleeId=${encodeURIComponent(selectedContact.roomId)}&contact=${encodeURIComponent(selectedContact.name)}`);
+                                    setSelectedContact(null);
+                                }}
+                            >
+                                <span className="text-green-500 font-semibold">Gọi video</span>
+                            </button>
+                            <button
+                                className="text-gray-500 hover:underline text-sm mt-2"
+                                onClick={() => setSelectedContact(null)}
+                            >
+                                Hủy
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
-

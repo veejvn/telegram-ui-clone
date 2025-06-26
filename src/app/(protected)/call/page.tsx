@@ -91,10 +91,10 @@ export default function CallHistoryPage() {
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-              {call.calleeId.charAt(0).toUpperCase()}
+              {(call.calleeName || call.calleeId).charAt(0).toUpperCase()}
             </div>
             <div>
-              <div className="font-medium">{call.calleeId}</div>
+              <div className="font-medium">{call.calleeName || call.calleeId}</div>
               <div
                 className={`text-sm ${call.status === 'missed'
                   ? 'text-red-400'

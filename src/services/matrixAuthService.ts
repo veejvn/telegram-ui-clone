@@ -1,6 +1,6 @@
 "use client"
 
-import * as sdk from "matrix-js-sdk"; 
+import * as sdk from "matrix-js-sdk";
 import { ERROR_MESSAGES } from "@/constants/error-messages"
 import { LoginFormData, RegisterFormData } from "@/types/auth";
 import { getLS, removeLS, setLS } from "@/tools/localStorage.tool";
@@ -32,7 +32,7 @@ export class MatrixAuthService {
         this.client = clientInstance
     }
 
-    async sendEmailVerification(email: string) : Promise<any> {
+    async sendEmailVerification(email: string): Promise<any> {
 
         const clientSecret = Math.random().toString(36).substring(2, 10);
         const sendAttempt = 1;
@@ -51,7 +51,7 @@ export class MatrixAuthService {
             });
 
             const data = await response.json();
-            
+
             if (!response.ok) {
                 throw new Error(data.error || 'Failed to send verification email');
             }
@@ -67,7 +67,7 @@ export class MatrixAuthService {
     }
 
     // Đăng ký tài khoản mới
-    async register({ username, password} : RegisterFormData) : Promise<any> {
+    async register({ username, password }: RegisterFormData): Promise<any> {
         try {
             const registerResponse = await this.client.registerRequest({
                 username,
@@ -81,6 +81,7 @@ export class MatrixAuthService {
             if (registerResponse.access_token) {
                 setLS("matrix_access_token", registerResponse.access_token);
                 setLS("matrix_user_id", registerResponse.user_id);
+
             }
             return {
                 success: true
@@ -92,7 +93,7 @@ export class MatrixAuthService {
     }
 
     // Đăng nhập
-    async login({username , password} : LoginFormData) : Promise<ILoginResponse> {
+    async login({ username, password }: LoginFormData): Promise<ILoginResponse> {
         try {
             const loginResponse = await this.client.loginRequest({
                 type: "m.login.password",
@@ -102,6 +103,8 @@ export class MatrixAuthService {
             if (loginResponse.access_token) {
                 setLS("matrix_access_token", loginResponse.access_token);
                 setLS("matrix_user_id", loginResponse.user_id);
+                setLS("matrix_device_id", loginResponse.device_id); // <-- Dòng này là bắt buộc!
+
             }
             return {
                 success: true,
@@ -128,10 +131,12 @@ export class MatrixAuthService {
             if (loginResponse.access_token) {
                 setLS("matrix_access_token", loginResponse.access_token);
                 setLS("matrix_user_id", loginResponse.user_id);
+                setLS("matrix_device_id", loginResponse.device_id); // Thêm dòng này!
                 this.client = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: loginResponse.access_token,
-                    userId: loginResponse.user_id
+                    userId: loginResponse.user_id,
+                    deviceId: loginResponse.device_id,               // Và truyền deviceId vào đây!
                 });
             }
 
@@ -157,10 +162,12 @@ export class MatrixAuthService {
             if (loginResponse.access_token) {
                 setLS("matrix_access_token", loginResponse.access_token);
                 setLS("matrix_user_id", loginResponse.user_id);
+                setLS("matrix_device_id", loginResponse.device_id); // Thêm dòng này!
                 this.client = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: loginResponse.access_token,
-                    userId: loginResponse.user_id
+                    userId: loginResponse.user_id,
+                    deviceId: loginResponse.device_id,               // Và truyền deviceId vào đây!
                 });
             }
 
@@ -172,7 +179,7 @@ export class MatrixAuthService {
     }
 
     // Đăng xuất
-    async logout() : Promise<void> {
+    async logout(): Promise<void> {
         try {
             const accessToken = getLS("matrix_access_token");
             const userId = getLS("matrix_user_id");
@@ -275,7 +282,7 @@ export class MatrixAuthService {
 
     // Kiểm tra trạng thái đăng nhập
     isLoggedIn() {
-        return !! getLS("matrix_access_token") && !! getLS("matrix_user_id");
+        return !!getLS("matrix_access_token") && !!getLS("matrix_user_id");
     }
 
     // Lấy thông tin người dùng hiện tại

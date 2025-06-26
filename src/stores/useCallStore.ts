@@ -1,4 +1,3 @@
-// src/stores/useCallStore.ts
 import { create } from 'zustand'
 import { callService, CallType, IncomingCall } from '@/services/callService'
 
@@ -20,19 +19,37 @@ interface CallStore {
     placeCall: (roomId: string, type: CallType) => void
     answerCall: () => void
     hangup: () => void
+    reset: () => void
 }
 
+// Audio setup
+const outgoingAudio = typeof Audio !== 'undefined' ? new Audio('/sounds/outgoing.mp3') : null
+const ringtoneAudio = typeof Audio !== 'undefined' ? new Audio('/sounds/ringtone.mp3') : null
+
+if (outgoingAudio) outgoingAudio.loop = true
+if (ringtoneAudio) ringtoneAudio.loop = true
+
 let _timer: ReturnType<typeof setInterval> | null = null
+
+const stopAllTracks = (stream?: MediaStream) => {
+    console.log('Nhận remoteStream:', stream); // <--- THÊM LOG NÀY!
+
+    if (stream) {
+        stream.getTracks().forEach(track => {
+            try { track.stop() } catch { }
+        })
+    }
+}
 
 const useCallStore = create<CallStore>((set, get) => {
     // subscribe matrix-js-sdk events
     callService.on('outgoing-call', () => {
-        // caller đã gửi invite
+        outgoingAudio?.play().catch(() => { })
         set({ state: 'ringing', incoming: undefined, callDuration: 0 })
     })
 
     callService.on('incoming-call', (data: IncomingCall) => {
-        // callee nhận cuộc gọi
+        ringtoneAudio?.play().catch(() => { })
         set({ state: 'incoming', incoming: data, callDuration: 0 })
     })
 
@@ -41,8 +58,13 @@ const useCallStore = create<CallStore>((set, get) => {
     })
 
     callService.on('remote-stream', (stream: MediaStream) => {
-        // khi peer đã bắt đầu media
+        outgoingAudio?.pause()
+        ringtoneAudio?.pause()
+        if (outgoingAudio) outgoingAudio.currentTime = 0
+        if (ringtoneAudio) ringtoneAudio.currentTime = 0
+
         set({ remoteStream: stream, state: 'connected' })
+
         // start duration timer
         if (_timer) clearInterval(_timer)
         set({ callDuration: 0 })
@@ -52,11 +74,20 @@ const useCallStore = create<CallStore>((set, get) => {
     })
 
     callService.on('call-ended', () => {
-        // cleanup on hangup
         if (_timer) {
             clearInterval(_timer)
             _timer = null
         }
+        outgoingAudio?.pause()
+        ringtoneAudio?.pause()
+        if (outgoingAudio) outgoingAudio.currentTime = 0
+        if (ringtoneAudio) ringtoneAudio.currentTime = 0
+
+        // STOP ALL TRACKS
+        const { localStream, remoteStream } = get();
+        stopAllTracks(localStream);
+        stopAllTracks(remoteStream);
+
         set({
             state: 'ended',
             localStream: undefined,
@@ -65,11 +96,20 @@ const useCallStore = create<CallStore>((set, get) => {
     })
 
     callService.on('call-error', () => {
-        // error cũng end call
         if (_timer) {
             clearInterval(_timer)
             _timer = null
         }
+        outgoingAudio?.pause()
+        ringtoneAudio?.pause()
+        if (outgoingAudio) outgoingAudio.currentTime = 0
+        if (ringtoneAudio) ringtoneAudio.currentTime = 0
+
+        // STOP ALL TRACKS
+        const { localStream, remoteStream } = get();
+        stopAllTracks(localStream);
+        stopAllTracks(remoteStream);
+
         set({ state: 'error' })
     })
 
@@ -86,6 +126,29 @@ const useCallStore = create<CallStore>((set, get) => {
         hangup: () => {
             callService.hangup()
         },
+        reset: () => {
+            if (_timer) {
+                clearInterval(_timer)
+                _timer = null
+            }
+            outgoingAudio?.pause()
+            ringtoneAudio?.pause()
+            if (outgoingAudio) outgoingAudio.currentTime = 0
+            if (ringtoneAudio) ringtoneAudio.currentTime = 0
+
+            // STOP ALL TRACKS
+            const { localStream, remoteStream } = get();
+            stopAllTracks(localStream);
+            stopAllTracks(remoteStream);
+
+            set({
+                state: 'idle',
+                incoming: undefined,
+                localStream: undefined,
+                remoteStream: undefined,
+                callDuration: 0,
+            });
+        }
     }
 })
 
