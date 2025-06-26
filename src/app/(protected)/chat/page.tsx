@@ -57,19 +57,19 @@ export default function ChatsPage() {
   };
 
   const refreshRooms = () => {
-  if (!client) return;
-  getUserRooms(client)
-    .then((res) => {
-      if (res.success && res.rooms) {
-        setRooms(res.rooms);
-      } else {
-        console.error("Failed to fetch user rooms or rooms are undefined.");
-      }
-    })
-    .catch((error) => {
-      console.error("An error occurred while fetching user rooms:", error);
-    });
-};
+    if (!client) return;
+    getUserRooms(client)
+      .then((res) => {
+        if (res.success && res.rooms) {
+          setRooms(res.rooms);
+        } else {
+          console.error("Failed to fetch user rooms or rooms are undefined.");
+        }
+      })
+      .catch((error) => {
+        console.error("An error occurred while fetching user rooms:", error);
+      });
+  };
 
   const handleDeleteMine = async () => {
     if (!client) return;
