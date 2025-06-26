@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -22,6 +22,9 @@ import {
 import Link from "next/link";
 import { useUserStore } from "@/stores/useUserStore";
 import { getInitials } from "@/utils/getInitials";
+import { useMatrixClient } from "@/contexts/MatrixClientProvider";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { rewriteMatrixThumbnailUrl } from "@/utils/rewriteMatrixThumbnailUrl";
 
 interface SettingItem {
   title: string;
@@ -88,8 +91,37 @@ const settings: SettingItem[] = [
 export default function SettingsPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { user } = useUserStore.getState()
-  const displayName = user ? user.displayName : "Your Name"
+  const client = useMatrixClient()
+  const userId = useAuthStore.getState().userId;
+  const { user } = useUserStore.getState();
+  const displayName = user ? user.displayName : "Your Name";
+  const [avatarUrl, setAvatarUrl] = useState("");
+
+  useEffect(() => {
+    const getAvatar = async () => {
+      if (!client || !userId) return;
+
+      try {
+        // Lấy profile info
+        const profile = await client.getProfileInfo(userId);
+
+        if (profile.avatar_url) {
+          // Convert MXC URL to HTTP URL
+          const httpUrl = client.mxcUrlToHttp(profile.avatar_url, 32, 32, "crop");
+          if(httpUrl) {
+            const rewriteHttpUrl = rewriteMatrixThumbnailUrl(httpUrl);
+            const proxyUrl = `/api/matrix-image?url=${encodeURIComponent(rewriteHttpUrl)}`;
+            setAvatarUrl(proxyUrl)
+          }
+        }
+      } catch (error) {
+        console.error("Error loading avatar:", error);
+      }
+    };
+    getAvatar();
+  }, [client, userId]);
+
+  console.log(avatarUrl)
 
   const handleFileSelect = () => {
     fileInputRef.current?.click();
@@ -111,7 +143,13 @@ export default function SettingsPage() {
           <QrCode className="h-6 w-6 text-blue-500" />
           <div className="absolute left-1/2 transform -translate-x-1/2 top-4">
             <Avatar className="h-20 w-20">
-              <AvatarFallback className="text-xl">{getInitials(displayName)}</AvatarFallback>
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="avatar"/>
+              ) : (
+                <AvatarFallback className="text-xl">
+                  {getInitials(displayName)}
+                </AvatarFallback>
+              )}
             </Avatar>
           </div>
           <Button
@@ -123,7 +161,10 @@ export default function SettingsPage() {
         </div>
         <div className="mt-16 text-center px-4 pb-4">
           <h1 className="text-2xl font-semibold">{displayName}</h1>
-          <p className="text-sm text-gray-400">+84 12345689</p>
+          {/* ✅ Hiển thị homeserver */}
+          <p className="text-sm text-blue-500">
+            Homeserver: {user?.homeserver?.replace("https://", "")}
+          </p>
         </div>
       </div>
 

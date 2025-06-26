@@ -10,7 +10,17 @@ const nextConfig: NextConfig = {
                 hostname: 'matrix.org',
                 pathname: '/_matrix/media/**',
             },
+            {
+                protocol: 'https',
+                hostname: '*.matrix.org',
+            },
+            {
+                protocol: 'https',
+                hostname: 'matrix-client.matrix.org',
+            },
         ],
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     },
     eslint: {
         ignoreDuringBuilds: true,
