@@ -10,9 +10,7 @@ import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
 export const useTimeline = (roomId: string) => {
   const addMessage = useChatStore((state) => state.addMessage);
   const setMessage = useChatStore((state) => state.setMessages);
-  const updateMessageStatus = useChatStore(
-    (state) => state.updateMessageStatus
-  );
+  const updateLastSeen = useChatStore((state) => state.updateLastSeen);
   const client = useMatrixClient();
 
   useEffect(() => {
@@ -74,15 +72,21 @@ export const useTimeline = (roomId: string) => {
       }
 
       addMessage(roomId, {
-        eventId: event.getId() ?? " ",
-        sender: event.getSender(),
-        senderDisplayName: event.sender?.name ?? event.getSender(),
-        text: event.getContent().body,
-        time: new Date(event.getTs()).toLocaleString(),
+        eventId: event.getId() ?? "",
+        sender,
+        senderDisplayName,
+        text,
+        imageUrl,
+        videoUrl,
+        fileUrl,
+        fileName,
+        time,
         status: "sent",
+        type,
       });
-      const userId = client.getUserId();
-      if (event.getSender() !== userId) {
+
+      if (sender && sender !== userId) {
+        updateLastSeen(roomId, sender, ts);
         const events = room.getLiveTimeline().getEvents();
         const lastEvent = events.length > 0 ? events[events.length - 1] : null;
         if (lastEvent) {

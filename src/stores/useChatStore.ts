@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 export type MessageStatus = "sending" | "sent" | "read";
-export type MessageType = "text" | "image" | "video" | "file" | "emoji"
+export type MessageType = "text" | "image" | "video" | "file" | "emoji";
 
 export type Message = {
   eventId: string;
@@ -39,7 +39,6 @@ type ChatStore = {
     eventId: string,
     status: MessageStatus
   ) => void;
-  updateMessageStatus: (roomId: string, localId: string | null, eventId: string, status: MessageStatus) => void;
   updateLastSeen: (roomId: string, userId: string, timestamp: number) => void;
 };
 
@@ -122,9 +121,9 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             : msg
         ),
       },
-    };
+    });
   },
-  
+
   updateLastSeen: (roomId, userId, timestamp) => {
     set((state) => {
       const roomLastSeen = state.lastSeenByRoom[roomId] || {};

@@ -52,16 +52,17 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     setShowEmojiPicker(false);
 
     // 🔁 Gửi lên Matrix
-    sendMessage(roomId, trimmed, client)
-      .then((res) => {
-        if (!res.success) {
-          console.log("Send Failed!");
-        }
-      })
-      .catch((err) => {
-        console.log("Send Error:", err);
-      });
-    setShowEmojiPicker((prev) => !prev);
+    setTimeout(() => {
+      sendMessage(roomId, trimmed, client)
+        .then((res) => {
+          if (!res.success) {
+            console.log("Send Failed!");
+          }
+        })
+        .catch((err) => {
+          console.log("Send Error:", err);
+        });
+    }, 1000);
   };
 
   const handleEmojiClick = (emojiData: any) => {
@@ -121,18 +122,19 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
           rows={1}
           className="flex-1 h-auto resize-none bg-transparent outline-none px-3 max-h-[6rem] overflow-y-auto text-lg text-black dark:text-white scrollbar-thin"
         />
-
-        {/* <Smile
-          onClick={() => setShowEmojiPicker((prev) => !prev)}
-          className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
-          size={30}
-        /> */}
-
-        <Eclipse
-          onClick={() => setShowEmojiPicker((prev) => !prev)}
-          className="text-[#858585] cursor-default"
-          size={30}
-        />
+        {text.trim() ? (
+          <Smile
+            onClick={() => setShowEmojiPicker((prev) => !prev)}
+            className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
+            size={30}
+          />
+        ) : (
+          <Eclipse
+            onClick={() => setShowEmojiPicker((prev) => !prev)}
+            className="text-[#858585] cursor-default"
+            size={30}
+          />
+        )}
 
         {showEmojiPicker && (
           <div className="absolute bottom-12 left-6 z-50">

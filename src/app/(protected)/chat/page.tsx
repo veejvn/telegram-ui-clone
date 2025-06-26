@@ -90,7 +90,7 @@ export default function ChatsPage() {
         <SearchBar />
       </div>
 
-      {!rooms ? (
+      {!rooms || rooms.length == 0 ? (
         <div className="flex flex-1 flex-col justify-between min-h-[calc(100vh-112px)] pb-8">
           <div className="flex flex-1 flex-col items-center justify-center text-center">
             <img

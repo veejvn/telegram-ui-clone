@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useState } from "react";
 import ChatMessage from "./ChatMessage";
 import { useTimeline } from "@/hooks/useTimeline";
 import { MessageStatus, useChatStore } from "@/stores/useChatStore";
@@ -39,14 +39,15 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
 
   // 2. Tự động cuộn xuống khi có tin nhắn mới
   useEffect(() => {
-    // Chỉ cuộn xuống khi không phải đang tải tin nhắn cũ
     if (!isLoadingMore && messagesEndRef?.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "auto" });
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+      });
     }
-  }, [messages.length, messagesEndRef, isLoadingMore]); // Chạy khi số lượng tin nhắn thay đổi
+  }, [messages.length, isLoadingMore, messagesEndRef]);
 
   // 3. Khôi phục vị trí scroll sau khi thêm tin nhắn cũ
-  React.useLayoutEffect(() => {
+  useLayoutEffect(() => {
     const container = containerRef.current;
     if (isLoadingMore && prevScrollHeightRef.current !== null && container) {
       container.scrollTop +=
@@ -112,7 +113,6 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
             ))}
           </div>
         ))}
-
         <div ref={messagesEndRef} />
 
         {isLoadingMore && (

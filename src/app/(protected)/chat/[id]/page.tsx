@@ -9,7 +9,7 @@ import { useParams } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import * as sdk from "matrix-js-sdk";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
-import { sendReadReceipt } from "@/utils/chat/sendReceipt";
+
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import styles from "./page.module.css";
