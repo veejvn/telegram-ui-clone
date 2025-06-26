@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 import ChatComposer from "@/components/chat/ChatComposer";
 import ChatHeader from "@/components/chat/ChatHeader";
@@ -8,6 +9,7 @@ import { useParams } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import * as sdk from "matrix-js-sdk";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
+
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import styles from "./page.module.css";
