@@ -11,19 +11,20 @@ import { useSearchParams } from "next/navigation";
 const ChatMessage = ({ msg }: { msg: Message }) => {
   const userId = useAuthStore.getState().userId;
   const { type } = msg;
-  const [isSender, setIsSender] = useState(false);
+  const isSender = msg.sender === userId;
+  // const [isSender, setIsSender] = useState(false);
+
+  // useEffect(() => {
+  //   if (msg.sender === userId) {
+  //     setIsSender(true);
+  //   } else {
+  //     setIsSender(false);
+  //   }
+  // }, [msg]);
   const messageRef = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
   const highlightId = searchParams.get("highlight");
   const [animate, setAnimate] = useState(false);
-
-  useEffect(() => {
-    if (msg.sender === userId) {
-      setIsSender(true);
-    } else {
-      setIsSender(false);
-    }
-  }, [msg, userId]);
 
   useEffect(() => {
     if (msg.eventId === highlightId && messageRef.current) {
@@ -46,6 +47,7 @@ const ChatMessage = ({ msg }: { msg: Message }) => {
       case "image":
         return <ImageMessage msg={msg} isSender={isSender} />;
       default:
+        console.warn("⚠️ Unknown type in message:", msg);
         return <TextMessage msg={msg} isSender={isSender} />;
     }
   };

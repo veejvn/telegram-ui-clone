@@ -7,6 +7,9 @@ type ErrorMessages = {
         INVALID_EMAIL: string;
         SESSION_EXPIRED: string;
         UNAUTHORIZED: string;
+        USERNAME_EXISTS: string;
+        INVALID_USERNAME: string;
+        REGISTRATION_FAILED: string;
     };
     VALIDATION: {
         REQUIRED_FIELD: string;
@@ -14,6 +17,9 @@ type ErrorMessages = {
         MIN_LENGTH: string;
         MAX_LENGTH: string;
         PASSWORD_MISMATCH: string;
+        USERNAME_FORMAT: string;
+        PASSWORD_WEAK: string;
+        PASSWORD_SAME_AS_USERNAME: string;
     };
     NETWORK: {
         CONNECTION_ERROR: string;
@@ -39,7 +45,6 @@ type ErrorMessages = {
 };
 
 export const ERROR_MESSAGES: ErrorMessages = {
-    // Authentication errors
     AUTH: {
         INVALID_CREDENTIALS: 'Invalid username or password',
         USER_NOT_FOUND: 'User not found',
@@ -48,40 +53,36 @@ export const ERROR_MESSAGES: ErrorMessages = {
         INVALID_EMAIL: 'Invalid email format',
         SESSION_EXPIRED: 'Session has expired',
         UNAUTHORIZED: 'You do not have permission to access',
+        USERNAME_EXISTS: 'Username is already taken',
+        INVALID_USERNAME: 'Invalid username',
+        REGISTRATION_FAILED: 'Registration failed',
     },
-
-    // Form validation errors
     VALIDATION: {
         REQUIRED_FIELD: 'This field is required',
         INVALID_FORMAT: 'Invalid format',
         MIN_LENGTH: 'Content is too short',
         MAX_LENGTH: 'Content is too long',
         PASSWORD_MISMATCH: 'Passwords do not match',
+        USERNAME_FORMAT: 'Username can only contain letters, numbers, and underscores',
+        PASSWORD_WEAK: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+        PASSWORD_SAME_AS_USERNAME: 'Password cannot be the same as username',
     },
-
-    // Network errors
     NETWORK: {
-        CONNECTION_ERROR: 'Cannot connect to server',
-        TIMEOUT: 'Request timeout',
+        CONNECTION_ERROR: 'Cannot connect to the server',
+        TIMEOUT: 'Request timed out',
         SERVER_ERROR: 'Server error',
         API_ERROR: 'API call failed',
     },
-
-    // File upload errors
     UPLOAD: {
         FILE_TOO_LARGE: 'File is too large',
-        INVALID_FILE_TYPE: 'File type not supported',
+        INVALID_FILE_TYPE: 'File type is not supported',
         UPLOAD_FAILED: 'Upload failed',
     },
-
-    // Chat/Message errors
     CHAT: {
         MESSAGE_NOT_FOUND: 'Message not found',
         SEND_FAILED: 'Failed to send message',
         INVALID_RECIPIENT: 'Invalid recipient',
     },
-
-    // General errors
     GENERAL: {
         UNKNOWN_ERROR: 'An unknown error occurred',
         OPERATION_FAILED: 'Operation failed',
