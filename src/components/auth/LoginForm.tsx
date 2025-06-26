@@ -17,9 +17,9 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
   const handleSubmit = async (data: LoginFormData) => {
     try {
       const authService = new MatrixAuthService();
-      const { success, token } = await authService.login(data);
+      const { success, token, userId, deviceId } = await authService.login(data);
       if (success && token) {
-        onSuccess(token);
+        onSuccess(token, userId, deviceId);
       }
     } catch (error: any) {
       let errorMessage: string = ERROR_MESSAGES.GENERAL.UNKNOWN_ERROR;
@@ -77,12 +77,6 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         />
         <ErrorMessage message={error}></ErrorMessage>
         <div className="flex items-center justify-between text-sm my-5">
-          <Link
-            href="/forgot-password"
-            className="text-blue-600 hover:text-blue-800 transition-colors duration-200"
-          >
-            Forgot your password?
-          </Link>
           <Link href="/register" className="text-blue-600 hover:text-blue-800">
             Create account
           </Link>

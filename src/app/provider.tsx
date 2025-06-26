@@ -1,6 +1,7 @@
 "use client";
 
 import { ThemeProvider } from "@/contexts/ThemeProvider";
+import { Toaster } from "@/contexts/toaster";
 import { ToastProvider } from "@/contexts/ToastProvider";
 
 export default function Providers({
@@ -17,6 +18,7 @@ export default function Providers({
         disableTransitionOnChange
       >
         <ToastProvider>{children}</ToastProvider>
+        <Toaster/>
       </ThemeProvider>
     </>
   );

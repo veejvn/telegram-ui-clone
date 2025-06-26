@@ -3,13 +3,16 @@
 import * as sdk from "matrix-js-sdk";
 import { useEffect } from "react";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
-import { getTimeline } from "@/services/chatService";
-import { useChatStore } from "@/stores/useChatStore";
-import { sendReadReceipt } from "@/utils/chat/sendReceipt";
+import { getTimeline, sendReadReceipt } from "@/services/chatService";
+import { MessageType, useChatStore } from "@/stores/useChatStore";
+import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
 
 export const useTimeline = (roomId: string) => {
   const addMessage = useChatStore((state) => state.addMessage);
   const setMessage = useChatStore((state) => state.setMessages);
+  const updateMessageStatus = useChatStore(
+    (state) => state.updateMessageStatus
+  );
   const client = useMatrixClient();
 
   useEffect(() => {
@@ -30,6 +33,45 @@ export const useTimeline = (roomId: string) => {
     ) => {
       if (toStart || room.roomId !== roomId) return;
       if (event.getType() !== "m.room.message") return;
+
+      const content = event.getContent();
+      const userId = client.getUserId();
+      const sender = event.getSender();
+      const senderDisplayName = event.sender?.name ?? sender;
+      const text = content.body;
+      const ts = event.getTs();
+      const time = new Date(ts).toLocaleString();
+
+      let imageUrl: string | null = null;
+      let videoUrl: string | null = null;
+      let fileUrl: string | null = null;
+      let fileName: string | null = null;
+      let type: MessageType = "text";
+
+      if (content.msgtype === "m.image") {
+        type = "image";
+        const mxcUrl = content.url;
+        console.log("Original MXC URL:", mxcUrl);
+        if (mxcUrl) {
+          imageUrl = client.mxcUrlToHttp(mxcUrl, 800, 600, "scale", true);
+        }
+        console.log("Generated HTTP URL:", imageUrl);
+      } else if (content.msgtype === "m.video") {
+        type = "video";
+        if (content.url) {
+          videoUrl = client.mxcUrlToHttp(content.url);
+        }
+      } else if (content.msgtype === "m.file") {
+        type = "file";
+        if (content.url) {
+          fileUrl = client.mxcUrlToHttp(content.url);
+          fileName = content.body ?? "file";
+        }
+      } else if (isOnlyEmojis(text)) {
+        type = "emoji";
+      } else {
+        type = "text";
+      }
 
       addMessage(roomId, {
         eventId: event.getId() ?? " ",
@@ -61,38 +103,6 @@ export const useTimeline = (roomId: string) => {
       if (res.success && res.timeline) {
         setMessage(roomId, res.timeline);
       }
-
-      // // Lấy tất cả tin nhắn của mình trong phòng
-      // const myMessages = (useChatStore.getState().messagesByRoom[roomId] || [])
-      //   .filter((msg) => msg.sender === userId);
-
-      // myMessages.forEach((msg) => {
-      //   //Tìm MatrixEvent tương ứng với eventId
-      //   const matrixEvent = room.getLiveTimeline().getEvents().find(
-      //     (e: any) => typeof e.getId === "function" && e.getId() === msg.eventId
-      //   );
-      //   if (!matrixEvent) return;
-      //   // Lấy tất cả receipt cho eventId này
-      //   const receipts = room.getReceiptsForEvent(matrixEvent) as any[] | undefined;
-      //   //console.log(receipts);
-      //   if (receipts && receipts.length > 0) {
-      //     receipts.forEach((receipt) => {
-      //       if (receipt.userId === userId) return; // bỏ qua chính mình
-      //       if (receipt.type === "m.read" || receipt.type === "m.delivered") {
-      //         const newStatus = receipt.type === "m.read" ? "read" : "delivered";
-      //         if (msg.status !== newStatus) {
-      //           updateMessageStatus(
-      //             roomId,
-      //             null,
-      //             msg.eventId,
-      //             newStatus
-      //           );
-      //           console.log("update message status")
-      //         }
-      //       }
-      //     });
-      //   }
-      // });
     };
 
     client.on("Room.receipt" as any, onReceipt);

@@ -1,27 +1,32 @@
-// src/store/auth.ts
 import { getLS } from '@/tools/localStorage.tool'
 import { create } from 'zustand'
 
 interface AuthState {
     isLogging: boolean
-    accessToken?: string
-    login: (accessToken: string) => void
+    accessToken: string | null
+    userId: string | null,
+    deviceId: string | null,
+    login: (accessToken: string, userId: string, deviceId: string) => void
     logout: () => void
 }
 
 export const useAuthStore = create<AuthState>((set) => {
     const storedToken = typeof window !== 'undefined' ? getLS("matrix_access_token") : null
+    const storedUserId = typeof window !== 'undefined' ? getLS("matrix_user_id") : null
+    const storeddeviceId = typeof window !== 'undefined' ? getLS("matrix_device_id") : null
 
     return {
         isLogging: !!storedToken,
         accessToken: storedToken ?? undefined,
+        userId: storedUserId,
+        deviceId: storeddeviceId,
 
-        login: (accessToken) => {
-            set({ isLogging: true, accessToken })
+        login: (accessToken, userId, deviceId) => {
+            set({ isLogging: true, accessToken, userId, deviceId})
         },
 
         logout: () => {
-            set({ isLogging: false, accessToken: undefined })
+            set({ isLogging: false, accessToken: null, userId: null, deviceId: null })
         },
     }
 })

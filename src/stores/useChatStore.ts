@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
-export type MessageStatus = "sending" | "sent" | "delivered" | "read";
+export type MessageStatus = "sending" | "sent" | "read";
+export type MessageType = "text" | "image" | "video" | "file" | "emoji"
 
 export type Message = {
   eventId: string;
@@ -9,7 +10,12 @@ export type Message = {
   senderDisplayName?: string | undefined;
   sender: string | undefined;
   text: string;
+  imageUrl?: string | null;
+  videoUrl?: string | null;
+  fileUrl?: string | null;
+  fileName?: string | null;
   status: MessageStatus;
+  type?: MessageType;
 };
 
 type ChatStore = {
@@ -18,6 +24,7 @@ type ChatStore = {
   hasMoreByRoom: Record<string, boolean>;
   oldestEventIdByRoom: Record<string, string | null>;
 
+  lastSeenByRoom: Record<string, Record<string, number>>;
   addMessage: (roomId: string, msg: Message) => void;
   setMessages: (roomId: string, msgs: Message[]) => void;
   prependMessages: (roomId: string, msgs: Message[]) => void;
@@ -32,6 +39,8 @@ type ChatStore = {
     eventId: string,
     status: MessageStatus
   ) => void;
+  updateMessageStatus: (roomId: string, localId: string | null, eventId: string, status: MessageStatus) => void;
+  updateLastSeen: (roomId: string, userId: string, timestamp: number) => void;
 };
 
 export const useChatStore = create<ChatStore>((set, get) => ({
@@ -39,6 +48,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   isLoadingMoreByRoom: {},
   hasMoreByRoom: {},
   oldestEventIdByRoom: {},
+  lastSeenByRoom: {},
 
   addMessage: (roomId, msg) => {
     const current = get().messagesByRoom[roomId] || [];
@@ -112,6 +122,21 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             : msg
         ),
       },
+    };
+  },
+  
+  updateLastSeen: (roomId, userId, timestamp) => {
+    set((state) => {
+      const roomLastSeen = state.lastSeenByRoom[roomId] || {};
+      return {
+        lastSeenByRoom: {
+          ...state.lastSeenByRoom,
+          [roomId]: {
+            ...roomLastSeen,
+            [userId]: Math.max(roomLastSeen[userId] || 0, timestamp),
+          },
+        },
+      };
     });
   },
 }));
