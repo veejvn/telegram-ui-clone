@@ -85,35 +85,64 @@ const SearchContent = ({
             Không tìm thấy người dùng nào.
           </div>
         ) : (
-          filteredUsers.map((user, idx) => (
-            <div
-              key={user.user_id || idx}
-              className="flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-[#232323] transition"
-            >
-              <div className="w-10 h-10 rounded-full bg-purple-400 flex items-center justify-center font-bold text-white text-lg">
-                {(user.display_name &&
-                  user.display_name.charAt(0).toUpperCase()) ||
-                  (user.user_id && user.user_id.charAt(1).toUpperCase()) ||
-                  "?"}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold text-gray-900 dark:text-gray-100 truncate max-w-[140px]">
-                  {user.display_name || "Không có tên"}
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[180px]">
-                  {user.user_id}
-                </div>
-              </div>
-              <Button
-                onClick={() => client && handleAddContact(client, user.user_id)}
-                size="lg"
-                className="bg-white hover:bg-zinc-300 text-blue-500"
-                disabled={!client}
+          filteredUsers.map((user, idx) => {
+            const hasCommonRoom = client
+              ?.getRooms()
+              .some((room) =>
+                room
+                  .getJoinedMembers()
+                  .some((member) => member.userId === user.user_id)
+              );
+
+            const handleUserClick = () => {
+              if (hasCommonRoom) {
+                const room = client
+                  ?.getRooms()
+                  .find((r) =>
+                    r.getJoinedMembers().some((m) => m.userId === user.user_id)
+                  );
+                if (room) {
+                  router.push(`/chat/${room.roomId}`);
+                }
+              }
+            };
+
+            return (
+              <div
+                key={user.user_id || idx}
+                onClick={handleUserClick}
+                className="flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-[#232323] transition"
               >
-                <UserRoundPlus />
-              </Button>
-            </div>
-          ))
+                <div className="w-10 h-10 rounded-full bg-purple-400 flex items-center justify-center font-bold text-white text-lg">
+                  {(user.display_name &&
+                    user.display_name.charAt(0).toUpperCase()) ||
+                    (user.user_id && user.user_id.charAt(1).toUpperCase()) ||
+                    "?"}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-gray-900 dark:text-gray-100 truncate max-w-[140px]">
+                    {user.display_name || "Không có tên"}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[180px]">
+                    {user.user_id}
+                  </div>
+                </div>
+                {!hasCommonRoom && (
+                  <Button
+                    onClick={(e) => {
+                      e.stopPropagation(); // Đừng để click thẻ chạy
+                      client && handleAddContact(client, user.user_id);
+                    }}
+                    size="lg"
+                    className="bg-white hover:bg-zinc-300 text-blue-500"
+                    disabled={!client}
+                  >
+                    <UserRoundPlus />
+                  </Button>
+                )}
+              </div>
+            );
+          })
         )}
       </div>
 
@@ -129,6 +158,13 @@ const SearchContent = ({
             <div
               key={msg.result?.event_id || idx}
               className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#232323] cursor-pointer"
+              onClick={() => {
+                const roomId = msg.result?.room_id;
+                const eventId = msg.result?.event_id;
+                if (roomId && eventId) {
+                  router.push(`/chat/${roomId}?highlight=${eventId}`);
+                }
+              }}
             >
               <div className="text-sm text-gray-900 dark:text-gray-100 truncate">
                 {msg.result?.content?.body}

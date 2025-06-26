@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import ChatMessage from "./ChatMessage";
 import { useTimeline } from "@/hooks/useTimeline";
 import { useChatStore } from "@/stores/useChatStore";
+import { useSearchParams } from "next/navigation";
 
 type ChatMessagesProps = {
   roomId: string;
@@ -14,35 +15,39 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
   useTimeline(roomId);
 
   const messagesByRoom = useChatStore((state) => state.messagesByRoom);
-
   const messages = messagesByRoom[roomId] ?? [];
 
+  const searchParams = useSearchParams();
+  const highlightId = searchParams.get("highlight");
+  const firstHighlightedRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
-    if (messagesEndRef?.current) {
+    if (highlightId && firstHighlightedRef.current) {
+      firstHighlightedRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    } else if (messagesEndRef?.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "auto" });
     }
-  }, [messages]);
+  }, [messages, highlightId]);
 
   return (
-    <>
-      <div className="py-1.5">
-        {/* <div className="text-center text-sm">
-          <p
-            className=" bg-gray-500/10 rounded-full backdrop-blur-sm 
-            text-white inline-block px-1.5"
+    <div className="py-1.5">
+      {messages.map((msg) => {
+        const isHighlighted = msg.eventId === highlightId;
+
+        return (
+          <div
+            key={msg.eventId}
+            ref={isHighlighted ? firstHighlightedRef : null}
           >
-            Today
-          </p>
-        </div> */}
-        {messages.map((msg) => (
-          <div key={msg.eventId}>
-            <ChatMessage  msg={msg} />
-            <div ref={messagesEndRef} />
+            <ChatMessage msg={msg} />
           </div>
-        ))}
-        {/* <div className="flex justify-end text-red-500">{lastMessage.status}</div> */}
-      </div>
-    </>
+        );
+      })}
+      <div ref={messagesEndRef} />
+    </div>
   );
 };
 
