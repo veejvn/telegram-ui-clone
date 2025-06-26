@@ -4,15 +4,40 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
+import { MatrixAuthService } from "@/services/matrixAuthService";
+import { useUserStore } from "@/stores/useUserStore";
 export default function SetUsernamePage() {
   const router = useRouter();
   const [username, setUsername] = useState("");
+  const setUser = useUserStore((state) => state.setUser);
+  const handleSave = async () => {
+  try {
+    const authService = new MatrixAuthService();
 
-  const handleSave = () => {
-    console.log("Username:", username);
+    const userId = authService.client.getUserId();
+    if (!userId || !userId.startsWith("@")) {
+      throw new Error("Invalid User ID: " + userId);
+    }
+
+    await authService.updateProfile(username);
+
+    const profile = await authService.client.getProfileInfo(userId);
+
+    console.log("New Profile:", profile);
+
+    setUser({
+      displayName: profile.displayname ?? "",
+    });
+
     router.back();
-  };
+  } catch (error) {
+    console.error(" Profile update error:", error);
+    alert("Username update failed.");
+  }
+};
+
+
+
 
   return (
     <div className="min-h-screen px-4 py-6">

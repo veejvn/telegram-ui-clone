@@ -22,6 +22,7 @@ import {
 import Link from "next/link";
 import { useUserStore } from "@/stores/useUserStore";
 import { getInitials } from "@/utils/getInitials";
+import { MatrixAuthService } from "@/services/matrixAuthService";
 
 interface SettingItem {
   title: string;
@@ -88,9 +89,9 @@ const settings: SettingItem[] = [
 export default function SettingsPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { user } = useUserStore.getState()
-  const displayName = user ? user.displayName : "Your Name"
-
+  const user = useUserStore((state) => state.user);
+  const displayName = user?.displayName || "Your Name";
+  
   const handleFileSelect = () => {
     fileInputRef.current?.click();
   };

@@ -1,6 +1,6 @@
 "use client"
 
-import * as sdk from "matrix-js-sdk"; 
+import * as sdk from "matrix-js-sdk";
 import { ERROR_MESSAGES } from "@/constants/error-messages"
 import { LoginFormData, RegisterFormData } from "@/types/auth";
 import { getLS, removeLS, setLS } from "@/tools/localStorage.tool";
@@ -12,23 +12,31 @@ const SERVER_URL: string = process.env.NEXT_PUBLIC_SERVER_URL ?? "http://localho
 let clientInstance: sdk.MatrixClient | null = null;
 
 export class MatrixAuthService {
-    private client: sdk.MatrixClient
+    public client: sdk.MatrixClient
 
     constructor() {
         if (typeof window === 'undefined') {
             throw new Error(ERROR_MESSAGES.GENERAL.UNKNOWN_ERROR)
         }
-
+        const token = getLS("matrix_access_token");
+        const userId = getLS("matrix_user_id");
+        if (!token || !userId) {
+            throw new Error("Missing Matrix access token or user ID");
+        }
         if (!clientInstance) {
             clientInstance = sdk.createClient({
                 baseUrl: HOMESERVER_URL,
+                accessToken: token,
+                userId: userId,
             })
         }
-
+        if (!clientInstance) {
+            throw new Error("Failed to initialize Matrix client");
+        }
         this.client = clientInstance
     }
 
-    async sendEmailVerification(email: string) : Promise<any> {
+    async sendEmailVerification(email: string): Promise<any> {
 
         const clientSecret = Math.random().toString(36).substring(2, 10);
         const sendAttempt = 1;
@@ -47,7 +55,7 @@ export class MatrixAuthService {
             });
 
             const data = await response.json();
-            
+
             if (!response.ok) {
                 throw new Error(data.error || 'Failed to send verification email');
             }
@@ -63,7 +71,7 @@ export class MatrixAuthService {
     }
 
     // Đăng ký tài khoản mới
-    async register({ username, password} : RegisterFormData) : Promise<any> {
+    async register({ username, password }: RegisterFormData): Promise<any> {
         try {
             const registerResponse = await this.client.registerRequest({
                 username,
@@ -88,7 +96,7 @@ export class MatrixAuthService {
     }
 
     // Đăng nhập
-    async login({username , password} : LoginFormData) : Promise<ILoginResponse> {
+    async login({ username, password }: LoginFormData): Promise<ILoginResponse> {
         try {
             const loginResponse = await this.client.loginRequest({
                 type: "m.login.password",
@@ -169,7 +177,7 @@ export class MatrixAuthService {
     }
 
     // Đăng xuất
-    async logout() : Promise<void> {
+    async logout(): Promise<void> {
         try {
             const accessToken = getLS("matrix_access_token");
             const userId = getLS("matrix_user_id");
@@ -258,6 +266,10 @@ export class MatrixAuthService {
     // Cập nhật thông tin cá nhân
     async updateProfile(displayName?: string, avatarUrl?: string) {
         try {
+            const userId = this.client.getUserId();
+            if (!userId) {
+                throw new Error("Client is not logged in or userId is missing");
+            }
             if (displayName) {
                 await this.client.setDisplayName(displayName)
             }
@@ -272,7 +284,7 @@ export class MatrixAuthService {
 
     // Kiểm tra trạng thái đăng nhập
     isLoggedIn() {
-        return !! getLS("matrix_access_token") && !! getLS("matrix_user_id");
+        return !!getLS("matrix_access_token") && !!getLS("matrix_user_id");
     }
 
     // Lấy thông tin người dùng hiện tại
