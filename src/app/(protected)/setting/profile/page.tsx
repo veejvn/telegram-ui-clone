@@ -4,19 +4,11 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useUserStore } from "@/stores/useUserStore";
+import { getInitials } from "@/utils/getInitials";
 
 export default function MyProfilePage() {
   const router = useRouter();
-  const { user } = useUserStore(); // ✅ lấy trực tiếp từ zustand localStorage
-
-  if (!user) {
-    return (
-      <div className="p-4 text-center">
-        <p className="text-gray-600 mb-4">Bạn chưa đăng nhập.</p>
-        <Button onClick={() => router.push("/login")}>Đăng nhập</Button>
-      </div>
-    );
-  }
+  const { user } = useUserStore.getState(); // ✅ lấy trực tiếp từ zustand localStorage
 
   return (
     <div className="bg-white text-black min-h-screen px-4 pt-6 pb-10">
@@ -40,13 +32,13 @@ export default function MyProfilePage() {
       <div className="flex flex-col items-center space-y-2 mb-6">
         <Avatar className="w-20 h-20 bg-purple-600 text-white text-2xl">
           <AvatarFallback>
-            {user.displayName?.slice(0, 2).toUpperCase()}
+            {getInitials(user?.displayName ?? "")}
           </AvatarFallback>
         </Avatar>
-        <h2 className="text-xl font-semibold">{user.displayName}</h2>
+        <h2 className="text-xl font-semibold">{user?.displayName}</h2>
         <span className="text-gray-500 text-sm">🟢 Online</span>
         {/* ✅ Hiển thị homeserver */}
-        <span className="text-sm text-gray-400">@matrix.teknix.dev{user.homeserver}</span>
+        <span className="text-sm text-gray-400">@matrix.teknix.dev{user?.homeserver}</span>
       </div>
 
       {/* Posts Section */}

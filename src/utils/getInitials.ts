@@ -1,5 +1,5 @@
-export function getInitials(displayName: string): string {
-  if (!displayName) return "";
+export function getInitials(displayName: string | null): string {
+  if (!displayName) return "YN";
   return displayName
     .split(" ")
     .filter(word => word.trim().length > 0)

@@ -8,8 +8,10 @@ export function createUserInfo(client: sdk.MatrixClient) {
     const user = client.getUser(userId ?? "");
 
     const displayName = user?.displayName || userId || "Unknown";
+    const status = "online"
 
     setUser({
         displayName,
+        status
     });
 }

@@ -1,13 +1,14 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
+type Status = "online" | "offline"
+
 export interface UserInfo {
     displayName: string;
-    status: "online";
+    status: Status;
     phone?: string;
     avatarUrl?: string;
-    homeserver: string;
-
+    homeserver?: string;
 }
 
 interface UserState {
