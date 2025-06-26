@@ -6,31 +6,27 @@ import Link from "next/link";
 import { ChatList } from "@/components/chat/ChatList";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { getUserRooms } from "@/services/chatService";
 import * as sdk from "matrix-js-sdk";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import ChatEditButton from "@/components/chat/ChatEditButton";
 import ChatActionBar from "@/components/chat/ChatActionBar";
+import DeleteChatModal from "@/components/chat/DeleteChatModal";
 
 export default function ChatsPage() {
   const [rooms, setRooms] = useState<sdk.Room[]>([]);
   const client = useMatrixClient();
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     if (!client) return;
-    getUserRooms(client)
-      .then((res) => {
-        if (res.success && res.rooms) {
-          setRooms(res.rooms);
-        } else {
-          console.error("Failed to fetch user rooms or rooms are undefined.");
-        }
-      })
-      .catch((error) => {
-        console.error("An error occurred while fetching user rooms:", error);
-      });
+    const joinedRooms = client.getRooms().filter((room) => {
+      const membership = room.getMyMembership();
+      const isEmptyRoom = room.name?.toLowerCase().startsWith("empty room");
+      return membership === "join" && !isEmptyRoom;
+    });
+    setRooms(joinedRooms);
   }, [client]);
 
   const handleSelectRoom = (roomId: string) => {
@@ -44,26 +40,58 @@ export default function ChatsPage() {
   const handleReadAll = () => {
     alert("Read All: " + selectedRooms.join(", "));
   };
+
   const handleArchive = () => {
     alert("Archive: " + selectedRooms.join(", "));
   };
-  const handleDelete = async () => {
+
+  const handleDelete = () => {
+    setShowDeleteModal(true);
+  };
+
+  const refreshRooms = () => {
     if (!client) return;
+    const joinedRooms = client.getRooms().filter((room) => {
+      const membership = room.getMyMembership();
+      const isEmptyRoom = room.name?.toLowerCase().startsWith("empty room");
+      return membership === "join" && !isEmptyRoom;
+    });
+    setRooms(joinedRooms);
+  };
+
+  const handleDeleteMine = async () => {
+    if (!client) return;
+
     await Promise.all(
       selectedRooms.map(async (roomId) => {
-        try {
-          await client.leave(roomId);
-          console.log("Đã rời khỏi room:", roomId);
-        } catch (err) {
-          console.error("Lỗi khi rời khỏi room:", roomId, err);
-        }
+        await client.leave(roomId);
+        await client.forget(roomId);
       })
     );
-    setRooms((prevRooms) =>
-      prevRooms.filter((room) => !selectedRooms.includes(room.roomId))
-    );
+
+    refreshRooms();
     setSelectedRooms([]);
     setIsEditMode(false);
+    setShowDeleteModal(false);
+  };
+
+  const handleDeleteBoth = async () => {
+    if (!client) return;
+
+    await Promise.all(
+      selectedRooms.map(async (roomId) => {
+        await client.sendEvent(roomId, "m.room.delete_for_everyone" as any, {
+          by: client.getUserId(),
+        });
+        await client.leave(roomId);
+        await client.forget(roomId);
+      })
+    );
+
+    refreshRooms();
+    setSelectedRooms([]);
+    setIsEditMode(false);
+    setShowDeleteModal(false);
   };
 
   const handleDone = () => {
@@ -75,11 +103,11 @@ export default function ChatsPage() {
     <div>
       <div className="sticky bg-white dark:bg-black top-0 z-10">
         <div className="flex items-center justify-between px-4 py-2">
-           <ChatEditButton
-              isEditMode={isEditMode}
-              onEdit={() => setIsEditMode(true)}
-              onDone={handleDone}
-            />
+          <ChatEditButton
+            isEditMode={isEditMode}
+            onEdit={() => setIsEditMode(true)}
+            onDone={handleDone}
+          />
           <h1 className="text-md font-semibold">Chats</h1>
           <div className="flex gap-3">
             <div className="text-blue-500">+</div>
@@ -89,7 +117,7 @@ export default function ChatsPage() {
         <SearchBar />
       </div>
 
-      {!rooms ? (
+      {rooms.length === 0 ? (
         <div className="flex flex-1 flex-col justify-between min-h-[calc(100vh-112px)] pb-8">
           <div className="flex flex-1 flex-col items-center justify-center text-center">
             <img
@@ -104,10 +132,7 @@ export default function ChatsPage() {
             </p>
           </div>
           <div className="w-full pb-6 px-15">
-            <Button
-              className="w-full bg-blue-500 hover:bg-blue-600 
-          text-white text-base rounded-lg py-6 cursor-pointer"
-            >
+            <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white text-base rounded-lg py-6 cursor-pointer">
               <Link href={"/chat/newMessage"}>New Message</Link>
             </Button>
           </div>
@@ -120,6 +145,30 @@ export default function ChatsPage() {
               isEditMode={isEditMode}
               selectedRooms={selectedRooms}
               onSelectRoom={handleSelectRoom}
+              onMute={() => {}}
+              onDelete={async (roomId, type) => {
+                if (!client) return;
+
+                if (type === "me") {
+                  await client.leave(roomId);
+                  await client.forget(roomId);
+                } else if (type === "both") {
+                  await client.sendEvent(
+                    roomId,
+                    "m.room.delete_for_everyone" as any,
+                    {
+                      by: client.getUserId(),
+                    }
+                  );
+                  await client.leave(roomId);
+                  await client.forget(roomId);
+                }
+
+                refreshRooms();
+              }}
+              onArchive={(roomId) => {
+                alert("Archive: " + roomId);
+              }}
             />
           </div>
         </ScrollArea>
@@ -133,6 +182,13 @@ export default function ChatsPage() {
           onDelete={handleDelete}
         />
       )}
+
+      <DeleteChatModal
+        open={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onDeleteMine={handleDeleteMine}
+        onDeleteBoth={handleDeleteBoth}
+      />
     </div>
   );
 }
