@@ -94,10 +94,11 @@ export default function SettingsPage() {
   useEffect(() => {
     setIsHydrated(true);
   }, []);
-   useEffect(() => {
+
+  useEffect(() => {
     const fetchProfile = async () => {
       try {
-        if (hasFetched.current || user?.displayName) return;
+        if (hasFetched.current) return;
         hasFetched.current = true;
 
         const authService = new MatrixAuthService();
@@ -105,14 +106,23 @@ export default function SettingsPage() {
         if (!userId) return;
 
         const profile = await authService.client.getProfileInfo(userId);
-        setUser({ displayName: profile.displayname ?? "Your Name" });
+
+        console.log("🔄 Fetching profile from server...");
+        console.log("📦 Local displayName:", user?.displayName);
+        console.log("🆔 userId:", userId);
+        console.log("🪪 Server profile:", profile);
+
+        if (profile.displayname) {
+          setUser({ displayName: profile.displayname });
+        }
       } catch (error) {
         console.error("Lỗi khi fetch profile:", error);
       }
     };
 
-    fetchProfile();
-  }, [setUser, user]);
+    if (isHydrated) fetchProfile();
+  }, [setUser, user?.displayName, isHydrated]);
+
 
   if (!isHydrated) return null; // 👈 tránh render sai trước khi Zustand khởi tạo
 

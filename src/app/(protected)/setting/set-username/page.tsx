@@ -20,7 +20,7 @@ export default function SetUsernamePage() {
       }
 
       await authService.updateProfile(username);
-
+      console.log("Display name updated on server:", username);
       const profile = await authService.client.getProfileInfo(userId);
 
       console.log("New Profile:", profile);

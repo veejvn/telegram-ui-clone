@@ -1,29 +1,40 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist, createJSONStorage } from "zustand/middleware";
 
 interface UserInfo {
-  displayName: string;
+    displayName: string;
+    avatarUrl?: string;
 }
 
 interface User {
-  user: UserInfo | null;
-  setUser: (data: UserInfo) => void;
-  clearUser: () => void; // ✅ Thêm hàm clearUser
+    user: UserInfo | null;
+    setUser: (data: Partial<UserInfo>) => void;
+    clearUser: () => void;
 }
 
+
 export const useUserStore = create<User>()(
-  persist(
-    (set) => ({
-      user: null,
-      setUser: (data: UserInfo) => set({ user: data }),
-      clearUser: () => set({ user: null }), // ✅ Reset user về null
-    }),
-    {
-      name: "matrix-user",
-      storage:
-        typeof window !== "undefined"
-          ? createJSONStorage(() => localStorage)
-          : undefined,
-    }
-  )
+    persist(
+        (set, get) => ({
+            user: null,
+            setUser: (data) => {
+                const current = get().user;
+                set({
+                    user: {
+                        ...current,     // giữ thông tin cũ
+                        ...data,        // cập nhật mới
+                    } as UserInfo,
+                });
+            },
+            clearUser: () => set({ user: null }),
+        }),
+        {
+            name: "matrix-user",
+            storage: typeof window !== "undefined"
+                ? createJSONStorage(() => localStorage)
+                : undefined,
+            // Optional: hạn chế lỗi khi deserialize sai format
+            partialize: (state) => ({ user: state.user }),
+        }
+    )
 );
