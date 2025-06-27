@@ -1,7 +1,10 @@
 import React from "react";
-import { Separator } from "../ui/separator";
 import * as sdk from "matrix-js-sdk";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Bell, Ellipsis, Hand, Phone, Search, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,25 +16,25 @@ export default function InfoBody({ user }: { user: sdk.User }) {
   const mediaItems = [
     {
       id: 1,
-      name: 'Youtube',
-      url: 'http://youtube.com',
-      icon: 'Y',
-      bgColor: 'bg-gray-100'
+      name: "Youtube",
+      url: "http://youtube.com",
+      icon: "Y",
+      bgColor: "bg-gray-100",
     },
     {
       id: 2,
-      name: 'Google',
-      url: 'http://google.com',
-      icon: 'G',
-      bgColor: 'bg-gray-100'
+      name: "Google",
+      url: "http://google.com",
+      icon: "G",
+      bgColor: "bg-gray-100",
     },
     {
       id: 3,
-      name: 'Matrix',
-      url: 'http://Matrix.org',
-      icon: 'M',
-      bgColor: 'bg-gray-100'
-    }
+      name: "Matrix",
+      url: "http://Matrix.org",
+      icon: "M",
+      bgColor: "bg-gray-100",
+    },
   ];
   return (
     <>
@@ -49,7 +52,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
              w-[75px] h-[50px] cursor-pointer      
           bg-white rounded-lg py-1 group"
           >
-            <Phone className="text-[#155dfc]"/>
+            <Phone className="text-[#155dfc]" />
             <p className="text-xs text-[#155dfc]">call</p>
           </div>
 
@@ -59,7 +62,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
              w-[75px] h-[50px] cursor-pointer     
           bg-white rounded-lg py-1 group"
           >
-            <Video className="text-[#155dfc]"/>
+            <Video className="text-[#155dfc]" />
             <p className="text-xs text-[#155dfc]">video</p>
           </div>
 
@@ -69,7 +72,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
              w-[75px] h-[50px] group cursor-pointer  
           bg-white rounded-lg  py-1"
           >
-            <Bell className="text-[#155dfc]"/>
+            <Bell className="text-[#155dfc]" />
             <p className="text-xs text-[#155dfc]">mute</p>
           </div>
 
@@ -79,7 +82,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
             group cursor-pointer
           bg-white rounded-lg  w-[75px] h-[50px] py-1"
           >
-            <Search className="text-[#155dfc]"/>
+            <Search className="text-[#155dfc]" />
             <p className="text-xs text-[#155dfc]">search</p>
           </div>
 
@@ -99,7 +102,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
               <div className="">
                 <Button className="flex justify-between items-center w-full my-1 text-red-500 bg-white dark:bg-black">
                   Block User
-                  <Hand/>
+                  <Hand />
                 </Button>
               </div>
             </PopoverContent>
@@ -118,28 +121,68 @@ export default function InfoBody({ user }: { user: sdk.User }) {
         <div className="text-start py-4 flex flex-col rounded-lg gap-3">
           <Tabs defaultValue="media">
             <TabsList className="w-full h-12">
-              <TabsTrigger value="media" className="data-[state=active]:text-[#155dfc] text-zinc-500">Media</TabsTrigger>
-              <TabsTrigger value="link" className="data-[state=active]:text-[#155dfc] text-zinc-500">Links</TabsTrigger>
+              <TabsTrigger
+                value="media"
+                className="data-[state=active]:text-[#155dfc] text-zinc-500"
+              >
+                Media
+              </TabsTrigger>
+              <TabsTrigger
+                value="link"
+                className="data-[state=active]:text-[#155dfc] text-zinc-500"
+              >
+                Links
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="media">
               <div className="grid grid-cols-3 gap-0.5 bg-white p-1 rounded-lg">
                 <div className="">
-                  <Image src="/images/folder.png" alt="image" width={500} height={500}></Image>
+                  <Image
+                    src="/images/folder.png"
+                    alt="image"
+                    width={500}
+                    height={500}
+                  ></Image>
                 </div>
                 <div>
-                  <Image src="/images/contact.png" alt="image" width={500} height={500}></Image>
+                  <Image
+                    src="/images/contact.png"
+                    alt="image"
+                    width={500}
+                    height={500}
+                  ></Image>
                 </div>
                 <div>
-                  <Image src="/images/logo.png" alt="image" width={500} height={500}></Image>
+                  <Image
+                    src="/images/logo.png"
+                    alt="image"
+                    width={500}
+                    height={500}
+                  ></Image>
                 </div>
                 <div>
-                  <Image src="/images/logo.png" alt="image" width={500} height={500}></Image>
+                  <Image
+                    src="/images/logo.png"
+                    alt="image"
+                    width={500}
+                    height={500}
+                  ></Image>
                 </div>
                 <div>
-                  <Image src="/images/contact.png" alt="image" width={500} height={500}></Image>
+                  <Image
+                    src="/images/contact.png"
+                    alt="image"
+                    width={500}
+                    height={500}
+                  ></Image>
                 </div>
-                 <div>
-                  <Image src="/images/folder.png" alt="image" width={500} height={500}></Image>
+                <div>
+                  <Image
+                    src="/images/folder.png"
+                    alt="image"
+                    width={500}
+                    height={500}
+                  ></Image>
                 </div>
               </div>
             </TabsContent>
@@ -149,20 +192,25 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                   {/* Media Items */}
                   <div className="space-y-4">
                     {mediaItems.map((item) => (
-                      <div key={item.id} className="flex items-center space-x-4">
+                      <div
+                        key={item.id}
+                        className="flex items-center space-x-4"
+                      >
                         {/* Icon */}
-                        <div className={`w-10 h-10 ${item.bgColor} rounded-lg flex items-center justify-center`}>
+                        <div
+                          className={`w-10 h-10 ${item.bgColor} rounded-lg flex items-center justify-center`}
+                        >
                           <span className="text-gray-600 font-semibold text-lg">
                             {item.icon}
                           </span>
                         </div>
-                        
+
                         {/* Content */}
                         <div className="flex flex-col">
                           <span className="text-gray-900 font-medium text-sm">
                             {item.name}
                           </span>
-                          <a 
+                          <a
                             href={item.url}
                             className="text-blue-500 text-sm hover:text-blue-600 transition-colors"
                             target="_blank"

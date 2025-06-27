@@ -38,7 +38,7 @@ export default function EditProfilePage() {
             console.error("Logout error:", error);
         }
     };
-    
+
     return (
         <div className="min-h-screen dark:bg-black dark:text-white flex justify-center items-center">
             <Card className="w-full max-w-md dark:bg-zinc-900 border-none shadow-lg rounded-none">

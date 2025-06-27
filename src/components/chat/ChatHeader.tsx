@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import {
   Avatar,
@@ -14,12 +14,13 @@ import { formatRelativeTime } from "@/utils/chat/formatRelativeTime";
 import { useChatStore } from "@/stores/useChatStore";
 
 const ChatHeader = ({ room }: { room: sdk.Room }) => {
-  const HOMESERVER_URL: string = process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
+  const HOMESERVER_URL: string =
+    process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
   const client = useMatrixClient();
   const lastSeenByRoom = useChatStore((state) => state.lastSeenByRoom);
   const myUserId = client?.getUserId();
   const roomId = room.roomId;
-  const others = room.getJoinedMembers().filter(m => m.userId !== myUserId);
+  const others = room.getJoinedMembers().filter((m) => m.userId !== myUserId);
   const lastSeenMap = lastSeenByRoom[roomId] || {};
 
   const avatarUrl = room.getAvatarUrl(

@@ -11,30 +11,30 @@ export default function SetUsernamePage() {
   const [username, setUsername] = useState("");
   const setUser = useUserStore((state) => state.setUser);
   const handleSave = async () => {
-  try {
-    const authService = new MatrixAuthService();
+    try {
+      const authService = new MatrixAuthService();
 
-    const userId = authService.client.getUserId();
-    if (!userId || !userId.startsWith("@")) {
-      throw new Error("Invalid User ID: " + userId);
+      const userId = authService.client.getUserId();
+      if (!userId || !userId.startsWith("@")) {
+        throw new Error("Invalid User ID: " + userId);
+      }
+
+      await authService.updateProfile(username);
+
+      const profile = await authService.client.getProfileInfo(userId);
+
+      console.log("New Profile:", profile);
+
+      setUser({
+        displayName: profile.displayname ?? "",
+      });
+
+      router.back();
+    } catch (error) {
+      console.error(" Profile update error:", error);
+      alert("Username update failed.");
     }
-
-    await authService.updateProfile(username);
-
-    const profile = await authService.client.getProfileInfo(userId);
-
-    console.log("New Profile:", profile);
-
-    setUser({
-      displayName: profile.displayname ?? "",
-    });
-
-    router.back();
-  } catch (error) {
-    console.error(" Profile update error:", error);
-    alert("Username update failed.");
-  }
-};
+  };
 
 
   return (

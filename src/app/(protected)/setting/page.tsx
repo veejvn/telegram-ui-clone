@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -22,7 +22,7 @@ import {
 import Link from "next/link";
 import { useUserStore } from "@/stores/useUserStore";
 import { getInitials } from "@/utils/getInitials";
-
+import { MatrixAuthService } from "@/services/matrixAuthService";
 interface SettingItem {
   title: string;
   icon: React.ReactNode;
@@ -88,9 +88,36 @@ const settings: SettingItem[] = [
 export default function SettingsPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { user } = useUserStore.getState()
-  const displayName = user ? user.displayName : "Your Name"
+  const { user, setUser } = useUserStore();
+  const hasFetched = useRef(false);
+  const [isHydrated, setIsHydrated] = useState(false);
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+   useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        if (hasFetched.current || user?.displayName) return;
+        hasFetched.current = true;
 
+        const authService = new MatrixAuthService();
+        const userId = authService.client?.getUserId?.();
+        if (!userId) return;
+
+        const profile = await authService.client.getProfileInfo(userId);
+        setUser({ displayName: profile.displayname ?? "Your Name" });
+      } catch (error) {
+        console.error("Lỗi khi fetch profile:", error);
+      }
+    };
+
+    fetchProfile();
+  }, [setUser, user]);
+
+  if (!isHydrated) return null; // 👈 tránh render sai trước khi Zustand khởi tạo
+
+  // Render page...
+  const displayName = user ? user.displayName : "Your Name"
   const handleFileSelect = () => {
     fileInputRef.current?.click();
   };
@@ -122,7 +149,7 @@ export default function SettingsPage() {
           </Button>
         </div>
         <div className="mt-16 text-center px-4 pb-4">
-          <h1 className="text-2xl font-semibold">{displayName}</h1>
+          <h1 className="text-2xl font-semibold">{user?.displayName ?? "Your Name"}</h1>
           <p className="text-sm text-gray-400">+84 12345689</p>
         </div>
       </div>
