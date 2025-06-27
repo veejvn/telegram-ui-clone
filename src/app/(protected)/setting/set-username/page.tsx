@@ -4,15 +4,35 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useUserStore } from "@/stores/useUserStore";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 
 export default function SetUsernamePage() {
   const router = useRouter();
-  const [username, setUsername] = useState("");
+  const [displayName, setDisplayname] = useState("");
+  const setUser = useUserStore((state) => state.setUser);
+  const userId = useAuthStore((state) => state.userId);
+  const client =  useMatrixClient();
 
-  const handleSave = () => {
-    console.log("Username:", username);
-    router.back();
+  const handleSave = async () => {
+    try {
+      if (!client || !userId || !userId.startsWith("@")) return
+
+      await client.setDisplayName(displayName);
+      const profile = await client.getProfileInfo(userId);
+
+      setUser({
+        displayName: profile.displayname ?? "",
+      });
+
+      router.back();
+    } catch (error) {
+      console.error(" Profile update error:", error);
+      alert("Username update failed.");
+    }
   };
+
 
   return (
     <div className="min-h-screen px-4 py-6">
@@ -36,8 +56,8 @@ export default function SetUsernamePage() {
           <Input
             className="border placeholder:text-gray-500"
             placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            value={displayName}
+            onChange={(e) => setDisplayname(e.target.value)}
           />
         </div>
 
@@ -53,7 +73,7 @@ export default function SetUsernamePage() {
         <p className="text-xs text-gray-400">
           This link opens a chat with you:{" "}
           <a
-            href={`https://t.me/${username}`}
+            href={`https://t.me/${displayName}`}
             className="text-blue-400 underline"
           >
             https://t.me/

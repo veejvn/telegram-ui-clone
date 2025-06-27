@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import styles from "./page.module.css";
 import { sendReadReceipt } from "@/services/chatService";
+import { useUserStore } from "@/stores/useUserStore";
 
 const ChatPage = () => {
   const { theme } = useTheme();
@@ -21,11 +22,14 @@ const ChatPage = () => {
   const [room, setRoom] = useState<sdk.Room | null>();
   const param = useParams();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
+  const user = useUserStore.getState().user;
   const client = useMatrixClient();
-  const roomId = param.id?.slice(0, 19) + ":matrix.org";
+  const homeserver =
+    user && user.homeserver
+      ? user.homeserver.replace(/^https?:\/\//, "").replace(/\/$/, "")
+      : "";
+  const roomId = user ? param.id?.slice(0, 19) + ":" + homeserver : "";
   const router = useRouter();
-
   useEffect(() => {
     if (!client) return;
 
@@ -75,7 +79,7 @@ const ChatPage = () => {
     try {
       await client.leave(roomId);
       setRoom(null);
-      router.push("/chat")
+      router.push("/chat");
     } catch (e) {
       toast.error("Không thể từ chối mời lời mời", {
         action: {

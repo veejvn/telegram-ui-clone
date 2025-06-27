@@ -15,19 +15,27 @@ let clientInstance: sdk.MatrixClient | null = null;
 const clearUser = useUserStore.getState().clearUser
 
 export class MatrixAuthService {
-    private client: sdk.MatrixClient
+    public client: sdk.MatrixClient
 
     constructor() {
         if (typeof window === 'undefined') {
             throw new Error(ERROR_MESSAGES.GENERAL.UNKNOWN_ERROR)
         }
-
+        const token = getLS("matrix_access_token");
+        const userId = getLS("matrix_user_id");
+        if (!token || !userId) {
+            throw new Error("Missing Matrix access token or user ID");
+        }
         if (!clientInstance) {
             clientInstance = sdk.createClient({
                 baseUrl: HOMESERVER_URL,
+                accessToken: token,
+                userId: userId,
             })
         }
-
+        if (!clientInstance) {
+            throw new Error("Failed to initialize Matrix client");
+        }
         this.client = clientInstance
     }
 
@@ -79,9 +87,6 @@ export class MatrixAuthService {
             if (registerResponse.access_token) {
                 setLS("matrix_access_token", registerResponse.access_token);
                 setLS("matrix_user_id", registerResponse.user_id);
-<<<<<<< HEAD
-
-=======
                 setLS("matrix_device_id", registerResponse.device_id);
                 clientInstance = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
@@ -89,7 +94,6 @@ export class MatrixAuthService {
                     userId: registerResponse.user_id,
                     deviceId: registerResponse.device_id
                 });
->>>>>>> 63ff68dd67bfe39f4b7a7c4bfe8ad19fa282377a
             }
             return {
                 success: true,
@@ -112,18 +116,13 @@ export class MatrixAuthService {
             if (loginResponse.access_token) {
                 setLS("matrix_access_token", loginResponse.access_token);
                 setLS("matrix_user_id", loginResponse.user_id);
-<<<<<<< HEAD
                 setLS("matrix_device_id", loginResponse.device_id); // <-- Dòng này là bắt buộc!
-
-=======
-                setLS("matrix_device_id", loginResponse.device_id);
                 clientInstance = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: loginResponse.access_token,
                     userId: loginResponse.user_id,
                     deviceId: loginResponse.device_id
                 });
->>>>>>> 63ff68dd67bfe39f4b7a7c4bfe8ad19fa282377a
             }
             return {
                 success: true,
@@ -308,35 +307,4 @@ export class MatrixAuthService {
             throw error;
         }
     }
-
-    // Cập nhật thông tin cá nhân
-    async updateProfile(displayName?: string, avatarUrl?: string) {
-        try {
-            if (displayName) {
-                await this.client.setDisplayName(displayName)
-            }
-            if (avatarUrl) {
-                await this.client.setAvatarUrl(avatarUrl)
-            }
-        } catch (error) {
-            console.error("Update profile failed:", error)
-            throw error
-        }
-    }
-<<<<<<< HEAD
-
-    // Kiểm tra trạng thái đăng nhập
-    isLoggedIn() {
-        return !!getLS("matrix_access_token") && !!getLS("matrix_user_id");
-    }
-
-    // Lấy thông tin người dùng hiện tại
-    getCurrentUser() {
-        return {
-            token: getLS("matrix_access_token"),
-            userId: getLS("matrix_user_id"),
-        }
-    }
-=======
->>>>>>> 63ff68dd67bfe39f4b7a7c4bfe8ad19fa282377a
 } 
