@@ -1,28 +1,32 @@
-import { create } from "zustand"
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 
+type Status = "online" | "offline"
 
-interface UserInfo{
-    displayName: string
+export interface UserInfo {
+    displayName: string;
+    status: Status;
+    phone?: string;
+    avatarUrl?: string;
+    homeserver?: string;
 }
 
-interface User {
-    user: UserInfo | null
-    setUser: (data: UserInfo) => void,
-    clearUser: () => void,
+interface UserState {
+    user: UserInfo | null;
+    setUser: (data: UserInfo) => void;
+    clearUser: () => void;
 }
 
-export const useUserStore = create<User>()(
+export const useUserStore = create<UserState>()(
     persist(
         (set) => ({
             user: null,
-            setUser: (data: UserInfo) => set({user: data}),
-            clearUser: () => set({user: null})
+            setUser: (data) => set({ user: data }),
+            clearUser: () => set({ user: null }),
         }),
         {
             name: "matrix_user",
-            storage: createJSONStorage(() => localStorage)
+            storage: createJSONStorage(() => localStorage),
         }
     )
-)
-
+);

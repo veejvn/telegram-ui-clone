@@ -7,6 +7,7 @@ import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useTheme } from "next-themes";
 import EmojiPicker, { Theme as EmojiTheme } from "emoji-picker-react";
 import { useChatStore } from "@/stores/useChatStore";
+import { useChatStore } from "@/stores/useChatStore";
 
 const ChatComposer = ({ roomId }: { roomId: string }) => {
   const [text, setText] = useState("");
@@ -18,8 +19,11 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   const client = useMatrixClient();
   const theme = useTheme();
   const { addMessage } = useChatStore.getState();
+  const { addMessage } = useChatStore.getState();
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
+      if (textareaRef.current) {
+        textareaRef.current.value = "";
       if (textareaRef.current) {
         textareaRef.current.value = "";
       }
@@ -63,6 +67,37 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
           console.log("Send Error:", err);
         });
     }, 1000);
+    const localId = "local_" + Date.now(); // Fake ID tạm thời
+    const userId = client.getUserId();
+    const now = new Date();
+
+    // 🧠 Hiển thị ngay trên UI (thêm vào store)
+    addMessage(roomId, {
+      eventId: localId,
+      sender: userId ?? undefined,
+      senderDisplayName: userId ?? undefined,
+      text: trimmed,
+      time: now.toLocaleString(),
+      timestamp: now.getTime(),
+      status: "sent",
+    });
+
+    // 🧹 Reset UI
+    setText("");
+    setShowEmojiPicker(false);
+
+    // 🔁 Gửi lên Matrix
+    setTimeout(() => {
+      sendMessage(roomId, trimmed, client)
+        .then((res) => {
+          if (!res.success) {
+            console.log("Send Failed!");
+          }
+        })
+        .catch((err) => {
+          console.log("Send Error:", err);
+        });
+    }, 1000);
   };
 
   const handleEmojiClick = (emojiData: any) => {
@@ -71,6 +106,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
 
   const handleChangeFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    if (!file || !client || file.type.startsWith("image/")) return;
     if (!file || !client || file.type.startsWith("image/")) return;
 
     try {
@@ -149,6 +185,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
           </div>
         )}
       </div>
+
 
       {text.trim() ? (
         <svg

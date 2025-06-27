@@ -1,42 +1,63 @@
 "use client";
+
 import EmojiMessage from "@/components/chat/message-type/EmojiMessage";
 import ImageMessage from "@/components/chat/message-type/ImageMassage";
 import TextMessage from "@/components/chat/message-type/TextMessage";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Message } from "@/stores/useChatStore";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import clsx from "clsx";
 
 const ChatMessage = ({ msg }: { msg: Message }) => {
   const userId = useAuthStore.getState().userId;
   const { type } = msg;
   const isSender = msg.sender === userId;
-  // const [isSender, setIsSender] = useState(false);
+  const messageRef = useRef<HTMLDivElement>(null);
+  const searchParams = useSearchParams();
+  const highlightId = searchParams.get("highlight");
+  const [animate, setAnimate] = useState(false);
 
-  // useEffect(() => {
-  //   if (msg.sender === userId) {
-  //     setIsSender(true);
-  //   } else {
-  //     setIsSender(false);
-  //   }
-  // }, [msg]);
+  useEffect(() => {
+    if (msg.eventId === highlightId && messageRef.current) {
+      messageRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+      setAnimate(true);
+      const timeout = setTimeout(() => setAnimate(false), 1000);
+      return () => clearTimeout(timeout);
+    }
+  }, [highlightId, msg.eventId]);
 
   const renderContent = () => {
     switch (type) {
       case "text":
-        return <TextMessage msg={msg} isSender={isSender} />;
+        return <TextMessage msg={msg} isSender={isSender} animate={animate} />;
       case "emoji":
         return <EmojiMessage msg={msg} isSender={isSender} />;
       case "image":
         return <ImageMessage msg={msg} isSender={isSender} />;
       default:
-        console.warn("⚠️ Unknown type in message:", msg);
+        //console.warn("⚠️ Unknown type in message:", msg);
         return <TextMessage msg={msg} isSender={isSender} />;
     }
   };
 
+  const flashHighlightClass = clsx();
+
   return (
-    <div className={`flex ${isSender ? "justify-end" : "justify-start"} my-2`}>
-      <div className="flex flex-col max-w-[90%] w-fit">{renderContent()}</div>
+    <div
+      ref={messageRef}
+      className={`flex ${isSender ? "justify-end" : "justify-start"} my-2`}
+    >
+      <div
+        className={`flex flex-col max-w-[90%] w-fit rounded-xl transition ${
+          animate ? "flash-background" : ""
+        }`}
+      >
+        {renderContent()}
+      </div>
     </div>
   );
 };

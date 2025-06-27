@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useEffect, useLayoutEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useState, useRef } from "react";
 import ChatMessage from "./ChatMessage";
 import { useTimeline } from "@/hooks/useTimeline";
 import { MessageStatus, useChatStore } from "@/stores/useChatStore";
-import { getOlderMessages, getTimeline } from "@/services/chatService";
+import { getOlderMessages } from "@/services/chatService";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { convertEventsToMessages } from "@/utils/chat/convertEventsToMessages";
 import { groupMessagesByDate } from "@/utils/chat/groupMessagesByDate";
+import { useSearchParams } from "next/navigation";
 
 type ChatMessagesProps = {
   roomId: string;
@@ -21,6 +22,11 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
   const messagesByRoom = useChatStore((state) => state.messagesByRoom);
   const { prependMessages, setOldestEventId } = useChatStore();
   const messages = messagesByRoom[roomId] ?? [];
+  const grouped = groupMessagesByDate(messages);
+
+  const searchParams = useSearchParams();
+  const highlightId = searchParams.get("highlight");
+  const firstHighlightedRef = useRef<HTMLDivElement | null>(null);
 
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMoreByRoom, setHasMoreByRoom] = useState<{
@@ -86,31 +92,48 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
     }
   };
 
-  const grouped = groupMessagesByDate(messages);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMoreByRoom, setHasMoreByRoom] = useState<{
+    [roomId: string]: boolean;
+  }>({});
+
+  const containerRef = React.useRef<HTMLDivElement | null>(null);
+  const prevScrollHeightRef = React.useRef<number | null>(null);
+
+  useEffect(() => {
+    setHasMoreByRoom((prev) => ({
+      ...prev,
+      [roomId]: true,
+    }));
+  }, [roomId]);
+
+  // 2. Tự động cuộn xuống khi có tin nhắn mới
+  useEffect(() => {
+    if (highlightId && firstHighlightedRef.current) {
+      firstHighlightedRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    } else if (messagesEndRef?.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "auto" });
+    }
+  }, [messages, highlightId]);
 
   return (
     <>
-      <div
-        className="py-1 flex flex-col"
-        ref={containerRef}
-        onScroll={handleScroll}
-        style={{ overflowY: "auto", height: "100%" }}
-      >
-        {Object.entries(grouped).map(([dateLabel, msgs]) => (
-          <div key={dateLabel}>
-            <div className="text-center text-sm my-1.5">
-              <p
-                className=" bg-gray-900/15 rounded-full backdrop-blur-2xl 
-                text-white inline-block py-1 px-2"
-              >
-                {dateLabel}
-              </p>
-            </div>
-            {msgs.map((msg) => (
-              <div key={msg.eventId}>
-                <ChatMessage msg={msg} />
-              </div>
-            ))}
+      <div className="py-1.5">
+        {/* <div className="text-center text-sm">
+          <p
+            className=" bg-gray-500/10 rounded-full backdrop-blur-sm 
+            text-white inline-block px-1.5"
+          >
+            Today
+          </p>
+        </div> */}
+        {messages.map((msg) => (
+          <div key={msg.eventId}>
+            <ChatMessage msg={msg} />
+            <div ref={messagesEndRef} />
           </div>
         ))}
         <div ref={messagesEndRef} />
@@ -118,7 +141,6 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
         {isLoadingMore && (
           <div className="text-center text-gray-400">Loading more...</div>
         )}
-        {/* <div className="flex justify-end text-red-500">{lastMessage.status}</div> */}
       </div>
     </>
   );

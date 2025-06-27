@@ -1,5 +1,4 @@
 import React from "react";
-import { Separator } from "../ui/separator";
 import * as sdk from "matrix-js-sdk";
 import {
   Popover,
