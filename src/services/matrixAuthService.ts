@@ -15,19 +15,27 @@ let clientInstance: sdk.MatrixClient | null = null;
 const clearUser = useUserStore.getState().clearUser
 
 export class MatrixAuthService {
-    private client: sdk.MatrixClient
+    public client: sdk.MatrixClient
 
     constructor() {
         if (typeof window === 'undefined') {
             throw new Error(ERROR_MESSAGES.GENERAL.UNKNOWN_ERROR)
         }
-
+        const token = getLS("matrix_access_token");
+        const userId = getLS("matrix_user_id");
+        if (!token || !userId) {
+            throw new Error("Missing Matrix access token or user ID");
+        }
         if (!clientInstance) {
             clientInstance = sdk.createClient({
                 baseUrl: HOMESERVER_URL,
+                accessToken: token,
+                userId: userId,
             })
         }
-
+        if (!clientInstance) {
+            throw new Error("Failed to initialize Matrix client");
+        }
         this.client = clientInstance
     }
 
@@ -293,21 +301,6 @@ export class MatrixAuthService {
         } catch (error) {
             console.error("Reset password failed:", error);
             throw error;
-        }
-    }
-
-    // Cập nhật thông tin cá nhân
-    async updateProfile(displayName?: string, avatarUrl?: string) {
-        try {
-            if (displayName) {
-                await this.client.setDisplayName(displayName)
-            }
-            if (avatarUrl) {
-                await this.client.setAvatarUrl(avatarUrl)
-            }
-        } catch (error) {
-            console.error("Update profile failed:", error)
-            throw error
         }
     }
 } 
