@@ -303,36 +303,4 @@ export class MatrixAuthService {
             throw error;
         }
     }
-
-    // Cập nhật thông tin cá nhân
-    async updateProfile(displayName?: string, avatarUrl?: string) {
-        try {
-            const userId = this.client.getUserId();
-            if (!userId) {
-                throw new Error("Client is not logged in or userId is missing");
-            }
-            if (displayName) {
-                await this.client.setDisplayName(displayName)
-            }
-            if (avatarUrl) {
-                await this.client.setAvatarUrl(avatarUrl)
-            }
-        } catch (error) {
-            console.error("Update profile failed:", error)
-            throw error
-        }
-    }
-
-    // Kiểm tra trạng thái đăng nhập
-    isLoggedIn() {
-        return !!getLS("matrix_access_token") && !!getLS("matrix_user_id");
-    }
-
-    // Lấy thông tin người dùng hiện tại
-    getCurrentUser() {
-        return {
-            token: getLS("matrix_access_token"),
-            userId: getLS("matrix_user_id"),
-        }
-    }
 } 

@@ -104,8 +104,8 @@ export default function SettingsPage() {
       const profile = await client.getProfileInfo(userId);
       if (profile && profile.avatar_url) {
         const httpUrl = client.mxcUrlToHttp(profile.avatar_url, 96, 96, "crop") ?? "";
-        console.log("avatar_url:", profile.avatar_url);
-        console.log("httpUrl:", httpUrl);
+        // console.log("avatar_url:", profile.avatar_url);
+        // console.log("httpUrl:", httpUrl);
 
         // Kiểm tra link HTTP thực tế
         const isValid = /^https?:\/\//.test(httpUrl) && !httpUrl.includes("M_NOT_FOUND");
@@ -194,6 +194,10 @@ export default function SettingsPage() {
     }
   };
 
+  const handleClickEdit = () => {
+    router.push("/setting/profile/edit")
+  }
+
   const avatarBackgroundColor = getBackgroundColorClass(userId)
 
   return (
@@ -223,7 +227,7 @@ export default function SettingsPage() {
           <Button
             className="text-blue-500 hover:bg-zinc-300 bg-white dark:bg-transparent border dark:hover:text-blue-700"
             size="sm"
-            onClick={handleFileSelect}
+            onClick={handleClickEdit}
           >
             Edit
           </Button>

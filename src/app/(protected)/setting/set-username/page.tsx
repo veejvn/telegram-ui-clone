@@ -4,26 +4,23 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MatrixAuthService } from "@/services/matrixAuthService";
 import { useUserStore } from "@/stores/useUserStore";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { useMatrixClient } from "@/contexts/MatrixClientProvider";
+
 export default function SetUsernamePage() {
   const router = useRouter();
-  const [username, setUsername] = useState("");
+  const [displayName, setDisplayname] = useState("");
   const setUser = useUserStore((state) => state.setUser);
+  const userId = useAuthStore((state) => state.userId);
+  const client =  useMatrixClient();
+
   const handleSave = async () => {
     try {
-      const authService = new MatrixAuthService();
+      if (!client || !userId || !userId.startsWith("@")) return
 
-      const userId = authService.client.getUserId();
-      if (!userId || !userId.startsWith("@")) {
-        throw new Error("Invalid User ID: " + userId);
-      }
-
-      await authService.updateProfile(username);
-      console.log("Display name updated on server:", username);
-      const profile = await authService.client.getProfileInfo(userId);
-
-      console.log("New Profile:", profile);
+      await client.setDisplayName(displayName);
+      const profile = await client.getProfileInfo(userId);
 
       setUser({
         displayName: profile.displayname ?? "",
@@ -59,8 +56,8 @@ export default function SetUsernamePage() {
           <Input
             className="border placeholder:text-gray-500"
             placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            value={displayName}
+            onChange={(e) => setDisplayname(e.target.value)}
           />
         </div>
 
@@ -76,7 +73,7 @@ export default function SetUsernamePage() {
         <p className="text-xs text-gray-400">
           This link opens a chat with you:{" "}
           <a
-            href={`https://t.me/${username}`}
+            href={`https://t.me/${displayName}`}
             className="text-blue-400 underline"
           >
             https://t.me/
