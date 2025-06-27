@@ -24,6 +24,7 @@ import { useUserStore } from "@/stores/useUserStore";
 import { getInitials } from "@/utils/getInitials";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { getBackgroundColorClass } from "@/utils/getBackgroundColor ";
 
 interface SettingItem {
   title: string;
@@ -120,12 +121,12 @@ export default function SettingsPage() {
             // Nếu fetch lỗi, sẽ fallback
           }
         }
-        setAvatarUrl("https://avatars.githubusercontent.com/u/583231?v=4");
+        setAvatarUrl("");
       } else {
-        setAvatarUrl("https://avatars.githubusercontent.com/u/583231?v=4");
+        setAvatarUrl("");
       }
     } catch (error) {
-      setAvatarUrl("https://avatars.githubusercontent.com/u/583231?v=4");
+      setAvatarUrl("");
       console.error("Error loading avatar:", error);
     }
   };
@@ -168,6 +169,8 @@ export default function SettingsPage() {
     }
   };
 
+  const avatarBackgroundColor = getBackgroundColorClass(userId)
+
   return (
     <>
       {/* Header */}
@@ -175,7 +178,7 @@ export default function SettingsPage() {
         <div className="flex items-center justify-between px-4 pt-4">
           <QrCode className="h-6 w-6 text-blue-500" />
           <div className="absolute left-1/2 transform -translate-x-1/2 top-4">
-            <Avatar className="h-20 w-20">
+            <Avatar className={`h-20 w-20 ${avatarBackgroundColor}`}>
               {avatarUrl ? (
                 <img
                   src={avatarUrl}
@@ -202,7 +205,9 @@ export default function SettingsPage() {
         </div>
         <div className="mt-16 text-center px-4 pb-4">
           <h1 className="text-2xl font-semibold">{displayName}</h1>
-          <p className="text-sm text-gray-400">+84 12345689</p>
+          <p className="text-sm text-blue-500">
+            Homeserver: {user?.homeserver?.replace("https://", "")}
+          </p>
         </div>
       </div>
 

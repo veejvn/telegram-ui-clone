@@ -8,6 +8,7 @@ import { getInitials } from "@/utils/getInitials";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import React, { useEffect, useState } from "react";
+import { getBackgroundColorClass } from "@/utils/getBackgroundColor ";
 
 export default function MyProfilePage() {
   const router = useRouter();
@@ -18,7 +19,7 @@ export default function MyProfilePage() {
   const client = useMatrixClient();
   const userId = useAuthStore.getState().userId;
   const [avatarUrl, setAvatarUrl] = useState<string>(
-    "https://avatars.githubusercontent.com/u/583231?v=4"
+    ""
   ); // fallback mặc định
 
   useEffect(() => {
@@ -46,9 +47,9 @@ export default function MyProfilePage() {
             }
           }
         }
-        setAvatarUrl("https://avatars.githubusercontent.com/u/583231?v=4");
+        setAvatarUrl("");
       } catch {
-        setAvatarUrl("https://avatars.githubusercontent.com/u/583231?v=4");
+        setAvatarUrl("");
       }
     };
     fetchAvatar();
@@ -60,6 +61,8 @@ export default function MyProfilePage() {
     userObj.on?.("User.avatarUrl", handler);
     return () => userObj.off?.("User.avatarUrl", handler);
   }, [client, userId]);
+
+  const avatarBackgroundColor = getBackgroundColorClass(userId)
 
   return (
     <div className="bg-white text-black min-h-screen px-4 pt-6 pb-10">
@@ -81,20 +84,21 @@ export default function MyProfilePage() {
 
       {/* Profile Info */}
       <div className="flex flex-col items-center space-y-2 mb-6">
-        <Avatar className="w-20 h-20 bg-purple-600 text-white text-2xl">
-          <img
-            src={avatarUrl}
-            alt="avatar"
-            className="w-20 h-20 rounded-full object-cover"
-            width={80}
-            height={80}
-            loading="lazy"
-            onError={(e) => {
-              // Nếu link ảnh bị lỗi, fallback về ảnh mặc định
-              (e.currentTarget as HTMLImageElement).src =
-                "https://avatars.githubusercontent.com/u/583231?v=4";
-            }}
-          />
+        <Avatar className={`w-20 h-20 text-white text-2xl ${avatarBackgroundColor}`}>
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt="avatar"
+              className="h-20 w-20 rounded-full object-cover"
+              width={80}
+              height={80}
+              loading="lazy"
+            />
+          ) : (
+            <AvatarFallback className={`text-xl`}>
+              {getInitials(displayName)}
+            </AvatarFallback>
+          )}
         </Avatar>
         <h2 className="text-xl font-semibold">{displayName}</h2>
         <span className="text-gray-500 text-sm">{user?.status}</span>
