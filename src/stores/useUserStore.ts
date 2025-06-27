@@ -13,20 +13,32 @@ export interface UserInfo {
 
 interface UserState {
     user: UserInfo | null;
-    setUser: (data: UserInfo) => void;
+    setUser: (data: Partial<UserInfo>) => void;
     clearUser: () => void;
 }
 
 export const useUserStore = create<UserState>()(
     persist(
-        (set) => ({
+        (set, get) => ({
             user: null,
-            setUser: (data) => set({ user: data }),
+            setUser: (data) => {
+                const current = get().user;
+                set({
+                    user: {
+                        ...current,     // giữ thông tin cũ
+                        ...data,        // cập nhật mới
+                    } as UserInfo,
+                });
+            },
             clearUser: () => set({ user: null }),
         }),
         {
             name: "matrix_user",
-            storage: createJSONStorage(() => localStorage),
+            storage: typeof window !== "undefined"
+                ? createJSONStorage(() => localStorage)
+                : undefined,
+            // Optional: hạn chế lỗi khi deserialize sai format
+            partialize: (state) => ({ user: state.user }),
         }
     )
 );
