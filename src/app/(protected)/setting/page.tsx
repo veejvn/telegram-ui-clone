@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, useEffect, useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -22,7 +22,9 @@ import {
 import Link from "next/link";
 import { useUserStore } from "@/stores/useUserStore";
 import { getInitials } from "@/utils/getInitials";
-import { MatrixAuthService } from "@/services/matrixAuthService";
+import { useMatrixClient } from "@/contexts/MatrixClientProvider";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { getBackgroundColorClass } from "@/utils/getBackgroundColor ";
 
 interface SettingItem {
   title: string;
@@ -89,45 +91,63 @@ const settings: SettingItem[] = [
 export default function SettingsPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { user, setUser } = useUserStore();
-  const hasFetched = useRef(false);
-  const [isHydrated, setIsHydrated] = useState(false);
-
-  useEffect(() => {
-    setIsHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        if (hasFetched.current) return;
-        hasFetched.current = true;
-
-        const authService = new MatrixAuthService();
-        const userId = authService.client?.getUserId?.();
-        if (!userId) return;
-
-        const profile = await authService.client.getProfileInfo(userId);
-
-        console.log("🔄 Fetching profile from server...");
-        console.log("📦 Local displayName:", user?.displayName);
-        console.log("🆔 userId:", userId);
-        console.log("🪪 Server profile:", profile);
-
-        if (profile.displayname) {
-          setUser({ displayName: profile.displayname });
-        }
-      } catch (error) {
-        console.error("Lỗi khi fetch profile:", error);
-      }
-    };
-
-    if (isHydrated) fetchProfile();
-  }, [setUser, user?.displayName, isHydrated]);
-
-  if (!isHydrated) return null;
-
+  const client = useMatrixClient();
+  const userId = useAuthStore.getState().userId;
+  const { user , setUser } = useUserStore.getState();
   const displayName = user ? user.displayName : "Your Name";
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  // Lấy avatar_url (MXC) và chuyển sang HTTP URL, ưu tiên dùng proxy nếu cần
+  const fetchAvatar = async () => {
+    if (!client || !userId) return;
+    try {
+      const profile = await client.getProfileInfo(userId);
+      if (profile && profile.avatar_url) {
+        const httpUrl = client.mxcUrlToHttp(profile.avatar_url, 96, 96, "crop") ?? "";
+        console.log("avatar_url:", profile.avatar_url);
+        console.log("httpUrl:", httpUrl);
+
+        // Kiểm tra link HTTP thực tế
+        const isValid = /^https?:\/\//.test(httpUrl) && !httpUrl.includes("M_NOT_FOUND");
+        if (isValid) {
+          // Test link HTTP thực tế
+          try {
+            const res = await fetch(httpUrl, { method: "HEAD" });
+            if (res.ok) {
+              setAvatarUrl(`/api/matrix-image?url=${encodeURIComponent(httpUrl)}`);
+              return;
+            }
+          } catch (e) {
+            // Nếu fetch lỗi, sẽ fallback
+          }
+        }
+        setAvatarUrl("");
+      } else {
+        setAvatarUrl("");
+      }
+    } catch (error) {
+      setAvatarUrl("");
+      console.error("Error loading avatar:", error);
+    }
+  };
+
+  // Lắng nghe sự kiện thay đổi avatar để cập nhật realtime
+  useEffect(() => {
+    fetchAvatar();
+    if (!client || !userId) return;
+
+    const userObj = client.getUser?.(userId) as any;
+    if (!userObj) return;
+
+    const handler = () => fetchAvatar();
+    userObj.on?.("User.avatarUrl", handler);
+
+    return () => {
+      userObj.off?.("User.avatarUrl", handler);
+    };
+    // eslint-disable-next-line
+  }, [client, userId]);
+  // eslint-disable-next-line
 
   const handleFileSelect = () => {
     fileInputRef.current?.click();
@@ -135,14 +155,10 @@ export default function SettingsPage() {
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !client) return;
 
     try {
       console.log("📂 File được chọn:", file.name);
-
-      const authService = new MatrixAuthService();
-      const client = authService.client;
-      const userId = client.getUserId();
       if (!userId) throw new Error("Không tìm thấy userId");
 
       // 1️⃣ upload
@@ -167,7 +183,7 @@ export default function SettingsPage() {
       }
 
       // 2️⃣ update profile
-      await authService.updateProfile(undefined, avatarUrl);
+      await client.setAvatarUrl(avatarUrl);
 
       // 3️⃣ zustand update
       setUser({ avatarUrl });
@@ -175,9 +191,10 @@ export default function SettingsPage() {
       console.log(" Avatar updated successfully");
     } catch (error) {
       console.error(" Error uploading avatar:", error);
-      alert("Avatar update failed.");
     }
   };
+
+  const avatarBackgroundColor = getBackgroundColorClass(userId)
 
   return (
     <>
@@ -186,12 +203,15 @@ export default function SettingsPage() {
         <div className="flex items-center justify-between px-4 pt-4">
           <QrCode className="h-6 w-6 text-blue-500" />
           <div className="absolute left-1/2 transform -translate-x-1/2 top-4">
-            <Avatar className="h-20 w-20">
-              {user?.avatarUrl ? (
+            <Avatar className={`h-20 w-20 ${avatarBackgroundColor}`}>
+              {avatarUrl ? (
                 <img
-                  src={user.avatarUrl}
-                  alt="Avatar"
-                  className="h-full w-full object-cover"
+                  src={avatarUrl}
+                  alt="avatar"
+                  className="h-20 w-20 rounded-full object-cover"
+                  width={80}
+                  height={80}
+                  loading="lazy"
                 />
               ) : (
                 <AvatarFallback className="text-xl">
@@ -203,13 +223,16 @@ export default function SettingsPage() {
           <Button
             className="text-blue-500 hover:bg-zinc-300 bg-white dark:bg-transparent border dark:hover:text-blue-700"
             size="sm"
+            onClick={handleFileSelect}
           >
             Edit
           </Button>
         </div>
         <div className="mt-16 text-center px-4 pb-4">
           <h1 className="text-2xl font-semibold">{displayName}</h1>
-          <p className="text-sm text-gray-400">+84 12345689</p>
+          <p className="text-sm text-blue-500">
+            Homeserver: {user?.homeserver?.replace("https://", "")}
+          </p>
         </div>
       </div>
 

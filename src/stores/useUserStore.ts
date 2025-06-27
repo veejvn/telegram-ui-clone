@@ -1,19 +1,23 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
-interface UserInfo {
+type Status = "online" | "offline"
+
+export interface UserInfo {
     displayName: string;
+    status: Status;
+    phone?: string;
     avatarUrl?: string;
+    homeserver?: string;
 }
 
-interface User {
+interface UserState {
     user: UserInfo | null;
     setUser: (data: Partial<UserInfo>) => void;
     clearUser: () => void;
 }
 
-
-export const useUserStore = create<User>()(
+export const useUserStore = create<UserState>()(
     persist(
         (set, get) => ({
             user: null,
@@ -29,7 +33,7 @@ export const useUserStore = create<User>()(
             clearUser: () => set({ user: null }),
         }),
         {
-            name: "matrix-user",
+            name: "matrix_user",
             storage: typeof window !== "undefined"
                 ? createJSONStorage(() => localStorage)
                 : undefined,
