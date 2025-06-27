@@ -30,12 +30,11 @@ class CallService extends EventEmitter {
 
     private onIncomingCall(call: sdk.MatrixCall) {
         if (!call) return;
-
         const opp = call.getOpponentMember();
         if (!opp) return;
 
         this.currentCall = call;
-        this.registerCallEvents(call); // ĐĂNG KÝ NGAY SAU KHI NHẬN CALL
+        this.registerCallEvents(call);
 
         const rawType = (call as any).callType;
         const callType: CallType = rawType === 'video' ? 'video' : 'voice';
@@ -47,8 +46,6 @@ class CallService extends EventEmitter {
             callerId: opp.userId!,
             callType,
         });
-
-        // KHÔNG auto-answer ở đây, chờ UI gọi answer
     }
 
     private registerCallEvents(call: sdk.MatrixCall) {
@@ -71,11 +68,8 @@ class CallService extends EventEmitter {
             }
         });
 
-        // ========================
-        // FIX CHO MATRIX CALL V2+
-        // ========================
+        // Matrix Call v2+
         c.on('feeds_changed', () => {
-            // getRemoteFeeds chỉ có ở MatrixCall v2+
             const feeds = typeof c.getRemoteFeeds === 'function' ? c.getRemoteFeeds() : undefined;
             if (feeds && feeds.length > 0) {
                 const stream = feeds[0].stream;
@@ -87,28 +81,44 @@ class CallService extends EventEmitter {
             }
         });
 
-        c.on('hangup', () => {
-            console.log('[CallService] Call ended');
-            this.emit('call-ended');
+        // Hangup - cleanup duy nhất ở đây!
+        c.on('hangup', (event: any) => {
+            const reason = event?.reason || "user_hangup";
+            console.log('[CallService] Hangup received from SDK/peer! Reason:', reason);
+            this.emit('call-ended', reason);
+            this.currentCall = undefined; // chỉ cleanup tại đây!
         });
 
         c.on('error', (err: Error) => {
             console.error('[CallService] Call error:', err);
             this.emit('call-error', err);
+            this.currentCall = undefined;
         });
     }
-    // GỌI ĐI - ĐĂNG KÝ EVENT TRƯỚC KHI CALL
+
+    // Gọi đi (voice/video)
     public async placeCall(roomId: string, type: CallType) {
         if (!this.client) return;
         const call = this.client.createCall(roomId);
         if (!call) return;
 
         this.currentCall = call;
-        this.registerCallEvents(call); // ĐĂNG KÝ NGAY SAU TẠO
+        this.registerCallEvents(call);
 
         if (type === 'voice') {
-            await call.placeVoiceCall(); // PHẢI SAU registerCallEvents
+            await call.placeVoiceCall();
         } else {
+            // LẤY audio + video stream
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+            console.log('🟢 [DEBUG] video call getUserMedia tracks:', stream.getTracks());
+            console.log('🟢 [DEBUG] video call getUserMedia video tracks:', stream.getVideoTracks());
+            if ((call as any).peerConn) {
+                const pc = (call as any).peerConn;
+                stream.getTracks().forEach((track: MediaStreamTrack) => {
+                    pc.addTrack(track, stream);
+                });
+            }
+            this.emit('local-stream', stream);
             await call.placeVideoCall();
         }
 
@@ -116,32 +126,31 @@ class CallService extends EventEmitter {
         this.emit('outgoing-call', { roomId, callType: type });
     }
 
-    // TRẢ LỜI CUỘC GỌI - KHÔNG ĐĂNG KÝ EVENT NỮA (đã đăng ký khi nhận call)
     public answerCall() {
         if (!this.currentCall) return;
-
         console.log('[CallService] Answering call...');
         this.currentCall.answer();
-
-        // KHÔNG emit connected thủ công bằng setTimeout!
-        // CHỈ emit khi nhận được remoteStream thật
     }
 
+    // KHÔNG cleanup currentCall ở đây!
     public hangup() {
         if (!this.currentCall) return;
-
-        console.log('[CallService] Hanging up...');
+        console.log('[CallService] Hanging up (send signaling to peer/Element)...');
         (this.currentCall as any).hangup();
-        this.currentCall = undefined;
-        this.emit('call-ended');
+        // Không emit call-ended ở đây, cleanup chỉ khi nhận event hangup từ SDK/peer!
+        // this.currentCall = undefined;
     }
+
     public async upgradeToVideo() {
         if (!this.currentCall) return;
         try {
+            // 1. Lấy video stream mới
             const videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
             const videoTrack = videoStream.getVideoTracks()[0];
             const callAny = this.currentCall as any;
             const senders = callAny.peerConn?.getSenders?.();
+
+            // 2. Thêm video track vào peerConn
             if (senders) {
                 const videoSender = senders.find((sender: RTCRtpSender) => sender.track && sender.track.kind === 'video');
                 if (videoSender) {
@@ -150,18 +159,23 @@ class CallService extends EventEmitter {
                     callAny.peerConn?.addTrack?.(videoTrack, videoStream);
                 }
             }
+
+            // 3. Ghép audio cũ (nếu có) với video track mới
+            let localStream: MediaStream | undefined = undefined;
+            if (callAny.localStream) {
+                const audioTracks = callAny.localStream.getAudioTracks();
+                localStream = new MediaStream([...audioTracks, videoTrack]);
+            } else {
+                localStream = new MediaStream([videoTrack]);
+            }
+
+            this.emit('local-stream', localStream);
+            callAny.localStream = localStream;
         } catch (err) {
             console.error("[CallService] Không thể bật camera:", err);
-            if (err instanceof Error) {
-                alert("Không thể bật camera: " + err.message);
-            } else {
-                alert("Không thể bật camera: " + String(err));
-            }
+            alert("Không thể bật camera: " + (err instanceof Error ? err.message : String(err)));
         }
     }
-
-
-} // <--- ĐÂY là dấu đóng class!
-
+}
 
 export const callService = new CallService();

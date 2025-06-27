@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import useCallStore from '@/stores/useCallStore';
@@ -24,6 +22,8 @@ export default function CallContainer({
         placeCall,
         hangup,
         callDuration,
+        callEndedReason,
+        upgradeToVideo,   // <-- Lấy luôn từ store
     } = useCallStore();
 
     const addHistory = useCallHistoryStore((s) => s.addCall);
@@ -38,8 +38,14 @@ export default function CallContainer({
     useEffect(() => {
         if (state === 'ended' && !historyAdded) {
             let status: CallStatus = 'accepted';
-            if (incoming && callDuration === 0) status = 'missed';
-            else if (!incoming && callDuration === 0) status = 'rejected';
+
+            // Mapping reason chuẩn
+            if (callEndedReason === "user_declined") status = 'rejected';
+            else if (
+                callEndedReason === "invite_timeout" ||
+                callEndedReason === "invite_expired"
+            ) status = 'missed';
+            else if (callDuration === 0) status = 'missed'; // fallback nếu không có reason
 
             addHistory({
                 calleeId: incoming?.callerId ?? roomId,
@@ -52,7 +58,18 @@ export default function CallContainer({
             setHistoryAdded(true);
             onTerminate();
         }
-    }, [state, historyAdded, incoming, callDuration, addHistory, onTerminate, roomId, type, contactName]);
+    }, [
+        state,
+        historyAdded,
+        incoming,
+        callDuration,
+        addHistory,
+        onTerminate,
+        roomId,
+        type,
+        contactName,
+        callEndedReason,
+    ]);
 
     // Chỉ gọi mới nếu là caller và state là 'idle'
     useEffect(() => {
@@ -66,7 +83,7 @@ export default function CallContainer({
         return () => setHistoryAdded(false);
     }, []);
 
-    // Render VoiceCall hoặc VideoCall UI tuỳ loại
+    // Sửa chỗ này: KHÔNG gọi hangup trước khi switch video!
     if (type === 'voice') {
         return (
             <VoiceCall
@@ -77,9 +94,10 @@ export default function CallContainer({
                     hangup();
                     onTerminate();
                 }}
-                onSwitchToVideo={() => {
-                    hangup();
-                    onTerminate();
+                onSwitchToVideo={async () => {
+                    // Chỉ gọi upgradeToVideo, không hangup/reset!
+                    await upgradeToVideo();
+                    // Chuyển sang layout video call
                     router.replace(
                         `/call/video?calleeId=${encodeURIComponent(roomId)}&contact=${encodeURIComponent(contactName)}`
                     );

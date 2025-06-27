@@ -1,9 +1,7 @@
-import { MatrixAuthService } from "@/services/matrixAuthService";
+"use client"
 import * as sdk from "matrix-js-sdk";
 import { formatTime } from "./formatTimeString";
-
-const authService = new MatrixAuthService();
-const { userId: currentUserId } = authService.getCurrentUser();
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export const getLastMessagePreview = (
   room: sdk.Room
@@ -14,6 +12,7 @@ export const getLastMessagePreview = (
 } => {
   const timeline = room.getLiveTimeline().getEvents();
   const lastEvent = timeline[timeline.length - 1];
+  const userId = useAuthStore.getState().userId
 
   let text = "";
   let timestamp = 0;
@@ -52,7 +51,7 @@ export const getLastMessagePreview = (
   }
 
   let senderName: string = senderId || "Unknown";
-  if (senderId === currentUserId) {
+  if (senderId === userId) {
     senderName = "You";
   } else {
     const member: sdk.RoomMember | null = room.getMember(senderId || "");

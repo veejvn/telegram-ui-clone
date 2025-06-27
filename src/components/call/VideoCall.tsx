@@ -88,7 +88,7 @@ export function VideoCall({
     };
 
     return (
-        <div className="relative w-full h-screen dark:bg-[#1C1C1E] dark:text-white overflow-hidden">
+        <div className="relative w-full h-screen dark:bg-[#7c7c80] dark:text-white overflow-hidden">
             {/* Remote video or loading fallback */}
             {state === 'connected' ? (
                 <video
@@ -113,7 +113,7 @@ export function VideoCall({
                     className="w-full h-full object-cover"
                 />
                 {!cameraOn && (
-                    <div className="absolute inset-0 dark:bg-[#2C2C2E] flex items-center justify-center">
+                    <div className="absolute inset-0 dark:bg-[#7c7c80] flex items-center justify-center">
                         <VideoOff className="w-8 h-8 dark:text-gray-400" />
                     </div>
                 )}
@@ -197,13 +197,27 @@ function ControlButton({
                 className={cn(
                     'w-14 h-14 rounded-full flex items-center justify-center transition-colors mb-2 border',
                     active
-                        ? 'dark:bg-[#2C2C2E] dark:hover:bg-[#3C3C3E]'
-                        : 'bg-red-500/80 hover:bg-red-600/80'
+                        ? 'dark:bg-[#2C2C2E] dark:hover:bg-[#3C3C3E] border-white'
+                        : 'bg-gray-500 dark:bg-gray-700 border-white'
                 )}
             >
-                {icon}
+                {/* Lưu ý: 
+                    - Nếu tắt, icon màu trắng mờ hơn (opacity-60)
+                    - Nếu bật, icon màu trắng sáng
+                */}
+                <span className={cn(
+                    "w-6 h-6",
+                    active ? "text-white" : "text-white opacity-60"
+                )}>
+                    {icon}
+                </span>
             </button>
-            <span className="text-xs dark:text-white/80">{label}</span>
+            <span className={cn(
+                "text-xs",
+                active
+                    ? "text-white"
+                    : "text-white opacity-60"
+            )}>{label}</span>
         </div>
     );
 }

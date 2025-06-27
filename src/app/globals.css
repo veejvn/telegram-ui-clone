@@ -134,3 +134,22 @@ input[type="password"]::-webkit-input-password-toggle-button {
 input[type="password"]::-webkit-textfield-decoration-container {
   display: none !important;
 }
+
+@keyframes flashBackground {
+  0% {
+    background-color: rgb(220, 248, 198);
+  }
+  30% {
+    background-color: rgb(145, 220, 88);
+  }
+  70% {
+    background-color: rgb(145, 220, 88);
+  }
+  100% {
+    background-color: rgb(220, 248, 198);
+  }
+}
+
+.flash-background {
+  animation: flashBackground 3s ease-in-out;
+}

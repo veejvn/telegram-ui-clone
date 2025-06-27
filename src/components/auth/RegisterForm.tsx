@@ -4,39 +4,65 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ERROR_MESSAGES, ErrorMessageValue } from "@/constants/error-messages";
+import { ERROR_MESSAGES } from "@/constants/error-messages";
 import { MatrixAuthService } from "@/services/matrixAuthService";
 import { ErrorMessage, Field, Form, SubmitButton } from "@/components/Form";
 import registerSchema from "@/validations/registerSchema";
-import { RegisterFormData } from "@/types/auth";
+import type { RegisterFormData } from "@/types/auth";
+import { toast } from "sonner";
+import ServerStatus from "./ServerStatus";
+
+const HOMESERVER_URL = process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
 
 export default function RegisterForm() {
   const router = useRouter();
   const [error, setError] = useState("");
 
   const handleSubmit = async (data: RegisterFormData) => {
+    setError("");
+
     try {
       const authService = new MatrixAuthService();
       const response = await authService.register(data);
-      if (response?.access_token) {
-        router.push("/chat");
+
+      if (response?.success && response?.token && response?.userId) {
+        // Show success toast and redirect to login page
+        toast.success("Registration successful! Please sign in to continue.", {
+          duration: 3000,
+        });
+        router.push("/login");
+        return;
+      } else {
+        throw new Error("Registration failed");
       }
     } catch (error: any) {
       let errorMessage = ERROR_MESSAGES.GENERAL.UNKNOWN_ERROR;
 
-      if (error?.errcode === "M_USER_IN_USE") {
-        errorMessage = ERROR_MESSAGES.AUTH.EMAIL_EXISTS;
+      // Handle specific errors
+      if (error?.message?.includes("Username has already been taken") || error?.message?.includes("Username is already taken")) {
+        errorMessage = ERROR_MESSAGES.AUTH.USERNAME_EXISTS;
+      } else if (error?.message?.includes("Invalid username")) {
+        errorMessage = ERROR_MESSAGES.AUTH.INVALID_USERNAME;
+      } else if (error?.message?.includes("Username must be at least")) {
+        errorMessage = error.message;
+      } else if (error?.errcode === "M_USER_IN_USE") {
+        errorMessage = ERROR_MESSAGES.AUTH.USERNAME_EXISTS;
       } else if (error?.errcode === "M_INVALID_USERNAME") {
-        errorMessage = ERROR_MESSAGES.VALIDATION.INVALID_FORMAT;
+        errorMessage = ERROR_MESSAGES.AUTH.INVALID_USERNAME;
       } else if (error?.errcode === "M_EXCLUSIVE") {
-        errorMessage = ERROR_MESSAGES.AUTH.EMAIL_EXISTS;
+        errorMessage = ERROR_MESSAGES.AUTH.USERNAME_EXISTS;
+      } else if (error?.errcode === "M_FORBIDDEN") {
+        errorMessage = ERROR_MESSAGES.AUTH.REGISTRATION_FAILED;
+      } else if (error?.errcode === "M_UNKNOWN") {
+        errorMessage = ERROR_MESSAGES.GENERAL.UNKNOWN_ERROR;
       } else if (
         error?.message?.includes("Failed to fetch") ||
         error?.message?.includes("NetworkError")
       ) {
         errorMessage = ERROR_MESSAGES.NETWORK.CONNECTION_ERROR;
+      } else if (error?.message) {
+        errorMessage = error.message;
       }
-
       setError(errorMessage);
     }
   };
@@ -45,7 +71,8 @@ export default function RegisterForm() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-md space-y-8 bg-white/50 backdrop-blur-lg p-8 rounded-2xl shadow-xl"
+      transition={{ duration: 0.5 }}
+      className="w-full max-w-md space-y-8 bg-white/50 backdrop-blur-lg p-8 rounded-2xl shadow-xl dark:bg-gray-800/50 dark:backdrop-blur-lg"
     >
       <div className="text-center space-y-2">
         <motion.h2
@@ -55,9 +82,19 @@ export default function RegisterForm() {
         >
           Create an account
         </motion.h2>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           Join us and start chatting with friends!
         </p>
+
+        {/* Server Info */}
+        <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-blue-700 dark:text-blue-300">
+              <span className="font-medium">Server:</span> {HOMESERVER_URL.replace('https://', '')}
+            </p>
+            <ServerStatus />
+          </div>
+        </div>
       </div>
 
       <Form<RegisterFormData> schema={registerSchema} onSubmit={handleSubmit}>
@@ -79,8 +116,9 @@ export default function RegisterForm() {
           type="password"
           placeholder="••••••••"
         />
+
         <div className="text-center">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             Already have an account?{" "}
             <Link
               href="/login"
@@ -90,7 +128,9 @@ export default function RegisterForm() {
             </Link>
           </p>
         </div>
-        <ErrorMessage message={error}></ErrorMessage>
+
+        <ErrorMessage message={error} />
+
         <SubmitButton loadingText="Creating account...">
           Create account
         </SubmitButton>

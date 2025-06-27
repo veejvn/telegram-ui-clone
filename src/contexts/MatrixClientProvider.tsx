@@ -4,14 +4,15 @@ import React, {
   createContext,
   useContext,
   useEffect,
-  useRef,
   useState,
 } from "react";
 import * as sdk from "matrix-js-sdk";
 import { getLS } from "@/tools/localStorage.tool";
 import { waitForClientReady } from "@/lib/matrix";
+import { createUserInfo } from "@/utils/createUserInfo";
 
-const HOMESERVER_URL = "https://matrix.org";
+const HOMESERVER_URL =
+  process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
 
 export const MatrixClientContext = createContext<sdk.MatrixClient | null>(null);
 
@@ -44,6 +45,11 @@ export function MatrixClientProvider({
 
       await waitForClientReady(client);
 
+<<<<<<< HEAD
+=======
+      createUserInfo(client);
+
+>>>>>>> 63ff68dd67bfe39f4b7a7c4bfe8ad19fa282377a
       if (isMounted) setClient(client);
     };
 

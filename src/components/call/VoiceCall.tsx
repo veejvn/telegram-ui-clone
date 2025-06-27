@@ -6,7 +6,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import useCallStore from '@/stores/useCallStore';
-import { callService } from '@/services/callService';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 interface VoiceCallProps {
     contactName: string;
@@ -14,26 +14,26 @@ interface VoiceCallProps {
     callState?: string;
     callDuration?: number;
     onEndCall: () => void;
-    onSwitchToVideo?: () => void;
+    onSwitchToVideo?: () => Promise<void> | void; // <-- Thêm dòng này!
+
 }
 
 export function VoiceCall({
     contactName,
     contactAvatar,
-    callState, // <-- Thêm ở đây
+    callState,
+    callDuration,
     onEndCall,
-    onSwitchToVideo,
 }: VoiceCallProps) {
-    const { remoteStream, state: storeState, hangup } = useCallStore();
-
-    // Nếu callState truyền vào, ưu tiên dùng, không thì fallback về state của store
+    const { remoteStream, state: storeState, hangup, upgradeToVideo } = useCallStore();
     const state = callState ?? storeState;
-
     const [isMuted, setIsMuted] = useState(false);
     const [isSpeakerOn, setIsSpeakerOn] = useState(true);
-    const [callDuration, setCallDuration] = useState(0);
+    const [internalCallDuration, setInternalCallDuration] = useState(0);
 
     const audioRef = useRef<HTMLAudioElement>(null);
+    const router = useRouter();
+    const params = useSearchParams();
 
     useEffect(() => {
         if (audioRef.current && remoteStream) {
@@ -53,7 +53,7 @@ export function VoiceCall({
     useEffect(() => {
         let timer: number | undefined;
         if (state === 'connected') {
-            timer = window.setInterval(() => setCallDuration((t) => t + 1), 1000);
+            timer = window.setInterval(() => setInternalCallDuration((t) => t + 1), 1000);
         }
         return () => {
             if (timer) window.clearInterval(timer);
@@ -72,17 +72,17 @@ export function VoiceCall({
     };
 
     const handleSwitchToVideo = async () => {
-        if (onSwitchToVideo) {
-            await onSwitchToVideo();
-        } else {
-            // Nếu không truyền prop, fallback luôn gọi upgrade
-            await callService.upgradeToVideo();
-        }
+        // Không gọi hangup hoặc onEndCall!
+        await upgradeToVideo();
+        // Chuyển sang layout video call nếu muốn
+        const calleeId = params.get('calleeId');
+        const contact = params.get('contact') || contactName;
+        router.replace(`/call/video?calleeId=${calleeId}&contact=${encodeURIComponent(contact)}`);
     };
 
     const renderCallStatus = () => {
         if (state === 'connected') {
-            return formatDuration(callDuration);
+            return formatDuration(callDuration ?? internalCallDuration);
         }
         if (state === 'ringing') {
             return 'Đang đổ chuông...';
@@ -127,6 +127,7 @@ export function VoiceCall({
                 </div>
 
                 <div className="flex items-center justify-center space-x-6">
+                    {/* Mic toggle */}
                     <div className="flex flex-col items-center">
                         <Button
                             size="lg"
@@ -142,6 +143,7 @@ export function VoiceCall({
                         <span className="text-xs dark:text-white/80">{isMuted ? 'Unmute' : 'Mute'}</span>
                     </div>
 
+                    {/* End call */}
                     <div className="flex flex-col items-center">
                         <Button
                             size="lg"
@@ -154,6 +156,7 @@ export function VoiceCall({
                         <span className="text-xs dark:text-white/80">End</span>
                     </div>
 
+                    {/* Speaker toggle */}
                     <div className="flex flex-col items-center">
                         <Button
                             size="lg"
@@ -169,19 +172,18 @@ export function VoiceCall({
                         <span className="text-xs dark:text-white/80">{isSpeakerOn ? 'Speaker On' : 'Speaker Off'}</span>
                     </div>
 
-                    {onSwitchToVideo && (
-                        <div className="flex flex-col items-center">
-                            <Button
-                                size="lg"
-                                variant="ghost"
-                                className="rounded-full w-16 h-16 dark:bg-[#2C2C2E] transition-all duration-200 border"
-                                onClick={handleSwitchToVideo}
-                            >
-                                <Video className="h-8 w-8 dark:text-white" />
-                            </Button>
-                            <span className="text-xs dark:text-white/80">Switch to Video</span>
-                        </div>
-                    )}
+                    {/* Switch to video */}
+                    <div className="flex flex-col items-center">
+                        <Button
+                            size="lg"
+                            variant="ghost"
+                            className="rounded-full w-16 h-16 dark:bg-[#2C2C2E] transition-all duration-200 border"
+                            onClick={handleSwitchToVideo}
+                        >
+                            <Video className="h-8 w-8 dark:text-white" />
+                        </Button>
+                        <span className="text-xs dark:text-white/80">Switch to Video</span>
+                    </div>
                 </div>
             </div>
         </div>

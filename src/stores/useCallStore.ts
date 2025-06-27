@@ -16,10 +16,12 @@ interface CallStore {
     localStream?: MediaStream
     remoteStream?: MediaStream
     callDuration: number
+    callEndedReason?: string
     placeCall: (roomId: string, type: CallType) => void
     answerCall: () => void
     hangup: () => void
     reset: () => void
+    upgradeToVideo: () => Promise<void>
 }
 
 // Audio setup
@@ -32,8 +34,6 @@ if (ringtoneAudio) ringtoneAudio.loop = true
 let _timer: ReturnType<typeof setInterval> | null = null
 
 const stopAllTracks = (stream?: MediaStream) => {
-    console.log('Nhận remoteStream:', stream); // <--- THÊM LOG NÀY!
-
     if (stream) {
         stream.getTracks().forEach(track => {
             try { track.stop() } catch { }
@@ -41,77 +41,80 @@ const stopAllTracks = (stream?: MediaStream) => {
     }
 }
 
+let _hasListener = false;
+
 const useCallStore = create<CallStore>((set, get) => {
-    // subscribe matrix-js-sdk events
-    callService.on('outgoing-call', () => {
-        outgoingAudio?.play().catch(() => { })
-        set({ state: 'ringing', incoming: undefined, callDuration: 0 })
-    })
-
-    callService.on('incoming-call', (data: IncomingCall) => {
-        ringtoneAudio?.play().catch(() => { })
-        set({ state: 'incoming', incoming: data, callDuration: 0 })
-    })
-
-    callService.on('local-stream', (stream: MediaStream) => {
-        set({ localStream: stream })
-    })
-
-    callService.on('remote-stream', (stream: MediaStream) => {
-        outgoingAudio?.pause()
-        ringtoneAudio?.pause()
-        if (outgoingAudio) outgoingAudio.currentTime = 0
-        if (ringtoneAudio) ringtoneAudio.currentTime = 0
-
-        set({ remoteStream: stream, state: 'connected' })
-
-        // start duration timer
-        if (_timer) clearInterval(_timer)
-        set({ callDuration: 0 })
-        _timer = setInterval(() => {
-            set((s) => ({ callDuration: s.callDuration + 1 }))
-        }, 1000)
-    })
-
-    callService.on('call-ended', () => {
-        if (_timer) {
-            clearInterval(_timer)
-            _timer = null
-        }
-        outgoingAudio?.pause()
-        ringtoneAudio?.pause()
-        if (outgoingAudio) outgoingAudio.currentTime = 0
-        if (ringtoneAudio) ringtoneAudio.currentTime = 0
-
-        // STOP ALL TRACKS
-        const { localStream, remoteStream } = get();
-        stopAllTracks(localStream);
-        stopAllTracks(remoteStream);
-
-        set({
-            state: 'ended',
-            localStream: undefined,
-            remoteStream: undefined,
+    if (!_hasListener) {
+        callService.on('outgoing-call', () => {
+            outgoingAudio?.play().catch(() => { })
+            set({ state: 'ringing', incoming: undefined, callDuration: 0, callEndedReason: undefined })
         })
-    })
 
-    callService.on('call-error', () => {
-        if (_timer) {
-            clearInterval(_timer)
-            _timer = null
-        }
-        outgoingAudio?.pause()
-        ringtoneAudio?.pause()
-        if (outgoingAudio) outgoingAudio.currentTime = 0
-        if (ringtoneAudio) ringtoneAudio.currentTime = 0
+        callService.on('incoming-call', (data: IncomingCall) => {
+            ringtoneAudio?.play().catch(() => { })
+            set({ state: 'incoming', incoming: data, callDuration: 0, callEndedReason: undefined })
+        })
 
-        // STOP ALL TRACKS
-        const { localStream, remoteStream } = get();
-        stopAllTracks(localStream);
-        stopAllTracks(remoteStream);
+        callService.on('local-stream', (stream: MediaStream) => {
+            set({ localStream: stream })
+        })
 
-        set({ state: 'error' })
-    })
+        callService.on('remote-stream', (stream: MediaStream) => {
+            outgoingAudio?.pause()
+            ringtoneAudio?.pause()
+            if (outgoingAudio) outgoingAudio.currentTime = 0
+            if (ringtoneAudio) ringtoneAudio.currentTime = 0
+
+            set({ remoteStream: stream, state: 'connected' })
+
+            if (_timer) clearInterval(_timer)
+            set({ callDuration: 0 })
+            _timer = setInterval(() => {
+                set((s) => ({ callDuration: s.callDuration + 1 }))
+            }, 1000)
+        })
+
+        callService.on('call-ended', (reason?: string) => {
+            if (_timer) {
+                clearInterval(_timer)
+                _timer = null
+            }
+            outgoingAudio?.pause()
+            ringtoneAudio?.pause()
+            if (outgoingAudio) outgoingAudio.currentTime = 0
+            if (ringtoneAudio) ringtoneAudio.currentTime = 0
+
+            const { localStream, remoteStream } = get();
+            stopAllTracks(localStream);
+            stopAllTracks(remoteStream);
+
+            set({
+                state: 'ended',
+                localStream: undefined,
+                remoteStream: undefined,
+                callEndedReason: reason,
+            })
+        })
+
+        callService.on('call-error', () => {
+            if (_timer) {
+                clearInterval(_timer)
+                _timer = null
+            }
+            outgoingAudio?.pause()
+            ringtoneAudio?.pause()
+            if (outgoingAudio) outgoingAudio.currentTime = 0
+            if (ringtoneAudio) ringtoneAudio.currentTime = 0
+
+            const { localStream, remoteStream } = get();
+            stopAllTracks(localStream);
+            stopAllTracks(remoteStream);
+
+            set({ state: 'error', callEndedReason: 'error' })
+        })
+
+        _hasListener = true;
+    }
 
     return {
         state: 'idle',
@@ -125,6 +128,7 @@ const useCallStore = create<CallStore>((set, get) => {
         },
         hangup: () => {
             callService.hangup()
+            // KHÔNG cleanup state tại đây!
         },
         reset: () => {
             if (_timer) {
@@ -136,7 +140,6 @@ const useCallStore = create<CallStore>((set, get) => {
             if (outgoingAudio) outgoingAudio.currentTime = 0
             if (ringtoneAudio) ringtoneAudio.currentTime = 0
 
-            // STOP ALL TRACKS
             const { localStream, remoteStream } = get();
             stopAllTracks(localStream);
             stopAllTracks(remoteStream);
@@ -147,8 +150,16 @@ const useCallStore = create<CallStore>((set, get) => {
                 localStream: undefined,
                 remoteStream: undefined,
                 callDuration: 0,
+                callEndedReason: undefined,
             });
-        }
+        },
+        upgradeToVideo: async () => {
+            try {
+                await callService.upgradeToVideo();
+            } catch (err) {
+                console.error("[CallStore] upgradeToVideo error:", err);
+            }
+        },
     }
 })
 
