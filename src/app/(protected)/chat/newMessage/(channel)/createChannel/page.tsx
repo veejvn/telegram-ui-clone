@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export default function CreateChannelPage() {
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen dark:bg-black dark:text-white">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">
         <Link href="/chat/newMessage">
@@ -20,9 +20,9 @@ export default function CreateChannelPage() {
       </div>
 
       {/* Channel Name Input */}
-      <div className="bg-[#181818] rounded-lg mx-4 mt-6 flex items-center px-4 py-4">
+      <div className="dark:bg-[#181818] rounded-lg mx-4 mt-6 flex items-center px-4 py-4">
         <label className="w-14 h-14 rounded-full bg-blue-900 flex items-center justify-center mr-4 cursor-pointer">
-          <input type="file" accept="image/*" className="hidden" />
+          <input type="file" accept="image/*" className="hidden" aria-label="file"/>
           <Camera size={28} className="text-blue-400" />
         </label>
         <input
@@ -33,7 +33,7 @@ export default function CreateChannelPage() {
       </div>
 
       {/* Description Input */}
-      <div className="bg-[#181818] rounded-lg mx-4 mt-4 px-4 py-3">
+      <div className="dark:bg-[#181818] rounded-lg mx-4 mt-4 px-4 py-3 border">
         <input
           type="text"
           placeholder="Description"

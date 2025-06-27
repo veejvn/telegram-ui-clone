@@ -71,7 +71,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
 
   const handleChangeFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !client || file.type.startsWith("image/")) return;
+    if (!file || !client) return;
 
     try {
       await sendImageMessage(client, roomId, file);
