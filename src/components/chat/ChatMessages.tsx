@@ -92,22 +92,6 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
     }
   };
 
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [hasMoreByRoom, setHasMoreByRoom] = useState<{
-    [roomId: string]: boolean;
-  }>({});
-
-  const containerRef = React.useRef<HTMLDivElement | null>(null);
-  const prevScrollHeightRef = React.useRef<number | null>(null);
-
-  useEffect(() => {
-    setHasMoreByRoom((prev) => ({
-      ...prev,
-      [roomId]: true,
-    }));
-  }, [roomId]);
-
-  // 2. Tự động cuộn xuống khi có tin nhắn mới
   useEffect(() => {
     if (highlightId && firstHighlightedRef.current) {
       firstHighlightedRef.current.scrollIntoView({
@@ -121,19 +105,33 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
 
   return (
     <>
-      <div className="py-1.5">
-        {/* <div className="text-center text-sm">
-          <p
-            className=" bg-gray-500/10 rounded-full backdrop-blur-sm 
-            text-white inline-block px-1.5"
-          >
-            Today
-          </p>
-        </div> */}
-        {messages.map((msg) => (
-          <div key={msg.eventId}>
-            <ChatMessage msg={msg} />
-            <div ref={messagesEndRef} />
+      <div
+        className="py-1 px-4"
+        ref={containerRef}
+        onScroll={handleScroll}
+        // style={{ overflowY: "auto", height: "100%" }}
+      >
+        {Object.entries(grouped).map(([dateLabel, msgs]) => (
+          <div key={dateLabel}>
+            <div className="text-center text-sm my-1.5">
+              <p
+                className=" bg-gray-900/15 rounded-full backdrop-blur-2xl 
+                text-white inline-block py-1 px-2"
+              >
+                {dateLabel}
+              </p>
+            </div>
+            {msgs.map((msg) => {
+              const isHighlighted = msg.eventId === highlightId;
+              return (
+                <div
+                  key={msg.eventId}
+                  ref={isHighlighted ? firstHighlightedRef : null}
+                >
+                  <ChatMessage msg={msg} />
+                </div>
+              );
+            })}
           </div>
         ))}
         <div ref={messagesEndRef} />

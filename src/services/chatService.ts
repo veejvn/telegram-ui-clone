@@ -399,3 +399,24 @@ export const sendReadReceipt = async (client: sdk.MatrixClient, event: any) => {
     console.error("Failed to send read receipt:", err);
   }
 };
+
+export const sendTypingEvent = async (
+  roomId: string,
+  isTyping: boolean
+): Promise<{ success: boolean; err?: any }> => {
+  const client = useClientStore.getState().client;
+
+  if (!client) {
+    return {
+      success: false,
+      err: "User not authenticated or session invalid.",
+    };
+  }
+
+  try {
+    await client.sendTyping(roomId, isTyping, isTyping ? 30000 : 0); // Timeout khi isTyping=true
+    return { success: true };
+  } catch (err) {
+    return { success: false, err };
+  }
+};

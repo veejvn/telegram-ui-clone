@@ -75,7 +75,7 @@ const ChatPage = () => {
     try {
       await client.leave(roomId);
       setRoom(null);
-      router.push("/chat")
+      router.push("/chat");
     } catch (e) {
       toast.error("Không thể từ chối mời lời mời", {
         action: {
@@ -130,9 +130,11 @@ const ChatPage = () => {
         </div>
 
         {/* Chat content scrollable */}
-        <ScrollArea className="flex-1 min-h-0 px-4 space-y-1">
+
+        <ScrollArea className="flex-1 min-h-0 space-y-1 ">
           <ChatMessages roomId={roomId} messagesEndRef={messagesEndRef} />
         </ScrollArea>
+
         <ChatComposer roomId={roomId} />
       </div>
     </div>
