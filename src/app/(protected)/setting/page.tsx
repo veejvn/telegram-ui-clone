@@ -23,6 +23,7 @@ import Link from "next/link";
 import { useUserStore } from "@/stores/useUserStore";
 import { getInitials } from "@/utils/getInitials";
 import { MatrixAuthService } from "@/services/matrixAuthService";
+
 interface SettingItem {
   title: string;
   icon: React.ReactNode;
@@ -91,6 +92,7 @@ export default function SettingsPage() {
   const { user, setUser } = useUserStore();
   const hasFetched = useRef(false);
   const [isHydrated, setIsHydrated] = useState(false);
+
   useEffect(() => {
     setIsHydrated(true);
   }, []);
@@ -123,20 +125,57 @@ export default function SettingsPage() {
     if (isHydrated) fetchProfile();
   }, [setUser, user?.displayName, isHydrated]);
 
+  if (!isHydrated) return null;
 
-  if (!isHydrated) return null; // 👈 tránh render sai trước khi Zustand khởi tạo
+  const displayName = user ? user.displayName : "Your Name";
 
-  // Render page...
-  const displayName = user ? user.displayName : "Your Name"
   const handleFileSelect = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      console.log("File được chọn:", file.name);
-      // Nếu cần upload: thực hiện fetch/axios POST lên server tại đây
+    if (!file) return;
+
+    try {
+      console.log("📂 File được chọn:", file.name);
+
+      const authService = new MatrixAuthService();
+      const client = authService.client;
+      const userId = client.getUserId();
+      if (!userId) throw new Error("Không tìm thấy userId");
+
+      // 1️⃣ upload
+      const arrayBuffer = await file.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+
+      const uploadRes = await client.uploadContent(uint8Array, {
+        name: file.name,
+        type: file.type,
+        onlyContentUri: true,
+      } as any);
+
+      // type guard rõ ràng
+      let avatarUrl: string;
+
+      if (typeof uploadRes === "string") {
+        avatarUrl = uploadRes;
+      } else if (typeof uploadRes === "object" && "content_uri" in uploadRes) {
+        avatarUrl = uploadRes.content_uri;
+      } else {
+        throw new Error("Upload result unknown");
+      }
+
+      // 2️⃣ update profile
+      await authService.updateProfile(undefined, avatarUrl);
+
+      // 3️⃣ zustand update
+      setUser({ avatarUrl });
+
+      console.log(" Avatar updated successfully");
+    } catch (error) {
+      console.error(" Error uploading avatar:", error);
+      alert("Avatar update failed.");
     }
   };
 
@@ -148,7 +187,17 @@ export default function SettingsPage() {
           <QrCode className="h-6 w-6 text-blue-500" />
           <div className="absolute left-1/2 transform -translate-x-1/2 top-4">
             <Avatar className="h-20 w-20">
-              <AvatarFallback className="text-xl">{getInitials(displayName)}</AvatarFallback>
+              {user?.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt="Avatar"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <AvatarFallback className="text-xl">
+                  {getInitials(displayName)}
+                </AvatarFallback>
+              )}
             </Avatar>
           </div>
           <Button
@@ -159,7 +208,7 @@ export default function SettingsPage() {
           </Button>
         </div>
         <div className="mt-16 text-center px-4 pb-4">
-          <h1 className="text-2xl font-semibold">{user?.displayName ?? "Your Name"}</h1>
+          <h1 className="text-2xl font-semibold">{displayName}</h1>
           <p className="text-sm text-gray-400">+84 12345689</p>
         </div>
       </div>
