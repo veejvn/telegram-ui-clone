@@ -12,10 +12,9 @@ import * as sdk from "matrix-js-sdk";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { formatRelativeTime } from "@/utils/chat/formatRelativeTime";
 import { useChatStore } from "@/stores/useChatStore";
+import { getUserInfoInPrivateRoom } from "@/services/chatService";
 
 const ChatHeader = ({ room }: { room: sdk.Room }) => {
-  const HOMESERVER_URL: string =
-    process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
   const client = useMatrixClient();
   const lastSeenByRoom = useChatStore((state) => state.lastSeenByRoom);
   const myUserId = client?.getUserId();
@@ -23,13 +22,60 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
   const others = room.getJoinedMembers().filter((m) => m.userId !== myUserId);
   const lastSeenMap = lastSeenByRoom[roomId] || {};
 
-  const avatarUrl = room.getAvatarUrl(
-    HOMESERVER_URL, // baseUrl
-    60, // width
-    60, // height
-    "crop", // resize method
-    false // fallback
-  );
+  const [user, setUser] = useState<sdk.User | undefined>(undefined);
+
+  useEffect(() => {
+    if (!roomId || !client) return;
+
+    getUserInfoInPrivateRoom(roomId, client)
+      .then((res) => {
+        if (res.success) {
+          setUser(res.user);
+        } else {
+          console.log("Error: ", res.err);
+        }
+      })
+      .catch((res) => {
+        console.log("Error: ", res.err);
+      });
+  }, [roomId, client]);
+
+  const [avatarUrl, setAvatarUrl] = React.useState<string | null>(null);
+
+  
+  useEffect(() => {
+    const fetchAvatar = async () => {
+      if (!client || !user || !user.avatarUrl) return;
+      try {
+        const httpUrl = client.mxcUrlToHttp(user.avatarUrl, 96, 96, "crop") ?? "";
+  
+        // Kiểm tra link HTTP thực tế
+        const isValid =
+          /^https?:\/\//.test(httpUrl) && !httpUrl.includes("M_NOT_FOUND");
+        if (isValid) {
+          // Test link HTTP thực tế
+          try {
+            const res = await fetch(httpUrl, { method: "HEAD" });
+            if (res.ok) {
+              const apiUrl = `/api/matrix-image?url=${encodeURIComponent(
+                httpUrl
+              )}`;
+              setAvatarUrl(apiUrl);
+              return;
+            }
+          } catch (e) {
+            // Nếu fetch lỗi, sẽ fallback
+          }
+        }
+        setAvatarUrl("");
+      } catch (error) {
+        setAvatarUrl("");
+        console.error("Error loading avatar:", error);
+      }
+    };
+
+    fetchAvatar();
+  }, [client, user]);
 
   return (
     <>
@@ -62,7 +108,7 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
           <Link href={`${room.roomId}/info`}>
             <Avatar className="h-10 w-10">
               {avatarUrl ? (
-                <AvatarImage src="" alt="avatar" />
+                <AvatarImage src={avatarUrl} alt="avatar" />
               ) : (
                 <>
                   <AvatarImage src="" alt="Unknow" />
