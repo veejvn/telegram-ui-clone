@@ -171,7 +171,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
           />
         ) : (
           <Eclipse
-            onClick={() => setShowEmojiPicker((prev) => !prev)}
+            // onClick={() => setShowEmojiPicker((prev) => !prev)}
             className="text-[#858585] cursor-default"
             size={30}
           />
