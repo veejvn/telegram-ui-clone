@@ -25,7 +25,7 @@ export default function Page() {
   };
   return (
     <>
-      <div className=" bg-[#1a1a1a]">
+      <div className=" dark:bg-[#1a1a1a]">
         <div className="flex items-center justify-between px-3 py-3">
           <div className="flex text-blue-600 hover:opacity-70">
             <Link href={"/chat"}>Cancel</Link>
@@ -63,7 +63,7 @@ export default function Page() {
               </div>
             </div>
           </AlertDialogTrigger>
-          <AlertDialogContent className="w-56 h-40 bg-[#1a1a1a] text-white border-0 p-0">
+          <AlertDialogContent className="w-56 h-40 dark:bg-[#1a1a1a] dark:text-white border-0 p-0">
             <AlertDialogHeader className="pt-4">
               <AlertDialogTitle className="text-base text-center">
                 Please Allow Access
@@ -73,12 +73,12 @@ export default function Page() {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter className="grid grid-cols-2 w-full border-t border-black gap-0">
-              <AlertDialogCancel className="bg-[#1a1a1a] text-blue-500 hover:bg-transparent border-r border-black rounded-none">
+              <AlertDialogCancel className="dark:bg-[#1a1a1a] text-blue-500 hover:bg-transparent border-r dark:border-black rounded-none">
                 Not Now
               </AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => handleSettingClick()}
-                className="bg-[#1a1a1a] text-blue-500 hover:bg-transparent border-l border-black rounded-none"
+                className="bg-white dark:bg-[#1a1a1a] text-blue-500 hover:bg-transparent border-l dark:border-black rounded-none"
               >
                 Setting
               </AlertDialogAction>

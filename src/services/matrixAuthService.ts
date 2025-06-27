@@ -21,20 +21,10 @@ export class MatrixAuthService {
         if (typeof window === 'undefined') {
             throw new Error(ERROR_MESSAGES.GENERAL.UNKNOWN_ERROR)
         }
-        const token = getLS("matrix_access_token");
-        const userId = getLS("matrix_user_id");
-        if (!token || !userId) {
-            throw new Error("Missing Matrix access token or user ID");
-        }
         if (!clientInstance) {
             clientInstance = sdk.createClient({
                 baseUrl: HOMESERVER_URL,
-                accessToken: token,
-                userId: userId,
             })
-        }
-        if (!clientInstance) {
-            throw new Error("Failed to initialize Matrix client");
         }
         this.client = clientInstance
     }

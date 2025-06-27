@@ -34,7 +34,7 @@ export default function CreateGroupPage() {
       {/* Group Name Input */}
       <div className="bg-[#181818] rounded-lg mx-4 mt-6 flex items-center px-4 py-4">
         <label className="w-14 h-14 rounded-full bg-blue-900 flex items-center justify-center mr-4 cursor-pointer">
-          <input type="file" accept="image/*" className="hidden" />
+          <input type="file" accept="image/*" className="hidden" aria-label="file"/>
           <Camera size={28} className="text-blue-400" />
         </label>
         <input
