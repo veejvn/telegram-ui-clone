@@ -35,7 +35,9 @@ export default function MyProfilePage() {
             try {
               const res = await fetch(httpUrl, { method: "HEAD" });
               if (res.ok) {
-                const apiUrl = `/api/matrix-image?url=${encodeURIComponent(httpUrl)}`;
+                const apiUrl = `/api/matrix-image?url=${encodeURIComponent(
+                  httpUrl
+                )}`;
                 setUser({ avatarUrl: apiUrl });
                 return;
               }
@@ -100,6 +102,7 @@ export default function MyProfilePage() {
           )}
         </Avatar>
         <h2 className="text-xl font-semibold">{displayName}</h2>
+        <span className="text-sm text-blue-500">{userId}</span>
         <span className="text-gray-500 text-sm">{user?.status}</span>
       </div>
 
@@ -107,11 +110,7 @@ export default function MyProfilePage() {
       <div>
         <h3 className="text-sm font-semibold text-black mb-2">Posts</h3>
         <div className="bg-gray-100 rounded-xl flex flex-col items-center justify-center py-12 text-center">
-          <img
-            src="/images/no-post-yet.png"
-            alt="No posts"
-            className="mb-4"
-          />
+          <img src="/images/no-post-yet.png" alt="No posts" className="mb-4" />
           <p className="text-sm text-gray-500 mb-2">No posts yet...</p>
           <p className="text-xs text-gray-400 mb-4">
             Publish photos and videos to display on your profile page.
