@@ -204,6 +204,9 @@ export class MatrixAuthService {
             removeLS("matrix_user_id");
             removeLS("matrix_device_id");
             clearUser();
+            if (this.client) {
+                this.client.stopClient();
+            }
             clientInstance = null;
         } catch (error) {
             console.error("Logout failed:", error)
