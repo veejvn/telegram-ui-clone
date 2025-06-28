@@ -57,7 +57,7 @@ export function MatrixClientProvider({
             setClient(null);
             clearUser();
             logout()
-            router.replace("/login");
+            window.location.href = "/login";
           }
         });
   
@@ -78,7 +78,7 @@ export function MatrixClientProvider({
         setClient(null);
         clearUser();
         logout();
-        router.replace("/login");
+        window.location.href = "/login";
       }
     };
 
