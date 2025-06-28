@@ -12,8 +12,8 @@ export default function IncomingCall({
     onReject,
 }: IncomingCallProps) {
     return (
-        <div className="flex flex-col items-center space-y-6 bg-black/90 px-6 py-10 rounded-xl shadow-xl">
-            <p className="text-white text-lg">
+        <div className="flex flex-col items-center space-y-6 bg-white text-black dark:bg-black/90 px-6 py-10 rounded-xl shadow-xl">
+            <p className="dark:text-white text-lg">
                 Cuộc gọi đến từ <strong>{callerName}</strong>
             </p>
             <div className="flex space-x-4">

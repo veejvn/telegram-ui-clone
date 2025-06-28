@@ -98,7 +98,7 @@ export function VideoCall({
                     className="absolute inset-0 w-full h-full object-cover opacity-80"
                 />
             ) : (
-                <div className="absolute inset-0 bg-black flex items-center justify-center text-white text-xl font-medium">
+                <div className="absolute inset-0 dark:bg-black flex items-center justify-center dark:text-white text-xl font-medium">
                     Đang chờ đối phương chấp nhận...
                 </div>
             )}
