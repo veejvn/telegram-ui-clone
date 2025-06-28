@@ -167,6 +167,8 @@ export function VideoCall({
                         <button
                             onClick={handleEnd}
                             className="w-14 h-14 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition-colors mb-2"
+                            title="End Call"
+                            aria-label="End Call"
                         >
                             <PhoneOff className="w-6 h-6" />
                         </button>

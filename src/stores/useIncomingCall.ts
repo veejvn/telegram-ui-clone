@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { useClientStore } from "@/stores/useMatrixStore";
 import type { MatrixCall } from "matrix-js-sdk/src/webrtc/call";
 import { CallErrorCode } from "matrix-js-sdk/src/webrtc/call";
 import { useRouter } from "next/navigation";
+import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 
 interface IncomingCallState {
     call: MatrixCall | null;
@@ -13,7 +13,7 @@ interface IncomingCallState {
 }
 
 export function useIncomingCall(): IncomingCallState {
-    const { client } = useClientStore();
+    const client = useMatrixClient();
     const [call, setCall] = useState<MatrixCall | null>(null);
     const [callerId, setCallerId] = useState<string | null>(null);
     const [visible, setVisible] = useState(false);

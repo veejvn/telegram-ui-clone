@@ -45,11 +45,8 @@ export function MatrixClientProvider({
 
       await waitForClientReady(client);
 
-<<<<<<< HEAD
-=======
       createUserInfo(client);
 
->>>>>>> 63ff68dd67bfe39f4b7a7c4bfe8ad19fa282377a
       if (isMounted) setClient(client);
     };
 
