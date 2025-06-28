@@ -7,7 +7,7 @@ import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { getUserInfoInPrivateRoom } from "@/services/chatService";
 import PrivateInfoHeader from "@/components/chat/PrivateInfoHeader";
 
-export default function Page() {
+export default function InfoPage() {
   const params = useParams();
   const roomId = decodeURIComponent(params.id as string);
   const client = useMatrixClient();
@@ -15,9 +15,6 @@ export default function Page() {
 
   useEffect(() => {
     if (!roomId || !client) return;
-
-    const room = client.getRoom(roomId);
-    console.log(room?.getJoinRule());
 
     getUserInfoInPrivateRoom(roomId, client)
       .then((res) => {

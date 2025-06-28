@@ -27,7 +27,7 @@ export default function Page() {
 
   return (
     <>
-      <div className="flex items-center justify-between px-2 py-3 bg-[#1a1a1a]">
+      <div className="flex items-center justify-between px-2 py-3 dark:bg-[#1a1a1a]">
         <div className="flex text-blue-600 hover:opacity-70">
           <Link
             href={"/chat/newMessage"}
