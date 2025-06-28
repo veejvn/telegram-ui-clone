@@ -53,14 +53,50 @@ const ChatPage = () => {
   // Kiểm tra trạng thái invite
   const isInvite = room?.getMyMembership() === "invite";
 
+  // const handleJoin = async () => {
+  //   if (!client) return;
+  //   setJoining(true);
+  //   try {
+  //     await client.joinRoom(roomId);
+  //     // Sau khi join, reload lại room
+  //     const joinedRoom = client.getRoom(roomId);
+  //     setRoom(joinedRoom);
+  //   } catch (e) {
+  //     toast.error("Không thể tham gia phòng!", {
+  //       action: {
+  //         label: "OK",
+  //         onClick: () => router.push("/chat"),
+  //       },
+  //       duration: 5000,
+  //     });
+  //   }
+  //   setJoining(false);
+  // };
+
   const handleJoin = async () => {
     if (!client) return;
     setJoining(true);
     try {
       await client.joinRoom(roomId);
-      // Sau khi join, reload lại room
+
+      // Đợi đến khi client sync xong
+      await new Promise<void>((resolve) => {
+        const onSync = (state: string) => {
+          if (state === "SYNCING" || state === "PREPARED") {
+            resolve();
+            client.removeListener("sync" as any, onSync);
+          }
+        };
+        client.on("sync" as any, onSync);
+      });
+
+      // Lấy lại room sau khi sync
       const joinedRoom = client.getRoom(roomId);
-      setRoom(joinedRoom);
+      if (joinedRoom) {
+        setRoom(joinedRoom);
+      } else {
+        toast.error("Không thể load dữ liệu phòng sau khi tham gia.");
+      }
     } catch (e) {
       toast.error("Không thể tham gia phòng!", {
         action: {
@@ -69,8 +105,9 @@ const ChatPage = () => {
         },
         duration: 5000,
       });
+    } finally {
+      setJoining(false);
     }
-    setJoining(false);
   };
 
   const handleReject = async () => {
