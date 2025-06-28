@@ -58,7 +58,7 @@ export default function NewCallPage() {
         .sort((a, b) => a.name.localeCompare(b.name));
 
     return (
-        <div className="flex h-screen flex-col bg-black text-white">
+        <div className="flex h-screen flex-col dark:bg-black dark:text-white">
             <div className="px-4 pt-4 pb-2 flex items-center justify-between">
                 <button className="text-blue-400 text-sm" onClick={() => router.back()}>
                     Close
@@ -69,7 +69,7 @@ export default function NewCallPage() {
 
             <div className="px-4 pb-2">
                 <Input
-                    className="rounded-md bg-zinc-900 border-zinc-700 text-sm placeholder:text-zinc-500"
+                    className="rounded-md dark:bg-zinc-900 border-zinc-700 text-sm placeholder:text-zinc-500"
                     placeholder="Search for contacts or usernames"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
@@ -86,10 +86,10 @@ export default function NewCallPage() {
                         filtered.map((c) => (
                             <div
                                 key={c.id}
-                                className="px-4 py-2 flex items-center gap-3 hover:bg-zinc-900 cursor-pointer"
+                                className="px-4 py-2 flex items-center gap-3 hover:bg-zinc-300 dark:hover:bg-zinc-700 cursor-pointer"
                                 onClick={() => setSelectedContact(c)}
                             >
-                                <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center text-sm font-semibold">
+                                <div className="w-8 h-8 rounded-full bg-zinc-300 dark:bg-zinc-700 flex items-center justify-center text-sm font-semibold">
                                     {c.name.charAt(0).toUpperCase()}
                                 </div>
                                 <div>
@@ -99,8 +99,6 @@ export default function NewCallPage() {
                         ))
                     )}
                 </ScrollArea>
-
-// Popup chọn loại call
                 {selectedContact && (
                     <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center">
                         <div className="bg-white rounded-xl p-6 flex flex-col gap-4 w-80">

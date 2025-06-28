@@ -1,5 +1,8 @@
+"use client";
+
 import { EventEmitter } from 'events';
 import * as sdk from 'matrix-js-sdk';
+import { useAuthStore } from '@/stores/useAuthStore';
 
 export type CallType = 'voice' | 'video';
 
@@ -9,6 +12,9 @@ export interface IncomingCall {
     callType: CallType;
 }
 
+const HOMESERVER_URL: string = process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
+const { accessToken, userId, deviceId } = useAuthStore.getState(); // Đảm bảo đã đăng nhập
+
 class CallService extends EventEmitter {
     private client: sdk.MatrixClient;
     private currentCall?: sdk.MatrixCall;
@@ -16,10 +22,10 @@ class CallService extends EventEmitter {
     constructor() {
         super();
         this.client = sdk.createClient({
-            baseUrl: process.env.NEXT_PUBLIC_MATRIX_SERVER_URL!,
-            accessToken: process.env.NEXT_PUBLIC_MATRIX_ACCESS_TOKEN!,
-            userId: process.env.NEXT_PUBLIC_MATRIX_USER_ID!,
-            deviceId: process.env.NEXT_PUBLIC_MATRIX_DEVICE_ID!,
+            baseUrl: HOMESERVER_URL!,
+            accessToken: accessToken!,
+            userId: userId!,
+            deviceId: deviceId!,
         });
 
         this.client.startClient({ initialSyncLimit: 10 });

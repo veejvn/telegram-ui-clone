@@ -35,7 +35,7 @@ export default function CallHistoryPage() {
   };
 
   return (
-    <main className="bg-black min-h-screen text-white font-sans pb-16">
+    <main className="dark:bg-black min-h-screen dark:text-white font-sans pb-16">
       {/* Header */}
       <div className="flex justify-between items-center px-4 pt-4 pb-2">
         <button
@@ -44,16 +44,16 @@ export default function CallHistoryPage() {
         >
           {editing ? 'Done' : 'Edit'}
         </button>
-        <div className="text-sm flex gap-2 bg-zinc-800 rounded-full px-2 py-1">
+        <div className="text-sm flex gap-2 dark:bg-zinc-800 rounded-full px-2 py-1">
           <button
             onClick={() => setMissedOnly(false)}
-            className={`font-medium ${!missedOnly ? 'text-white' : 'text-zinc-400'}`}
+            className={`font-medium ${!missedOnly ? 'dark:text-white' : 'text-zinc-400'}`}
           >
             All
           </button>
           <button
             onClick={() => setMissedOnly(true)}
-            className={`font-medium ${missedOnly ? 'text-white' : 'text-zinc-400'}`}
+            className={`font-medium ${missedOnly ? 'dark:text-white' : 'text-zinc-400'}`}
           >
             Missed
           </button>
