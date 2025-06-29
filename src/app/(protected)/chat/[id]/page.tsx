@@ -53,26 +53,6 @@ const ChatPage = () => {
   // Kiểm tra trạng thái invite
   const isInvite = room?.getMyMembership() === "invite";
 
-  // const handleJoin = async () => {
-  //   if (!client) return;
-  //   setJoining(true);
-  //   try {
-  //     await client.joinRoom(roomId);
-  //     // Sau khi join, reload lại room
-  //     const joinedRoom = client.getRoom(roomId);
-  //     setRoom(joinedRoom);
-  //   } catch (e) {
-  //     toast.error("Không thể tham gia phòng!", {
-  //       action: {
-  //         label: "OK",
-  //         onClick: () => router.push("/chat"),
-  //       },
-  //       duration: 5000,
-  //     });
-  //   }
-  //   setJoining(false);
-  // };
-
   const handleJoin = async () => {
     if (!client) return;
     setJoining(true);
@@ -171,9 +151,11 @@ const ChatPage = () => {
         </div>
 
         {/* Chat content scrollable */}
-        <ScrollArea className="flex-1 min-h-0 px-4 space-y-1">
+
+        <ScrollArea className="flex-1 min-h-0 space-y-1 ">
           <ChatMessages roomId={roomId} messagesEndRef={messagesEndRef} />
         </ScrollArea>
+
         <ChatComposer roomId={roomId} />
       </div>
     </div>

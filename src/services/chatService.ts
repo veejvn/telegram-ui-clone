@@ -5,12 +5,8 @@
 import * as sdk from "matrix-js-sdk";
 import { Message, MessageStatus, MessageType } from "@/stores/useChatStore";
 import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
-import { MatrixAuthService } from "./matrixAuthService";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { useClientStore } from "@/stores/useClientStore";
-
-const authService = new MatrixAuthService();
 
 export const getUserRooms = async (
   client: sdk.MatrixClient
@@ -397,5 +393,26 @@ export const sendReadReceipt = async (client: sdk.MatrixClient, event: any) => {
     await client.sendReadReceipt(event);
   } catch (err) {
     console.error("Failed to send read receipt:", err);
+  }
+};
+
+export const sendTypingEvent = async (
+  client: sdk.MatrixClient | null,
+  roomId: string,
+  isTyping: boolean
+): Promise<{ success: boolean; err?: any }> => {
+
+  if (!client) {
+    return {
+      success: false,
+      err: "User not authenticated or session invalid.",
+    };
+  }
+
+  try {
+    await client.sendTyping(roomId, isTyping, isTyping ? 30000 : 0); // Timeout khi isTyping=true
+    return { success: true };
+  } catch (err) {
+    return { success: false, err };
   }
 };
