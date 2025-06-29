@@ -29,7 +29,9 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
   const firstHighlightedRef = useRef<HTMLDivElement | null>(null);
 
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [hasMoreByRoom, setHasMoreByRoom] = useState<{[roomId: string]: boolean;}>({});
+  const [hasMoreByRoom, setHasMoreByRoom] = useState<{
+    [roomId: string]: boolean;
+  }>({});
 
   const containerRef = React.useRef<HTMLDivElement | null>(null);
   const prevScrollHeightRef = React.useRef<number | null>(null);
@@ -104,7 +106,7 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
   return (
     <>
       <div
-        className="py-1 flex flex-col h-full overflow-y-auto"
+        className="py-1 px-4"
         ref={containerRef}
         onScroll={handleScroll}
         // style={{ overflowY: "auto", height: "100%" }}
@@ -121,14 +123,14 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
             </div>
             {msgs.map((msg) => {
               const isHighlighted = msg.eventId === highlightId;
-              return(
-              <div 
-                key={msg.eventId}
-                ref={isHighlighted ? firstHighlightedRef : null}
-              >
-                <ChatMessage msg={msg} />
-              </div>
-              )
+              return (
+                <div
+                  key={msg.eventId}
+                  ref={isHighlighted ? firstHighlightedRef : null}
+                >
+                  <ChatMessage msg={msg} />
+                </div>
+              );
             })}
           </div>
         ))}

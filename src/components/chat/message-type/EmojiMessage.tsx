@@ -11,7 +11,12 @@ const EmojiMessage = ({ msg, isSender }: MessagePros) => {
 
   return (
     <div className={`rounded-lg py-2`}>
-      <p className="whitespace-pre-wrap break-words leading-snug text-end text-7xl">
+      <p
+        className={clsx(
+          "whitespace-pre-wrap break-words leading-snug text-end text-7xl",
+          isSender ? "text-right" : "text-left"
+        )}
+      >
         {msg.text}
       </p>
       <div className={textClass}>

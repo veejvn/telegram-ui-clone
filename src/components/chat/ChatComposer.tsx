@@ -2,22 +2,31 @@
 
 import { useRef, useState, useEffect } from "react";
 import { Eclipse, Mic, Paperclip, Smile } from "lucide-react";
-import { sendImageMessage, sendMessage } from "@/services/chatService";
+import {
+  sendImageMessage,
+  sendMessage,
+  sendTypingEvent,
+} from "@/services/chatService";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useTheme } from "next-themes";
 import EmojiPicker, { Theme as EmojiTheme } from "emoji-picker-react";
 import { useChatStore } from "@/stores/useChatStore";
+import TypingIndicator from "./TypingIndicator";
+import useTyping from "@/hooks/useTyping";
 
 const ChatComposer = ({ roomId }: { roomId: string }) => {
   const [text, setText] = useState("");
   const [isMultiLine, setIsMultiLine] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
+  const typingTimeoutRef = useRef<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const client = useMatrixClient();
   const theme = useTheme();
+  const [isTyping, setIsTyping] = useState(false);
+  useTyping(roomId);
   const { addMessage } = useChatStore.getState();
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       if (textareaRef.current) {
@@ -50,7 +59,8 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     // 🧹 Reset UI
     setText("");
     setShowEmojiPicker(false);
-
+    setIsTyping(false);
+    sendTypingEvent(client, roomId, false);
     // 🔁 Gửi lên Matrix
     setTimeout(() => {
       sendMessage(roomId, trimmed, client)
@@ -93,6 +103,35 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     }
   }, [text]);
 
+  const onInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setText(value);
+
+    if (!isTyping) {
+      setIsTyping(true);
+      sendTypingEvent(client, roomId, true);
+    }
+
+    // Reset debounce timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+      sendTypingEvent(client, roomId, false); // Dừng typing sau 3s không gõ
+    }, 3000);
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
     <div className="relative flex justify-between items-center bg-white dark:bg-[#1c1c1e] px-2.5 py-2 lg:py-3">
       <Paperclip
@@ -116,7 +155,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
         <textarea
           ref={textareaRef}
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={onInputChange}
           onKeyDown={handleKeyDown}
           placeholder="Message"
           rows={1}
@@ -137,7 +176,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
         )}
 
         {showEmojiPicker && (
-          <div className="absolute bottom-12 left-6 z-50">
+          <div className="absolute bottom-12 right-2 z-50">
             <EmojiPicker
               width={300}
               height={350}
@@ -148,6 +187,10 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             />
           </div>
         )}
+      </div>
+
+      <div className="absolute bottom-14 left-0 z-50">
+        <TypingIndicator roomId={roomId} />
       </div>
 
       {text.trim() ? (
