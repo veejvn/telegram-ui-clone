@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import styles from "./page.module.css";
 import { sendReadReceipt } from "@/services/chatService";
+import { useUserStore } from "@/stores/useUserStore";
 
 const ChatPage = () => {
   const { theme } = useTheme();
@@ -21,11 +22,14 @@ const ChatPage = () => {
   const [room, setRoom] = useState<sdk.Room | null>();
   const param = useParams();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
+  const user = useUserStore.getState().user;
   const client = useMatrixClient();
-  const roomId = param.id?.slice(0, 19) + ":matrix.org";
+  const homeserver =
+    user && user.homeserver
+      ? user.homeserver.replace(/^https?:\/\//, "").replace(/\/$/, "")
+      : "";
+  const roomId = user ? param.id?.slice(0, 19) + ":" + homeserver : "";
   const router = useRouter();
-
   useEffect(() => {
     if (!client) return;
 
@@ -54,9 +58,25 @@ const ChatPage = () => {
     setJoining(true);
     try {
       await client.joinRoom(roomId);
-      // Sau khi join, reload lại room
+
+      // Đợi đến khi client sync xong
+      await new Promise<void>((resolve) => {
+        const onSync = (state: string) => {
+          if (state === "SYNCING" || state === "PREPARED") {
+            resolve();
+            client.removeListener("sync" as any, onSync);
+          }
+        };
+        client.on("sync" as any, onSync);
+      });
+
+      // Lấy lại room sau khi sync
       const joinedRoom = client.getRoom(roomId);
-      setRoom(joinedRoom);
+      if (joinedRoom) {
+        setRoom(joinedRoom);
+      } else {
+        toast.error("Không thể load dữ liệu phòng sau khi tham gia.");
+      }
     } catch (e) {
       toast.error("Không thể tham gia phòng!", {
         action: {
@@ -65,8 +85,9 @@ const ChatPage = () => {
         },
         duration: 5000,
       });
+    } finally {
+      setJoining(false);
     }
-    setJoining(false);
   };
 
   const handleReject = async () => {

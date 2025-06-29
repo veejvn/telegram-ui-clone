@@ -336,7 +336,7 @@ export async function sendImageMessage(
     const imageMessage = {
       msgtype: "m.image",
       body: file.name,
-      url: uploadResponse,
+      url: uploadResponse.content_uri,
       info: {
         mimetype: file.type,
         size: file.size,

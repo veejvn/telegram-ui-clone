@@ -12,30 +12,32 @@ import { TabsContent } from "@radix-ui/react-tabs";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 
+const mediaItems = [
+  {
+    id: 1,
+    name: "Youtube",
+    url: "http://youtube.com",
+    icon: "Y",
+    bgColor: "bg-gray-100",
+  },
+  {
+    id: 2,
+    name: "Google",
+    url: "http://google.com",
+    icon: "G",
+    bgColor: "bg-gray-100",
+  },
+  {
+    id: 3,
+    name: "Matrix",
+    url: "http://Matrix.org",
+    icon: "M",
+    bgColor: "bg-gray-100",
+  },
+];
+
 export default function InfoBody({ user }: { user: sdk.User }) {
-  const mediaItems = [
-    {
-      id: 1,
-      name: "Youtube",
-      url: "http://youtube.com",
-      icon: "Y",
-      bgColor: "bg-gray-100",
-    },
-    {
-      id: 2,
-      name: "Google",
-      url: "http://google.com",
-      icon: "G",
-      bgColor: "bg-gray-100",
-    },
-    {
-      id: 3,
-      name: "Matrix",
-      url: "http://Matrix.org",
-      icon: "M",
-      bgColor: "bg-gray-100",
-    },
-  ];
+
   return (
     <>
       <div className="text-center px-4">
