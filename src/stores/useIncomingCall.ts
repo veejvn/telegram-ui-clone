@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import type { MatrixCall } from "matrix-js-sdk/src/webrtc/call";
-import { CallErrorCode } from "matrix-js-sdk/src/webrtc/call";
+import type { MatrixCall } from "matrix-js-sdk";
+const { CallErrorCode } = await import("matrix-js-sdk/lib/webrtc/call");
 import { useRouter } from "next/navigation";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 
