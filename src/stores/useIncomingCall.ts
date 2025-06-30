@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import type { MatrixCall } from "matrix-js-sdk";
-const { CallErrorCode } = await import("matrix-js-sdk/lib/webrtc/call");
+import type { MatrixCall } from "@/types/MatrixCall";
+import { CallErrorCode } from "@/constants/CallErrorCode";
 import { useRouter } from "next/navigation";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 
@@ -48,7 +48,7 @@ export function useIncomingCall(): IncomingCallState {
         if (!call) return;
 
         const isVideo = call.type === "video";
-        call.answer(true, isVideo);
+        call.answer({ audio: true, video: isVideo });
         setVisible(false);
 
         // 👉 Tự động redirect sau khi nhận
