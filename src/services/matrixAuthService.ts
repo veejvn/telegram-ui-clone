@@ -106,7 +106,7 @@ export class MatrixAuthService {
             if (loginResponse.access_token) {
                 setLS("matrix_access_token", loginResponse.access_token);
                 setLS("matrix_user_id", loginResponse.user_id);
-                setLS("matrix_device_id", loginResponse.device_id);
+                setLS("matrix_device_id", loginResponse.device_id); // <-- Dòng này là bắt buộc!
                 clientInstance = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: loginResponse.access_token,
@@ -141,10 +141,12 @@ export class MatrixAuthService {
             if (loginResponse.access_token) {
                 setLS("matrix_access_token", loginResponse.access_token);
                 setLS("matrix_user_id", loginResponse.user_id);
+                setLS("matrix_device_id", loginResponse.device_id); // Thêm dòng này!
                 this.client = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: loginResponse.access_token,
-                    userId: loginResponse.user_id
+                    userId: loginResponse.user_id,
+                    deviceId: loginResponse.device_id,               // Và truyền deviceId vào đây!
                 });
             }
 
@@ -170,10 +172,12 @@ export class MatrixAuthService {
             if (loginResponse.access_token) {
                 setLS("matrix_access_token", loginResponse.access_token);
                 setLS("matrix_user_id", loginResponse.user_id);
+                setLS("matrix_device_id", loginResponse.device_id); // Thêm dòng này!
                 this.client = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: loginResponse.access_token,
-                    userId: loginResponse.user_id
+                    userId: loginResponse.user_id,
+                    deviceId: loginResponse.device_id,               // Và truyền deviceId vào đây!
                 });
             }
 
