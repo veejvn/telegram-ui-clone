@@ -24,6 +24,8 @@ export default function useUnreadMessages(room: Room | null, userId: string) {
       for (const event of timelineEvents) {
         if (event.getType() !== "m.room.message") continue;
 
+        if (event.getSender() === userId) continue;
+
         if (found) {
           result.push(event);
         }
@@ -45,12 +47,12 @@ export default function useUnreadMessages(room: Room | null, userId: string) {
       }
     };
 
-    room.on("Room.timeline", handleUpdate);
-    room.on("Room.receipt", handleUpdate);
+    room.on("Room.timeline" as any, handleUpdate);
+    room.on("Room.receipt" as any, handleUpdate);
 
     return () => {
-      room.off("Room.timeline", handleUpdate);
-      room.off("Room.receipt", handleUpdate);
+      room.off("Room.timeline" as any, handleUpdate);
+      room.off("Room.receipt" as any, handleUpdate);
     };
   }, [room, userId]);
 
