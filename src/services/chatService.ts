@@ -401,6 +401,7 @@ export const sendTypingEvent = async (
   roomId: string,
   isTyping: boolean
 ): Promise<{ success: boolean; err?: any }> => {
+
   if (!client) {
     return {
       success: false,

@@ -44,8 +44,6 @@ const ChatMessage = ({ msg }: { msg: Message }) => {
     }
   };
 
-  const flashHighlightClass = clsx();
-
   return (
     <div
       ref={messageRef}
