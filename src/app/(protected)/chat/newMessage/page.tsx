@@ -38,9 +38,9 @@ export default function Page() {
         <SearchBar />
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col ">
         <Link href={"/chat/newMessage/addMember"}>
-          <div className="hover:bg-[#181818]">
+          <div className="dark:hover:bg-[#181818] hover:bg-gray-200">
             <div className="flex items-center gap-3 px-4 py-3 ">
               <Users size={24} className="text-blue-500" />
               <span className="text-blue-500 text-base">New Group</span>
@@ -53,7 +53,7 @@ export default function Page() {
 
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <div className="hover:bg-[#181818]">
+            <div className="dark:hover:bg-[#181818] hover:bg-gray-200">
               <div className="flex items-center gap-3 px-4 py-3 ">
                 <UserPlus size={24} className="text-blue-500" />
                 <span className="text-blue-500 text-base">New Contact</span>
@@ -86,7 +86,7 @@ export default function Page() {
           </AlertDialogContent>
         </AlertDialog>
         <Link href={"/chat/newMessage/createChannel"}>
-          <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-[#181818]">
+          <div className="flex items-center gap-3 px-4 py-3 cursor-pointer dark:hover:bg-[#181818] hover:bg-gray-200">
             <Megaphone size={24} className="text-blue-500" />
             <span className="text-blue-500 text-base">New Channel</span>
           </div>

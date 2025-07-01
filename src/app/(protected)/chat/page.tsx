@@ -13,6 +13,7 @@ import ChatEditButton from "@/components/chat/ChatEditButton";
 import ChatActionBar from "@/components/chat/ChatActionBar";
 import DeleteChatModal from "@/components/chat/DeleteChatModal";
 import { getUserRooms } from "@/services/chatService";
+import { CircleFadingPlus, SquarePen } from "lucide-react";
 
 export default function ChatsPage() {
   const [rooms, setRooms] = useState<sdk.Room[]>([]);
@@ -114,16 +115,30 @@ export default function ChatsPage() {
   return (
     <div>
       <div className="sticky bg-white dark:bg-black top-0 z-10">
-        <div className="flex items-center justify-between px-4 py-2">
+        <div className="flex items-center justify-between px-4 py-3 ">
           <ChatEditButton
             isEditMode={isEditMode}
             onEdit={() => setIsEditMode(true)}
             onDone={handleDone}
           />
           <h1 className="text-md font-semibold">Chats</h1>
-          <div className="flex gap-3">
-            <div className="text-blue-500">+</div>
-            <div className="text-blue-500">✏️</div>
+          <div className="flex gap-3 items-center">
+            <div
+              className="text-blue-500 cursor-pointer
+            hover:scale-105 duration-500 transition-all ease-in-out
+            hover:opacity-50"
+            >
+              <CircleFadingPlus className="rotate-y-180" />
+            </div>
+            <div
+              className="text-blue-500 cursor-pointer
+            hover:scale-105 duration-500 transition-all ease-in-out
+            hover:opacity-50"
+            >
+              <Link href={"/chat/newMessage"}>
+                <SquarePen />
+              </Link>
+            </div>
           </div>
         </div>
         <SearchBar />
