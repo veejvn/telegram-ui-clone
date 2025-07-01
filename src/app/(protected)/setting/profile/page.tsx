@@ -12,15 +12,12 @@ import { getBackgroundColorClass } from "@/utils/getBackgroundColor ";
 
 export default function MyProfilePage() {
   const router = useRouter();
-  const user = useUserStore.getState().user;
+  const { user, setUser } = useUserStore.getState();
   const displayName = user ? user.displayName : "Your Name";
 
   // Thêm logic lấy avatar từ Matrix giống trang Setting
   const client = useMatrixClient();
   const userId = useAuthStore.getState().userId;
-  const [avatarUrl, setAvatarUrl] = useState<string>(
-    ""
-  ); // fallback mặc định
 
   useEffect(() => {
     if (!client || !userId) return;
@@ -32,14 +29,16 @@ export default function MyProfilePage() {
           const httpUrl =
             client.mxcUrlToHttp(profile.avatar_url, 96, 96, "crop") ?? "";
           const isValid =
-            /^https?:\/\//.test(httpUrl) &&
-            !httpUrl.includes("M_NOT_FOUND");
+            /^https?:\/\//.test(httpUrl) && !httpUrl.includes("M_NOT_FOUND");
           if (isValid) {
             // Kiểm tra HEAD để chắc chắn link tồn tại
             try {
               const res = await fetch(httpUrl, { method: "HEAD" });
               if (res.ok) {
-                setAvatarUrl(`/api/matrix-image?url=${encodeURIComponent(httpUrl)}`);
+                const apiUrl = `/api/matrix-image?url=${encodeURIComponent(
+                  httpUrl
+                )}`;
+                setUser({ avatarUrl: apiUrl });
                 return;
               }
             } catch {
@@ -47,9 +46,9 @@ export default function MyProfilePage() {
             }
           }
         }
-        setAvatarUrl("");
+        setUser({ avatarUrl: "" });
       } catch {
-        setAvatarUrl("");
+        setUser({ avatarUrl: "" });
       }
     };
     fetchAvatar();
@@ -62,7 +61,7 @@ export default function MyProfilePage() {
     return () => userObj.off?.("User.avatarUrl", handler);
   }, [client, userId]);
 
-  const avatarBackgroundColor = getBackgroundColorClass(userId)
+  const avatarBackgroundColor = getBackgroundColorClass(userId);
 
   return (
     <div className="bg-white text-black min-h-screen px-4 pt-6 pb-10">
@@ -84,10 +83,12 @@ export default function MyProfilePage() {
 
       {/* Profile Info */}
       <div className="flex flex-col items-center space-y-2 mb-6">
-        <Avatar className={`w-20 h-20 text-white text-2xl ${avatarBackgroundColor}`}>
-          {avatarUrl ? (
+        <Avatar
+          className={`w-20 h-20 text-white text-2xl ${avatarBackgroundColor}`}
+        >
+          {user?.avatarUrl ? (
             <img
-              src={avatarUrl}
+              src={user?.avatarUrl}
               alt="avatar"
               className="h-20 w-20 rounded-full object-cover"
               width={80}
@@ -101,6 +102,7 @@ export default function MyProfilePage() {
           )}
         </Avatar>
         <h2 className="text-xl font-semibold">{displayName}</h2>
+        <span className="text-sm text-blue-500">{userId}</span>
         <span className="text-gray-500 text-sm">{user?.status}</span>
       </div>
 
@@ -108,11 +110,7 @@ export default function MyProfilePage() {
       <div>
         <h3 className="text-sm font-semibold text-black mb-2">Posts</h3>
         <div className="bg-gray-100 rounded-xl flex flex-col items-center justify-center py-12 text-center">
-          <img
-            src="/no-posts-placeholder.png"
-            alt="No posts"
-            className="w-24 h-24 mb-4"
-          />
+          <img src="/images/no-post-yet.png" alt="No posts" className="mb-4" />
           <p className="text-sm text-gray-500 mb-2">No posts yet...</p>
           <p className="text-xs text-gray-400 mb-4">
             Publish photos and videos to display on your profile page.

@@ -37,7 +37,7 @@ const TypingIndicator = ({ roomId }: { roomId: string }) => {
 
     const displayNames = othersTyping.map((userId) => {
       const member = room.getMember(userId);
-      console.log("📌 user:", userId, "| member:", member);
+      //console.log("📌 user:", userId, "| member:", member);
       return member?.rawDisplayName || userId;
     });
 

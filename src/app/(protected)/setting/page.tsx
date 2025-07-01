@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -93,19 +93,17 @@ export default function SettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const client = useMatrixClient();
   const userId = useAuthStore.getState().userId;
-  const { user } = useUserStore.getState();
+  const { user , setUser } = useUserStore.getState();
   const displayName = user ? user.displayName : "Your Name";
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [_, setRefresh] = useState(0);
 
-  // 1. Lấy avatar_url (MXC) và chuyển sang HTTP URL, ưu tiên dùng proxy nếu cần
+  // Lấy avatar_url (MXC) và chuyển sang HTTP URL, ưu tiên dùng proxy nếu cần
   const fetchAvatar = async () => {
     if (!client || !userId) return;
     try {
       const profile = await client.getProfileInfo(userId);
       if (profile && profile.avatar_url) {
         const httpUrl = client.mxcUrlToHttp(profile.avatar_url, 96, 96, "crop") ?? "";
-        console.log("avatar_url:", profile.avatar_url);
-        console.log("httpUrl:", httpUrl);
 
         // Kiểm tra link HTTP thực tế
         const isValid = /^https?:\/\//.test(httpUrl) && !httpUrl.includes("M_NOT_FOUND");
@@ -114,60 +112,78 @@ export default function SettingsPage() {
           try {
             const res = await fetch(httpUrl, { method: "HEAD" });
             if (res.ok) {
-              setAvatarUrl(`/api/matrix-image?url=${encodeURIComponent(httpUrl)}`);
+              const apiUrl = `/api/matrix-image?url=${encodeURIComponent(httpUrl)}`;
+              setUser({ avatarUrl: apiUrl });
+              setRefresh((prev) => prev + 1);
               return;
             }
           } catch (e) {
             // Nếu fetch lỗi, sẽ fallback
           }
         }
-        setAvatarUrl("");
+        setUser({ avatarUrl: "" });
       } else {
-        setAvatarUrl("");
+        setUser({ avatarUrl: "" });
       }
     } catch (error) {
-      setAvatarUrl("");
+      setUser({ avatarUrl: "" });
       console.error("Error loading avatar:", error);
     }
   };
 
-  // 6. Lắng nghe sự kiện thay đổi avatar để cập nhật realtime
+  // Lắng nghe sự kiện thay đổi avatar để cập nhật realtime
   useEffect(() => {
     fetchAvatar();
-    if (!client || !userId) return;
-
-    const userObj = client.getUser?.(userId) as any;
-    if (!userObj) return;
-
-    const handler = () => fetchAvatar();
-    userObj.on?.("User.avatarUrl", handler);
-
-    return () => {
-      userObj.off?.("User.avatarUrl", handler);
-    };
-    // eslint-disable-next-line
   }, [client, userId]);
-  // eslint-disable-next-line
 
-  // 5. Cho phép upload/thay đổi avatar
   const handleFileSelect = () => {
     fileInputRef.current?.click();
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !client || !userId) return;
+    if (!file || !client) return;
+
     try {
-      // Upload lên Matrix media repo
-      const uploadRes = await client.uploadContent(file, { type: file.type });
-      // Đặt avatar mới
-      await client.setProfileInfo("avatar_url", { avatar_url: uploadRes.content_uri });
-      // Cập nhật lại avatar
-      fetchAvatar();
+      console.log("📂 File được chọn:", file.name);
+      if (!userId) throw new Error("Không tìm thấy userId");
+
+      // 1️⃣ upload
+      const arrayBuffer = await file.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+
+      const uploadRes = await client.uploadContent(uint8Array, {
+        name: file.name,
+        type: file.type,
+        onlyContentUri: true,
+      } as any);
+
+      // type guard rõ ràng
+      let avatarUrl: string;
+
+      if (typeof uploadRes === "string") {
+        avatarUrl = uploadRes;
+      } else if (typeof uploadRes === "object" && "content_uri" in uploadRes) {
+        avatarUrl = uploadRes.content_uri;
+      } else {
+        throw new Error("Upload result unknown");
+      }
+
+      // 2️⃣ update profile
+      await client.setAvatarUrl(avatarUrl);
+
+      // 3️⃣ cập nhật avatar ngay lập tức
+      await fetchAvatar();
+
+      console.log(" Avatar updated successfully");
     } catch (error) {
-      console.error("Upload avatar failed:", error);
+      console.error(" Error uploading avatar:", error);
     }
   };
+
+  const handleClickEdit = () => {
+    router.push("/setting/profile/edit")
+  }
 
   const avatarBackgroundColor = getBackgroundColorClass(userId)
 
@@ -179,9 +195,9 @@ export default function SettingsPage() {
           <QrCode className="h-6 w-6 text-blue-500" />
           <div className="absolute left-1/2 transform -translate-x-1/2 top-4">
             <Avatar className={`h-20 w-20 ${avatarBackgroundColor}`}>
-              {avatarUrl ? (
+              {user?.avatarUrl ? (
                 <img
-                  src={avatarUrl}
+                  src={user.avatarUrl}
                   alt="avatar"
                   className="h-20 w-20 rounded-full object-cover"
                   width={80}
@@ -198,7 +214,7 @@ export default function SettingsPage() {
           <Button
             className="text-blue-500 hover:bg-zinc-300 bg-white dark:bg-transparent border dark:hover:text-blue-700"
             size="sm"
-            onClick={handleFileSelect}
+            onClick={handleClickEdit}
           >
             Edit
           </Button>

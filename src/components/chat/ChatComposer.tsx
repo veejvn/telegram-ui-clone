@@ -18,7 +18,6 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   const [text, setText] = useState("");
   const [isMultiLine, setIsMultiLine] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
   const typingTimeoutRef = useRef<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -61,7 +60,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     setText("");
     setShowEmojiPicker(false);
     setIsTyping(false);
-    sendTypingEvent(roomId, false);
+    sendTypingEvent(client, roomId, false);
     // 🔁 Gửi lên Matrix
     setTimeout(() => {
       sendMessage(roomId, trimmed, client)
@@ -82,8 +81,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
 
   const handleChangeFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !client || file.type.startsWith("image/")) return;
-    if (!file || !client || file.type.startsWith("image/")) return;
+    if (!file || !client) return;
 
     try {
       await sendImageMessage(client, roomId, file);
@@ -105,13 +103,13 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     }
   }, [text]);
 
-  const onInputChange = (e) => {
+  const onInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setText(value);
 
     if (!isTyping) {
       setIsTyping(true);
-      sendTypingEvent(roomId, true);
+      sendTypingEvent(client, roomId, true);
     }
 
     // Reset debounce timeout
@@ -121,7 +119,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
 
     typingTimeoutRef.current = setTimeout(() => {
       setIsTyping(false);
-      sendTypingEvent(roomId, false); // Dừng typing sau 3s không gõ
+      sendTypingEvent(client, roomId, false); // Dừng typing sau 3s không gõ
     }, 3000);
   };
 

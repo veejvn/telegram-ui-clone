@@ -7,7 +7,7 @@ export default function AddMemberBar() {
         type="text"
         placeholder="Who would you like to add?"
         className="flex-1 h-auto resize-none bg-transparent outline-none 
-            text-white"
+            dark:text-white"
       />
     </div>
   );

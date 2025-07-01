@@ -1,5 +1,3 @@
-import { Appearance } from "react-native";
-
 export const ROUTES = {
     LOGIN: '/login',
     REGISTER: '/register',

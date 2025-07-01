@@ -5,12 +5,8 @@
 import * as sdk from "matrix-js-sdk";
 import { Message, MessageStatus, MessageType } from "@/stores/useChatStore";
 import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
-import { MatrixAuthService } from "./matrixAuthService";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { useClientStore } from "@/stores/useClientStore";
-
-const authService = new MatrixAuthService();
 
 export const getUserRooms = async (
   client: sdk.MatrixClient
@@ -336,7 +332,7 @@ export async function sendImageMessage(
     const imageMessage = {
       msgtype: "m.image",
       body: file.name,
-      url: uploadResponse,
+      url: uploadResponse.content_uri,
       info: {
         mimetype: file.type,
         size: file.size,
@@ -401,11 +397,10 @@ export const sendReadReceipt = async (client: sdk.MatrixClient, event: any) => {
 };
 
 export const sendTypingEvent = async (
+  client: sdk.MatrixClient | null,
   roomId: string,
   isTyping: boolean
 ): Promise<{ success: boolean; err?: any }> => {
-  const client = useClientStore.getState().client;
-
   if (!client) {
     return {
       success: false,
