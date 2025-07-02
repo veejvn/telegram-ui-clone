@@ -15,9 +15,13 @@ export default function SetUsernamePage() {
   const userId = useAuthStore((state) => state.userId);
   const client = useMatrixClient();
 
+  const isValidUsername = displayName.length >= 5;
+
   const handleSave = async () => {
+    if (!isValidUsername) return;
+
     try {
-      if (!client || !userId || !userId.startsWith("@")) return
+      if (!client || !userId || !userId.startsWith("@")) return;
 
       await client.setDisplayName(displayName);
       const profile = await client.getProfileInfo(userId);
@@ -28,11 +32,10 @@ export default function SetUsernamePage() {
 
       router.back();
     } catch (error) {
-      console.error(" Profile update error:", error);
+      console.error("Profile update error:", error);
       alert("Username update failed.");
     }
   };
-
 
   return (
     <div className="min-h-screen px-4 py-6">
@@ -48,12 +51,13 @@ export default function SetUsernamePage() {
 
         <button
           onClick={handleSave}
-          className="text-blue-500 text-sm font-medium"
+          className={`text-sm font-medium ${isValidUsername ? "text-blue-500" : "text-gray-400 cursor-not-allowed"
+            }`}
+          disabled={!isValidUsername}
         >
           Done
         </button>
       </div>
-
 
       <div className="space-y-4">
         <label className="text-xs text-zinc-500 font-medium mb-1 block">USERNAME</label>
@@ -68,6 +72,12 @@ export default function SetUsernamePage() {
             className="pl-[100px] pr-3 py-2 text-base rounded-md border border-zinc-300 dark:border-zinc-700 caret-blue-500"
           />
         </div>
+
+        {displayName !== "" && !isValidUsername && (
+          <p className="text-xs text-red-500">
+            Usernames must have at least 5 characters.
+          </p>
+        )}
 
 
         <p className="text-xs text-gray-400 leading-relaxed">
@@ -89,7 +99,6 @@ export default function SetUsernamePage() {
             https://t.me/{displayName}
           </a>
         </p>
-
       </div>
     </div>
   );
