@@ -33,56 +33,90 @@ interface SettingItem {
   path?: string;
 }
 
-const settings: SettingItem[] = [
-  {
-    title: "My Profile",
-    icon: <User className="h-6 w-6 text-red-500" />,
-    path: "/setting/profile",
-  },
+const group1: SettingItem[] = [
   {
     title: "Saved Messages",
-    icon: <Bookmark className="h-6 w-6 text-blue-500" />,
+    icon: (
+      <span className="inline-flex items-center justify-center h-8 w-8 rounded-[10px] bg-[#1877F2]">
+        <Bookmark className="h-5 w-5 text-white" />
+      </span>
+    ),
     path: "/setting/saved-message",
   },
   {
     title: "Recent Calls",
-    icon: <PhoneCall className="h-6 w-6 text-green-500" />,
+    icon: (
+      <span className="inline-flex items-center justify-center h-8 w-8 rounded-[10px] bg-[#34C759]">
+        <PhoneCall className="h-5 w-5 text-white" />
+      </span>
+    ),
     path: "/setting/recent-call",
   },
   {
     title: "Devices",
-    icon: <Smartphone className="h-6 w-6 text-orange-500" />,
+    icon: (
+      <span className="inline-flex items-center justify-center h-8 w-8 rounded-[10px] bg-[#FF9500]">
+        <Smartphone className="h-5 w-5 text-white" />
+      </span>
+    ),
     extra: <span className="text-sm text-gray-400">Scan QR</span>,
     path: "/setting/device",
   },
   {
     title: "Chat Folders",
-    icon: <Folder className="h-6 w-6 text-cyan-500" />,
+    icon: (
+      <span className="inline-flex items-center justify-center h-8 w-8 rounded-[10px] bg-[#30B6F6]">
+        <Folder className="h-5 w-5 text-white" />
+      </span>
+    ),
     path: "/setting/chat-folder",
   },
+];
+
+const group2: SettingItem[] = [
   {
     title: "Notifications and Sounds",
-    icon: <Bell className="h-6 w-6 text-red-500" />,
+    icon: (
+      <span className="inline-flex items-center justify-center h-8 w-8 rounded-[10px] bg-[#FF3B30]">
+        <Bell className="h-5 w-5 text-white" />
+      </span>
+    ),
     path: "/setting/notification-and-sound",
   },
   {
     title: "Privacy and Security",
-    icon: <Lock className="h-6 w-6 text-gray-400" />,
+    icon: (
+      <span className="inline-flex items-center justify-center h-8 w-8 rounded-[10px] bg-[#8E8E93]">
+        <Lock className="h-5 w-5 text-white" />
+      </span>
+    ),
     path: "/setting/privacy-and-security",
   },
   {
     title: "Data and Storage",
-    icon: <Database className="h-6 w-6 text-green-600" />,
+    icon: (
+      <span className="inline-flex items-center justify-center h-8 w-8 rounded-[10px] bg-[#34C759]">
+        <Database className="h-5 w-5 text-white" />
+      </span>
+    ),
     path: "/setting/data-and-storage",
   },
   {
     title: "Appearance",
-    icon: <Palette className="h-6 w-6 text-blue-700" />,
+    icon: (
+      <span className="inline-flex items-center justify-center h-8 w-8 rounded-[10px] bg-[#30B6F6]">
+        <Palette className="h-5 w-5 text-white" />
+      </span>
+    ),
     path: "/setting/appearance",
   },
   {
     title: "Language",
-    icon: <Globe className="h-6 w-6 text-violet-600" />,
+    icon: (
+      <span className="inline-flex items-center justify-center h-8 w-8 rounded-[10px] bg-[#007AFF]">
+        <Globe className="h-5 w-5 text-white" />
+      </span>
+    ),
     extra: <span className="text-sm text-gray-400">English</span>,
     path: "/setting/language",
   },
@@ -93,22 +127,21 @@ export default function SettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const client = useMatrixClient();
   const userId = useAuthStore.getState().userId;
-  const { user , setUser } = useUserStore.getState();
-  const displayName = user ? user.displayName : "Your Name";
+  const { user, setUser } = useUserStore.getState();
+  const displayName = user ? user.displayName : "Tên";
+  const phone = user?.phone || "Sđt";
+  const homeserver = user?.homeserver?.replace("https://", "") || "";
   const [_, setRefresh] = useState(0);
 
-  // Lấy avatar_url (MXC) và chuyển sang HTTP URL, ưu tiên dùng proxy nếu cần
+  // Đưa fetchAvatar ra ngoài useEffect
   const fetchAvatar = async () => {
     if (!client || !userId) return;
     try {
       const profile = await client.getProfileInfo(userId);
       if (profile && profile.avatar_url) {
         const httpUrl = client.mxcUrlToHttp(profile.avatar_url, 96, 96, "crop") ?? "";
-
-        // Kiểm tra link HTTP thực tế
         const isValid = /^https?:\/\//.test(httpUrl) && !httpUrl.includes("M_NOT_FOUND");
         if (isValid) {
-          // Test link HTTP thực tế
           try {
             const res = await fetch(httpUrl, { method: "HEAD" });
             if (res.ok) {
@@ -117,24 +150,19 @@ export default function SettingsPage() {
               setRefresh((prev) => prev + 1);
               return;
             }
-          } catch (e) {
-            // Nếu fetch lỗi, sẽ fallback
-          }
+          } catch { }
         }
-        setUser({ avatarUrl: "" });
-      } else {
-        setUser({ avatarUrl: "" });
       }
-    } catch (error) {
       setUser({ avatarUrl: "" });
-      console.error("Error loading avatar:", error);
+    } catch {
+      setUser({ avatarUrl: "" });
     }
   };
 
-  // Lắng nghe sự kiện thay đổi avatar để cập nhật realtime
   useEffect(() => {
     fetchAvatar();
-  }, [client, userId]);
+    // eslint-disable-next-line
+  }, [client, userId, setUser]);
 
   const handleFileSelect = () => {
     fileInputRef.current?.click();
@@ -145,10 +173,7 @@ export default function SettingsPage() {
     if (!file || !client) return;
 
     try {
-      console.log("📂 File được chọn:", file.name);
       if (!userId) throw new Error("Không tìm thấy userId");
-
-      // 1️⃣ upload
       const arrayBuffer = await file.arrayBuffer();
       const uint8Array = new Uint8Array(arrayBuffer);
 
@@ -158,9 +183,7 @@ export default function SettingsPage() {
         onlyContentUri: true,
       } as any);
 
-      // type guard rõ ràng
       let avatarUrl: string;
-
       if (typeof uploadRes === "string") {
         avatarUrl = uploadRes;
       } else if (typeof uploadRes === "object" && "content_uri" in uploadRes) {
@@ -169,115 +192,139 @@ export default function SettingsPage() {
         throw new Error("Upload result unknown");
       }
 
-      // 2️⃣ update profile
       await client.setAvatarUrl(avatarUrl);
-
-      // 3️⃣ cập nhật avatar ngay lập tức
       await fetchAvatar();
-
-      console.log(" Avatar updated successfully");
     } catch (error) {
-      console.error(" Error uploading avatar:", error);
+      console.error("Error uploading avatar:", error);
     }
   };
 
   const handleClickEdit = () => {
-    router.push("/setting/profile/edit")
-  }
+    router.push("/setting/profile/edit");
+  };
 
-  const avatarBackgroundColor = getBackgroundColorClass(userId)
+  const avatarBackgroundColor = getBackgroundColorClass(userId);
 
   return (
-    <>
+    <div className="min-h-screen bg-[#f5f6fa] dark:bg-[#101014] pb-8">
       {/* Header */}
-      <div className="relative">
-        <div className="flex items-center justify-between px-4 pt-4">
+      <div className="relative px-4 pt-4 pb-2">
+        <div className="flex items-center justify-between">
           <QrCode className="h-6 w-6 text-blue-500" />
-          <div className="absolute left-1/2 transform -translate-x-1/2 top-4">
-            <Avatar className={`h-20 w-20 ${avatarBackgroundColor}`}>
-              {user?.avatarUrl ? (
-                <img
-                  src={user.avatarUrl}
-                  alt="avatar"
-                  className="h-20 w-20 rounded-full object-cover"
-                  width={80}
-                  height={80}
-                  loading="lazy"
-                />
-              ) : (
-                <AvatarFallback className="text-xl">
-                  {getInitials(displayName)}
-                </AvatarFallback>
-              )}
-            </Avatar>
-          </div>
           <Button
-            className="text-blue-500 hover:bg-zinc-300 bg-white dark:bg-transparent border dark:hover:text-blue-700"
-            size="sm"
+            variant="ghost"
+            className="text-blue-500 text-base font-medium px-2 py-1 h-auto shadow-none border-none"
             onClick={handleClickEdit}
           >
             Edit
           </Button>
         </div>
-        <div className="mt-16 text-center px-4 pb-4">
-          <h1 className="text-2xl font-semibold">{displayName}</h1>
-          <p className="text-sm text-blue-500">
-            Homeserver: {user?.homeserver?.replace("https://", "")}
-          </p>
+        <div className="flex flex-col items-center mt-2 mb-2">
+          <Avatar className={`h-20 w-20 text-3xl ${avatarBackgroundColor}`}>
+            {user?.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt="avatar"
+                className="h-20 w-20 rounded-full object-cover"
+                width={80}
+                height={80}
+                loading="lazy"
+              />
+            ) : (
+              <AvatarFallback className="text-3xl">
+                {getInitials(displayName)}
+              </AvatarFallback>
+            )}
+          </Avatar>
+          <div className="mt-3 text-lg font-semibold">{displayName}</div>
+          <div className="text-sm text-blue-500">
+            Homeserver: {homeserver}
+          </div>
         </div>
       </div>
 
       {/* Action Shortcuts */}
-      <div className="mx-4 rounded-2xl border-2 divide-y-2">
-        {/* Set Profile Photo */}
+      <div className="mx-4 rounded-2xl bg-white dark:bg-[#181818] border dark:border-[#232323] divide-y shadow-sm mb-4">
         <div
-          className="flex items-center justify-between px-4 py-3 cursor-pointer"
+          className="flex items-center px-4 py-2 cursor-pointer"
           onClick={handleFileSelect}
         >
-          <div className="flex items-center space-x-3">
-            <div className="bg-indigo-600 h-9 w-9 rounded-full flex items-center justify-center text-white">
-              <Camera className="h-5 w-5" />
-            </div>
-            <span className="text-base">Set Profile Photo</span>
-          </div>
-          <ChevronRight className="h-5 w-5 text-gray-500" />
+          <Camera className="h-4 w-4 text-[#1877F2] mr-2" />
+          <span className="text-[17px] text-[#1877F2]">Set Profile Photo</span>
         </div>
-
-        {/* Set Username */}
         <div
-          className="flex items-center justify-between px-4 py-3 cursor-pointer"
+          className="flex items-center px-4 py-2 cursor-pointer"
           onClick={() => router.push("/setting/set-username")}
         >
-          <div className="flex items-center space-x-3">
-            <div className="bg-indigo-600 h-9 w-9 rounded-full flex items-center justify-center text-white">
-              <AtSign className="h-5 w-5" />
-            </div>
-            <span className="text-base">Set Username</span>
-          </div>
-          <ChevronRight className="h-5 w-5 text-gray-500" />
+          <AtSign className="h-4 w-4 text-[#1877F2] mr-2" />
+          <span className="text-[17px] text-[#1877F2]">Set Username</span>
         </div>
       </div>
 
-      {/* Settings List */}
-      <div className="p-4 space-y-2">
-        {settings.map((item) => (
+      {/* My Profile */}
+      <div className="mx-4 rounded-2xl bg-white dark:bg-[#181818] border dark:border-[#232323] flex items-center justify-between px-4 py-3 mb-4 shadow-sm">
+        <div className="flex items-center space-x-2">
+          <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-[#FF2D55]">
+            <User className="h-5 w-5 text-white" />
+          </span>
+          <span className="font-medium text-[15px]">My Profile</span>
+        </div>
+        <ChevronRight className="h-5 w-5 text-gray-400" />
+      </div>
+
+      {/* Group 1: Saved, Recent, Devices, Chat Folders */}
+      <div className="mx-4 rounded-2xl bg-white dark:bg-[#181818] border dark:border-[#232323] shadow-sm mb-4 overflow-hidden">
+        {group1.map((item, idx) => (
           <Link
             key={item.title}
-            className="flex items-center justify-between border-2 rounded-2xl px-4 py-3"
+            className={
+              "flex items-center justify-between px-4 py-3 " +
+              (idx !== group1.length - 1 ? "border-b dark:border-[#232323] " : "") +
+              "text-black dark:text-white"
+            }
+            href={item.path || "#"}
+          >
+            <div className="flex items-center space-x-2">
+              <span className="inline-flex items-center justify-center h-8 w-8 rounded-[8px] bg-[color]">
+                {/* Đổi bg-[color] cho từng icon như bạn đã làm */}
+                {item.icon}
+              </span>
+              <span className="text-[15px]">{item.title}</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              {item.extra && (
+                <span className="text-xs text-gray-400">{item.extra}</span>
+              )}
+              <ChevronRight className="h-5 w-5 text-gray-400" />
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      {/* Group 2: Notifications, Privacy, Data, Appearance, Language */}
+      <div className="mx-4 rounded-2xl bg-white dark:bg-[#181818] border dark:border-[#232323] shadow-sm overflow-hidden">
+        {group2.map((item, idx) => (
+          <Link
+            key={item.title}
+            className={
+              "flex items-center justify-between px-4 py-3 " +
+              (idx !== group2.length - 1 ? "border-b dark:border-[#232323] " : "") +
+              "text-black dark:text-white"
+            }
             href={item.path || "#"}
           >
             <div className="flex items-center space-x-3">
               {item.icon}
-              <span>{item.title}</span>
+              <span className="font-medium">{item.title}</span>
             </div>
             <div className="flex items-center space-x-2">
               {item.extra}
-              <ChevronRight className="h-5 w-5 text-gray-500" />
+              <ChevronRight className="h-5 w-5 text-gray-400" />
             </div>
           </Link>
         ))}
-        <div className="h-14"></div>
       </div>
+
       <input
         ref={fileInputRef}
         type="file"
@@ -286,6 +333,8 @@ export default function SettingsPage() {
         className="hidden"
         aria-label="Upload profile photo"
       />
-    </>
+      {/* Thêm khoảng trống tránh bị che bởi thanh tab bar */}
+      <div className="h-20" />
+    </div>
   );
 }
