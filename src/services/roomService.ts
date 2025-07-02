@@ -10,19 +10,15 @@ export async function createPublicRoom(
   try {
     if (!client) throw new Error("Matrix client not initialized");
 
-    //  Tạo phòng
     const res = await client.createRoom({
       name: roomName,
-      invite: invitees?.length ? invitees : undefined,
       visibility: "public" as sdk.Visibility,
     });
 
     const roomId = res.room_id;
 
-    // Đợi room được fully emit
     await waitUntilRoomSynced(client, roomId);
 
-    //  Nếu có ảnh đại diện, upload
     if (avatarFile) {
       const mxcUrl = await client.uploadContent(avatarFile, {
         name: avatarFile.name,
@@ -35,6 +31,16 @@ export async function createPublicRoom(
         { url: mxcUrl },
         ""
       );
+    }
+
+    if (invitees?.length) {
+      for (const userId of invitees) {
+        try {
+          await client.invite(roomId, userId);
+        } catch (inviteErr: any) {
+          console.warn(`❌ Failed to invite ${userId}:`, inviteErr?.message);
+        }
+      }
     }
 
     return { roomId };
@@ -51,7 +57,7 @@ function waitUntilRoomSynced(
     const timeout = setTimeout(() => {
       client.removeListener("Room" as any, handler);
       resolve(); // fallback nếu chờ quá lâu
-    }, 4000); // tăng timeout nếu cần
+    }, 4000);
 
     const handler = (room: sdk.Room) => {
       if (room.roomId === roomId) {

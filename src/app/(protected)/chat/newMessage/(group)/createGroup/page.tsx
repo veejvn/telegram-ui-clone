@@ -15,13 +15,22 @@ import {
 import { createPublicRoom } from "@/services/roomService";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useRouter } from "next/navigation";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/ChatAvatar";
+import { useAddMembersStore } from "@/stores/useAddMembersStore";
 
 export default function CreateGroupPage() {
   const [groupName, setGroupName] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const { selectedUsers, clearUsers } = useAddMembersStore();
   const client = useMatrixClient();
   const router = useRouter();
+
+  const userIds = selectedUsers.map((user) => user.userId);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -36,11 +45,13 @@ export default function CreateGroupPage() {
     const result = await createPublicRoom(
       groupName.trim(),
       client,
-      avatarFile ? avatarFile : undefined
+      avatarFile ? avatarFile : undefined,
+      userIds
     );
 
     if ("roomId" in result) {
       router.push(`/chat/${result.roomId}`);
+      clearUsers();
     } else {
       console.log("❌ Failed to create room: " + result.error);
     }
@@ -51,7 +62,7 @@ export default function CreateGroupPage() {
     <div className="min-h-screen bg-gray-200 dark:bg-black">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 ">
-        <Link href="/chat/newMessage">
+        <Link href="/chat/newMessage/addMember">
           <div className="flex items-center text-blue-500 hover:opacity-70 cursor-pointer">
             <ChevronLeft size={22} className="mr-1" />
             <span className="text-base">Back</span>
@@ -157,6 +168,29 @@ export default function CreateGroupPage() {
           period of time.
         </p>
       </div>
+      {selectedUsers.map((user) => (
+        <div
+          key={user.userId}
+          className="dark:bg-[#181818] bg-white rounded-lg mx-4 mt-6 |
+      px-2.5 py-1.5 flex gap-2 items-center"
+        >
+          <Avatar className="h-10 w-10">
+            <AvatarImage
+              src={user.avatarUrl || ""}
+              alt={user.avatarUrl ? "avatar" : "Unknown Avatar"}
+            />
+            {!user.avatarUrl && (
+              <AvatarFallback className="bg-purple-400 text-white text-xl font-bold">
+                {user.displayName.slice(0, 1).toUpperCase()}
+              </AvatarFallback>
+            )}
+          </Avatar>
+          <div>
+            <p className="font-medium -mb-1">{user.displayName}</p>
+            <p className="text-gray-400 text-sm -mt-1">last seen recently</p>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

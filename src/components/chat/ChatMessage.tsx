@@ -7,7 +7,6 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { Message } from "@/stores/useChatStore";
 import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import clsx from "clsx";
 
 const ChatMessage = ({ msg }: { msg: Message }) => {
   const userId = useAuthStore.getState().userId;

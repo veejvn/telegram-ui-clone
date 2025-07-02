@@ -5,6 +5,16 @@ import { MessagePros } from "@/types/chat";
 import { formatMsgTime } from "@/utils/chat/formatMsgTime";
 import { useTheme } from "next-themes";
 import { BubbleTail } from "./BubbleTail";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import CopyIconSvg from "../icons/CopyIconSvg";
+import ForwardIconSvg from "../icons/ForwardIconSvg";
+import BinIconSvg from "../icons/BinIconSvg";
 
 // 💬 Main TextMessage
 const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
@@ -25,46 +35,66 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
   );
 
   return (
-    <div
-      className={clsx(
-        "flex items-end", // Đảm bảo tail căn đáy với bubble
-        isSender ? "justify-end" : "justify-start"
-      )}
-    >
-      {/* 🡐 Tail cho tin nhận */}
-      {!isSender && (
-        <BubbleTail
-          isSender={false}
-          fillColor={theme.theme === "dark" ? "#282434" : "#FFFFFF"}
-        />
-      )}
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <div
+          className={clsx(
+            "flex items-end", // Đảm bảo tail căn đáy với bubble
+            isSender ? "justify-end" : "justify-start"
+          )}
+        >
+          {/* 🡐 Tail cho tin nhận */}
+          {!isSender && (
+            <BubbleTail
+              isSender={false}
+              fillColor={theme.theme === "dark" ? "#282434" : "#FFFFFF"}
+            />
+          )}
 
-      {/* 💬 Nội dung tin nhắn */}
-      <div className="flex flex-col  ">
-        <div className={textClass}>
-          <p className={"whitespace-pre-wrap break-words leading-snug"}>
-            {msg.text}
-          </p>
-          <div className={timeClass}>
-            {formatMsgTime(msg.time)}
-            {isSender &&
-              (msg.status === "read" ? (
-                <CheckCheck size={14} />
-              ) : (
-                <Check size={14} />
-              ))}
+          {/* 💬 Nội dung tin nhắn */}
+          <div className="flex flex-col  ">
+            <div className={textClass}>
+              <p className={"whitespace-pre-wrap break-words leading-snug"}>
+                {msg.text}
+              </p>
+              <div className={timeClass}>
+                {formatMsgTime(msg.time)}
+                {isSender &&
+                  (msg.status === "read" ? (
+                    <CheckCheck size={14} />
+                  ) : (
+                    <Check size={14} />
+                  ))}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* 🡒 Tail cho tin gửi */}
-      {isSender && (
-        <BubbleTail
-          isSender={true}
-          fillColor={theme.theme === "dark" ? "#6f42c1" : "#DCF8C6"}
-        />
-      )}
-    </div>
+          {/* 🡒 Tail cho tin gửi */}
+          {isSender && (
+            <BubbleTail
+              isSender={true}
+              fillColor={theme.theme === "dark" ? "#6f42c1" : "#DCF8C6"}
+            />
+          )}
+        </div>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="mx-2">
+        <DropdownMenuItem className="flex justify-between items-center">
+          <p>Copy</p>
+          <CopyIconSvg isDark={theme.theme === "dark"} />
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem className="flex justify-between items-center">
+          <p>Forward</p>
+          <ForwardIconSvg isDark={theme.theme === "dark"} />
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem className="flex justify-between items-center">
+          <p className="text-red-500">Delete</p>
+          <BinIconSvg />
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };
 
