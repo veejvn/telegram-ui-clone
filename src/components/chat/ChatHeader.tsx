@@ -10,16 +10,14 @@ import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import * as sdk from "matrix-js-sdk";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
-import { formatRelativeTime } from "@/utils/chat/formatRelativeTime";
-import { useChatStore } from "@/stores/useChatStore";
 import { getUserInfoInPrivateRoom } from "@/services/chatService";
-import { usePresence } from "@/hooks/usePresence";
 import { getRoomInfo } from "@/utils/chat/RoomHelpers";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { usePresenceContext } from "@/contexts/PresenceProvider";
 
 const ChatHeader = ({ room }: { room: sdk.Room }) => {
   const client = useMatrixClient();
+  const { getLastSeen } = usePresenceContext() || {};
   const currentUserId = useAuthStore.getState().userId;
   const { roomId, type, otherUserId } = getRoomInfo(
     room,
@@ -27,8 +25,6 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
   );
 
   const [user, setUser] = useState<sdk.User | undefined>(undefined);
-
-  const { getLastSeen } = usePresenceContext() || {};
 
   let lastSeen: Date | null = null;
 
@@ -126,18 +122,6 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
               {getDetailedStatus()}
             </p>
           </div>
-          {
-            // others.map(({ userId }) => {
-            //   const ts = lastSeenMap[userId];
-            //   return (
-            //     <div key={userId}>
-            //       <p className="text-sm text-muted-foreground">
-            //         {ts ? formatRelativeTime(new Date(ts)) : "Chưa hoạt động"}
-            //       </p>
-            //     </div>
-            //   );
-            // })
-          }
         </div>
         <div>
           <Link href={`${room.roomId}/info`}>

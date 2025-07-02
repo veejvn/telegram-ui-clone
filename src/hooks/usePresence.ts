@@ -68,7 +68,6 @@ export function usePresence(client: sdk.MatrixClient | null): UseMatrixPresenceR
   // Lấy thời gian last seen
   const getLastSeen = useCallback((userId: string): Date | null => {
     const presence = userPresences.get(userId);
-    console.log(presence);
     return presence?.lastActiveTs ? new Date(presence.lastActiveTs) : null;
   }, [userPresences]);
 
