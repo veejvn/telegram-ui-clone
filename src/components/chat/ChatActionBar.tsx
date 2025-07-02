@@ -10,7 +10,7 @@ export default function ChatActionBar({
   onDelete: () => void;
 }) {
   return (
-    <div className="fixed bottom-0 left-0 w-full bg-white dark:bg-black border-t border-gray-300 dark:border-gray-700 px-4 py-3 z-50">
+    <div className="fixed bottom-0 left-0 w-full bg-white dark:bg-black border-t border-gray-300 dark:border-gray-700 px-4 py-5 z-[9999] shadow-md">
       <div className="flex w-full max-w-xs mx-auto justify-between items-center text-base font-medium text-gray-600 dark:text-gray-400">
         <button
           className={`${selectedCount < 2 ? "opacity-50" : ""}`}
