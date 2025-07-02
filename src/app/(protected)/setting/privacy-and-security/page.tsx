@@ -53,20 +53,19 @@ export default function PrivacyAndSecurityPage() {
   return (
     <div className="bg-[#f6f6f6] dark:bg-black min-h-screen text-black dark:text-white px-4 pt-6 pb-24">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center mb-4">
         <button
           type="button"
-          onClick={() => router.back()}
-          className="text-blue-400"
+          className="text-blue-400 mr-4 cursor-pointer"
+          onClick={() => router.push("/setting")}
         >
           &lt; Back
         </button>
-        <div className="w-16" />
+        <h1 className="text-xl font-bold flex-1 text-center">
+          Privacy and Security
+        </h1>
+        <div className="w-12" />
       </div>
-
-      <h1 className="text-center text-black font-semibold dark:text-white text-2xl mb-4 ">
-        Privacy and Security
-      </h1>
 
       {/* Top Section */}
       <div className="rounded-xl bg-white dark:bg-zinc-900 text-black dark:text-white mb-4 divide-y divide-gray-200 dark:divide-zinc-800">
