@@ -18,6 +18,12 @@ import {
   Smartphone,
   ChevronRight,
   Globe,
+  Star,
+  Store,
+  Gift,
+  MessageCircle,
+  HelpCircle,
+  Lightbulb,
 } from "lucide-react";
 import Link from "next/link";
 import { useUserStore } from "@/stores/useUserStore";
@@ -121,6 +127,75 @@ const group2: SettingItem[] = [
     // Tăng cỡ chữ English
     extra: "English",
     path: "/setting/language",
+  },
+];
+
+const group3: SettingItem[] = [
+  {
+    title: "Telegram Premium",
+    icon: (
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] bg-[#8E6DEB] mr-2">
+        <Star className="h-4 w-4 text-white" />
+      </span>
+    ),
+    path: "/setting/premium",
+  },
+  {
+    title: "My Stars",
+    icon: (
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] bg-[#FF9500] mr-2">
+        <Star className="h-4 w-4 text-white" />
+      </span>
+    ),
+    path: "/setting/my-stars",
+  },
+  {
+    title: "Telegram Business",
+    icon: (
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] bg-[#A259E6] mr-2">
+        <Store className="h-4 w-4 text-white" />
+      </span>
+    ),
+    path: "/setting/business",
+  },
+  {
+    title: "Send a Gift",
+    icon: (
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] bg-[#30C6B0] mr-2">
+        <Gift className="h-4 w-4 text-white" />
+      </span>
+    ),
+    path: "/setting/send-gift",
+  },
+];
+
+const group4: SettingItem[] = [
+  {
+    title: "Ask a Question",
+    icon: (
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] bg-[#FF9500] mr-2">
+        <MessageCircle className="h-4 w-4 text-white" />
+      </span>
+    ),
+    path: "/setting/ask-question",
+  },
+  {
+    title: "Telegram FAQ",
+    icon: (
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] bg-[#30B6F6] mr-2">
+        <HelpCircle className="h-4 w-4 text-white" />
+      </span>
+    ),
+    path: "/setting/faq",
+  },
+  {
+    title: "Telegram Features",
+    icon: (
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] bg-[#FFD600] mr-2">
+        <Lightbulb className="h-4 w-4 text-white" />
+      </span>
+    ),
+    path: "/setting/features",
   },
 ];
 
@@ -343,13 +418,72 @@ export default function SettingsPage() {
     {
       key: "group2",
       render: () => (
-        <div className="mx-4 rounded-2xl bg-white dark:bg-[#181818] shadow-sm overflow-hidden">
+        <div className="mx-4 rounded-2xl bg-white dark:bg-[#181818] shadow-sm overflow-hidden mb-4">
           {group2.map((item, idx) => (
             <Link
               key={item.title}
               className={
                 "flex items-center justify-between px-4 py-3 " +
                 (idx !== group2.length - 1 ? "border-b border-[#f0f0f0] dark:border-[#232323] " : "") +
+                "text-black dark:text-white"
+              }
+              href={item.path || "#"}
+              style={
+                // Thêm bo góc dưới cho mục cuối cùng (Language)
+                idx === group2.length - 1
+                  ? { borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }
+                  : {}
+              }
+            >
+              <div className="flex items-center space-x-2">
+                {item.icon}
+                <span className="text-[15px] font-normal">{item.title}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                {item.extra && (
+                  <span className="text-[15px] text-gray-400 font-normal">{item.extra}</span>
+                )}
+                <ChevronRight className="h-5 w-5 text-gray-400" />
+              </div>
+            </Link>
+          ))}
+        </div>
+      ),
+    },
+    {
+      key: "group3",
+      render: () => (
+        <div className="mx-4 rounded-2xl bg-white dark:bg-[#181818] shadow-sm mb-4 overflow-hidden">
+          {group3.map((item, idx) => (
+            <Link
+              key={item.title}
+              className={
+                "flex items-center justify-between px-4 py-2 " +
+                (idx !== group3.length - 1 ? "border-b border-[#f0f0f0] dark:border-[#232323] " : "") +
+                "text-black dark:text-white"
+              }
+              href={item.path || "#"}
+            >
+              <div className="flex items-center space-x-2">
+                {item.icon}
+                <span className="text-[15px] font-normal">{item.title}</span>
+              </div>
+              <ChevronRight className="h-5 w-5 text-gray-400" />
+            </Link>
+          ))}
+        </div>
+      ),
+    },
+    {
+      key: "group4",
+      render: () => (
+        <div className="mx-4 rounded-2xl bg-white dark:bg-[#181818] shadow-sm mb-4 overflow-hidden">
+          {group4.map((item, idx) => (
+            <Link
+              key={item.title}
+              className={
+                "flex items-center justify-between px-4 py-2 " +
+                (idx !== group4.length - 1 ? "border-b border-[#f0f0f0] dark:border-[#232323] " : "") +
                 "text-black dark:text-white"
               }
               href={item.path || "#"}
