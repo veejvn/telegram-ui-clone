@@ -10,24 +10,24 @@ export default function ChatActionBar({
   onDelete: () => void;
 }) {
   return (
-    <div className="fixed bottom-0 left-0 w-full bg-white border-t flex justify-center items-center px-4 py-3 z-50">
-      <div className="flex w-full max-w-xs justify-between">
+    <div className="fixed bottom-0 left-0 w-full bg-white dark:bg-black border-t border-gray-300 dark:border-gray-700 px-4 py-3 z-50">
+      <div className="flex w-full max-w-xs mx-auto justify-between items-center text-base font-medium text-gray-600 dark:text-gray-400">
         <button
-          className={`text-blue-500 font-semibold ${selectedCount < 2 ? "opacity-50" : ""}`}
+          className={`${selectedCount < 2 ? "opacity-50" : ""}`}
           disabled={selectedCount < 2}
           onClick={onReadAll}
         >
           Read All
         </button>
         <button
-          className={`text-gray-700 font-semibold ${selectedCount === 0 ? "opacity-50" : ""}`}
+          className={`${selectedCount === 0 ? "opacity-50" : "text-blue-500"}`}
           disabled={selectedCount === 0}
           onClick={onArchive}
         >
           Archive
         </button>
         <button
-          className={`text-red-500 font-semibold ${selectedCount === 0 ? "opacity-50" : ""}`}
+          className={`${selectedCount === 0 ? "opacity-50" : "text-blue-500"}`}
           disabled={selectedCount === 0}
           onClick={onDelete}
         >
