@@ -2,7 +2,6 @@
 'use client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent } from '@/components/ui/card';
 import { QrCode, ChevronLeft } from 'lucide-react';
 import { MdLaptopMac } from 'react-icons/md';
 
@@ -15,8 +14,23 @@ export default function DevicesPage() {
         setScannedData('DeviceID-12345');
     };
 
+    // Lấy theme từ html (tailwind dark mode)
+    const isDark = typeof window !== "undefined"
+        ? document.documentElement.classList.contains("dark")
+        : false;
+
+    // Đặt màu cho các box theo theme
+    const cardBg = isDark ? "bg-[#23232b]" : "bg-white";
+    const cardBorder = isDark ? "" : "border border-zinc-200";
+    const sectionBg = isDark ? "bg-black" : "bg-white";
+    const textColor = isDark ? "text-white" : "text-black";
+    const subTextColor = isDark ? "text-gray-400" : "text-gray-600";
+    const inputBg = isDark ? "bg-[#18181b]" : "bg-white";
+    // Đặt màu icon laptop minh họa theo theme
+    const laptopIconColor = isDark ? "text-white" : "text-gray-700";
+
     return (
-        <div className="min-h-screen bg-black text-white p-0">
+        <div className={`min-h-screen ${sectionBg} ${textColor} p-0`}>
             {/* Header */}
             <div className="flex items-center px-4 pt-4 pb-2">
                 <button
@@ -27,7 +41,7 @@ export default function DevicesPage() {
                     <span>Back</span>
                 </button>
                 <div className="flex-1 text-center text-lg font-semibold -ml-8">Devices</div>
-                <div className="w-12" /> {/* Để cân header */}
+                <div className="w-12" />
             </div>
 
             {/* Main content */}
@@ -35,8 +49,7 @@ export default function DevicesPage() {
                 {/* Laptop illustration */}
                 <div className="flex flex-col items-center mt-2 mb-4">
                     <div className="bg-white/10 rounded-2xl p-4 mb-2">
-                        {/* Dùng icon laptop từ Material Design */}
-                        <MdLaptopMac className="h-16 w-16 text-white" />
+                        <MdLaptopMac className={`h-16 w-16 ${laptopIconColor}`} />
                     </div>
                     <div className="text-center text-[15px] text-gray-300">
                         Link <span className="text-blue-400">Telegram Desktop</span> or <span className="text-blue-400">Telegram Web</span> by scanning a QR code.
@@ -56,17 +69,17 @@ export default function DevicesPage() {
                 <div className="uppercase text-xs text-gray-400 font-semibold mb-2 px-1 tracking-wider">
                     This Device
                 </div>
-                <div className="bg-[#23232b] rounded-2xl px-4 py-3 flex items-center mb-2">
+                <div className={`${cardBg} ${cardBorder} rounded-2xl px-4 py-3 flex items-center mb-2`}>
                     <div className="bg-blue-500 rounded-xl h-9 w-9 flex items-center justify-center mr-3">
                         <MdLaptopMac className="h-5 w-5 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
                         <div className="font-medium text-[15px] truncate">iPhone 11 Pro Max</div>
-                        <div className="text-xs text-gray-400 truncate">Telegram iOS 11.2.1</div>
-                        <div className="text-xs text-gray-400 truncate">Can Tho, Vietnam · online</div>
+                        <div className={`text-xs ${subTextColor} truncate`}>Telegram iOS 11.2.1</div>
+                        <div className={`text-xs ${subTextColor} truncate`}>Can Tho, Vietnam · online</div>
                     </div>
                 </div>
-                <div className="text-xs text-gray-400 px-1 mb-6">
+                <div className={`text-xs ${subTextColor} px-1 mb-6`}>
                     The official Telegram App is available for iPhone, iPad, Android, macOS, Windows and Linux. <a href="#" className="text-blue-400 underline">Learn More</a>
                 </div>
 
@@ -74,7 +87,7 @@ export default function DevicesPage() {
                 <div className="uppercase text-xs text-gray-400 font-semibold mb-2 px-1 tracking-wider">
                     Automatically Terminate Old Sessions
                 </div>
-                <div className="bg-[#23232b] rounded-2xl flex items-center justify-between px-4 py-3">
+                <div className={`${cardBg} ${cardBorder} rounded-2xl flex items-center justify-between px-4 py-3`}>
                     <span className="text-[15px]">If Inactive For</span>
                     <button className="flex items-center text-[15px] text-gray-300 font-medium">
                         6 months
