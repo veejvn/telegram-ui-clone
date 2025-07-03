@@ -13,6 +13,8 @@ import ChatEditButton from "@/components/chat/ChatEditButton";
 import ChatActionBar from "@/components/chat/ChatActionBar";
 import DeleteChatModal from "@/components/chat/DeleteChatModal";
 import { getUserRooms } from "@/services/chatService";
+import { getLS } from "@/tools/localStorage.tool";
+import { useRouter } from "next/navigation";
 
 export default function ChatsPage() {
   const [rooms, setRooms] = useState<sdk.Room[]>([]);
@@ -111,15 +113,46 @@ export default function ChatsPage() {
     setSelectedRooms([]);
   };
 
+  const backUrl = getLS("backUrl");
+
+  const route = useRouter();
+
+  const MAIN_APP_ORIGIN =  process.env.NEXT_PUBLIC_MAIN_APP_ORIGIN ?? "http://localhost:3000";
+
+  const handleBack = () => {
+    if (backUrl) {
+      if (
+        backUrl.startsWith("http") ||
+        backUrl.startsWith("//")
+      ) {
+        window.location.href = backUrl;
+      } else if (backUrl.startsWith("/")) {
+        // Đường dẫn tuyệt đối, chuyển về app chính
+        window.location.href = MAIN_APP_ORIGIN + backUrl;
+      } else {
+        // Đường dẫn nội bộ app chat
+        route.push(backUrl);
+      }
+    }
+  };
+
   return (
     <div>
       <div className="sticky bg-white dark:bg-black top-0 z-10">
         <div className="flex items-center justify-between px-4 py-2">
-          <ChatEditButton
-            isEditMode={isEditMode}
-            onEdit={() => setIsEditMode(true)}
-            onDone={handleDone}
-          />
+          <div> 
+            {backUrl ? 
+              <button 
+                className="text-blue-500 font-medium w-10 cursor-pointer pr-3" 
+                onClick={handleBack}>
+                  Back
+              </button> : ""}
+            <ChatEditButton
+              isEditMode={isEditMode}
+              onEdit={() => setIsEditMode(true)}
+              onDone={handleDone}
+            />
+          </div>
           <h1 className="text-md font-semibold">Chats</h1>
           <div className="flex gap-3">
             <div className="text-blue-500">+</div>

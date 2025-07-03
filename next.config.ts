@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  basePath: '/chat',
   reactStrictMode: true,
   transpilePackages: ['matrix-js-sdk'],
   images: {
@@ -25,22 +26,6 @@ const nextConfig: NextConfig = {
   eslint: {
       ignoreDuringBuilds: true,
   },
-  assetPrefix: '/chat-static',
-  async rewrites() {
-    return {
-      beforeFiles: [
-        {
-          source: '/chat-static/_next/:path+',
-          destination: '/_next/:path+',
-        },
-      ],
-    }
-  },
-  // experimental: {
-  //   serverActions: {
-  //     allowedOrigins: ['http://localhost:3000'],
-  //   },
-  // },
 };
 
 export default nextConfig;

@@ -105,6 +105,8 @@ export default function SettingsPage() {
       if (profile && profile.avatar_url) {
         const httpUrl = client.mxcUrlToHttp(profile.avatar_url, 96, 96, "crop") ?? "";
 
+        //setUser({ avatarUrl: httpUrl });
+
         // Kiểm tra link HTTP thực tế
         const isValid = /^https?:\/\//.test(httpUrl) && !httpUrl.includes("M_NOT_FOUND");
         if (isValid) {
@@ -112,7 +114,7 @@ export default function SettingsPage() {
           try {
             const res = await fetch(httpUrl, { method: "HEAD" });
             if (res.ok) {
-              const apiUrl = `/api/matrix-image?url=${encodeURIComponent(httpUrl)}`;
+              const apiUrl = `/chat/api/matrix-image?url=${encodeURIComponent(httpUrl)}`;
               setUser({ avatarUrl: apiUrl });
               setRefresh((prev) => prev + 1);
               return;
