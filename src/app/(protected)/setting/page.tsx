@@ -24,6 +24,7 @@ import {
   MessageCircle,
   HelpCircle,
   Lightbulb,
+  BatteryCharging,
 } from "lucide-react";
 import Link from "next/link";
 import { useUserStore } from "@/stores/useUserStore";
@@ -118,9 +119,19 @@ const group2: SettingItem[] = [
     path: "/setting/appearance",
   },
   {
+    title: "Power Saving",
+    icon: (
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] bg-[#FF9500] mr-2">
+        <BatteryCharging className="h-4 w-4 text-white" />
+      </span>
+    ),
+    extra: "Off",
+    path: "/setting/power-saving",
+  },
+  {
     title: "Language",
     icon: (
-      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] bg-[#007AFF] mr-2">
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] bg-[#A259E6] mr-2">
         <Globe className="h-4 w-4 text-white" />
       </span>
     ),
