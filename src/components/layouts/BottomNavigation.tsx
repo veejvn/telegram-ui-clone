@@ -3,7 +3,7 @@ import { CircleUserRound, Phone, MessageCircle, Settings } from "lucide-react";
 
 const BottomNavigattion = () => {
   return (
-    <div className="fixed bottom-0 w-full border-t border-gray-400 flex justify-around items-center py-2 bg-white dark:bg-black text-gray-400">
+    <div className="fixed bottom-0 w-full border-t border-gray-400 flex justify-around items-center pt-2 pb-7 bg-white dark:bg-black text-gray-400">
       <Link href={"/contact"}>
         <div className="flex flex-col items-center">
           <span className="relative">

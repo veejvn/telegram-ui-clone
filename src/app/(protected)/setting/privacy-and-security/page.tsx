@@ -2,7 +2,7 @@
 
 import {
   ChevronRight,
-  ShieldBan,
+  OctagonMinus,
   ScanFace,
   Timer,
   AtSign,
@@ -10,26 +10,53 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+// const privacyItemsTop = [
+//   {
+//     icon: <ShieldBan className="text-red-500" size={22} />,
+//     label: "Blocked Users",
+//     value: "None",
+//   },
+//   {
+//     icon: <ScanFace className="text-green-500" size={22} />,
+//     label: "Passcode & Face ID",
+//     value: "Off",
+//   },
+//   {
+//     icon: <KeyRound className="text-orange-400" size={22} />,
+//     label: "Two-Step Verification",
+//     value: "Off",
+//   },
+//   {
+//     icon: <Timer className="text-purple-400" size={22} />,
+//     label: "Auto-Delete Messages",
+//     value: "Off",
+//   },
+// ];
+
 const privacyItemsTop = [
   {
-    icon: <ShieldBan className="text-red-500" size={22} />,
+    icon: <OctagonMinus size={22} className="text-white" />,
     label: "Blocked Users",
     value: "None",
+    bg: "#FF3B30", // Red iOS tươi
   },
   {
-    icon: <ScanFace className="text-green-500" size={22} />,
+    icon: <ScanFace size={22} className="text-white" />,
     label: "Passcode & Face ID",
     value: "Off",
+    bg: "#30D158", // Green iOS tươi
   },
   {
-    icon: <KeyRound className="text-orange-400" size={22} />,
+    icon: <KeyRound size={22} className="text-white" />,
     label: "Two-Step Verification",
     value: "Off",
+    bg: "#FF9500", // Orange iOS tươi
   },
   {
-    icon: <Timer className="text-purple-400" size={22} />,
+    icon: <Timer size={22} className="text-white" />,
     label: "Auto-Delete Messages",
     value: "Off",
+    bg: "#AF52DE", // Purple iOS tươi
   },
 ];
 
@@ -53,20 +80,19 @@ export default function PrivacyAndSecurityPage() {
   return (
     <div className="bg-[#f6f6f6] dark:bg-black min-h-screen text-black dark:text-white px-4 pt-6 pb-24">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center mb-4">
         <button
           type="button"
-          onClick={() => router.back()}
-          className="text-blue-400"
+          className="text-blue-400 mr-4 cursor-pointer"
+          onClick={() => router.push("/setting")}
         >
           &lt; Back
         </button>
-        <div className="w-16" />
+        <h1 className="text-xl font-bold flex-1 text-center">
+          Privacy and Security
+        </h1>
+        <div className="w-12" />
       </div>
-
-      <h1 className="text-center text-black font-semibold dark:text-white text-2xl mb-4 ">
-        Privacy and Security
-      </h1>
 
       {/* Top Section */}
       <div className="rounded-xl bg-white dark:bg-zinc-900 text-black dark:text-white mb-4 divide-y divide-gray-200 dark:divide-zinc-800">
@@ -76,7 +102,12 @@ export default function PrivacyAndSecurityPage() {
             className="flex items-center justify-between px-4 py-3"
           >
             <div className="flex items-center space-x-3">
-              {item.icon}
+              <div
+                className="w-9 h-9 flex items-center justify-center rounded-lg shadow-sm"
+                style={{ backgroundColor: item.bg }}
+              >
+                {item.icon}
+              </div>
               <span>{item.label}</span>
             </div>
             <div className="flex items-center space-x-1">
@@ -87,10 +118,19 @@ export default function PrivacyAndSecurityPage() {
         ))}
       </div>
 
+      <p className="text-xs text-zinc-400 px-4 pb-3 mb-4">
+        Automatically delete messages for everyone after a period of time in all new chats you start.
+      </p>
+
       {/* Login Email */}
       <div className="rounded-xl bg-white dark:bg-zinc-900 text-black dark:text-white mb-4 divide-y divide-gray-200 dark:divide-zinc-800">
         <div className="flex items-center px-4 py-3 space-x-3">
-          <AtSign className="text-blue-400" size={22} />
+          <div
+            className="w-9 h-9 flex items-center justify-center rounded-lg shadow-sm"
+            style={{ backgroundColor: "#6366F1" }}
+          >
+            <AtSign className="text-white" size={22} />
+          </div>
           <span>Login Email</span>
         </div>
       </div>
