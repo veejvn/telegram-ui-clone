@@ -15,6 +15,8 @@ import ForwardIconSvg from "../icons/ForwardIconSvg";
 import BinIconSvg from "../icons/BinIconSvg";
 import { useTheme } from "next-themes";
 import { useState } from "react";
+import { copyToClipboard } from "@/utils/copyToClipboard";
+import { toast } from "sonner";
 
 const EmojiMessage = ({ msg, isSender }: MessagePros) => {
   const theme = useTheme();
@@ -23,6 +25,15 @@ const EmojiMessage = ({ msg, isSender }: MessagePros) => {
     "flex items-center gap-1 text-xs",
     isSender ? "text-white justify-end" : "text-white"
   );
+
+  const handleCopy = async (text: string) => {
+    const success = await copyToClipboard(text);
+    if (success) {
+      toast.success("Copied to clipboard!");
+    } else {
+      toast.error("Failed to copy text");
+    }
+  };
 
   return (
     <div className={"rounded-lg py-2"}>
@@ -44,7 +55,10 @@ const EmojiMessage = ({ msg, isSender }: MessagePros) => {
             </p>
           </div>
           <DropdownMenuContent>
-            <DropdownMenuItem className="flex justify-between items-center">
+            <DropdownMenuItem
+              className="flex justify-between items-center"
+              onClick={() => handleCopy(msg.text)}
+            >
               <p>Copy</p>
               <CopyIconSvg isDark={theme.theme === "dark"} />
             </DropdownMenuItem>

@@ -3,26 +3,24 @@ import React from "react";
 export default function BinIconSvg() {
   return (
     <svg
-      height="900px"
-      width="900x"
       version="1.1"
       id="Layer_1"
       xmlns="http://www.w3.org/2000/svg"
       xmlnsXlink="http://www.w3.org/1999/xlink"
       viewBox="15 5 20 35"
-      enable-background="new 0 0 50 50"
+      enableBackground="new 0 0 50 50"
       xmlSpace="preserve"
       fill="#000000"
       stroke="#000000"
-      stroke-width="0.0005"
+      strokeWidth="0.0005"
     >
-      <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+      <g id="SVGRepo_bgCarrier" strokeWidth="0"></g>
       <g
         id="SVGRepo_tracerCarrier"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeLinecap="round"
+        strokeLinejoin="round"
         stroke="#CCCCCC"
-        stroke-width="2.6"
+        strokeWidth="2.6"
       ></g>
       <g id="SVGRepo_iconCarrier">
         <path

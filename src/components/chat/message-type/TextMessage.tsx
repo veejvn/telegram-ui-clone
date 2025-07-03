@@ -15,6 +15,8 @@ import {
 import CopyIconSvg from "../icons/CopyIconSvg";
 import ForwardIconSvg from "../icons/ForwardIconSvg";
 import BinIconSvg from "../icons/BinIconSvg";
+import { copyToClipboard } from "@/utils/copyToClipboard";
+import { toast } from "sonner";
 
 // 💬 Main TextMessage
 const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
@@ -33,6 +35,15 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
       ? "text-green-500 justify-end dark:text-white"
       : "text-gray-400 dark:text-gray-400"
   );
+
+  const handleCopy = async (text: string) => {
+    const success = await copyToClipboard(text);
+    if (success) {
+      toast.success("Copied to clipboard!");
+    } else {
+      toast.error("Failed to copy text");
+    }
+  };
 
   return (
     <DropdownMenu>
@@ -79,7 +90,10 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
         </div>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="mx-2">
-        <DropdownMenuItem className="flex justify-between items-center">
+        <DropdownMenuItem
+          className="flex justify-between items-center"
+          onClick={() => handleCopy(msg.text)}
+        >
           <p>Copy</p>
           <CopyIconSvg isDark={theme.theme === "dark"} />
         </DropdownMenuItem>

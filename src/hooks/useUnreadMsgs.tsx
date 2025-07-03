@@ -1,11 +1,15 @@
 import { MatrixEvent, Room } from "matrix-js-sdk";
 import { useEffect, useState } from "react";
+import { useMatrixClient } from "@/contexts/MatrixClientProvider";
+import { useAuthStore } from "@/stores/useAuthStore";
 
-export default function useUnreadMessages(room: Room | null, userId: string) {
+export default function useUnreadMessages(room: Room | null) {
   const [unreadMsgs, setUnreadMsgs] = useState<MatrixEvent[]>([]);
+  const client = useMatrixClient();
+  const userId = useAuthStore.getState().userId;
 
   useEffect(() => {
-    if (!room || !userId) return;
+    if (!room || !client || !userId) return;
 
     const computeUnread = () => {
       const timelineEvents = room.getLiveTimeline().getEvents();
@@ -14,47 +18,46 @@ export default function useUnreadMessages(room: Room | null, userId: string) {
       const result: MatrixEvent[] = [];
 
       if (!userReadUpTo) {
-        setUnreadMsgs(
-          timelineEvents.filter((e) => e.getType() === "m.room.message")
+        result.push(
+          ...timelineEvents.filter(
+            (e) =>
+              e.getType() === "m.room.message" &&
+              !e.isRedacted() &&
+              e.getSender() !== userId
+          )
         );
-        return;
-      }
+      } else {
+        let found = false;
+        for (const event of timelineEvents) {
+          if (event.getType() !== "m.room.message") continue;
+          if (event.getSender() === userId) continue;
 
-      let found = false;
-      for (const event of timelineEvents) {
-        if (event.getType() !== "m.room.message") continue;
-
-        if (event.getSender() === userId) continue;
-
-        if (found) {
-          result.push(event);
-        }
-
-        if (event.getId() === userReadUpTo) {
-          found = true;
+          if (found) result.push(event);
+          if (event.getId() === userReadUpTo) found = true;
         }
       }
 
       setUnreadMsgs(result);
     };
 
-    computeUnread(); // lần đầu
+    computeUnread();
 
-    // 🔁 Re-compute khi có tin nhắn mới hoặc đã đọc
-    const handleUpdate = (event: MatrixEvent, r: Room) => {
-      if (r.roomId === room.roomId) {
-        computeUnread();
-      }
+    const onTimeline = (event: MatrixEvent, eventRoom: Room) => {
+      if (eventRoom.roomId === room.roomId) computeUnread();
     };
 
-    room.on("Room.timeline" as any, handleUpdate);
-    room.on("Room.receipt" as any, handleUpdate);
+    const onReceipt = (event: MatrixEvent, eventRoom: Room) => {
+      if (eventRoom.roomId === room.roomId) computeUnread();
+    };
+
+    client.on("Room.timeline" as any, onTimeline);
+    client.on("Room.receipt" as any, onReceipt);
 
     return () => {
-      room.off("Room.timeline" as any, handleUpdate);
-      room.off("Room.receipt" as any, handleUpdate);
+      client.removeListener("Room.timeline" as any, onTimeline);
+      client.removeListener("Room.receipt" as any, onReceipt);
     };
-  }, [room, userId]);
+  }, [room, client, userId]);
 
   return unreadMsgs;
 }
