@@ -13,7 +13,7 @@ import ChatEditButton from "@/components/chat/ChatEditButton";
 import ChatActionBar from "@/components/chat/ChatActionBar";
 import DeleteChatModal from "@/components/chat/DeleteChatModal";
 import { getUserRooms } from "@/services/chatService";
-import { getLS } from "@/tools/localStorage.tool";
+import { getLS, removeLS } from "@/tools/localStorage.tool";
 import { useRouter } from "next/navigation";
 
 export default function ChatsPage() {
@@ -125,13 +125,12 @@ export default function ChatsPage() {
         backUrl.startsWith("http") ||
         backUrl.startsWith("//")
       ) {
+        removeLS("backUrl");
         window.location.href = backUrl;
       } else if (backUrl.startsWith("/")) {
         // Đường dẫn tuyệt đối, chuyển về app chính
+        removeLS("backUrl");
         window.location.href = MAIN_APP_ORIGIN + backUrl;
-      } else {
-        // Đường dẫn nội bộ app chat
-        route.push(backUrl);
       }
     }
   };
