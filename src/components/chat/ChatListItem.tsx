@@ -35,9 +35,8 @@ export const ChatListItem = ({
 
   // ⚡️ trigger render
   const [_, setRefresh] = useState(0);
-  const userId = client?.getUserId() || "";
 
-  const unreadMsgs = useUnreadMessages(room, userId);
+  const unreadMsgs = useUnreadMessages(room);
 
   useEffect(() => {
     if (!client) return;
