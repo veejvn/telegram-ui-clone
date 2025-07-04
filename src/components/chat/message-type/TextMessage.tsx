@@ -17,10 +17,13 @@ import ForwardIconSvg from "../icons/ForwardIconSvg";
 import BinIconSvg from "../icons/BinIconSvg";
 import { copyToClipboard } from "@/utils/copyToClipboard";
 import { toast } from "sonner";
+import { useParams, useRouter } from "next/navigation";
 
 // 💬 Main TextMessage
 const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
   const theme = useTheme();
+  const router = useRouter();
+
   const textClass = clsx(
     "rounded-2xl px-4 py-1.5",
     isSender
@@ -43,6 +46,10 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
     } else {
       toast.error("Failed to copy text");
     }
+  };
+
+  const handleForward = async () => {
+    router.push("/chat/forward");
   };
 
   return (
@@ -98,7 +105,10 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
           <CopyIconSvg isDark={theme.theme === "dark"} />
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="flex justify-between items-center">
+        <DropdownMenuItem
+          className="flex justify-between items-center"
+          onClick={handleForward}
+        >
           <p>Forward</p>
           <ForwardIconSvg isDark={theme.theme === "dark"} />
         </DropdownMenuItem>

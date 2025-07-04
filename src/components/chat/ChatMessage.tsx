@@ -16,6 +16,7 @@ const ChatMessage = ({ msg }: { msg: Message }) => {
   const searchParams = useSearchParams();
   const highlightId = searchParams.get("highlight");
   const [animate, setAnimate] = useState(false);
+  console.log("sender: ", msg.sender);
 
   useEffect(() => {
     if (msg.eventId === highlightId && messageRef.current) {

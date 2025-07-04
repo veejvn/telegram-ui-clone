@@ -10,6 +10,9 @@ import * as sdk from "matrix-js-sdk";
 import { useTheme } from "next-themes";
 import React, { useEffect, useState } from "react";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
+import UnreadMsgsCount from "./UnreadMsgsCount";
+import useUnreadMessages from "@/hooks/useUnreadMsgs";
+
 import { Check } from "lucide-react";
 interface ChatListItemProps {
   room: sdk.Room;
@@ -33,9 +36,9 @@ export const ChatListItem = ({
 
   // ⚡️ trigger render
   const [_, setRefresh] = useState(0);
-  const userId = client?.getUserId() || "";
+  // const userId = client?.getUserId() || "";
 
-  const unreadMsgs = useUnreadMessages(room, userId);
+  const unreadMsgs = useUnreadMessages(room);
 
   useEffect(() => {
     if (!client) return;

@@ -53,7 +53,7 @@ export default function Page() {
       </div>
       <AddMemberBar />
       <>
-        {users && users.length > 1 ? (
+        {users && users.length > 0 ? (
           <UserList users={users} />
         ) : (
           <div className="flex flex-1 flex-col justify-center items-center px-6 text-center">
