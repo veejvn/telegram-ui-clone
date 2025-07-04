@@ -4,6 +4,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import ProfileIcon from "@/icons/telegram/profile.svg";
+import { useTheme } from "next-themes";
+
 import {
   Camera,
   AtSign,
@@ -419,39 +421,55 @@ export default function SettingsPage() {
     },
     {
       key: "actions",
-      render: () => (
-        <div className="mx-4 rounded-2xl bg-white dark:bg-[#181818] shadow-sm mb-4 overflow-hidden">
-          <div
-            className="flex items-center px-4 py-2 cursor-pointer"
-            onClick={handleFileSelect}
-          >
-            <span className="inline-flex items-center justify-center h-7 w-7 mr-2">
-              <span className="relative">
-                <Camera className="h-4 w-4 text-[#1877F2]" />
-                <span className="absolute -bottom-1 -left-1 bg-white rounded-full border border-[#1877F2] w-2.5 h-2.5 flex items-center justify-center">
-                  <span className="text-[#1877F2] text-[10px] leading-none font-normal">+</span>
-                </span>
+      render: () => {
+        const { theme } = useTheme();
+        const isDark = theme === "dark" || (theme === "system" && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+        const profileImg = isDark
+          ? "/images/telegram/set-profile-dark.jpg"
+          : "/images/telegram/set-profile-light.jpg";
+        const usernameImg = isDark
+          ? "/images/telegram/set-username-dark.jpg"
+          : "/images/telegram/set-username-light.jpg";
+
+        return (
+          <div className="mx-4 rounded-2xl bg-white dark:bg-[#181818] shadow-sm mb-4 overflow-hidden">
+            <div
+              className="flex items-center px-4 py-2 cursor-pointer"
+              onClick={handleFileSelect}
+            >
+              <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[##1c1c1c] mr-2 overflow-hidden">
+                <img
+                  src={profileImg}
+                  alt="Set Profile Photo"
+                  className="w-8 h-8 object-cover rounded-[6px]"
+                  draggable={false}
+                />
               </span>
-            </span>
-            <span className="text-[15px] font-normal flex-1 text-[#1877F2]">Set Profile Photo</span>
-          </div>
-          <div className="border-t border-[#f0f0f0] dark:border-[#232323]" />
-          <div
-            className="flex items-center px-4 py-2 cursor-pointer"
-            onClick={() => router.push("/setting/set-username")}
-          >
-            <span className="inline-flex items-center justify-center h-7 w-7 mr-2">
-              <span className="relative">
-                <AtSign className="h-4 w-4 text-[#1877F2]" />
-                <span className="absolute -bottom-1 -left-1 bg-white rounded-full border border-[#1877F2] w-2.5 h-2.5 flex items-center justify-center">
-                  <span className="text-[#1877F2] text-[10px] leading-none font-normal">+</span>
-                </span>
+              <span className="text-[15px] font-normal flex-1 text-[#1877F2] dark:text-[#8cc5f7]">
+                Set Profile Photo
               </span>
-            </span>
-            <span className="text-[15px] font-normal flex-1 text-[#1877F2]">Set Username</span>
+            </div>
+            <div className="border-t border-[#f0f0f0] dark:border-[#232323]" />
+            <div
+              className="flex items-center px-4 py-2 cursor-pointer"
+              onClick={() => router.push("/setting/set-username")}
+            >
+              <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[##1c1c1c] mr-2 overflow-hidden">
+                <img
+                  src={usernameImg}
+                  alt="Set Username"
+                  className="w-8 h-8 object-cover rounded-[6px]"
+                  draggable={false}
+                />
+              </span>
+              <span className="text-[15px] font-normal flex-1 text-[#1877F2] dark:text-[#8cc5f7]">
+                Set Username
+              </span>
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       title: "My Profile",
