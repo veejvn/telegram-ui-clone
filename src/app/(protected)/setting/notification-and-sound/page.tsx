@@ -69,38 +69,68 @@ export default function NotificationSettings() {
   const messageItems = [
     {
       label: "Private Chats",
-      icon: <User className="text-white w-5 h-5" />,
-      iconBg: "bg-blue-500",
+      icon: (
+        <img
+          src="/icons/private-chat.png"
+          alt="Private Chat"
+          className="w-9 h-9 object-cover rounded-[10px]"
+        />
+      ),
+      iconBg: "", // Không cần nền vì PNG đã có
       value: privateChats,
       route: "private-chats",
       description: "1 exception",
     },
     {
       label: "Group Chats",
-      icon: <Users className="text-white w-5 h-5" />,
-      iconBg: "bg-green-500",
+      icon: (
+        <img
+          src="/icons/group-chat.png"
+          alt="Group Chat"
+          className="w-9 h-9 object-cover rounded-[10px]"
+        />
+      ),
+      iconBg: "",
       value: groupChats,
       route: "group-chats",
     },
     {
       label: "Channels",
-      icon: <MessageCircle className="text-white w-5 h-5" />,
-      iconBg: "bg-orange-500",
+      icon: (
+        <img
+          src="/icons/channel.png"
+          alt="Channel"
+          className="w-9 h-9 object-cover rounded-[10px]"
+        />
+      ),
+      iconBg: "",
       value: channels,
       route: "channels",
     },
     {
       label: "Stories",
-      icon: <Sparkles className="text-white w-5 h-5" />,
-      iconBg: "bg-purple-500",
+      icon: (
+        <img
+          src="/icons/story.png"
+          alt="Stories"
+          className="w-9 h-9 object-cover rounded-[10px]"
+        />
+      ),
+      iconBg: "",
       value: stories,
       route: "stories",
       customText: "Top 5",
     },
     {
       label: "Reactions",
-      icon: <Heart className="text-white w-5 h-5" />,
-      iconBg: "bg-pink-500",
+      icon: (
+        <img
+          src="/icons/reaction.png"
+          alt="Reactions"
+          className="w-12 h-12 object-cover rounded-[10px]"
+        />
+      ),
+      iconBg: "",
       value: reactions,
       route: "reactions",
       description: "Messages, Stories",
@@ -108,7 +138,7 @@ export default function NotificationSettings() {
   ];
 
   return (
-    <div className="p-6 space-y-6 overflow-y-auto bg-[#f2f2f7] dark:bg-black min-h-screen">
+    <div className="p-6 space-y-6 overflow-y-auto bg-white dark:bg-black min-h-screen">
       {/* Header */}
       <div className="flex items-center mb-4">
         <button
@@ -145,11 +175,10 @@ export default function NotificationSettings() {
                 className="flex items-center justify-between w-full px-4 py-3 focus:outline-none"
               >
                 <div className="flex items-center space-x-4">
-                  <div
-                    className={`w-8 h-8 rounded-2xl flex items-center justify-center ${iconBg}`}
-                  >
+                  <div className="w-9 h-9 flex items-center justify-center">
                     {icon}
                   </div>
+
                   <div className="flex flex-col items-start">
                     <span className="text-sm font-medium text-black dark:text-white">
                       {label}
@@ -282,7 +311,7 @@ const Section = ({
 
 // White card container
 const Card = ({ children }: { children: React.ReactNode }) => (
-  <div className="px-3 py-2 bg-white dark:bg-[#1c1c1c] border border-[#d1d1d6] dark:border-[#2c2c2e] rounded-xl divide-y space-y-1">
+  <div className="px-3 py-2 bg-white dark:bg-[#1c1c1e] border border-[#d1d1d6] dark:border-[#2c2c2e] rounded-xl divide-y space-y-1">
     {children}
   </div>
 );

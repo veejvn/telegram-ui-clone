@@ -21,25 +21,43 @@ const SettingItem = ({
   value,
   onClick,
   showChevron = true, // thêm prop này, mặc định là true
+  valueBelowTitle = false,
 }: {
   icon: React.ReactNode;
   title: React.ReactNode;
   value?: string;
   onClick?: () => void;
   showChevron?: boolean;
+  valueBelowTitle?: boolean;
 }) => (
   <div
     onClick={onClick}
     className="flex items-center justify-between px-4 py-3 bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-700 rounded-lg mb-2 cursor-pointer"
   >
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-3 flex-1">
       {icon}
-      <span className="text-black dark:text-white">{title}</span>
+      {valueBelowTitle ? (
+        <div className="flex flex-col">
+          <span className="text-black dark:text-white">{title}</span>
+          {value && (
+            <span className="text-zinc-400 dark:text-zinc-300 text-sm -mt-0.5">
+              {value}
+            </span>
+          )}
+        </div>
+      ) : (
+        <span className="text-black dark:text-white">{title}</span>
+      )}
     </div>
-    <div className="flex items-center gap-1 text-zinc-400 dark:text-zinc-300 text-sm">
-      {value && <span>{value}</span>}
-      {showChevron && <ChevronRight size={18} />}
-    </div>
+    {!valueBelowTitle && (
+      <div className="flex items-center gap-1 text-zinc-400 dark:text-zinc-300 text-sm">
+        {value && <span>{value}</span>}
+        {showChevron && <ChevronRight size={18} />}
+      </div>
+    )}
+    {valueBelowTitle && showChevron && (
+      <ChevronRight size={18} className="text-zinc-400 dark:text-zinc-300" />
+    )}
   </div>
 );
 
@@ -52,20 +70,19 @@ export default function DataAndStoragePage() {
 
   return (
     <div className="bg-[#f6f6f6] dark:bg-black min-h-screen text-black dark:text-white px-4 pt-6 pb-24">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center mb-4">
         <button
           type="button"
-          onClick={() => router.back()}
-          className="text-blue-400"
+          className="text-blue-400 mr-4 cursor-pointer"
+          onClick={() => router.push("/setting")}
         >
           &lt; Back
         </button>
-        <div className="w-16" />
+        <h1 className="text-xl font-bold flex-1 text-center">
+          Data and Storage
+        </h1>
+        <div className="w-12" />
       </div>
-
-      <h1 className="text-xl sm:text-2xl font-semibold text-center mb-4">
-        Data and Storage
-      </h1>
 
       {/* Storage & Network */}
       <div>
@@ -109,6 +126,7 @@ export default function DataAndStoragePage() {
           }
           title="Using Cellular"
           value="Media (2,5 MB)"
+          valueBelowTitle
           onClick={() =>
             router.push("/setting/data-and-storage/using-cellular")
           }
@@ -121,6 +139,7 @@ export default function DataAndStoragePage() {
           }
           title="Using Wi-Fi"
           value="Media (15 MB), Files (3,0 MB)"
+          valueBelowTitle
           onClick={() => router.push("/setting/data-and-storage/using-wifi")}
         />
         <SettingItem
