@@ -13,11 +13,15 @@ export default function SetUsernamePage() {
   const [displayName, setDisplayname] = useState("");
   const setUser = useUserStore((state) => state.setUser);
   const userId = useAuthStore((state) => state.userId);
-  const client =  useMatrixClient();
+  const client = useMatrixClient();
+
+  const isValidUsername = displayName.length >= 5;
 
   const handleSave = async () => {
+    if (!isValidUsername) return;
+
     try {
-      if (!client || !userId || !userId.startsWith("@")) return
+      if (!client || !userId || !userId.startsWith("@")) return;
 
       await client.setDisplayName(displayName);
       const profile = await client.getProfileInfo(userId);
@@ -28,38 +32,53 @@ export default function SetUsernamePage() {
 
       router.back();
     } catch (error) {
-      console.error(" Profile update error:", error);
+      console.error("Profile update error:", error);
       alert("Username update failed.");
     }
   };
 
-
   return (
     <div className="min-h-screen px-4 py-6">
       <div className="flex justify-between items-center mb-6">
-        <Button onClick={() => router.back()} className="text-blue-500 text-sm bg-white hover:bg-zinc-300 border dark:bg-black dark:hover:bg-zinc-700">
+        <button
+          onClick={() => router.back()}
+          className="text-blue-500 text-sm font-medium"
+        >
           Cancel
-        </Button>
+        </button>
+
         <h1 className="text-lg font-semibold">Username</h1>
-        <Button
-          size="sm"
-          className="text-blue-500 bg-white hover:bg-zinc-300 border dark:bg-black dark:hover:bg-zinc-700"
+
+        <button
           onClick={handleSave}
+          className={`text-sm font-medium ${isValidUsername ? "text-blue-500" : "text-gray-400 cursor-not-allowed"
+            }`}
+          disabled={!isValidUsername}
         >
           Done
-        </Button>
+        </button>
       </div>
 
       <div className="space-y-4">
-        <div>
-          <label className="text-sm mb-1 block">USERNAME</label>
+        <label className="text-xs text-zinc-500 font-medium mb-1 block">USERNAME</label>
+        <div className="relative">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-base text-black dark:text-white pointer-events-none">
+            Username
+          </span>
           <Input
-            className="border placeholder:text-gray-500"
-            placeholder="Username"
+            type="text"
             value={displayName}
             onChange={(e) => setDisplayname(e.target.value)}
+            className="pl-[100px] pr-3 py-2 text-base rounded-md border border-zinc-300 dark:border-zinc-700 caret-blue-500"
           />
         </div>
+
+        {displayName !== "" && !isValidUsername && (
+          <p className="text-xs text-red-500">
+            Usernames must have at least 5 characters.
+          </p>
+        )}
+
 
         <p className="text-xs text-gray-400 leading-relaxed">
           You can choose a username on Telegram. If you do, people will be able
@@ -68,15 +87,16 @@ export default function SetUsernamePage() {
         </p>
         <p className="text-xs text-gray-400">
           You can use <strong>a–z, 0–9</strong> and underscores. Minimum length
-          is <strong>5 characters</strong>.
+          is <strong>5 </strong>characters.
         </p>
         <p className="text-xs text-gray-400">
-          This link opens a chat with you:{" "}
+          <span>This link opens a chat with you:</span>
+          <br />
           <a
             href={`https://t.me/${displayName}`}
             className="text-blue-400 underline"
           >
-            https://t.me/
+            https://t.me/{displayName}
           </a>
         </p>
       </div>

@@ -7,8 +7,8 @@ import useCallStore from '@/stores/useCallStore';
 
 interface VideoCallProps {
     contactName: string;
-    callState?: string;       // <-- Đã thêm
-    callDuration?: number;    // <-- Đã thêm
+    callState?: string;
+    callDuration?: number;
     onEndCall: () => void;
 }
 
@@ -18,11 +18,18 @@ export function VideoCall({
     callDuration,
     onEndCall,
 }: VideoCallProps) {
-    const { localStream, remoteStream, state: storeState, hangup } = useCallStore();
+    const {
+        localStream,
+        remoteStream,
+        micOn,
+        toggleMic,
+        toggleCamera,
+        upgradeToVideo,
+        state: storeState,
+        hangup
+    } = useCallStore();
 
-    // Ưu tiên lấy state/duration từ props nếu có
     const state = callState ?? storeState;
-    const [micOn, setMicOn] = useState(true);
     const [cameraOn, setCameraOn] = useState(true);
     const [speakerOn, setSpeakerOn] = useState(true);
     const [internalDuration, setInternalDuration] = useState(0);
@@ -30,35 +37,40 @@ export function VideoCall({
     const localVideoRef = useRef<HTMLVideoElement>(null);
     const remoteVideoRef = useRef<HTMLVideoElement>(null);
 
-    // Attach local stream to PiP video
+    const [lastLocalTrackId, setLastLocalTrackId] = useState<string | undefined>();
+
     useEffect(() => {
-        if (localStream && localVideoRef.current) {
-            localVideoRef.current.srcObject = localStream;
+        if (localVideoRef.current && localStream) {
+            const videoTrack = localStream.getVideoTracks()[0];
+            if (videoTrack && videoTrack.id !== lastLocalTrackId) {
+                localVideoRef.current.srcObject = localStream;
+                setLastLocalTrackId(videoTrack.id);
+            }
         }
     }, [localStream]);
 
-    // Attach remote stream when connected
+
+    // Attach remote video
+    // Dưới useEffect gán remoteStream
     useEffect(() => {
-        if (state === 'connected' && remoteStream && remoteVideoRef.current) {
+        if (remoteVideoRef.current && remoteStream) {
             remoteVideoRef.current.srcObject = remoteStream;
+            // Khi remote bật lại track, track.onunmute sẽ fire
+            remoteStream.getVideoTracks().forEach(track => {
+                track.onunmute = () => {
+                    if (remoteVideoRef.current) {
+                        remoteVideoRef.current.srcObject = remoteStream;
+                        remoteVideoRef.current.play().catch(() => { });
+                    }
+                };
+            });
         }
-    }, [remoteStream, state]);
+    }, [remoteStream]);
 
-    // Control mic
-    useEffect(() => {
-        if (localStream) {
-            localStream.getAudioTracks().forEach((t) => (t.enabled = micOn));
-        }
-    }, [micOn, localStream]);
 
-    // Control camera
-    useEffect(() => {
-        if (localStream) {
-            localStream.getVideoTracks().forEach((t) => (t.enabled = cameraOn));
-        }
-    }, [cameraOn, localStream]);
 
-    // Control speaker
+
+    // Toggle speaker
     useEffect(() => {
         if (remoteVideoRef.current) {
             remoteVideoRef.current.muted = !speakerOn;
@@ -89,7 +101,7 @@ export function VideoCall({
 
     return (
         <div className="relative w-full h-screen dark:bg-[#7c7c80] dark:text-white overflow-hidden">
-            {/* Remote video or loading fallback */}
+            {/* Remote video */}
             {state === 'connected' ? (
                 <video
                     ref={remoteVideoRef}
@@ -103,7 +115,7 @@ export function VideoCall({
                 </div>
             )}
 
-            {/* Local PiP video */}
+            {/* Local PiP */}
             <div className="absolute top-4 right-4 w-32 aspect-[3/4] rounded-2xl overflow-hidden border border-white/20 shadow-lg">
                 <video
                     ref={localVideoRef}
@@ -141,28 +153,34 @@ export function VideoCall({
             {/* Controls */}
             <div className="absolute bottom-24 inset-x-0 pb-6 pt-20 bg-gradient-to-t dark:from-[#1C1C1E] dark:via-[#1C1C1E]/80 dark:to-transparent">
                 <div className="flex justify-center gap-8">
-                    {/* Mic */}
                     <ControlButton
-                        onClick={() => setMicOn((v) => !v)}
+                        onClick={() => toggleMic(!micOn)}
                         active={micOn}
                         icon={micOn ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
                         label={micOn ? 'Mute' : 'Unmute'}
                     />
-                    {/* Camera */}
                     <ControlButton
-                        onClick={() => setCameraOn((v) => !v)}
+                        onClick={async () => {
+                            if (!cameraOn) {
+                                // Lần đầu bật video: renegotiate
+                                await upgradeToVideo();
+                            } else {
+                                // Tắt video chỉ disable track
+                                await toggleCamera(false);
+                            }
+                            setCameraOn(!cameraOn);
+                        }}
+
                         active={cameraOn}
                         icon={cameraOn ? <Video className="w-6 h-6" /> : <VideoOff className="w-6 h-6" />}
                         label={cameraOn ? 'Stop Video' : 'Start Video'}
                     />
-                    {/* Speaker */}
                     <ControlButton
                         onClick={() => setSpeakerOn((v) => !v)}
                         active={speakerOn}
                         icon={speakerOn ? <Volume2 className="w-6 h-6" /> : <VolumeX className="w-6 h-6" />}
                         label={speakerOn ? 'Speaker' : 'Muted'}
                     />
-                    {/* End */}
                     <div className="flex flex-col items-center">
                         <button
                             onClick={handleEnd}
@@ -180,7 +198,6 @@ export function VideoCall({
     );
 }
 
-// 📦 Reusable control button
 function ControlButton({
     onClick,
     active,
@@ -203,10 +220,6 @@ function ControlButton({
                         : 'bg-gray-500 dark:bg-gray-700 border-white'
                 )}
             >
-                {/* Lưu ý: 
-                    - Nếu tắt, icon màu trắng mờ hơn (opacity-60)
-                    - Nếu bật, icon màu trắng sáng
-                */}
                 <span className={cn(
                     "w-6 h-6",
                     active ? "text-white" : "text-white opacity-60"

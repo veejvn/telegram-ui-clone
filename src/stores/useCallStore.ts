@@ -12,19 +12,24 @@ type State =
 
 interface CallStore {
     state: State
-    incoming?: IncomingCall
+    incoming?: IncomingCall & { callType: CallType }; // thêm callType
     localStream?: MediaStream
     remoteStream?: MediaStream
     callDuration: number
     callEndedReason?: string
+    micOn: boolean
     placeCall: (roomId: string, type: CallType) => void
     answerCall: () => void
     hangup: () => void
     reset: () => void
+    toggleCamera: (on: boolean) => void
+    toggleMic: (on: boolean) => void
+    hardMute: () => void
+    muteWithSilentTrack: () => void
+    recreateAudioTrack: () => Promise<void>
     upgradeToVideo: () => Promise<void>
 }
 
-// Audio setup
 const outgoingAudio = typeof Audio !== 'undefined' ? new Audio('/sounds/outgoing.mp3') : null
 const ringtoneAudio = typeof Audio !== 'undefined' ? new Audio('/sounds/ringtone.mp3') : null
 
@@ -51,9 +56,10 @@ const useCallStore = create<CallStore>((set, get) => {
         })
 
         callService.on('incoming-call', (data: IncomingCall) => {
-            ringtoneAudio?.play().catch(() => { })
-            set({ state: 'incoming', incoming: data, callDuration: 0, callEndedReason: undefined })
-        })
+            ringtoneAudio?.play().catch(() => { });
+            set({ state: 'incoming', incoming: { ...data }, callDuration: 0, callEndedReason: undefined });
+        });
+
 
         callService.on('local-stream', (stream: MediaStream) => {
             set({ localStream: stream })
@@ -72,6 +78,12 @@ const useCallStore = create<CallStore>((set, get) => {
             _timer = setInterval(() => {
                 set((s) => ({ callDuration: s.callDuration + 1 }))
             }, 1000)
+        })
+
+        // Lắng nghe sự kiện mic-toggled từ CallService
+        callService.on('mic-toggled', (isOn: boolean) => {
+            console.log(`[CallStore] Mic toggled from service: ${isOn}`);
+            set({ micOn: isOn });
         })
 
         callService.on('call-ended', (reason?: string) => {
@@ -93,6 +105,7 @@ const useCallStore = create<CallStore>((set, get) => {
                 localStream: undefined,
                 remoteStream: undefined,
                 callEndedReason: reason,
+                micOn: true, // reset về mặc định
             })
         })
 
@@ -110,7 +123,11 @@ const useCallStore = create<CallStore>((set, get) => {
             stopAllTracks(localStream);
             stopAllTracks(remoteStream);
 
-            set({ state: 'error', callEndedReason: 'error' })
+            set({
+                state: 'error',
+                callEndedReason: 'error',
+                micOn: true
+            })
         })
 
         _hasListener = true;
@@ -119,6 +136,7 @@ const useCallStore = create<CallStore>((set, get) => {
     return {
         state: 'idle',
         callDuration: 0,
+        micOn: true,
         placeCall: (roomId, type) => {
             const { state } = get();
             if (state === 'ringing' || state === 'connecting' || state === 'connected') {
@@ -132,14 +150,11 @@ const useCallStore = create<CallStore>((set, get) => {
             callService.answerCall()
         },
         hangup: () => {
-            // Immediately stop local/remote tracks on hangup
             const { localStream, remoteStream } = get();
             stopAllTracks(localStream);
             stopAllTracks(remoteStream);
-            // Optionally clear from state immediately (optional, can keep for UI until call-ended)
             set({ localStream: undefined, remoteStream: undefined });
             callService.hangup()
-            // KHÔNG cleanup state tại đây!
         },
         reset: () => {
             if (_timer) {
@@ -162,8 +177,71 @@ const useCallStore = create<CallStore>((set, get) => {
                 remoteStream: undefined,
                 callDuration: 0,
                 callEndedReason: undefined,
+                micOn: true
             });
         },
+        toggleCamera: (on: boolean) => {
+            console.log(`[CallStore] Toggle camera requested: ${on}`);
+            try {
+                callService.toggleCamera(on);
+            } catch (e) {
+                console.warn('[CallStore] toggleCamera failed:', e);
+            }
+        },
+
+        toggleMic: (on) => {
+            console.log(`[CallStore] Toggle mic requested: ${on}`);
+
+            // Cập nhật trạng thái UI ngay lập tức
+            set({ micOn: on });
+
+            // Gửi tới callService để xử lý thực tế
+            try {
+                callService.toggleMic(on);
+            } catch (e) {
+                console.warn('[CallStore] toggleMic failed:', e);
+                // Revert lại trạng thái nếu thất bại
+                set({ micOn: !on });
+            }
+        },
+
+        // Thêm các method mạnh hơn
+        hardMute: () => {
+            console.log('[CallStore] Hard mute requested');
+            set({ micOn: false });
+            try {
+                if ('hardMute' in callService) {
+                    (callService as any).hardMute();
+                }
+            } catch (e) {
+                console.warn('[CallStore] hardMute failed:', e);
+            }
+        },
+
+        muteWithSilentTrack: () => {
+            console.log('[CallStore] Mute with silent track requested');
+            set({ micOn: false });
+            try {
+                if ('muteWithSilentTrack' in callService) {
+                    (callService as any).muteWithSilentTrack();
+                }
+            } catch (e) {
+                console.warn('[CallStore] muteWithSilentTrack failed:', e);
+            }
+        },
+
+        recreateAudioTrack: async () => {
+            console.log('[CallStore] Recreate audio track requested');
+            try {
+                if ('recreateAudioTrack' in callService) {
+                    await (callService as any).recreateAudioTrack();
+                    set({ micOn: true });
+                }
+            } catch (e) {
+                console.warn('[CallStore] recreateAudioTrack failed:', e);
+            }
+        },
+
         upgradeToVideo: async () => {
             try {
                 await callService.upgradeToVideo();

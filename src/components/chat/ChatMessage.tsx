@@ -33,7 +33,7 @@ const ChatMessage = ({ msg }: { msg: Message }) => {
   const renderContent = () => {
     switch (type) {
       case "text":
-        return <TextMessage msg={msg} isSender={isSender} animate={animate}/>;
+        return <TextMessage msg={msg} isSender={isSender} animate={animate} />;
       case "emoji":
         return <EmojiMessage msg={msg} isSender={isSender} />;
       case "image":
@@ -43,10 +43,6 @@ const ChatMessage = ({ msg }: { msg: Message }) => {
         return <TextMessage msg={msg} isSender={isSender} />;
     }
   };
-
-  const flashHighlightClass = clsx(
-
-  )
 
   return (
     <div

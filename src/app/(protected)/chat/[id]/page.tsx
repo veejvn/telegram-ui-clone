@@ -58,9 +58,25 @@ const ChatPage = () => {
     setJoining(true);
     try {
       await client.joinRoom(roomId);
-      // Sau khi join, reload lại room
+
+      // Đợi đến khi client sync xong
+      await new Promise<void>((resolve) => {
+        const onSync = (state: string) => {
+          if (state === "SYNCING" || state === "PREPARED") {
+            resolve();
+            client.removeListener("sync" as any, onSync);
+          }
+        };
+        client.on("sync" as any, onSync);
+      });
+
+      // Lấy lại room sau khi sync
       const joinedRoom = client.getRoom(roomId);
-      setRoom(joinedRoom);
+      if (joinedRoom) {
+        setRoom(joinedRoom);
+      } else {
+        toast.error("Không thể load dữ liệu phòng sau khi tham gia.");
+      }
     } catch (e) {
       toast.error("Không thể tham gia phòng!", {
         action: {
@@ -69,8 +85,9 @@ const ChatPage = () => {
         },
         duration: 5000,
       });
+    } finally {
+      setJoining(false);
     }
-    setJoining(false);
   };
 
   const handleReject = async () => {
@@ -134,9 +151,11 @@ const ChatPage = () => {
         </div>
 
         {/* Chat content scrollable */}
-        <ScrollArea className="flex-1 min-h-0 px-4 space-y-1">
+
+        <ScrollArea className="flex-1 min-h-0 space-y-1 ">
           <ChatMessages roomId={roomId} messagesEndRef={messagesEndRef} />
         </ScrollArea>
+
         <ChatComposer roomId={roomId} />
       </div>
     </div>

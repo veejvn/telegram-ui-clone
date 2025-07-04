@@ -14,8 +14,7 @@ interface VoiceCallProps {
     callState?: string;
     callDuration?: number;
     onEndCall: () => void;
-    onSwitchToVideo?: () => Promise<void> | void; // <-- Thêm dòng này!
-
+    onSwitchToVideo?: () => Promise<void> | void;
 }
 
 export function VoiceCall({
@@ -25,9 +24,16 @@ export function VoiceCall({
     callDuration,
     onEndCall,
 }: VoiceCallProps) {
-    const { remoteStream, state: storeState, hangup, upgradeToVideo } = useCallStore();
+    const {
+        remoteStream,
+        micOn,
+        toggleMic,
+        state: storeState,
+        hangup,
+        upgradeToVideo
+    } = useCallStore();
+
     const state = callState ?? storeState;
-    const [isMuted, setIsMuted] = useState(false);
     const [isSpeakerOn, setIsSpeakerOn] = useState(true);
     const [internalCallDuration, setInternalCallDuration] = useState(0);
 
@@ -41,14 +47,6 @@ export function VoiceCall({
             audioRef.current.muted = !isSpeakerOn;
         }
     }, [remoteStream, isSpeakerOn]);
-
-    useEffect(() => {
-        if (remoteStream) {
-            remoteStream.getAudioTracks().forEach((t) => {
-                t.enabled = !isMuted;
-            });
-        }
-    }, [isMuted, remoteStream]);
 
     useEffect(() => {
         let timer: number | undefined;
@@ -72,9 +70,7 @@ export function VoiceCall({
     };
 
     const handleSwitchToVideo = async () => {
-        // Không gọi hangup hoặc onEndCall!
         await upgradeToVideo();
-        // Chuyển sang layout video call nếu muốn
         const calleeId = params.get('calleeId');
         const contact = params.get('contact') || contactName;
         router.replace(`/call/video?calleeId=${calleeId}&contact=${encodeURIComponent(contact)}`);
@@ -97,6 +93,11 @@ export function VoiceCall({
             return 'Có cuộc gọi đến...';
         }
         return 'Đang gọi...';
+    };
+
+    const handleToggleMic = () => {
+        console.log(`[VoiceCall] Toggle Mic: ${!micOn}`);
+        toggleMic(!micOn);
     };
 
     return (
@@ -134,13 +135,13 @@ export function VoiceCall({
                             variant="ghost"
                             className={cn(
                                 'rounded-full w-16 h-16 transition-all duration-200 border',
-                                isMuted ? 'bg-red-600/80 hover:bg-red-700/80' : 'dark:bg-[#2C2C2E]'
+                                !micOn ? 'bg-red-600/80 hover:bg-red-700/80' : 'dark:bg-[#2C2C2E]'
                             )}
-                            onClick={() => setIsMuted((v) => !v)}
+                            onClick={handleToggleMic}
                         >
-                            {isMuted ? <MicOff className="h-8 w-8 text-white" /> : <Mic className="h-8 w-8 dark:text-white" />}
+                            {!micOn ? <MicOff className="h-8 w-8 text-white" /> : <Mic className="h-8 w-8 dark:text-white" />}
                         </Button>
-                        <span className="text-xs dark:text-white/80">{isMuted ? 'Unmute' : 'Mute'}</span>
+                        <span className="text-xs dark:text-white/80">{micOn ? 'Mute' : 'Unmute'}</span>
                     </div>
 
                     {/* End call */}

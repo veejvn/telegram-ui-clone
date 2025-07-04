@@ -128,6 +128,7 @@ export default function ChatsPage() {
         </div>
         <SearchBar />
       </div>
+
       {!rooms || rooms.length == 0 ? (
         <div className="flex flex-1 flex-col justify-between min-h-[calc(100vh-112px)] pb-8">
           <div className="flex flex-1 flex-col items-center justify-center text-center">
@@ -142,7 +143,7 @@ export default function ChatsPage() {
               You have no{"\n"}conversations yet.
             </p>
           </div>
-          <div className="w-full pb-6 px-15">
+          <div className="w-full pb-30 px-15">
             <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white text-base rounded-lg py-6 cursor-pointer">
               <Link href={"/chat/newMessage"}>New Message</Link>
             </Button>
