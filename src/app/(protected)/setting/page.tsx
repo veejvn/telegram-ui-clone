@@ -73,11 +73,11 @@ const group1: SettingItem[] = [
   {
     title: "Devices",
     icon: (
-      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] mr-2 p-0 bg-transparent">
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] bg-[#fd9500] mr-2 overflow-hidden">
         <img
           src="/images/telegram/device.jpg"
           alt="Devices"
-          className="w-7 h-7 object-cover rounded-[10px]"
+          className="w-5 h-5 object-cover rounded-[8px]"
           draggable={false}
         />
       </span>
@@ -88,11 +88,11 @@ const group1: SettingItem[] = [
   {
     title: "Chat Folders",
     icon: (
-      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] mr-2 p-0 bg-transparent overflow-hidden">
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] bg-[#2dabdb] mr-2 overflow-hidden">
         <img
           src="/images/telegram/chat-folder.jpg"
           alt="Chat Folders"
-          className="w-full h-full object-cover rounded-[10px]"
+          className="w-5 h-5 object-cover rounded-[8px]"
           draggable={false}
         />
       </span>
@@ -105,16 +105,16 @@ const group2: SettingItem[] = [
   {
     title: "Notifications and Sounds",
     icon: (
-      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] bg-transparent mr-2 overflow-hidden p-0">
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] bg-[#fd3a38] mr-2 overflow-hidden">
         <img
           src="/images/telegram/notifications-and-sounds.jpg"
           alt="Notifications and Sounds"
-          className="w-full h-full object-cover rounded-[10px]"
+          className="w-5 h-5 object-cover rounded-[8px]"
           draggable={false}
         />
       </span>
     ),
-    path: "/setting/notification-and-sound",
+    path: "/setting/notification-and-sounds",
   },
   {
     title: "Privacy and Security",
