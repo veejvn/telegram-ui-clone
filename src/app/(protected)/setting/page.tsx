@@ -45,11 +45,11 @@ const group1: SettingItem[] = [
   {
     title: "Saved Messages",
     icon: (
-      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] bg-[#0479fd] mr-2 overflow-hidden">
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#0479fd] mr-2 overflow-hidden">
         <img
           src="/images/telegram/saved-message.jpg"
           alt="Saved Messages"
-          className="w-5 h-5 object-cover rounded-[8px]"
+          className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
         />
       </span>
@@ -59,11 +59,11 @@ const group1: SettingItem[] = [
   {
     title: "Recent Calls",
     icon: (
-      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] bg-[#38c656] mr-2 overflow-hidden">
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#38c656] mr-2 overflow-hidden">
         <img
           src="/images/telegram/recent-call.png"
           alt="Recent Calls"
-          className="w-5 h-5 object-cover rounded-[8px]"
+          className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
         />
       </span>
@@ -73,11 +73,11 @@ const group1: SettingItem[] = [
   {
     title: "Devices",
     icon: (
-      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] bg-[#fd9500] mr-2 overflow-hidden">
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#fd9500] mr-2 overflow-hidden">
         <img
           src="/images/telegram/device.jpg"
           alt="Devices"
-          className="w-5 h-5 object-cover rounded-[8px]"
+          className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
         />
       </span>
@@ -88,11 +88,11 @@ const group1: SettingItem[] = [
   {
     title: "Chat Folders",
     icon: (
-      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] bg-[#2dabdb] mr-2 overflow-hidden">
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#2dabdb] mr-2 overflow-hidden">
         <img
           src="/images/telegram/chat-folder.jpg"
           alt="Chat Folders"
-          className="w-5 h-5 object-cover rounded-[8px]"
+          className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
         />
       </span>
@@ -105,11 +105,11 @@ const group2: SettingItem[] = [
   {
     title: "Notifications and Sounds",
     icon: (
-      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] bg-[#fd3a38] mr-2 overflow-hidden">
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#fd3a38] mr-2 overflow-hidden">
         <img
           src="/images/telegram/notifications-and-sounds.jpg"
           alt="Notifications and Sounds"
-          className="w-5 h-5 object-cover rounded-[8px]"
+          className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
         />
       </span>
@@ -119,11 +119,11 @@ const group2: SettingItem[] = [
   {
     title: "Privacy and Security",
     icon: (
-      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] bg-[#8f8e94] mr-2 overflow-hidden">
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#8f8e94] mr-2 overflow-hidden">
         <img
           src="/images/telegram/privacy-and-security.png"
           alt="Privacy and Security"
-          className="w-5 h-5 object-cover rounded-[8px]"
+          className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
         />
       </span>
@@ -133,11 +133,11 @@ const group2: SettingItem[] = [
   {
     title: "Data and Storage",
     icon: (
-      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] mr-2 overflow-hidden bg-[#34C759] p-0">
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] mr-2 overflow-hidden bg-[#34C759] p-0">
         <img
           src="/images/telegram/data-and-storage.png"
           alt="Data and Storage"
-          className="w-5 h-5 object-cover rounded-[8px]"
+          className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
         />
       </span>
@@ -147,11 +147,11 @@ const group2: SettingItem[] = [
   {
     title: "Appearance",
     icon: (
-      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] mr-2 overflow-hidden bg-[#30B6F6] p-0">
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] mr-2 overflow-hidden bg-[#30B6F6] p-0">
         <img
           src="/images/telegram/appearance.png"
           alt="Appearance"
-          className="w-5 h-5 object-cover rounded-[8px]"
+          className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
         />
       </span>
@@ -161,11 +161,11 @@ const group2: SettingItem[] = [
   {
     title: "Power Saving",
     icon: (
-      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] bg-[#FF9500] mr-2 overflow-hidden p-0">
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#FF9500] mr-2 overflow-hidden p-0">
         <img
           src="/images/telegram/power-saving.png"
           alt="Power Saving"
-          className="w-5 h-5 object-cover rounded-[8px]"
+          className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
         />
       </span>
@@ -176,11 +176,11 @@ const group2: SettingItem[] = [
   {
     title: "Language",
     icon: (
-      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] bg-[#A259E6] mr-2 overflow-hidden">
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#A259E6] mr-2 overflow-hidden">
         <img
           src="/images/telegram/language.png"
           alt="Language"
-          className="w-5 h-5 object-cover rounded-[8px]"
+          className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
         />
       </span>
@@ -194,11 +194,11 @@ const group3: SettingItem[] = [
   {
     title: "Telegram Premium",
     icon: (
-      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] bg-[#ad6ef0] mr-2 overflow-hidden">
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#ad6ef0] mr-2 overflow-hidden">
         <img
           src="/images/telegram/premium.png"
           alt="Telegram Premium"
-          className="w-5 h-5 object-cover rounded-[8px]"
+          className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
         />
       </span>
@@ -208,11 +208,11 @@ const group3: SettingItem[] = [
   {
     title: "My Stars",
     icon: (
-      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] bg-[#f99011] mr-2 overflow-hidden">
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#f99011] mr-2 overflow-hidden">
         <img
           src="/images/telegram/my-stars.jpg"
           alt="My Stars"
-          className="w-5 h-5 object-cover rounded-[8px]"
+          className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
         />
       </span>
@@ -222,11 +222,11 @@ const group3: SettingItem[] = [
   {
     title: "Telegram Business",
     icon: (
-      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] bg-[#e06b95] mr-2 overflow-hidden">
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#e06b95] mr-2 overflow-hidden">
         <img
           src="/images/telegram/business.png"
           alt="Telegram Business"
-          className="w-5 h-5 object-cover rounded-[8px]"
+          className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
         />
       </span>
@@ -236,11 +236,11 @@ const group3: SettingItem[] = [
   {
     title: "Send a Gift",
     icon: (
-      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] bg-[#01ace0] mr-2 overflow-hidden">
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#01ace0] mr-2 overflow-hidden">
         <img
           src="/images/telegram/send-gift.jpg"
           alt="Send a Gift"
-          className="w-5 h-5 object-cover rounded-[8px]"
+          className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
         />
       </span>
@@ -253,11 +253,11 @@ const group4: SettingItem[] = [
   {
     title: "Ask a Question",
     icon: (
-      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] bg-[#ff9600] mr-2 overflow-hidden">
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#ff9600] mr-2 overflow-hidden">
         <img
           src="/images/telegram/ask-question.png"
           alt="Ask a Question"
-          className="w-5 h-5 object-cover rounded-[8px]"
+          className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
         />
       </span>
@@ -267,11 +267,11 @@ const group4: SettingItem[] = [
   {
     title: "Telegram FAQ",
     icon: (
-      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] bg-[#2dabdb] mr-2 overflow-hidden">
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#2dabdb] mr-2 overflow-hidden">
         <img
           src="/images/telegram/faq.png"
           alt="Telegram FAQ"
-          className="w-5 h-5 object-cover rounded-[8px]"
+          className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
         />
       </span>
@@ -281,11 +281,11 @@ const group4: SettingItem[] = [
   {
     title: "Telegram Features",
     icon: (
-      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] bg-[#fdcb14] mr-2 overflow-hidden">
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#fdcb14] mr-2 overflow-hidden">
         <img
           src="/images/telegram/features.png"
           alt="Telegram Features"
-          className="w-5 h-5 object-cover rounded-[8px]"
+          className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
         />
       </span>
@@ -456,11 +456,11 @@ export default function SettingsPage() {
     {
       title: "My Profile",
       icon: (
-        <span className="inline-flex items-center justify-center h-7 w-7 rounded-[10px] bg-[#FF2D55] mr-2 overflow-hidden">
+        <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#FF2D55] mr-2 overflow-hidden">
           <img
             src="/images/telegram/profile.png"
             alt="My Profile"
-            className="w-5 h-5 object-cover rounded-[8px]"
+            className="w-5 h-5 object-cover rounded-[6px]"
             draggable={false}
           />
         </span>
