@@ -72,8 +72,6 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
       if (!client || !user || !user.avatarUrl) return;
       try {
         const httpUrl = client.mxcUrlToHttp(user.avatarUrl, 96, 96, "crop") ?? "";
-        console.log("Avatar URL:", httpUrl);
-        // Kiểm tra link HTTP thực tế
         setAvatarUrl(httpUrl);
       } catch (error) {
         setAvatarUrl("");

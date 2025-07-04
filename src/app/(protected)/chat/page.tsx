@@ -15,6 +15,7 @@ import DeleteChatModal from "@/components/chat/DeleteChatModal";
 import { getUserRooms } from "@/services/chatService";
 import { getLS, removeLS } from "@/tools/localStorage.tool";
 import { MoveLeft } from "lucide-react";
+import clsx from "clsx";
 
 export default function ChatsPage() {
   const [rooms, setRooms] = useState<sdk.Room[]>([]);
@@ -113,40 +114,73 @@ export default function ChatsPage() {
     setSelectedRooms([]);
   };
 
+  const [showBackButton, setShowBackButton] = useState(false);
+
   const backUrl = getLS("backUrl");
 
-  const MAIN_APP_ORIGIN = typeof window !== "undefined" ? window.location.origin : "";
+  const MAIN_APP_ORIGIN =
+    typeof window !== "undefined" ? window.location.origin : "";
+
+  useEffect(() => {
+    if (backUrl) {
+      setShowBackButton(true);
+    } else if (
+      typeof document !== "undefined" &&
+      document.referrer &&
+      document.referrer.startsWith(MAIN_APP_ORIGIN)
+    ) {
+      setShowBackButton(true);
+    } else {
+      setShowBackButton(false);
+    }
+  }, [backUrl, MAIN_APP_ORIGIN]);
 
   const handleBack = () => {
     if (backUrl) {
-        removeLS("backUrl");
-        window.location.href = MAIN_APP_ORIGIN + backUrl;
-    }else{
-      window.location.href = MAIN_APP_ORIGIN
+      removeLS("backUrl");
+      window.location.href = MAIN_APP_ORIGIN + backUrl;
+    } else {
+      window.location.href = MAIN_APP_ORIGIN;
     }
   };
+
+  const chatTitleClass = clsx(
+    "text-md font-semibold",
+    (backUrl || showBackButton) ? "ml-12" : ""
+  )
 
   return (
     <div>
       <div className="sticky bg-white dark:bg-black top-0 z-10">
         <div className="flex items-center justify-between px-4 py-2">
           <div className="flex items-center">
-            <button
-              className="text-blue-500 font-medium w-10 cursor-pointer"
-              onClick={handleBack}
-              title="Back"
-              aria-label="Back"
-            >
-              <MoveLeft/>
-            </button>
-            <ChatEditButton
-              isEditMode={isEditMode}
-              onEdit={() => setIsEditMode(true)}
-              onDone={handleDone}
-            />
+            {showBackButton && (
+              <button
+                className="text-blue-500 font-medium w-10 cursor-pointer"
+                onClick={handleBack}
+                title="Back"
+                aria-label="Back"
+              >
+                <MoveLeft />
+              </button>
+            )}
+            {!showBackButton && (
+              <ChatEditButton
+                isEditMode={isEditMode}
+                onEdit={() => setIsEditMode(true)}
+                onDone={handleDone}
+              />
+            )}
           </div>
-          <h1 className="text-md font-semibold mr-6">Chats</h1>
+          <h1 className={chatTitleClass}>Chats</h1>
           <div className="flex gap-3">
+            {showBackButton && (
+              <ChatEditButton
+                isEditMode={isEditMode}
+                onEdit={() => setIsEditMode(true)}
+                onDone={handleDone}
+              />
+            )}
             <div className="text-blue-500">+</div>
             <div className="text-blue-500">✏️</div>
           </div>

@@ -31,10 +31,29 @@ export default function ProtectedLayout({
     }
   }, [isLogging, router]);
 
+  const [showBackButton, setShowBackButton] = useState(false);
+
+  const MAIN_APP_ORIGIN =
+    typeof window !== "undefined" ? window.location.origin : "";
+
+  useEffect(() => {
+    if (backUrl) {
+      setShowBackButton(true);
+    } else if (
+      typeof document !== "undefined" &&
+      document.referrer &&
+      document.referrer.startsWith(MAIN_APP_ORIGIN)
+    ) {
+      setShowBackButton(true);
+    } else {
+      setShowBackButton(false);
+    }
+  }, [backUrl, MAIN_APP_ORIGIN]);
+
   const pathname = usePathname();
   const isChatDetailPage = pathname ? /^\/chat(\/.+)+$/.test(pathname) : false;
   const isSettingPage = pathname ? pathname.startsWith("/setting/") : false;
-  const shouldShowBottomNav = !isChatDetailPage && !isSettingPage && !backUrl;
+  const shouldShowBottomNav = !isChatDetailPage && !isSettingPage && !backUrl && !showBackButton;
 
   if (!isReady || !isLogging) {
     return (
