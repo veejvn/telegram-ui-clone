@@ -1,9 +1,9 @@
-// src/app/(app)/setting/device/page.tsx
 'use client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { QrCode, ChevronLeft } from 'lucide-react';
-import { MdLaptopMac } from 'react-icons/md';
+import { MdPhoneIphone } from 'react-icons/md'; // icon điện thoại
+import Image from 'next/image'; // dùng để hiển thị ảnh minh họa
 
 export default function DevicesPage() {
     const [scannedData, setScannedData] = useState<string | null>(null);
@@ -14,20 +14,16 @@ export default function DevicesPage() {
         setScannedData('DeviceID-12345');
     };
 
-    // Lấy theme từ html (tailwind dark mode)
     const isDark = typeof window !== "undefined"
         ? document.documentElement.classList.contains("dark")
         : false;
 
-    // Đặt màu cho các box theo theme
     const cardBg = isDark ? "bg-[#23232b]" : "bg-white";
     const cardBorder = isDark ? "" : "border border-zinc-200";
     const sectionBg = isDark ? "bg-black" : "bg-white";
     const textColor = isDark ? "text-white" : "text-black";
     const subTextColor = isDark ? "text-gray-400" : "text-gray-600";
     const inputBg = isDark ? "bg-[#18181b]" : "bg-white";
-    // Đặt màu icon laptop minh họa theo theme
-    const laptopIconColor = isDark ? "text-white" : "text-gray-700";
 
     return (
         <div className={`min-h-screen ${sectionBg} ${textColor} p-0`}>
@@ -46,10 +42,19 @@ export default function DevicesPage() {
 
             {/* Main content */}
             <div className="px-4">
-                {/* Laptop illustration */}
+                {/* Laptop image minh họa theo theme */}
                 <div className="flex flex-col items-center mt-2 mb-4">
-                    <div className="bg-white/10 rounded-2xl p-4 mb-2">
-                        <MdLaptopMac className={`h-16 w-16 ${laptopIconColor}`} />
+                    <div className="rounded-2xl p-2 mb-2 bg-transparent">
+                        <Image
+                            src={isDark
+                                ? "/images/icon-device/laptop-dark.png"
+                                : "/images/icon-device/laptop-light.png"
+                            }
+                            alt="Laptop Illustration"
+                            width={120}
+                            height={120}
+                            className="rounded-xl transition-all"
+                        />
                     </div>
                     <div className="text-center text-[15px] text-gray-300">
                         Link <span className="text-blue-400">Telegram Desktop</span> or <span className="text-blue-400">Telegram Web</span> by scanning a QR code.
@@ -59,7 +64,7 @@ export default function DevicesPage() {
                 {/* Link Desktop Device Button */}
                 <button
                     onClick={handleScan}
-                    className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 transition text-white font-medium rounded-xl py-3 text-base mb-6"
+                    className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 transition-all text-white font-medium rounded-full py-3 text-base mb-6 shadow-md"
                 >
                     <QrCode className="h-5 w-5" />
                     Link Desktop Device
@@ -71,11 +76,11 @@ export default function DevicesPage() {
                 </div>
                 <div className={`${cardBg} ${cardBorder} rounded-2xl px-4 py-3 flex items-center mb-2`}>
                     <div className="bg-blue-500 rounded-xl h-9 w-9 flex items-center justify-center mr-3">
-                        <MdLaptopMac className="h-5 w-5 text-white" />
+                        <MdPhoneIphone className="h-5 w-5 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
                         <div className="font-medium text-[15px] truncate">iPhone 11 Pro Max</div>
-                        <div className={`text-xs ${subTextColor} truncate`}>Telegram iOS 11.2.1</div>
+                        <div className={`text-xs ${subTextColor} truncate`}>Telegram iOS 11.12.1</div>
                         <div className={`text-xs ${subTextColor} truncate`}>Can Tho, Vietnam · online</div>
                     </div>
                 </div>
