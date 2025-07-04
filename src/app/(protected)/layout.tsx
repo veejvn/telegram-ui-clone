@@ -45,7 +45,7 @@ export default function ProtectedLayout({
   return (
     <MatrixClientProvider>
       <main>
-        <div style={mainStyle} className="flex flex-col min-h-screen">
+        <div style={mainStyle} className="flex flex-col min-h-screen relative">
           {children}
           {shouldShowBottomNav && <BottomNavigattion />}
         </div>

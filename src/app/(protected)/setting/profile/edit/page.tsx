@@ -32,7 +32,7 @@ export default function EditProfilePage() {
             const authService = new MatrixAuthService();
             await authService.logout();
             logout();
-            router.push("/login"); // chuyển hướng về trang login nếu muốn
+            router.push("/chat/login"); // chuyển hướng về trang login nếu muốn
         } catch (error) {
             console.error("Logout error:", error);
         }
