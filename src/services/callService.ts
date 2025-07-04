@@ -18,6 +18,8 @@ const { accessToken, userId, deviceId } = useAuthStore.getState(); // Đảm b�
 class CallService extends EventEmitter {
     private client: sdk.MatrixClient;
     private currentCall?: sdk.MatrixCall;
+    private currentRoomId?: string; // Track current active call's roomId
+    private localStream?: MediaStream; // Track local stream for immediate cleanup
 
     constructor() {
         super();
@@ -59,6 +61,7 @@ class CallService extends EventEmitter {
 
         // Local stream
         c.on('local_stream', (stream: MediaStream) => {
+            this.localStream = stream; // Track local stream for cleanup
             console.log('[CallService] Local stream ready:', stream);
             this.emit('local-stream', stream);
         });
@@ -91,8 +94,14 @@ class CallService extends EventEmitter {
         c.on('hangup', (event: any) => {
             const reason = event?.reason || "user_hangup";
             console.log('[CallService] Hangup received from SDK/peer! Reason:', reason);
+            // Stop mic immediately on hangup event (defensive)
+            if (this.localStream) {
+                this.localStream.getAudioTracks().forEach(track => track.stop());
+            }
             this.emit('call-ended', reason);
             this.currentCall = undefined; // chỉ cleanup tại đây!
+            this.currentRoomId = undefined;
+            this.localStream = undefined;
         });
 
         c.on('error', (err: Error) => {
@@ -104,11 +113,17 @@ class CallService extends EventEmitter {
 
     // Gọi đi (voice/video)
     public async placeCall(roomId: string, type: CallType) {
+        // Prevent double-call for the same room
+        if (this.currentCall && this.currentRoomId === roomId) {
+            console.warn(`[CallService] Already have active call for this room (${roomId}), aborting new call.`);
+            return;
+        }
         if (!this.client) return;
         const call = this.client.createCall(roomId);
         if (!call) return;
 
         this.currentCall = call;
+        this.currentRoomId = roomId;
         this.registerCallEvents(call);
 
         if (type === 'voice') {
@@ -116,6 +131,7 @@ class CallService extends EventEmitter {
         } else {
             // LẤY audio + video stream
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+            this.localStream = stream;
             console.log('🟢 [DEBUG] video call getUserMedia tracks:', stream.getTracks());
             console.log('🟢 [DEBUG] video call getUserMedia video tracks:', stream.getVideoTracks());
             if ((call as any).peerConn) {
@@ -142,6 +158,10 @@ class CallService extends EventEmitter {
     public hangup() {
         if (!this.currentCall) return;
         console.log('[CallService] Hanging up (send signaling to peer/Element)...');
+        // Immediately stop mic (local audio tracks)
+        if (this.localStream) {
+            this.localStream.getAudioTracks().forEach(track => track.stop());
+        }
         (this.currentCall as any).hangup();
         // Không emit call-ended ở đây, cleanup chỉ khi nhận event hangup từ SDK/peer!
         // this.currentCall = undefined;

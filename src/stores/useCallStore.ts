@@ -120,6 +120,11 @@ const useCallStore = create<CallStore>((set, get) => {
         state: 'idle',
         callDuration: 0,
         placeCall: (roomId, type) => {
+            const { state } = get();
+            if (state === 'ringing' || state === 'connecting' || state === 'connected') {
+                console.warn(`[CallStore] Already have active call for this room (${roomId}), state=${state}`);
+                return;
+            }
             callService.placeCall(roomId, type)
         },
         answerCall: () => {
@@ -127,6 +132,12 @@ const useCallStore = create<CallStore>((set, get) => {
             callService.answerCall()
         },
         hangup: () => {
+            // Immediately stop local/remote tracks on hangup
+            const { localStream, remoteStream } = get();
+            stopAllTracks(localStream);
+            stopAllTracks(remoteStream);
+            // Optionally clear from state immediately (optional, can keep for UI until call-ended)
+            set({ localStream: undefined, remoteStream: undefined });
             callService.hangup()
             // KHÔNG cleanup state tại đây!
         },
