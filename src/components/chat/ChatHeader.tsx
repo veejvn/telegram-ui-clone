@@ -72,26 +72,9 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
       if (!client || !user || !user.avatarUrl) return;
       try {
         const httpUrl = client.mxcUrlToHttp(user.avatarUrl, 96, 96, "crop") ?? "";
-
+        console.log("Avatar URL:", httpUrl);
         // Kiểm tra link HTTP thực tế
-        const isValid =
-          /^https?:\/\//.test(httpUrl) && !httpUrl.includes("M_NOT_FOUND");
-        if (isValid) {
-          // Test link HTTP thực tế
-          try {
-            const res = await fetch(httpUrl, { method: "HEAD" });
-            if (res.ok) {
-              const apiUrl = `/api/matrix-image?url=${encodeURIComponent(
-                httpUrl
-              )}`;
-              setAvatarUrl(apiUrl);
-              return;
-            }
-          } catch (e) {
-            // Nếu fetch lỗi, sẽ fallback
-          }
-        }
-        setAvatarUrl("");
+        setAvatarUrl(httpUrl);
       } catch (error) {
         setAvatarUrl("");
         console.error("Error loading avatar:", error);

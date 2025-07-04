@@ -25,6 +25,7 @@ import { getInitials } from "@/utils/getInitials";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { getBackgroundColorClass } from "@/utils/getBackgroundColor ";
+import { avatarGroupClasses } from "@mui/material";
 
 interface SettingItem {
   title: string;
@@ -95,6 +96,7 @@ export default function SettingsPage() {
   const userId = useAuthStore.getState().userId;
   const { user , setUser } = useUserStore.getState();
   const displayName = user ? user.displayName : "Your Name";
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [_, setRefresh] = useState(0);
 
   // Lấy avatar_url (MXC) và chuyển sang HTTP URL, ưu tiên dùng proxy nếu cần
@@ -105,24 +107,25 @@ export default function SettingsPage() {
       if (profile && profile.avatar_url) {
         const httpUrl = client.mxcUrlToHttp(profile.avatar_url, 96, 96, "crop") ?? "";
 
-        //setUser({ avatarUrl: httpUrl });
+        setUser({ avatarUrl: httpUrl });
+        setAvatarUrl(httpUrl);
 
-        // Kiểm tra link HTTP thực tế
-        const isValid = /^https?:\/\//.test(httpUrl) && !httpUrl.includes("M_NOT_FOUND");
-        if (isValid) {
-          // Test link HTTP thực tế
-          try {
-            const res = await fetch(httpUrl, { method: "HEAD" });
-            if (res.ok) {
-              const apiUrl = `/chat/api/matrix-image?url=${encodeURIComponent(httpUrl)}`;
-              setUser({ avatarUrl: apiUrl });
-              setRefresh((prev) => prev + 1);
-              return;
-            }
-          } catch (e) {
-            // Nếu fetch lỗi, sẽ fallback
-          }
-        }
+        // // Kiểm tra link HTTP thực tế
+        // const isValid = /^https?:\/\//.test(httpUrl) && !httpUrl.includes("M_NOT_FOUND");
+        // if (isValid) {
+        //   // Test link HTTP thực tế
+        //   try {
+        //     const res = await fetch(httpUrl, { method: "HEAD" });
+        //     if (res.ok) {
+        //       const apiUrl = `/chat/api/matrix-image?url=${encodeURIComponent(httpUrl)}`;
+        //       setUser({ avatarUrl: apiUrl });
+        //       setRefresh((prev) => prev + 1);
+        //       return;
+        //     }
+        //   } catch (e) {
+        //     // Nếu fetch lỗi, sẽ fallback
+        //   }
+        // }
         setUser({ avatarUrl: "" });
       } else {
         setUser({ avatarUrl: "" });
@@ -197,9 +200,9 @@ export default function SettingsPage() {
           <QrCode className="h-6 w-6 text-blue-500" />
           <div className="absolute left-1/2 transform -translate-x-1/2 top-4">
             <Avatar className={`h-20 w-20 ${avatarBackgroundColor}`}>
-              {user?.avatarUrl ? (
+              {avatarUrl ? (
                 <img
-                  src={user.avatarUrl}
+                  src={avatarUrl}
                   alt="avatar"
                   className="h-20 w-20 rounded-full object-cover"
                   width={80}
