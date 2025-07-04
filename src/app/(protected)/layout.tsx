@@ -14,7 +14,7 @@ export default function ProtectedLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { isLogging } = useAuthStore();
+  const isLogging = useAuthStore((state => state.isLogging));
   const [isReady, setIsReady] = useState(false);
 
   const statusBarHeight = getLS("statusBarHeight");
