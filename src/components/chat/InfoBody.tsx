@@ -138,9 +138,9 @@ export default function InfoBody({ user }: { user: sdk.User }) {
             </TabsList>
             <TabsContent value="media">
               <div className="grid grid-cols-3 gap-0.5 bg-white p-1 rounded-lg">
-                <div className="">
+                <div>
                   <Image
-                    src="/images/folder.png"
+                    src="/chat/images/folder.png"
                     alt="image"
                     width={500}
                     height={500}
@@ -148,7 +148,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                 </div>
                 <div>
                   <Image
-                    src="/images/contact.png"
+                    src="/chat/images/contact.png"
                     alt="image"
                     width={500}
                     height={500}
@@ -156,7 +156,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                 </div>
                 <div>
                   <Image
-                    src="/images/logo.png"
+                    src="/chat/images/logo.png"
                     alt="image"
                     width={500}
                     height={500}
@@ -164,7 +164,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                 </div>
                 <div>
                   <Image
-                    src="/images/logo.png"
+                    src="/chat/images/logo.png"
                     alt="image"
                     width={500}
                     height={500}
@@ -172,7 +172,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                 </div>
                 <div>
                   <Image
-                    src="/images/contact.png"
+                    src="/chat/images/contact.png"
                     alt="image"
                     width={500}
                     height={500}
@@ -180,7 +180,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                 </div>
                 <div>
                   <Image
-                    src="/images/folder.png"
+                    src="/chat/images/folder.png"
                     alt="image"
                     width={500}
                     height={500}

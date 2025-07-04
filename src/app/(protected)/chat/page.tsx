@@ -115,18 +115,12 @@ export default function ChatsPage() {
 
   const backUrl = getLS("backUrl");
 
-  const MAIN_APP_ORIGIN = typeof window !== "undefined" ? window.location.origin : ""; 
+  const MAIN_APP_ORIGIN = typeof window !== "undefined" ? window.location.origin : "";
 
   const handleBack = () => {
     if (backUrl) {
-      if (backUrl.startsWith("http") || backUrl.startsWith("//")) {
-        removeLS("backUrl");
-        window.location.href = backUrl;
-      } else if (backUrl.startsWith("/")) {
-        // Đường dẫn tuyệt đối, chuyển về app chính
         removeLS("backUrl");
         window.location.href = MAIN_APP_ORIGIN + backUrl;
-      }
     }else{
       window.location.href = MAIN_APP_ORIGIN
     }

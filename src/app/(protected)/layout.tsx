@@ -16,6 +16,7 @@ export default function ProtectedLayout({
   const router = useRouter();
   const isLogging = useAuthStore((state => state.isLogging));
   const [isReady, setIsReady] = useState(false);
+  const backUrl = getLS("backUrl");
 
   const statusBarHeight = getLS("statusBarHeight");
 
@@ -33,7 +34,7 @@ export default function ProtectedLayout({
   const pathname = usePathname();
   const isChatDetailPage = pathname ? /^\/chat(\/.+)+$/.test(pathname) : false;
   const isSettingPage = pathname ? pathname.startsWith("/setting/") : false;
-  const shouldShowBottomNav = !isChatDetailPage && !isSettingPage;
+  const shouldShowBottomNav = !isChatDetailPage && !isSettingPage && !backUrl;
 
   if (!isReady || !isLogging) {
     return (
