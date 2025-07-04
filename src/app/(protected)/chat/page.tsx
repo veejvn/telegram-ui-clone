@@ -14,28 +14,30 @@ import ChatActionBar from "@/components/chat/ChatActionBar";
 import DeleteChatModal from "@/components/chat/DeleteChatModal";
 import { getUserRooms } from "@/services/chatService";
 import { CircleFadingPlus, SquarePen } from "lucide-react";
+import useSortedRooms from "@/hooks/useSortedRooms";
 
 export default function ChatsPage() {
-  const [rooms, setRooms] = useState<sdk.Room[]>([]);
+  // const [rooms, setRooms] = useState<sdk.Room[]>([]);
+  const { rooms, refreshRooms } = useSortedRooms();
   const client = useMatrixClient();
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  useEffect(() => {
-    if (!client) return;
-    getUserRooms(client)
-      .then((res) => {
-        if (res.success && res.rooms) {
-          setRooms(res.rooms);
-        } else {
-          console.error("Failed to fetch user rooms or rooms are undefined.");
-        }
-      })
-      .catch((error) => {
-        console.error("An error occurred while fetching user rooms:", error);
-      });
-  }, [client]);
+  // useEffect(() => {
+  //   if (!client) return;
+  //   getUserRooms(client)
+  //     .then((res) => {
+  //       if (res.success && res.rooms) {
+  //         setRooms(res.rooms);
+  //       } else {
+  //         console.error("Failed to fetch user rooms or rooms are undefined.");
+  //       }
+  //     })
+  //     .catch((error) => {
+  //       console.error("An error occurred while fetching user rooms:", error);
+  //     });
+  // }, [client]);
 
   const handleSelectRoom = (roomId: string) => {
     setSelectedRooms((prev) =>
@@ -57,20 +59,20 @@ export default function ChatsPage() {
     setShowDeleteModal(true);
   };
 
-  const refreshRooms = () => {
-    if (!client) return;
-    getUserRooms(client)
-      .then((res) => {
-        if (res.success && res.rooms) {
-          setRooms(res.rooms);
-        } else {
-          console.error("Failed to fetch user rooms or rooms are undefined.");
-        }
-      })
-      .catch((error) => {
-        console.error("An error occurred while fetching user rooms:", error);
-      });
-  };
+  // const refreshRooms = () => {
+  //   if (!client) return;
+  //   getUserRooms(client)
+  //     .then((res) => {
+  //       if (res.success && res.rooms) {
+  //         setRooms(res.rooms);
+  //       } else {
+  //         console.error("Failed to fetch user rooms or rooms are undefined.");
+  //       }
+  //     })
+  //     .catch((error) => {
+  //       console.error("An error occurred while fetching user rooms:", error);
+  //     });
+  // };
 
   const handleDeleteMine = async () => {
     if (!client) return;
