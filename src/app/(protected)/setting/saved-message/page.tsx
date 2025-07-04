@@ -63,12 +63,13 @@ export default function SavedMessagesPage() {
               </div>
             </div>
             <h2 className="text-lg font-semibold mb-1 text-gray-800 dark:text-gray-200">Your Cloud Storage</h2>
-            <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
-              <li>• Forward messages here to save them</li>
-              <li>• Send media and files to store them</li>
-              <li>• Access this chat from any device</li>
-              <li>• Use search to quickly find things</li>
-            </ul>
+            <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1 list-disc list-inside text-left">
+                <li>Forward messages here to save them</li>
+                <li>Send media and files to store them</li>
+                <li>Access this chat from any device</li>
+                <li>Use search to quickly find things</li>
+</ul>
+
           </div>
         </div>
 
