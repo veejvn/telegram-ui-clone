@@ -21,12 +21,6 @@ export default function Providers({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const searchParams = useSearchParams();
-  const backUrl = searchParams.get("backUrl");
-  if(backUrl) {
-    setLS("backUrl", backUrl);
-    console.log("Set backUrl to localStorage:", backUrl);
-  }
   return (
     <>
       <ThemeProvider
