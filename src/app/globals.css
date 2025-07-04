@@ -121,20 +121,6 @@
   }
 }
 
-input[type="password"]::-ms-reveal,
-input[type="password"]::-ms-clear {
-  display: none;
-}
-
-input[type="password"]::-webkit-credentials-auto-fill-button,
-input[type="password"]::-webkit-input-password-toggle-button {
-  display: none !important;
-}
-
-input[type="password"]::-webkit-textfield-decoration-container {
-  display: none !important;
-}
-
 @keyframes flashBackground {
   0% {
     background-color: rgb(220, 248, 198);

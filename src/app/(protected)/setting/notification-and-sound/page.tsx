@@ -1,8 +1,9 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, User, Users, MessageCircle, Heart } from "lucide-react";
+import { User, Users, MessageCircle, Heart, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { useTheme } from "next-themes";
 
 type NotificationToggleProps = {
   label: string;
@@ -13,34 +14,50 @@ type NotificationToggleProps = {
 
 const NotificationToggle = ({
   label,
-  description,
+  description = "",
   enabled,
   setEnabled,
-}: NotificationToggleProps) => (
-  <div className="flex items-start justify-between py-3">
-    <div>
-      <p className="font-medium">{label}</p>
-      {description && <p className="text-gray-400 text-sm">{description}</p>}
+}: NotificationToggleProps) => {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
+  return (
+    <div className="flex items-start justify-between py-3">
+      <div>
+        <p className="font-medium text-[15px] text-black dark:text-white">
+          {label}
+        </p>
+        {description && (
+          <p className="text-gray-500 dark:text-gray-400 text-sm">
+            {description}
+          </p>
+        )}
+      </div>
+      <label className="relative inline-flex items-center cursor-pointer w-11 h-6">
+        <Input
+          type="checkbox"
+          className="sr-only peer"
+          checked={enabled}
+          onChange={() => setEnabled(!enabled)}
+        />
+        <div
+          className={`w-11 h-6 rounded-full transition-colors duration-300 ${
+            enabled ? "bg-green-500" : isDark ? "bg-[#3a3a3c]" : "bg-[#d1d1d6]"
+          }`}
+        />
+        <div className="absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 peer-checked:translate-x-5" />
+      </label>
     </div>
-    <label className="relative inline-flex items-center cursor-pointer">
-      <Input
-        type="checkbox"
-        className="sr-only peer"
-        checked={enabled}
-        onChange={() => setEnabled(!enabled)}
-      />
-      <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:bg-green-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
-    </label>
-  </div>
-);
+  );
+};
 
 export default function NotificationSettings() {
+  const router = useRouter();
   const [privateChats, setPrivateChats] = useState(true);
   const [groupChats, setGroupChats] = useState(true);
   const [channels, setChannels] = useState(true);
   const [stories, setStories] = useState(false);
   const [reactions, setReactions] = useState(true);
-
   const [inAppSounds, setInAppSounds] = useState(true);
   const [inAppVibrate, setInAppVibrate] = useState(false);
   const [inAppPreview, setInAppPreview] = useState(true);
@@ -48,9 +65,51 @@ export default function NotificationSettings() {
   const [includeChannels, setIncludeChannels] = useState(true);
   const [countUnread, setCountUnread] = useState(true);
   const [newContacts, setNewContacts] = useState(true);
-  const router = useRouter();
+
+  const messageItems = [
+    {
+      label: "Private Chats",
+      icon: <User className="text-white w-5 h-5" />,
+      iconBg: "bg-blue-500",
+      value: privateChats,
+      route: "private-chats",
+      description: "1 exception",
+    },
+    {
+      label: "Group Chats",
+      icon: <Users className="text-white w-5 h-5" />,
+      iconBg: "bg-green-500",
+      value: groupChats,
+      route: "group-chats",
+    },
+    {
+      label: "Channels",
+      icon: <MessageCircle className="text-white w-5 h-5" />,
+      iconBg: "bg-orange-500",
+      value: channels,
+      route: "channels",
+    },
+    {
+      label: "Stories",
+      icon: <Sparkles className="text-white w-5 h-5" />,
+      iconBg: "bg-purple-500",
+      value: stories,
+      route: "stories",
+      customText: "Top 5",
+    },
+    {
+      label: "Reactions",
+      icon: <Heart className="text-white w-5 h-5" />,
+      iconBg: "bg-pink-500",
+      value: reactions,
+      route: "reactions",
+      description: "Messages, Stories",
+    },
+  ];
+
   return (
-    <div className="p-6 space-y-6 overflow-y-auto">
+    <div className="p-6 space-y-6 overflow-y-auto bg-[#f2f2f7] dark:bg-black min-h-screen">
+      {/* Header */}
       <div className="flex items-center mb-4">
         <button
           type="button"
@@ -59,183 +118,178 @@ export default function NotificationSettings() {
         >
           &lt; Back
         </button>
-        <h1 className="text-xl font-bold flex-1 text-center">Notifications</h1>
+        <h1 className="text-xl font-bold flex-1 text-center text-black dark:text-white">
+          Notifications
+        </h1>
         <div className="w-12" />
       </div>
 
       {/* Message Notifications */}
-
-      <div className="space-y-2">
-        <p className="text-gray-400 font-semibold uppercase text-sm px-1 mb-1 mt-4">
-          MESSAGE NOTIFICATIONS
-        </p>
-        {/* Private Chats */}
-        <button
-          type="button"
-          className="flex justify-between items-center p-4 border rounded-xl w-full focus:outline-none"
-          onClick={() =>
-            router.push("/setting/notification-and-sound/private-chats")
-          }
-        >
-          <div className="flex items-center space-x-2">
-            <User className="text-blue-400" />
-            <span>Private Chats</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <span className="text-gray-400">{privateChats ? "On" : "Off"}</span>
-            <span className="text-gray-400 text-lg">{">"}</span>
-          </div>
-        </button>
-        {/* Group Chats */}
-        <button
-          type="button"
-          className="flex justify-between items-center p-4 border rounded-xl w-full focus:outline-none"
-          onClick={() =>
-            router.push("/setting/notification-and-sound/group-chats")
-          }
-        >
-          <div className="flex items-center space-x-2">
-            <Users className="text-green-400" />
-            <span>Group Chats</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <span className="text-gray-400">{groupChats ? "On" : "Off"}</span>
-            <span className="text-gray-400 text-lg">{">"}</span>
-          </div>
-        </button>
-        {/* Channels */}
-        <button
-          type="button"
-          className="flex justify-between items-center p-4 border rounded-xl w-full focus:outline-none"
-          onClick={() =>
-            router.push("/setting/notification-and-sound/channels")
-          }
-        >
-          <div className="flex items-center space-x-2">
-            <MessageCircle className="text-purple-400" />
-            <span>Channels</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <span className="text-gray-400">{channels ? "On" : "Off"}</span>
-            <span className="text-gray-400 text-lg">{">"}</span>
-          </div>
-        </button>
-        {/* Stories */}
-        <button
-          type="button"
-          className="flex justify-between items-center p-4 border rounded-xl w-full focus:outline-none"
-          onClick={() => router.push("/setting/notification-and-sound/stories")}
-        >
-          <div className="flex items-center space-x-2">
-            <Bell className="text-yellow-400" />
-            <span>Stories</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <span className="text-gray-400">Top 5</span>
-            <span className="text-gray-400 text-lg">{">"}</span>
-          </div>
-        </button>
-        {/* Reactions */}
-        <button
-          type="button"
-          className="flex justify-between items-center p-4 border rounded-xl w-full focus:outline-none"
-          onClick={() =>
-            router.push("/setting/notification-and-sound/reactions")
-          }
-        >
-          <div className="flex items-center space-x-2">
-            <Heart className="text-pink-500" />
-            <span>Reactions</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <span className="text-gray-400">{reactions ? "On" : "Off"}</span>
-            <span className="text-gray-400 text-lg">{">"}</span>
-          </div>
-        </button>
-      </div>
+      <Section title="MESSAGE NOTIFICATIONS">
+        <div className="overflow-hidden bg-white dark:bg-[#1c1c1e] rounded-xl border border-[#d1d1d6] dark:border-[#2c2c2e] divide-y">
+          {messageItems.map(
+            ({
+              label,
+              icon,
+              iconBg,
+              value,
+              route,
+              customText,
+              description,
+            }) => (
+              <button
+                key={label}
+                onClick={() =>
+                  router.push(`/setting/notification-and-sound/${route}`)
+                }
+                className="flex items-center justify-between w-full px-4 py-3 focus:outline-none"
+              >
+                <div className="flex items-center space-x-4">
+                  <div
+                    className={`w-8 h-8 rounded-2xl flex items-center justify-center ${iconBg}`}
+                  >
+                    {icon}
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <span className="text-sm font-medium text-black dark:text-white">
+                      {label}
+                    </span>
+                    {description && (
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {description}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    {customText ?? (value ? "On" : "Off")}
+                  </span>
+                  <span className="text-lg text-gray-400 dark:text-gray-500">
+                    {">"}
+                  </span>
+                </div>
+              </button>
+            )
+          )}
+        </div>
+      </Section>
 
       {/* In-App Notifications */}
-      <p className="text-gray-400 font-semibold uppercase text-sm px-1 mb-1 mt-4">
-        IN-APP NOTIFICATIONS
-      </p>
-      <div className="p-4 border rounded-xl divide-y space-y-3">
-        <NotificationToggle
-          label="In-App Sounds"
-          enabled={inAppSounds}
-          setEnabled={setInAppSounds}
-          description={undefined}
-        />
-        <NotificationToggle
-          label="In-App Vibrate"
-          enabled={inAppVibrate}
-          setEnabled={setInAppVibrate}
-          description={undefined}
-        />
-        <NotificationToggle
-          label="In-App Preview"
-          enabled={inAppPreview}
-          setEnabled={setInAppPreview}
-          description={undefined}
-        />
-      </div>
-      {/* Names on Lock Screen */}
-      <div className="p-4 border rounded-xl space-y-3">
+      <Section title="IN-APP NOTIFICATIONS">
+        <Card>
+          <NotificationToggle
+            label="In-App Sounds"
+            enabled={inAppSounds}
+            setEnabled={setInAppSounds}
+          />
+          <NotificationToggle
+            label="In-App Vibrate"
+            enabled={inAppVibrate}
+            setEnabled={setInAppVibrate}
+          />
+          <NotificationToggle
+            label="In-App Preview"
+            enabled={inAppPreview}
+            setEnabled={setInAppPreview}
+          />
+        </Card>
+      </Section>
+
+      {/* Lock Screen */}
+      <Card>
         <NotificationToggle
           label="Names on Lock Screen"
           enabled={lockScreenNames}
           setEnabled={setLockScreenNames}
         />
-      </div>
-      <p className="text-gray-400 text-sm mt-1">
+      </Card>
+      <Description>
         Display names in notifications when the device is locked. To disable,
         make sure that 'Show Previews' is also set to 'When Unlocked' or 'Never'
-        in iOS Settings &gt; Notifications.
-      </p>
+        in{" "}
+        <span className="text-blue-400">iOS Settings &gt; Notifications.</span>
+      </Description>
+
       {/* Badge Counter */}
-      <p className="text-gray-400 font-semibold uppercase text-sm px-1 mb-1 mt-4">
-        Badge Counter
-      </p>
-      <div className="p-4 border divide-y rounded-xl space-y-3">
-        <NotificationToggle
-          label="Include Channels"
-          enabled={includeChannels}
-          setEnabled={setIncludeChannels}
-          description={undefined}
-        />
-        <NotificationToggle
-          label="Count Unread Messages"
-          enabled={countUnread}
-          setEnabled={setCountUnread}
-          description={undefined}
-        />
-      </div>
-      <p className="text-gray-400 text-sm mt-1">
-        Switch off to show the number of unread chats instead of messages
-      </p>
+      <Section title="Badge Counter">
+        <Card>
+          <NotificationToggle
+            label="Include Channels"
+            enabled={includeChannels}
+            setEnabled={setIncludeChannels}
+          />
+          <NotificationToggle
+            label="Count Unread Messages"
+            enabled={countUnread}
+            setEnabled={setCountUnread}
+          />
+        </Card>
+        <Description>
+          Switch off to show the number of unread chats instead of messages
+        </Description>
+      </Section>
+
       {/* New Contacts */}
-      <div className="p-4 border rounded-xl space-y-3">
+      <Card>
         <NotificationToggle
           label="New Contacts"
           enabled={newContacts}
           setEnabled={setNewContacts}
         />
-      </div>
-      <p className="text-gray-400 text-sm mt-1">
+      </Card>
+      <Description>
         Receive push notifications when one of your contacts becomes available
         on Telegram.
-      </p>
+      </Description>
 
-      {/* Reset */}
+      {/* Reset Button */}
       <div className="pt-0">
-        <button type="button" className="text-red-500 font-semibold w-full py-3 rounded-xl border transition text-left pl-4">
-          Reset All Notifications
-        </button>
-        <p className="text-gray-400 text-sm mt-1">
+        <Card>
+          <button
+            type="button"
+            className="text-red-500 font-semibold w-full py-2 rounded-xl transition text-left pl-2 bg-transparent"
+          >
+            Reset All Notifications
+          </button>
+        </Card>
+        <Description>
           Undo all custom notification settings for your contacts, groups and
           channels.
-        </p>
+        </Description>
       </div>
-      <div className="h-8"></div>
+
+      <div className="h-8" />
     </div>
   );
 }
+
+// Section title
+const Section = ({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) => (
+  <>
+    <p className="text-gray-500 dark:text-gray-400 font-semibold uppercase text-sm px-1 mb-1 mt-4">
+      {title}
+    </p>
+    {children}
+  </>
+);
+
+// White card container
+const Card = ({ children }: { children: React.ReactNode }) => (
+  <div className="px-3 py-2 bg-white dark:bg-[#1c1c1c] border border-[#d1d1d6] dark:border-[#2c2c2e] rounded-xl divide-y space-y-1">
+    {children}
+  </div>
+);
+
+// Text under cards
+const Description = ({ children }: { children: React.ReactNode }) => (
+  <p className="text-gray-500 dark:text-gray-400 text-sm mt-1 px-1">
+    {children}
+  </p>
+);
