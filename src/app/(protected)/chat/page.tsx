@@ -117,14 +117,12 @@ export default function ChatsPage() {
 
   const route = useRouter();
 
-  const MAIN_APP_ORIGIN =  process.env.NEXT_PUBLIC_MAIN_APP_ORIGIN ?? "http://localhost:3000";
+  const MAIN_APP_ORIGIN =
+    process.env.NEXT_PUBLIC_MAIN_APP_ORIGIN ?? "http://localhost:3000";
 
   const handleBack = () => {
     if (backUrl) {
-      if (
-        backUrl.startsWith("http") ||
-        backUrl.startsWith("//")
-      ) {
+      if (backUrl.startsWith("http") || backUrl.startsWith("//")) {
         removeLS("backUrl");
         window.location.href = backUrl;
       } else if (backUrl.startsWith("/")) {
@@ -139,13 +137,17 @@ export default function ChatsPage() {
     <div>
       <div className="sticky bg-white dark:bg-black top-0 z-10">
         <div className="flex items-center justify-between px-4 py-2">
-          <div> 
-            {backUrl ? 
-              <button 
-                className="text-blue-500 font-medium w-10 cursor-pointer pr-3" 
-                onClick={handleBack}>
-                  Back
-              </button> : ""}
+          <div>
+            {backUrl ? (
+              <button
+                className="text-blue-500 font-medium w-10 cursor-pointer"
+                onClick={handleBack}
+              >
+                Back
+              </button>
+            ) : (
+              ""
+            )}
             <ChatEditButton
               isEditMode={isEditMode}
               onEdit={() => setIsEditMode(true)}

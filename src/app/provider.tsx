@@ -12,7 +12,6 @@ function BackUrlSetter() {
   const backUrl = searchParams.get("backUrl");
   if (backUrl) {
     setLS("backUrl", backUrl);
-    console.log("Set backUrl to localStorage:", backUrl);
   }
   return null;
 }
