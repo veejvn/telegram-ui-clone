@@ -10,9 +10,7 @@ import * as sdk from "matrix-js-sdk";
 import { useTheme } from "next-themes";
 import React, { useEffect, useState } from "react";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
-import UnreadMsgsCount from "./UnreadMsgsCount";
-import useUnreadMessages from "@/hooks/useUnreadMsgs";
-
+import { Check } from "lucide-react";
 interface ChatListItemProps {
   room: sdk.Room;
   isEditMode?: boolean;
@@ -72,14 +70,19 @@ export const ChatListItem = ({
   return (
     <div className="flex px-2 py-2">
       {isEditMode && (
-        <input
-          type="checkbox"
-          className="mr-3 w-5 h-5"
-          checked={checked}
-          onChange={onSelect}
-          onClick={(e) => e.stopPropagation()}
-          aria-label="checkbox"
-        />
+        <label className="mr-3 inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            className="hidden peer"
+            checked={checked}
+            onChange={onSelect}
+            onClick={(e) => e.stopPropagation()}
+            aria-label="checkbox"
+          />
+          <div className="w-5 h-5 rounded-full border border-gray-400 peer-checked:bg-blue-500 peer-checked:border-blue-500 flex items-center justify-center">
+            {checked && <Check className="w-4 h-4 text-white" />}
+          </div>
+        </label>
       )}
       <div className="w-[60px] flex justify-center items-center">
         <Avatar className="h-15 w-15">
