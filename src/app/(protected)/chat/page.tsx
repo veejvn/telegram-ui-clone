@@ -14,7 +14,6 @@ import ChatActionBar from "@/components/chat/ChatActionBar";
 import DeleteChatModal from "@/components/chat/DeleteChatModal";
 import { getUserRooms } from "@/services/chatService";
 import { getLS, removeLS } from "@/tools/localStorage.tool";
-import { useRouter } from "next/navigation";
 import { MoveLeft } from "lucide-react";
 
 export default function ChatsPage() {
@@ -116,8 +115,7 @@ export default function ChatsPage() {
 
   const backUrl = getLS("backUrl");
 
-  const MAIN_APP_ORIGIN =
-    process.env.NEXT_PUBLIC_MAIN_APP_ORIGIN ?? "http://localhost:3000";
+  const MAIN_APP_ORIGIN = typeof window !== "undefined" ? window.location.origin : ""; 
 
   const handleBack = () => {
     if (backUrl) {
