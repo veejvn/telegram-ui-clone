@@ -3,21 +3,12 @@ import React, { useRef, useEffect, useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import ProfileIcon from "@/icons/telegram/profile.svg";
+import { useTheme } from "next-themes";
+
 import {
-  Camera,
-  AtSign,
-  User,
-  Bookmark,
-  PhoneCall,
   QrCode,
-  Folder,
-  Bell,
-  Lock,
-  Database,
-  Palette,
-  Smartphone,
   ChevronRight,
-  Globe,
 } from "lucide-react";
 import Link from "next/link";
 import { useUserStore } from "@/stores/useUserStore";
@@ -33,58 +24,256 @@ interface SettingItem {
   path?: string;
 }
 
-const settings: SettingItem[] = [
-  {
-    title: "My Profile",
-    icon: <User className="h-6 w-6 text-red-500" />,
-    path: "/setting/profile",
-  },
+const group1: SettingItem[] = [
   {
     title: "Saved Messages",
-    icon: <Bookmark className="h-6 w-6 text-blue-500" />,
+    icon: (
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#0479fd] mr-2 overflow-hidden">
+        <img
+          src="/images/telegram/saved-message.jpg"
+          alt="Saved Messages"
+          className="w-5 h-5 object-cover rounded-[6px]"
+          draggable={false}
+        />
+      </span>
+    ),
     path: "/setting/saved-message",
   },
   {
     title: "Recent Calls",
-    icon: <PhoneCall className="h-6 w-6 text-green-500" />,
+    icon: (
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#38c656] mr-2 overflow-hidden">
+        <img
+          src="/images/telegram/recent-call.png"
+          alt="Recent Calls"
+          className="w-5 h-5 object-cover rounded-[6px]"
+          draggable={false}
+        />
+      </span>
+    ),
     path: "/setting/recent-call",
   },
   {
     title: "Devices",
-    icon: <Smartphone className="h-6 w-6 text-orange-500" />,
-    extra: <span className="text-sm text-gray-400">Scan QR</span>,
+    icon: (
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#fd9500] mr-2 overflow-hidden">
+        <img
+          src="/images/telegram/device.jpg"
+          alt="Devices"
+          className="w-5 h-5 object-cover rounded-[6px]"
+          draggable={false}
+        />
+      </span>
+    ),
+    extra: "Scan QR",
     path: "/setting/device",
   },
   {
     title: "Chat Folders",
-    icon: <Folder className="h-6 w-6 text-cyan-500" />,
+    icon: (
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#2dabdb] mr-2 overflow-hidden">
+        <img
+          src="/images/telegram/chat-folder.jpg"
+          alt="Chat Folders"
+          className="w-5 h-5 object-cover rounded-[6px]"
+          draggable={false}
+        />
+      </span>
+    ),
     path: "/setting/chat-folder",
   },
+];
+
+const group2: SettingItem[] = [
   {
     title: "Notifications and Sounds",
-    icon: <Bell className="h-6 w-6 text-red-500" />,
+    icon: (
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#fd3a38] mr-2 overflow-hidden">
+        <img
+          src="/images/telegram/notifications-and-sounds.jpg"
+          alt="Notifications and Sounds"
+          className="w-5 h-5 object-cover rounded-[6px]"
+          draggable={false}
+        />
+      </span>
+    ),
     path: "/setting/notification-and-sound",
   },
   {
     title: "Privacy and Security",
-    icon: <Lock className="h-6 w-6 text-gray-400" />,
+    icon: (
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#8f8e94] mr-2 overflow-hidden">
+        <img
+          src="/images/telegram/privacy-and-security.png"
+          alt="Privacy and Security"
+          className="w-5 h-5 object-cover rounded-[6px]"
+          draggable={false}
+        />
+      </span>
+    ),
     path: "/setting/privacy-and-security",
   },
   {
     title: "Data and Storage",
-    icon: <Database className="h-6 w-6 text-green-600" />,
+    icon: (
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] mr-2 overflow-hidden bg-[#34C759] p-0">
+        <img
+          src="/images/telegram/data-and-storage.png"
+          alt="Data and Storage"
+          className="w-5 h-5 object-cover rounded-[6px]"
+          draggable={false}
+        />
+      </span>
+    ),
     path: "/setting/data-and-storage",
   },
   {
     title: "Appearance",
-    icon: <Palette className="h-6 w-6 text-blue-700" />,
+    icon: (
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] mr-2 overflow-hidden bg-[#30B6F6] p-0">
+        <img
+          src="/images/telegram/appearance.png"
+          alt="Appearance"
+          className="w-5 h-5 object-cover rounded-[6px]"
+          draggable={false}
+        />
+      </span>
+    ),
     path: "/setting/appearance",
   },
   {
+    title: "Power Saving",
+    icon: (
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#FF9500] mr-2 overflow-hidden p-0">
+        <img
+          src="/images/telegram/power-saving.png"
+          alt="Power Saving"
+          className="w-5 h-5 object-cover rounded-[6px]"
+          draggable={false}
+        />
+      </span>
+    ),
+    extra: "Off",
+    path: "/setting/power-saving",
+  },
+  {
     title: "Language",
-    icon: <Globe className="h-6 w-6 text-violet-600" />,
-    extra: <span className="text-sm text-gray-400">English</span>,
+    icon: (
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#A259E6] mr-2 overflow-hidden">
+        <img
+          src="/images/telegram/language.png"
+          alt="Language"
+          className="w-5 h-5 object-cover rounded-[6px]"
+          draggable={false}
+        />
+      </span>
+    ),
+    extra: "English",
     path: "/setting/language",
+  },
+];
+
+const group3: SettingItem[] = [
+  {
+    title: "Telegram Premium",
+    icon: (
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#ad6ef0] mr-2 overflow-hidden">
+        <img
+          src="/images/telegram/premium.png"
+          alt="Telegram Premium"
+          className="w-5 h-5 object-cover rounded-[6px]"
+          draggable={false}
+        />
+      </span>
+    ),
+    path: "/setting/premium",
+  },
+  {
+    title: "My Stars",
+    icon: (
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#f99011] mr-2 overflow-hidden">
+        <img
+          src="/images/telegram/my-stars.jpg"
+          alt="My Stars"
+          className="w-5 h-5 object-cover rounded-[6px]"
+          draggable={false}
+        />
+      </span>
+    ),
+    path: "/setting/my-stars",
+  },
+  {
+    title: "Telegram Business",
+    icon: (
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#e06b95] mr-2 overflow-hidden">
+        <img
+          src="/images/telegram/business.png"
+          alt="Telegram Business"
+          className="w-5 h-5 object-cover rounded-[6px]"
+          draggable={false}
+        />
+      </span>
+    ),
+    path: "/setting/business",
+  },
+  {
+    title: "Send a Gift",
+    icon: (
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#01ace0] mr-2 overflow-hidden">
+        <img
+          src="/images/telegram/send-gift.jpg"
+          alt="Send a Gift"
+          className="w-5 h-5 object-cover rounded-[6px]"
+          draggable={false}
+        />
+      </span>
+    ),
+    path: "/setting/send-gift",
+  },
+];
+
+const group4: SettingItem[] = [
+  {
+    title: "Ask a Question",
+    icon: (
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#ff9600] mr-2 overflow-hidden">
+        <img
+          src="/images/telegram/ask-question.png"
+          alt="Ask a Question"
+          className="w-5 h-5 object-cover rounded-[6px]"
+          draggable={false}
+        />
+      </span>
+    ),
+    path: "/setting/ask-question",
+  },
+  {
+    title: "Telegram FAQ",
+    icon: (
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#2dabdb] mr-2 overflow-hidden">
+        <img
+          src="/images/telegram/faq.png"
+          alt="Telegram FAQ"
+          className="w-5 h-5 object-cover rounded-[6px]"
+          draggable={false}
+        />
+      </span>
+    ),
+    path: "/setting/faq",
+  },
+  {
+    title: "Telegram Features",
+    icon: (
+      <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#fdcb14] mr-2 overflow-hidden">
+        <img
+          src="/images/telegram/features.png"
+          alt="Telegram Features"
+          className="w-5 h-5 object-cover rounded-[6px]"
+          draggable={false}
+        />
+      </span>
+    ),
+    path: "/setting/feature",
   },
 ];
 
@@ -93,22 +282,21 @@ export default function SettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const client = useMatrixClient();
   const userId = useAuthStore.getState().userId;
-  const { user , setUser } = useUserStore.getState();
-  const displayName = user ? user.displayName : "Your Name";
+  const { user, setUser } = useUserStore.getState();
+  const displayName = user ? user.displayName : "Tên";
+  const phone = user?.phone || "Sđt";
+  const homeserver = user?.homeserver?.replace("https://", "") || "";
   const [_, setRefresh] = useState(0);
 
-  // Lấy avatar_url (MXC) và chuyển sang HTTP URL, ưu tiên dùng proxy nếu cần
+  // Đưa fetchAvatar ra ngoài useEffect
   const fetchAvatar = async () => {
     if (!client || !userId) return;
     try {
       const profile = await client.getProfileInfo(userId);
       if (profile && profile.avatar_url) {
         const httpUrl = client.mxcUrlToHttp(profile.avatar_url, 96, 96, "crop") ?? "";
-
-        // Kiểm tra link HTTP thực tế
         const isValid = /^https?:\/\//.test(httpUrl) && !httpUrl.includes("M_NOT_FOUND");
         if (isValid) {
-          // Test link HTTP thực tế
           try {
             const res = await fetch(httpUrl, { method: "HEAD" });
             if (res.ok) {
@@ -117,24 +305,19 @@ export default function SettingsPage() {
               setRefresh((prev) => prev + 1);
               return;
             }
-          } catch (e) {
-            // Nếu fetch lỗi, sẽ fallback
-          }
+          } catch { }
         }
-        setUser({ avatarUrl: "" });
-      } else {
-        setUser({ avatarUrl: "" });
       }
-    } catch (error) {
       setUser({ avatarUrl: "" });
-      console.error("Error loading avatar:", error);
+    } catch {
+      setUser({ avatarUrl: "" });
     }
   };
 
-  // Lắng nghe sự kiện thay đổi avatar để cập nhật realtime
   useEffect(() => {
     fetchAvatar();
-  }, [client, userId]);
+    // eslint-disable-next-line
+  }, [client, userId, setUser]);
 
   const handleFileSelect = () => {
     fileInputRef.current?.click();
@@ -145,10 +328,7 @@ export default function SettingsPage() {
     if (!file || !client) return;
 
     try {
-      console.log("📂 File được chọn:", file.name);
       if (!userId) throw new Error("Không tìm thấy userId");
-
-      // 1️⃣ upload
       const arrayBuffer = await file.arrayBuffer();
       const uint8Array = new Uint8Array(arrayBuffer);
 
@@ -158,9 +338,7 @@ export default function SettingsPage() {
         onlyContentUri: true,
       } as any);
 
-      // type guard rõ ràng
       let avatarUrl: string;
-
       if (typeof uploadRes === "string") {
         avatarUrl = uploadRes;
       } else if (typeof uploadRes === "object" && "content_uri" in uploadRes) {
@@ -169,115 +347,265 @@ export default function SettingsPage() {
         throw new Error("Upload result unknown");
       }
 
-      // 2️⃣ update profile
       await client.setAvatarUrl(avatarUrl);
-
-      // 3️⃣ cập nhật avatar ngay lập tức
       await fetchAvatar();
-
-      console.log(" Avatar updated successfully");
     } catch (error) {
-      console.error(" Error uploading avatar:", error);
+      console.error("Error uploading avatar:", error);
     }
   };
 
   const handleClickEdit = () => {
-    router.push("/setting/profile/edit")
-  }
+    router.push("/setting/profile/edit");
+  };
 
-  const avatarBackgroundColor = getBackgroundColorClass(userId)
+  const avatarBackgroundColor = getBackgroundColorClass(userId);
 
-  return (
-    <>
-      {/* Header */}
-      <div className="relative">
-        <div className="flex items-center justify-between px-4 pt-4">
-          <QrCode className="h-6 w-6 text-blue-500" />
-          <div className="absolute left-1/2 transform -translate-x-1/2 top-4">
-            <Avatar className={`h-20 w-20 ${avatarBackgroundColor}`}>
+  const sections = [
+    {
+      key: "profile",
+      render: () => (
+        <div className="relative px-4 pt-4 pb-2">
+          <div className="flex items-center justify-between">
+            <QrCode className="h-6 w-6 text-blue-500" />
+            <Button
+              variant="ghost"
+              className="text-blue-500 text-base font-medium px-2 py-1 h-auto shadow-none border-none"
+              onClick={handleClickEdit}
+            >
+              Edit
+            </Button>
+          </div>
+          <div className="flex flex-col items-center mt-2 mb-2">
+            <Avatar className={`h-28 w-28 text-4xl ${avatarBackgroundColor}`}>
               {user?.avatarUrl ? (
                 <img
                   src={user.avatarUrl}
                   alt="avatar"
-                  className="h-20 w-20 rounded-full object-cover"
-                  width={80}
-                  height={80}
+                  className="h-28 w-28 rounded-full object-cover"
+                  width={112}
+                  height={112}
                   loading="lazy"
                 />
               ) : (
-                <AvatarFallback className="text-xl">
+                <AvatarFallback className="text-4xl">
                   {getInitials(displayName)}
                 </AvatarFallback>
               )}
             </Avatar>
+            <div className="mt-3 text-lg font-bold">{displayName}</div>
+            <div className="text-sm text-blue-500 font-medium">
+              Homeserver: {homeserver}
+            </div>
           </div>
-          <Button
-            className="text-blue-500 hover:bg-zinc-300 bg-white dark:bg-transparent border dark:hover:text-blue-700"
-            size="sm"
-            onClick={handleClickEdit}
-          >
-            Edit
-          </Button>
         </div>
-        <div className="mt-16 text-center px-4 pb-4">
-          <h1 className="text-2xl font-semibold">{displayName}</h1>
-          <p className="text-sm text-blue-500">
-            Homeserver: {user?.homeserver?.replace("https://", "")}
-          </p>
-        </div>
-      </div>
+      ),
+    },
+    {
+      key: "actions",
+      render: () => {
+        const { theme } = useTheme();
+        const isDark = theme === "dark" || (theme === "system" && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches);
 
-      {/* Action Shortcuts */}
-      <div className="mx-4 rounded-2xl border-2 divide-y-2">
-        {/* Set Profile Photo */}
-        <div
-          className="flex items-center justify-between px-4 py-3 cursor-pointer"
-          onClick={handleFileSelect}
-        >
-          <div className="flex items-center space-x-3">
-            <div className="bg-indigo-600 h-9 w-9 rounded-full flex items-center justify-center text-white">
-              <Camera className="h-5 w-5" />
+        const profileImg = isDark
+          ? "/images/telegram/set-profile-dark.jpg"
+          : "/images/telegram/set-profile-light.jpg";
+        const usernameImg = isDark
+          ? "/images/telegram/set-username-dark.jpg"
+          : "/images/telegram/set-username-light.jpg";
+
+        return (
+          <div className="mx-4 rounded-2xl bg-white dark:bg-[#181818] shadow-sm mb-4 overflow-hidden">
+            <div
+              className="flex items-center px-4 py-2 cursor-pointer"
+              onClick={handleFileSelect}
+            >
+              <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[##1c1c1c] mr-2 overflow-hidden">
+                <img
+                  src={profileImg}
+                  alt="Set Profile Photo"
+                  className="w-8 h-8 object-cover rounded-[6px]"
+                  draggable={false}
+                />
+              </span>
+              <span className="text-[15px] font-normal flex-1 text-[#1877F2] dark:text-[#8cc5f7]">
+                Set Profile Photo
+              </span>
             </div>
-            <span className="text-base">Set Profile Photo</span>
+            <div className="border-t border-[#f0f0f0] dark:border-[#232323]" />
+            <div
+              className="flex items-center px-4 py-2 cursor-pointer"
+              onClick={() => router.push("/setting/set-username")}
+            >
+              <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[##1c1c1c] mr-2 overflow-hidden">
+                <img
+                  src={usernameImg}
+                  alt="Set Username"
+                  className="w-8 h-8 object-cover rounded-[6px]"
+                  draggable={false}
+                />
+              </span>
+              <span className="text-[15px] font-normal flex-1 text-[#1877F2] dark:text-[#8cc5f7]">
+                Set Username
+              </span>
+            </div>
           </div>
-          <ChevronRight className="h-5 w-5 text-gray-500" />
-        </div>
+        );
+      },
+    },
+    {
+      title: "My Profile",
+      icon: (
+        <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#FF2D55] mr-2 overflow-hidden">
+          <img
+            src="/images/telegram/profile.png"
+            alt="My Profile"
+            className="w-5 h-5 object-cover rounded-[6px]"
+            draggable={false}
+          />
+        </span>
+      ),
+      path: "/setting/profile",
+    },
 
-        {/* Set Username */}
-        <div
-          className="flex items-center justify-between px-4 py-3 cursor-pointer"
-          onClick={() => router.push("/setting/set-username")}
-        >
-          <div className="flex items-center space-x-3">
-            <div className="bg-indigo-600 h-9 w-9 rounded-full flex items-center justify-center text-white">
-              <AtSign className="h-5 w-5" />
-            </div>
-            <span className="text-base">Set Username</span>
-          </div>
-          <ChevronRight className="h-5 w-5 text-gray-500" />
+    {
+      key: "group1",
+      render: () => (
+        <div className="mx-4 rounded-2xl bg-white dark:bg-[#181818] shadow-sm mb-4 overflow-hidden">
+          {group1.map((item, idx) => (
+            <Link
+              key={item.title}
+              className={
+                "flex items-center justify-between px-4 py-2 " +
+                (idx !== group1.length - 1 ? "border-b border-[#f0f0f0] dark:border-[#232323] " : "") +
+                "text-black dark:text-white"
+              }
+              href={item.path || "#"}
+            >
+              <div className="flex items-center space-x-2">
+                {item.icon}
+                <span className="text-[15px] font-normal">{item.title}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                {item.extra && (
+                  <span className="text-[15px] text-gray-400 font-normal">{item.extra}</span>
+                )}
+                <ChevronRight className="h-5 w-5 text-gray-400" />
+              </div>
+            </Link>
+          ))}
         </div>
-      </div>
+      ),
+    },
+    {
+      key: "group2",
+      render: () => (
+        <div className="mx-4 rounded-2xl bg-white dark:bg-[#181818] shadow-sm overflow-hidden mb-4">
+          {group2.map((item, idx) => (
+            <Link
+              key={item.title}
+              className={
+                "flex items-center justify-between px-4 py-3 " +
+                (idx !== group2.length - 1 ? "border-b border-[#f0f0f0] dark:border-[#232323] " : "") +
+                "text-black dark:text-white"
+              }
+              href={item.path || "#"}
+              style={
+                // Thêm bo góc dưới cho mục cuối cùng (Language)
+                idx === group2.length - 1
+                  ? { borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }
+                  : {}
+              }
+            >
+              <div className="flex items-center space-x-2">
+                {item.icon}
+                <span className="text-[15px] font-normal">{item.title}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                {item.extra && (
+                  <span className="text-[15px] text-gray-400 font-normal">{item.extra}</span>
+                )}
+                <ChevronRight className="h-5 w-5 text-gray-400" />
+              </div>
+            </Link>
+          ))}
+        </div>
+      ),
+    },
+    {
+      key: "group3",
+      render: () => (
+        <div className="mx-4 rounded-2xl bg-white dark:bg-[#181818] shadow-sm mb-4 overflow-hidden">
+          {group3.map((item, idx) => (
+            <Link
+              key={item.title}
+              className={
+                "flex items-center justify-between px-4 py-2 " +
+                (idx !== group3.length - 1 ? "border-b border-[#f0f0f0] dark:border-[#232323] " : "") +
+                "text-black dark:text-white"
+              }
+              href={item.path || "#"}
+            >
+              <div className="flex items-center space-x-2">
+                {item.icon}
+                <span className="text-[15px] font-normal">{item.title}</span>
+              </div>
+              <ChevronRight className="h-5 w-5 text-gray-400" />
+            </Link>
+          ))}
+        </div>
+      ),
+    },
+    {
+      key: "group4",
+      render: () => (
+        <div className="mx-4 rounded-2xl bg-white dark:bg-[#181818] shadow-sm mb-4 overflow-hidden">
+          {group4.map((item, idx) => (
+            <Link
+              key={item.title}
+              className={
+                "flex items-center justify-between px-4 py-2 " +
+                (idx !== group4.length - 1 ? "border-b border-[#f0f0f0] dark:border-[#232323] " : "") +
+                "text-black dark:text-white"
+              }
+              href={item.path || "#"}
+            >
+              <div className="flex items-center space-x-2">
+                {item.icon}
+                <span className="text-[15px] font-normal">{item.title}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                {item.extra && (
+                  <span className="text-[15px] text-gray-400 font-normal">{item.extra}</span>
+                )}
+                <ChevronRight className="h-5 w-5 text-gray-400" />
+              </div>
+            </Link>
+          ))}
+        </div>
+      ),
+    },
+  ];
 
-      {/* Settings List */}
-      <div className="p-4 space-y-2">
-        {settings.map((item) => (
-          <Link
-            key={item.title}
-            className="flex items-center justify-between border-2 rounded-2xl px-4 py-3"
-            href={item.path || "#"}
-          >
-            <div className="flex items-center space-x-3">
-              {item.icon}
-              <span>{item.title}</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              {item.extra}
-              <ChevronRight className="h-5 w-5 text-gray-500" />
-            </div>
-          </Link>
-        ))}
-        <div className="h-14"></div>
-      </div>
+  return (
+    <div className="min-h-screen bg-[#f5f6fa] dark:bg-[#101014] pb-8">
+      {sections.map((section, index) => (
+        <React.Fragment key={section.key || section.path || index}>
+          {"render" in section && typeof section.render === "function" ? (
+            section.render()
+          ) : (
+            <Link
+              href={section.path || "#"}
+              className="mx-4 rounded-2xl bg-white dark:bg-[#181818] shadow-sm flex items-center px-4 py-2 mb-4 transition hover:bg-gray-50 dark:hover:bg-[#232323]"
+            >
+              {section.icon}
+              <div className="flex-1 min-w-0">
+                <div className="text-[15px] font-normal">{section.title}</div>
+              </div>
+              <ChevronRight className="h-5 w-5 text-gray-400 ml-2" />
+            </Link>
+          )}
+        </React.Fragment>
+      ))}
       <input
         ref={fileInputRef}
         type="file"
@@ -286,6 +614,8 @@ export default function SettingsPage() {
         className="hidden"
         aria-label="Upload profile photo"
       />
-    </>
+      {/* Thêm khoảng trống tránh bị che bởi thanh tab bar */}
+      <div className="h-20" />
+    </div>
   );
 }
