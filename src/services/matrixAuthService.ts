@@ -3,7 +3,7 @@
 import * as sdk from "matrix-js-sdk";
 import { ERROR_MESSAGES } from "@/constants/error-messages"
 import { LoginFormData, RegisterFormData } from "@/types/auth";
-import { getLS, removeLS, setLS } from "@/tools/localStorage.tool";
+import { getCookie, removeCookie, setCookie } from "@/tools/cookie.tool";
 import { ILoginResponse } from "@/types/matrix";
 import { useUserStore } from "@/stores/useUserStore";
 import { setCookie, getCookie, deleteCookie } from "@/utils/cookie";

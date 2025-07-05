@@ -1,5 +1,6 @@
 import { getCookie } from "@/utils/cookie";
 import { create } from 'zustand'
+import { getCookie } from '@/tools/cookie.tool'
 
 interface AuthState {
     isLogging: boolean
@@ -22,6 +23,7 @@ export const useAuthStore = create<AuthState>((set) => {
         deviceId: storedDeviceId,
 
         login: (accessToken, userId, deviceId) => {
+            set({ isLogging: true, accessToken, userId, deviceId })
             set({ isLogging: true, accessToken, userId, deviceId })
         },
 

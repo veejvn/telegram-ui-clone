@@ -5,10 +5,7 @@ import * as sdk from "matrix-js-sdk";
 import { getCookie, deleteCookie } from "@/utils/cookie";
 import { waitForClientReady } from "@/lib/matrix";
 import { createUserInfo } from "@/utils/createUserInfo";
-import { useAuthStore } from "@/stores/useAuthStore";
 import { useRouter } from "next/navigation";
-import { useUserStore } from "@/stores/useUserStore";
-import { usePresence } from "@/hooks/usePresence";
 import { PresenceProvider } from "@/contexts/PresenceProvider";
 
 const HOMESERVER_URL =
@@ -25,8 +22,6 @@ export function MatrixClientProvider({
 }) {
   const router = useRouter();
   const [client, setClient] = useState<sdk.MatrixClient | null>(null);
-  const logout = useAuthStore((state) => state.logout);
-  const clearUser = useUserStore.getState().clearUser;
 
   useEffect(() => {
     let isMounted = true;
