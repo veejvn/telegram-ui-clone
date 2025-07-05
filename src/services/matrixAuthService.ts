@@ -3,7 +3,7 @@
 import * as sdk from "matrix-js-sdk";
 import { ERROR_MESSAGES } from "@/constants/error-messages"
 import { LoginFormData, RegisterFormData } from "@/types/auth";
-import { getLS, removeLS, setLS } from "@/tools/localStorage.tool";
+import { getCookie, removeCookie, setCookie } from "@/tools/cookie.tool";
 import { ILoginResponse } from "@/types/matrix";
 import { useUserStore } from "@/stores/useUserStore";
 
@@ -75,16 +75,17 @@ export class MatrixAuthService {
                 initial_device_display_name: "Web Client"
             });
             if (registerResponse.access_token) {
-                setLS("matrix_access_token", registerResponse.access_token);
-                setLS("matrix_user_id", registerResponse.user_id);
-                setLS("matrix_device_id", registerResponse.device_id);
-                clientInstance = sdk.createClient({
-                    baseUrl: HOMESERVER_URL,
-                    accessToken: registerResponse.access_token,
-                    userId: registerResponse.user_id,
-                    deviceId: registerResponse.device_id
-                });
+                setCookie("matrix_access_token", registerResponse.access_token);
+                setCookie("matrix_user_id", registerResponse.user_id);
+                if(registerResponse.device_id)
+                    setCookie("matrix_device_id", registerResponse.device_id);
             }
+            clientInstance = sdk.createClient({
+                baseUrl: HOMESERVER_URL,
+                accessToken: registerResponse.access_token,
+                userId: registerResponse.user_id,
+                deviceId: registerResponse.device_id
+            });
             return {
                 success: true,
                 token: registerResponse.access_token,
@@ -104,16 +105,17 @@ export class MatrixAuthService {
                 password: password,
             })
             if (loginResponse.access_token) {
-                setLS("matrix_access_token", loginResponse.access_token);
-                setLS("matrix_user_id", loginResponse.user_id);
-                setLS("matrix_device_id", loginResponse.device_id); // <-- Dòng này là bắt buộc!
-                clientInstance = sdk.createClient({
-                    baseUrl: HOMESERVER_URL,
-                    accessToken: loginResponse.access_token,
-                    userId: loginResponse.user_id,
-                    deviceId: loginResponse.device_id
-                });
+                setCookie("matrix_access_token", loginResponse.access_token);
+                setCookie("matrix_user_id", loginResponse.user_id);
+                setCookie("matrix_device_id", loginResponse.device_id);
             }
+
+            clientInstance = sdk.createClient({
+                baseUrl: HOMESERVER_URL,
+                accessToken: loginResponse.access_token,
+                userId: loginResponse.user_id,
+                deviceId: loginResponse.device_id
+            });
             return {
                 success: true,
                 token: loginResponse.access_token,
@@ -139,16 +141,15 @@ export class MatrixAuthService {
             })
 
             if (loginResponse.access_token) {
-                setLS("matrix_access_token", loginResponse.access_token);
-                setLS("matrix_user_id", loginResponse.user_id);
-                setLS("matrix_device_id", loginResponse.device_id); // Thêm dòng này!
-                this.client = sdk.createClient({
-                    baseUrl: HOMESERVER_URL,
-                    accessToken: loginResponse.access_token,
-                    userId: loginResponse.user_id,
-                    deviceId: loginResponse.device_id,               // Và truyền deviceId vào đây!
-                });
+                setCookie("matrix_access_token", loginResponse.access_token);
+                setCookie("matrix_user_id", loginResponse.user_id);
+                setCookie("matrix_device_id", loginResponse.device_id); // Thêm dòng này!
             }
+            this.client = sdk.createClient({
+                baseUrl: HOMESERVER_URL,
+                accessToken: loginResponse.access_token,
+                userId: loginResponse.user_id
+            });
 
             return loginResponse
         } catch (error) {
@@ -170,16 +171,16 @@ export class MatrixAuthService {
             })
 
             if (loginResponse.access_token) {
-                setLS("matrix_access_token", loginResponse.access_token);
-                setLS("matrix_user_id", loginResponse.user_id);
-                setLS("matrix_device_id", loginResponse.device_id); // Thêm dòng này!
-                this.client = sdk.createClient({
-                    baseUrl: HOMESERVER_URL,
-                    accessToken: loginResponse.access_token,
-                    userId: loginResponse.user_id,
-                    deviceId: loginResponse.device_id,               // Và truyền deviceId vào đây!
-                });
+                setCookie("matrix_access_token", loginResponse.access_token);
+                setCookie("matrix_user_id", loginResponse.user_id);
+                setCookie("matrix_device_id", loginResponse.device_id);
             }
+            this.client = sdk.createClient({
+                baseUrl: HOMESERVER_URL,
+                accessToken: loginResponse.access_token,
+                userId: loginResponse.user_id,
+                deviceId: loginResponse.device_id
+            });
 
             return loginResponse
         } catch (error) {
@@ -191,8 +192,8 @@ export class MatrixAuthService {
     // Đăng xuất
     async logout(): Promise<void> {
         try {
-            const accessToken = getLS("matrix_access_token");
-            const userId = getLS("matrix_user_id");
+            const accessToken = getCookie("matrix_access_token");
+            const userId = getCookie("matrix_user_id");
             if (!accessToken || !userId) {
                 throw new Error("No access token found. Please login first.");
             }
@@ -204,9 +205,9 @@ export class MatrixAuthService {
                 });
             }
             await this.client.logout()
-            removeLS("matrix_access_token");
-            removeLS("matrix_user_id");
-            removeLS("matrix_device_id");
+            removeCookie("matrix_access_token");
+            removeCookie("matrix_user_id");
+            removeCookie("matrix_device_id");
             clearUser();
             if (this.client) {
                 this.client.stopClient();
