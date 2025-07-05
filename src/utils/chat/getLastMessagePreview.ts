@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import * as sdk from "matrix-js-sdk";
 import { formatTime } from "./formatTimeString";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -11,19 +11,28 @@ export const getLastMessagePreview = (
   sender?: string;
 } => {
   const timeline = room.getLiveTimeline().getEvents();
-  const lastEvent = timeline[timeline.length - 1];
-  const userId = useAuthStore.getState().userId
+  const userId = useAuthStore.getState().userId;
+
+  // 🔁 Tìm event hợp lệ gần nhất từ cuối timeline
+  const lastValidEvent = [...timeline].reverse().find((event) => {
+    return (
+      event.getType() === "m.room.message" &&
+      !event.isRedacted() &&
+      !!event.getContent()?.msgtype
+    );
+  });
 
   let text = "";
   let timestamp = 0;
   let senderId = "";
 
-  if (lastEvent && lastEvent.getType() === "m.room.message") {
-    const msgType = lastEvent.getContent()?.msgtype;
+  if (lastValidEvent) {
+    const content = lastValidEvent.getContent();
+    const msgType = content.msgtype;
 
     switch (msgType) {
       case "m.text":
-        text = lastEvent.getContent().body;
+        text = content.body;
         break;
       case "m.image":
         text = "sent an image";
@@ -41,13 +50,22 @@ export const getLastMessagePreview = (
         text = "sent a message";
     }
 
-    timestamp = lastEvent.getTs();
-    senderId = lastEvent.getSender() || "";
+    timestamp = lastValidEvent.getTs();
+    senderId = lastValidEvent.getSender() || "";
   } else {
     const state = room.getLiveTimeline().getState(sdk.EventTimeline.FORWARDS);
     const creationEvent = state?.getStateEvents("m.room.create", "");
-    timestamp = creationEvent?.getTs?.() || Date.now();
-    text = "Room created";
+
+    if (creationEvent) {
+      timestamp = creationEvent.getTs?.() || Date.now();
+      text = "Room created";
+      senderId = "";
+    } else {
+      // fallback cuối cùng nếu không có gì cả
+      timestamp = Date.now();
+      text = "No messages yet";
+      senderId = "";
+    }
   }
 
   let senderName: string = senderId || "Unknown";

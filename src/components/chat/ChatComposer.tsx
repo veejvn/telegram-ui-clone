@@ -13,6 +13,7 @@ import EmojiPicker, { Theme as EmojiTheme } from "emoji-picker-react";
 import { useChatStore } from "@/stores/useChatStore";
 import TypingIndicator from "./TypingIndicator";
 import useTyping from "@/hooks/useTyping";
+import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
 
 const ChatComposer = ({ roomId }: { roomId: string }) => {
   const [text, setText] = useState("");
@@ -40,7 +41,6 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   const handleSend = () => {
     const trimmed = text.trim();
     if (!trimmed || !client) return;
-
     const localId = "local_" + Date.now(); // Fake ID tạm thời
     const userId = client.getUserId();
     const now = new Date();
@@ -54,6 +54,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
       time: now.toLocaleString(),
       timestamp: now.getTime(),
       status: "sent",
+      type: isOnlyEmojis(trimmed) ? "emoji" : undefined,
     });
 
     // 🧹 Reset UI
@@ -133,7 +134,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   }, []);
 
   return (
-    <div className="relative flex justify-between items-center bg-white dark:bg-[#1c1c1e] px-2.5 py-2 lg:py-3">
+    <div className="relative flex justify-between items-center bg-white dark:bg-[#1c1c1e] px-2.5 py-2 lg:py-3 pb-10">
       <Paperclip
         onClick={() => inputRef.current?.click()}
         className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"

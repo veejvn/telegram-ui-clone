@@ -22,7 +22,11 @@ const ImageMessage = ({ msg, isSender }: MessagePros) => {
           isSender ? "ml-auto" : "mr-auto"
         )}
       >
-        <img src={msg.imageUrl} alt={msg.text} className="rounded-xl object-cover max-h-[320px]"/>
+        <img
+          src={msg.imageUrl}
+          alt={msg.text}
+          className="rounded-xl object-cover max-h-[320px]"
+        />
       </div>
 
       <div className={textClass}>
