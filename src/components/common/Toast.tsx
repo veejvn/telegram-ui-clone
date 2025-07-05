@@ -1,6 +1,8 @@
-'use client';
+"use client";
 
 import { useEffect, useState } from 'react';
+import { useToast } from "@/hooks/use-toast";
+import { checkTokenValidity } from "@/lib/matrix";
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -18,6 +20,7 @@ export default function Toast({
     onClose
 }: ToastProps) {
     const [isVisible, setIsVisible] = useState(true);
+    const { toast } = useToast();
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -27,6 +30,27 @@ export default function Toast({
 
         return () => clearTimeout(timer);
     }, [duration, onClose]);
+
+    useEffect(() => {
+        const checkToken = async () => {
+            const isValid = await checkTokenValidity();
+            if (!isValid) {
+                toast({
+                    title: "Phiên đăng nhập hết hạn",
+                    description: "Vui lòng đăng nhập lại để tiếp tục sử dụng.",
+                    variant: "destructive",
+                });
+            }
+        };
+
+        // Kiểm tra token mỗi 5 phút
+        const interval = setInterval(checkToken, 5 * 60 * 1000);
+
+        // Kiểm tra ngay lập tức
+        checkToken();
+
+        return () => clearInterval(interval);
+    }, [toast]);
 
     const typeClasses = {
         success: 'bg-green-50 text-green-800 border-green-200',
@@ -91,4 +115,31 @@ export default function Toast({
             </div>
         </div>
     );
+}
+
+export function TokenExpirationToast() {
+    const { toast } = useToast();
+
+    useEffect(() => {
+        const checkToken = async () => {
+            const isValid = await checkTokenValidity();
+            if (!isValid) {
+                toast({
+                    title: "Phiên đăng nhập hết hạn",
+                    description: "Vui lòng đăng nhập lại để tiếp tục sử dụng.",
+                    variant: "destructive",
+                });
+            }
+        };
+
+        // Kiểm tra token mỗi 5 phút
+        const interval = setInterval(checkToken, 5 * 60 * 1000);
+
+        // Kiểm tra ngay lập tức
+        checkToken();
+
+        return () => clearInterval(interval);
+    }, [toast]);
+
+    return null;
 } 

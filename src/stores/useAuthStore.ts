@@ -1,6 +1,5 @@
-import { getLS } from '@/tools/localStorage.tool'
+import { getCookie } from "@/utils/cookie";
 import { create } from 'zustand'
-import { getCookie } from '@/tools/cookie.tool'
 
 interface AuthState {
     isLogging: boolean
@@ -12,17 +11,18 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>((set) => {
-    const storedToken = typeof window !== 'undefined' ? getCookie("matrix_access_token") : null
-    const storedUserId = typeof window !== 'undefined' ? getCookie("matrix_user_id") : null
-    const storedDeviceId = typeof window !== 'undefined' ? getCookie("matrix_device_id") : null
+    const storedToken: string | null = typeof window !== 'undefined' ? (getCookie("matrix_token") ?? null) : null
+    const storedUserId: string | null = typeof window !== 'undefined' ? (getCookie("matrix_user_id") ?? null) : null
+    const storedDeviceId: string | null = typeof window !== 'undefined' ? (getCookie("matrix_device_id") ?? null) : null
 
     return {
         isLogging: !!storedToken,
-        accessToken: storedToken ?? null,
+        accessToken: storedToken,
         userId: storedUserId,
         deviceId: storedDeviceId,
 
         login: (accessToken, userId, deviceId) => {
+            set({ isLogging: true, accessToken, userId, deviceId })
             set({ isLogging: true, accessToken, userId, deviceId })
         },
 

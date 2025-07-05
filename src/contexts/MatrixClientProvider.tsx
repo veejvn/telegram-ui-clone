@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import * as sdk from "matrix-js-sdk";
-import { getCookie } from "@/tools/cookie.tool";
+import { getCookie, deleteCookie } from "@/utils/cookie";
 import { waitForClientReady } from "@/lib/matrix";
 import { createUserInfo } from "@/utils/createUserInfo";
 import { useRouter } from "next/navigation";
@@ -26,10 +26,9 @@ export function MatrixClientProvider({
   useEffect(() => {
     let isMounted = true;
     const setupClient = async () => {
-      const accessToken = getCookie("matrix_access_token");
+      const accessToken = getCookie("matrix_token");
       const userId = getCookie("matrix_user_id");
       const deviceId = getCookie("matrix_device_id");
-
       if (!accessToken || !userId || !deviceId) return;
 
       try {
@@ -39,6 +38,17 @@ export function MatrixClientProvider({
           userId,
           deviceId
         });
+
+        // Lắng nghe lỗi xác thực khi sync
+        // client.on("sync" as any, (state: any, prevState: any, data: any) => {
+        //   if (
+        //     state === "ERROR" &&
+        //     data?.error?.httpStatus &&
+        //     [401, 403].includes(data.error.httpStatus)
+        //   ) {
+        //     // Xử lý logout ở đây nếu cần
+        //   }
+        // });
 
         client.startClient();
 
@@ -51,6 +61,7 @@ export function MatrixClientProvider({
         if (client) {
           client.stopClient();
         }
+        // Xử lý logout ở đây nếu cần
       }
     };
 
