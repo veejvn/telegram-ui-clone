@@ -8,7 +8,7 @@ import { useTheme } from "next-themes";
 
 import {
   QrCode,
-  ChevronRight
+  ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
 import { useUserStore } from "@/stores/useUserStore";
@@ -273,7 +273,7 @@ const group4: SettingItem[] = [
         />
       </span>
     ),
-    path: "/setting/features",
+    path: "/setting/feature",
   },
 ];
 

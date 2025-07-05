@@ -69,38 +69,68 @@ export default function NotificationSettings() {
   const messageItems = [
     {
       label: "Private Chats",
-      icon: <User className="text-white w-5 h-5" />,
-      iconBg: "bg-blue-500",
+      icon: (
+        <img
+          src="/icons/private-chat.png"
+          alt="Private Chat"
+          className="w-9 h-9 object-cover rounded-[10px]"
+        />
+      ),
+      iconBg: "", // Không cần nền vì PNG đã có
       value: privateChats,
       route: "private-chats",
       description: "1 exception",
     },
     {
       label: "Group Chats",
-      icon: <Users className="text-white w-5 h-5" />,
-      iconBg: "bg-green-500",
+      icon: (
+        <img
+          src="/icons/group-chat.png"
+          alt="Group Chat"
+          className="w-9 h-9 object-cover rounded-[10px]"
+        />
+      ),
+      iconBg: "",
       value: groupChats,
       route: "group-chats",
     },
     {
       label: "Channels",
-      icon: <MessageCircle className="text-white w-5 h-5" />,
-      iconBg: "bg-orange-500",
+      icon: (
+        <img
+          src="/icons/channel.png"
+          alt="Channel"
+          className="w-9 h-9 object-cover rounded-[10px]"
+        />
+      ),
+      iconBg: "",
       value: channels,
       route: "channels",
     },
     {
       label: "Stories",
-      icon: <Sparkles className="text-white w-5 h-5" />,
-      iconBg: "bg-purple-500",
+      icon: (
+        <img
+          src="/icons/story.png"
+          alt="Stories"
+          className="w-9 h-9 object-cover rounded-[10px]"
+        />
+      ),
+      iconBg: "",
       value: stories,
       route: "stories",
       customText: "Top 5",
     },
     {
       label: "Reactions",
-      icon: <Heart className="text-white w-5 h-5" />,
-      iconBg: "bg-pink-500",
+      icon: (
+        <img
+          src="/icons/reaction.png"
+          alt="Reactions"
+          className="w-12 h-12 object-cover rounded-[10px]"
+        />
+      ),
+      iconBg: "",
       value: reactions,
       route: "reactions",
       description: "Messages, Stories",
@@ -108,7 +138,7 @@ export default function NotificationSettings() {
   ];
 
   return (
-    <div className="p-6 space-y-6 overflow-y-auto bg-[#f2f2f7] dark:bg-black min-h-screen">
+    <div className="p-6 space-y-6 overflow-y-auto bg-white dark:bg-black min-h-screen">
       {/* Header */}
       <div className="flex items-center mb-4">
         <button
@@ -126,48 +156,59 @@ export default function NotificationSettings() {
 
       {/* Message Notifications */}
       <Section title="MESSAGE NOTIFICATIONS">
-        <div className="overflow-hidden bg-white dark:bg-[#1c1c1e] rounded-xl border border-[#d1d1d6] dark:border-[#2c2c2e] divide-y">
+        <div className="overflow-hidden bg-white dark:bg-[#1c1c1e] rounded-xl border border-[#d1d1d6] dark:border-[#2c2c2e]">
           {messageItems.map(
-            ({
-              label,
-              icon,
-              iconBg,
-              value,
-              route,
-              customText,
-              description,
-            }) => (
+            ({ label, icon, value, route, customText, description }, idx) => (
               <button
                 key={label}
                 onClick={() =>
                   router.push(`/setting/notification-and-sound/${route}`)
                 }
-                className="flex items-center justify-between w-full px-4 py-3 focus:outline-none"
+                className="flex w-full items-stretch px-0 focus:outline-none"
+                style={{ minHeight: 0 }}
               >
-                <div className="flex items-center space-x-4">
-                  <div
-                    className={`w-8 h-8 rounded-2xl flex items-center justify-center ${iconBg}`}
-                  >
+                {/* Icon */}
+                <div className="flex items-center justify-center pl-4 pr-3">
+                  <div className="w-9 h-9 flex items-center justify-center">
                     {icon}
                   </div>
-                  <div className="flex flex-col items-start">
-                    <span className="text-sm font-medium text-black dark:text-white">
-                      {label}
-                    </span>
-                    {description && (
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {description}
-                      </span>
-                    )}
-                  </div>
                 </div>
-                <div className="flex items-center space-x-1">
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    {customText ?? (value ? "On" : "Off")}
-                  </span>
-                  <span className="text-lg text-gray-400 dark:text-gray-500">
-                    {">"}
-                  </span>
+                {/* Phần chữ + border-b */}
+                <div
+                  className={`flex-1 min-w-0 py-[12px] min-h-[60px] ${
+                    idx !== messageItems.length - 1
+                      ? "border-b border-[#E5E5EA] dark:border-[#2c2c2e]"
+                      : ""
+                  }`}
+                >
+                  <div className="flex items-center">
+                    {/* Label + description */}
+                    {description ? (
+                      <div className="flex flex-col items-start justify-start flex-1">
+                        <span className="text-[16px] font-medium text-black dark:text-white leading-[20px]">
+                          {label}
+                        </span>
+                        <span className="text-[13px] text-[#8e8e93] dark:text-[#8e8e93] leading-[17px] mt-[2px]">
+                          {description}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center h-9 flex-1">
+                        <span className="text-[16px] font-medium text-black dark:text-white leading-[20px]">
+                          {label}
+                        </span>
+                      </div>
+                    )}
+                    {/* Trạng thái + > */}
+                    <div className="flex items-center space-x-1 pl-2 pr-[10px]">
+                      <span className="text-[15px] text-[#8e8e93] dark:text-[#8e8e93] leading-[20px]">
+                        {customText ?? (value ? "On" : "Off")}
+                      </span>
+                      <span className="text-[17px] text-[#c7c7cc] dark:text-[#48484a] leading-[20px]">
+                        &gt;
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </button>
             )
@@ -282,7 +323,7 @@ const Section = ({
 
 // White card container
 const Card = ({ children }: { children: React.ReactNode }) => (
-  <div className="px-3 py-2 bg-white dark:bg-[#1c1c1c] border border-[#d1d1d6] dark:border-[#2c2c2e] rounded-xl divide-y space-y-1">
+  <div className="px-3 py-2 bg-white dark:bg-[#1c1c1e] border border-[#d1d1d6] dark:border-[#2c2c2e] rounded-xl divide-y space-y-1">
     {children}
   </div>
 );
