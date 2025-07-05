@@ -40,6 +40,10 @@ const ChatPage = () => {
 
   useEffect(() => {
     if (!client || !room) return;
+    const isInvite = room?.getMyMembership() === "invite";
+    if(isInvite){
+      joinRoom()
+    }
     // Lấy event cuối cùng trong room (nếu có)
     const events = room.getLiveTimeline().getEvents();
     const lastEvent = events.length > 0 ? events[events.length - 1] : null;
@@ -50,11 +54,9 @@ const ChatPage = () => {
 
   if (!room) return null;
   // Kiểm tra trạng thái invite
-  const isInvite = room?.getMyMembership() === "invite";
 
-  const handleJoin = async () => {
+  const joinRoom = async () => {
     if (!client) return;
-    setJoining(true);
     try {
       await client.joinRoom(roomId);
 
@@ -84,54 +86,8 @@ const ChatPage = () => {
         },
         duration: 5000,
       });
-    } finally {
-      setJoining(false);
     }
   };
-
-  const handleReject = async () => {
-    if (!client) return;
-    setJoining(true);
-    try {
-      await client.leave(roomId);
-      setRoom(null);
-      router.push("/chat");
-    } catch (e) {
-      toast.error("Không thể từ chối mời lời mời", {
-        action: {
-          label: "OK",
-          onClick: () => router.push("/chat"),
-        },
-        duration: 5000,
-      });
-    }
-    setJoining(false);
-  };
-  if (isInvite) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen">
-        <div className="mb-4 text-lg font-semibold">
-          Bạn được mời vào phòng: {room.name || roomId}
-        </div>
-        <div className="flex gap-4">
-          <button
-            className="px-4 py-2 bg-blue-500 text-white rounded"
-            onClick={handleJoin}
-            disabled={joining}
-          >
-            Chấp nhận
-          </button>
-          <button
-            className="px-4 py-2 bg-gray-300 text-black rounded"
-            onClick={handleReject}
-            disabled={joining}
-          >
-            Từ chối
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="relative h-screen overflow-hidden">

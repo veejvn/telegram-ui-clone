@@ -30,6 +30,8 @@ export function MatrixClientProvider({
       const userId = getCookie("matrix_user_id");
       const deviceId = getCookie("matrix_device_id");
 
+      console.log(accessToken, userId, deviceId);
+
       if (!accessToken || !userId || !deviceId) return;
 
       try {
