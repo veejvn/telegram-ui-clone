@@ -13,13 +13,13 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => {
     const storedToken: string | null = typeof window !== 'undefined' ? (getCookie("matrix_token") ?? null) : null
     const storedUserId: string | null = typeof window !== 'undefined' ? (getCookie("matrix_user_id") ?? null) : null
-    const storeddeviceId: string | null = typeof window !== 'undefined' ? (getCookie("matrix_device_id") ?? null) : null
+    const storedDeviceId: string | null = typeof window !== 'undefined' ? (getCookie("matrix_device_id") ?? null) : null
 
     return {
         isLogging: !!storedToken,
-        accessToken: storedToken ?? undefined,
+        accessToken: storedToken,
         userId: storedUserId,
-        deviceId: storeddeviceId,
+        deviceId: storedDeviceId,
 
         login: (accessToken, userId, deviceId) => {
             set({ isLogging: true, accessToken, userId, deviceId })

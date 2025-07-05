@@ -41,6 +41,7 @@ export function MatrixClientProvider({
           baseUrl: HOMESERVER_URL,
           accessToken,
           userId,
+          deviceId
         });
 
         // Lắng nghe lỗi xác thực khi sync
@@ -50,13 +51,7 @@ export function MatrixClientProvider({
         //     data?.error?.httpStatus &&
         //     [401, 403].includes(data.error.httpStatus)
         //   ) {
-        //     removeLS("matrix_access_token");
-        //     removeLS("matrix_user_id");
-        //     removeLS("matrix_device_id");
-        //     setClient(null);
-        //     clearUser();
-        //     logout();
-        //     window.location.href = "/login";
+        //     // Xử lý logout ở đây nếu cần
         //   }
         // });
 
@@ -71,13 +66,7 @@ export function MatrixClientProvider({
         if (client) {
           client.stopClient();
         }
-        // removeLS("matrix_access_token");
-        // removeLS("matrix_user_id");
-        // removeLS("matrix_device_id");
-        // setClient(null);
-        // clearUser();
-        // logout();
-        // window.location.href = "/login";
+        // Xử lý logout ở đây nếu cần
       }
     };
 
