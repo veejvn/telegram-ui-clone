@@ -2,7 +2,7 @@
 
 export interface IncomingCallProps {
     callerName: string;
-    onAccept: () => void | Promise<void>;
+    onAccept: () => void;
     onReject: () => void;
 }
 

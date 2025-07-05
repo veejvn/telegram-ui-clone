@@ -19,7 +19,7 @@ interface CallStore {
     callEndedReason?: string
     micOn: boolean
     placeCall: (roomId: string, type: CallType) => void
-    answerCall: () => Promise<void>
+    answerCall: () => void
     hangup: () => void
     reset: () => void
     toggleCamera: (on: boolean) => void
@@ -145,9 +145,9 @@ const useCallStore = create<CallStore>((set, get) => {
             }
             callService.placeCall(roomId, type)
         },
-        answerCall: async () => {
+        answerCall: () => {
             set({ state: 'connecting' })
-            await callService.answerCall()
+            callService.answerCall()
         },
         hangup: () => {
             const { localStream, remoteStream } = get();

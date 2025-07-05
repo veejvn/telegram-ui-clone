@@ -5,30 +5,41 @@ export async function searchMatrixUsers(
   client: sdk.MatrixClient,
   searchTerm: string
 ) {
-  // Nếu searchTerm là user ID đúng định dạng @user:domain
-  const isUserId = searchTerm.startsWith("@") && searchTerm.includes(":");
+  const isLikelyUserId = searchTerm.startsWith("@");
 
-  // Nếu đúng định dạng user ID → lấy profile trực tiếp
-  if (isUserId) {
-    try {
-      const profile = await client.getProfileInfo(searchTerm);
-      return [
-        {
-          user_id: searchTerm,
-          display_name: profile?.displayname || "",
-        },
-      ];
-    } catch (err) {
-      // Không tìm thấy user → trả mảng rỗng
-      return [];
+  if (isLikelyUserId) {
+    const hasDomain = searchTerm.includes(":");
+
+    // Lấy domain động từ client
+    const defaultDomain = client
+      .getHomeserverUrl()
+      .replace(/^https?:\/\//, "")
+      .replace(/\/$/, "");
+
+    const possibleUserIds = hasDomain
+      ? [searchTerm]
+      : [`${searchTerm}:${defaultDomain}`];
+
+    for (const userId of possibleUserIds) {
+      try {
+        const profile = await client.getProfileInfo(userId);
+        return [
+          {
+            user_id: userId,
+            display_name: profile?.displayname || "",
+          },
+        ];
+      } catch (e) {
+        // thử user_id tiếp theo (ở đây chỉ có 1 domain thôi)
+      }
     }
+    return [];
   }
 
-  // Nếu không phải user ID → dùng search directory như bình thường
   const res = await client.searchUserDirectory({
     term: searchTerm,
-    limit: 1000,
+    limit: 100,
   });
 
-  return res && Array.isArray(res.results) ? res.results : [];
+  return Array.isArray(res?.results) ? res.results : [];
 }

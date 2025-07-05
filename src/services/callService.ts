@@ -133,36 +133,22 @@ class CallService extends EventEmitter {
         this.emit('outgoing-call', { roomId, callType: type });
     }
 
-    public async answerCall() {
+    public answerCall() {
         if (!this.currentCall) return;
 
         const callAny = this.currentCall as any;
 
-        try {
-            // ✅ Lấy local stream TRƯỚC khi answer
-            const isVideo = this.currentCall.type === 'video' || callAny.hasLocalUserMediaVideoTrack;
-            const stream = await navigator.mediaDevices.getUserMedia({
-                audio: true,
-                video: isVideo
-            });
+        this.currentCall.answer();
 
-            this.localStream = stream;
-            this.emit('local-stream', stream);
-
-            // ✅ Answer với constraints (Matrix SDK sẽ tự động lấy stream)
-            (this.currentCall as any).answer({ audio: true, video: isVideo });
-
-            console.log('[CallService] Answered call with local stream:', {
-                audioTracks: stream.getAudioTracks().length,
-                videoTracks: stream.getVideoTracks().length,
-                isVideo
-            });
-
-        } catch (err) {
-            console.error('[CallService] Failed to get user media for answer:', err);
-            // Fallback: answer without stream (audio only)
-            this.currentCall.answer();
-        }
+        // Đợi local stream được SDK emit hoặc chủ động kiểm tra
+        setTimeout(() => {
+            if (callAny.localStream) {
+                this.localStream = callAny.localStream;
+                this.emit('local-stream', callAny.localStream);
+            } else {
+                console.warn('[CallService] No local stream found after answer');
+            }
+        }, 500); // Chờ 0.5s để đảm bảo stream có đủ thời gian khởi tạo
     }
 
 

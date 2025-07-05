@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import useCallHistoryStore, { CallRecord } from '@/stores/useCallHistoryStore';
+import { getLS } from '@/tools/localStorage.tool';
 
 export default function CallHistoryPage() {
   const [missedOnly, setMissedOnly] = useState(false);
@@ -35,7 +36,7 @@ export default function CallHistoryPage() {
   };
 
   return (
-    <main className="dark:bg-black min-h-screen dark:text-white font-sans pb-16">
+    <div className="dark:bg-black min-h-screen dark:text-white font-sans pb-16">
       {/* Header */}
       <div className="flex justify-between items-center px-4 pt-4 pb-2">
         <button
@@ -142,6 +143,6 @@ export default function CallHistoryPage() {
           </div>
         ))}
       </div>
-    </main>
+    </div>
   );
 }
