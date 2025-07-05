@@ -10,7 +10,10 @@ import * as sdk from "matrix-js-sdk";
 import { useTheme } from "next-themes";
 import React, { useEffect, useState } from "react";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
+import UnreadMsgsCount from "./UnreadMsgsCount";
+import useUnreadMessages from "@/hooks/useUnreadMsgs";
 
+import { Check } from "lucide-react";
 interface ChatListItemProps {
   room: sdk.Room;
   isEditMode?: boolean;
@@ -33,6 +36,8 @@ export const ChatListItem = ({
 
   // ⚡️ trigger render
   const [_, setRefresh] = useState(0);
+
+  const unreadMsgs = useUnreadMessages(room);
 
   useEffect(() => {
     if (!client) return;
@@ -65,16 +70,21 @@ export const ChatListItem = ({
   const { content, time, sender } = getLastMessagePreview(room);
 
   return (
-    <div className="flex px-2 py-2 items-center">
+    <div className="flex px-2 py-2">
       {isEditMode && (
-        <input
-          type="checkbox"
-          className="mr-3 w-5 h-5"
-          checked={checked}
-          onChange={onSelect}
-          onClick={(e) => e.stopPropagation()}
-          aria-label="checkbox"
-        />
+        <label className="mr-3 inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            className="hidden peer"
+            checked={checked}
+            onChange={onSelect}
+            onClick={(e) => e.stopPropagation()}
+            aria-label="checkbox"
+          />
+          <div className="w-5 h-5 rounded-full border border-gray-400 peer-checked:bg-blue-500 peer-checked:border-blue-500 flex items-center justify-center">
+            {checked && <Check className="w-4 h-4 text-white" />}
+          </div>
+        </label>
       )}
       <div className="w-[60px] flex justify-center items-center">
         <Avatar className="h-15 w-15">
@@ -100,23 +110,29 @@ export const ChatListItem = ({
       <div className="flex-1 ps-2.5">
         <div className="flex items-center gap-1">
           <h1 className="text-[18px] mb-0.5">{room.name}</h1>
-          {isMuted && (
-            <VolumeX className="w-4 h-4 text-zinc-400" />
-          )}
+          {isMuted && <VolumeX className="w-4 h-4 text-zinc-400" />}
         </div>
         <p className="text-sm ">{sender}</p>
         <p className="text-sm text-muted-foreground">{content}</p>
       </div>
 
-      <div className="flex gap-1 text-sm">
-        <CheckCheck
-          className={
-            themes.theme === "dark"
-              ? "h-4 w-4 mt-0.5 text-blue-600"
-              : "h-4 w-4 mt-0.5 text-green-600"
-          }
-        />
-        <span className="text-muted-foreground">{time}</span>
+      <div className="flex flex-col justify-between pb-1.5">
+        <div className="flex gap-1 text-sm">
+          <CheckCheck
+            className={
+              themes.theme === "dark"
+                ? "h-4 w-4 mt-0.5 text-blue-600"
+                : "h-4 w-4 mt-0.5 text-green-600"
+            }
+          />
+
+          <span className="text-muted-foreground">{time}</span>
+        </div>
+        {unreadMsgs && (
+          <div className="text-right flex justify-end">
+            <UnreadMsgsCount count={unreadMsgs.length} />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import * as sdk from "matrix-js-sdk";
-import { Trash2, Check } from "lucide-react";
+import { Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import SearchBar from "@/components/layouts/SearchBar";
@@ -27,6 +27,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import ContactService from "@/services/contactService";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
+import { getLS } from "@/tools/localStorage.tool";
+import { ROUTES } from "@/constants/routes";
 
 interface Contact {
   firstName: string;
@@ -39,26 +41,36 @@ const ContactPage = () => {
   const [contacts, setContacts] = useState<sdk.Room[]>([]);
   const client = useMatrixClient();
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!client) return;
     const loadContacts = async () => {
+      setLoading(true);
       const rooms = await ContactService.getDirectMessageRooms(client);
       setContacts(rooms);
+      setTimeout(() => {
+        setLoading(false);
+      }, 500);
     };
     loadContacts();
   }, [client]);
 
   const handleAddContact = (contact: Contact) => {};
 
-
   const handleSettingClick = () => {
-    router.push("/setting");
+    router.push(ROUTES.SETTING);
+  };
+
+  const statusBarHeight = getLS("statusBarHeight");
+
+  const headerStyle = {
+    paddingTop: statusBarHeight ? Number(statusBarHeight) : 0,
   };
 
   return (
     <>
-      <div className="">
+      <div style={headerStyle}>
         <div className="flex items-center justify-between px-4 py-2">
           <Popover>
             <PopoverTrigger asChild>
@@ -97,7 +109,12 @@ const ContactPage = () => {
         <SearchBar />
       </div>
       <div className="px-4 py-2">
-        {contacts.length === 0 ? (
+        {loading ? (
+          <div className="flex flex-1 flex-col justify-center items-center px-6 text-center">
+            <div className="size-30 mt-10 mb-8 animate-pulse bg-gray-200 rounded-full" />
+            <h2 className="text-xl font-semibold my-4">Loading contacts...</h2>
+          </div>
+        ) : contacts.length === 0 ? (
           <div className="flex flex-1 flex-col justify-center items-center px-6 text-center">
             <div className="size-30 mt-10 mb-8">
               <Image
@@ -149,9 +166,11 @@ const ContactPage = () => {
           </div>
         ) : (
           <ul className="divide-y divide-gray-400">
-            {contacts.map(room => {
+            {contacts.map((room) => {
               const other = client
-                ? room.getJoinedMembers().find((m) => m.userId !== client.getUserId())
+                ? room
+                    .getJoinedMembers()
+                    .find((m) => m.userId !== client.getUserId())
                 : undefined;
               return (
                 <li
@@ -159,11 +178,17 @@ const ContactPage = () => {
                   className="flex items-center gap-3 py-3 px-2 hover:bg-blue-50 dark:hover:bg-zinc-800 transition-colors rounded-lg cursor-pointer"
                 >
                   <Avatar className="flex items-center justify-center w-10 h-10 text-base bg-zinc-300">
-                      {other?.name?.[0]?.toUpperCase() || other?.userId?.[1]?.toUpperCase() || "?"}
+                    {other?.name?.[0]?.toUpperCase() ||
+                      other?.userId?.[1]?.toUpperCase() ||
+                      "?"}
                   </Avatar>
                   <div className="flex flex-col flex-1 min-w-0">
-                    <span className="font-medium truncate">{other?.name || other?.userId}</span>
-                    <span className="text-xs text-gray-500 truncate">{other?.userId}</span>
+                    <span className="font-medium truncate">
+                      {other?.name || other?.userId}
+                    </span>
+                    <span className="text-xs text-gray-500 truncate">
+                      {other?.userId}
+                    </span>
                   </div>
                   {/* Bạn có thể thêm nút chat hoặc menu ở đây */}
                 </li>
