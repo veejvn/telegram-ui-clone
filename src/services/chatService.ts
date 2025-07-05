@@ -7,6 +7,7 @@ import { Message, MessageStatus, MessageType } from "@/stores/useChatStore";
 import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { m } from "framer-motion";
 
 export const getUserRooms = async (
   client: sdk.MatrixClient

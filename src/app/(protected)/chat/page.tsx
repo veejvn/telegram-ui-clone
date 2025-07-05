@@ -16,6 +16,7 @@ import { getUserRooms } from "@/services/chatService";
 import { CircleFadingPlus, Loader2, SquarePen } from "lucide-react";
 import useSortedRooms from "@/hooks/useSortedRooms";
 import { getLS } from "@/tools/localStorage.tool";
+import useListenRoomInvites from "@/hooks/useListenRoomInvites";
 
 export default function ChatsPage() {
   // const [rooms, setRooms] = useState<sdk.Room[]>([]);
@@ -24,6 +25,7 @@ export default function ChatsPage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  useListenRoomInvites();
   // useEffect(() => {
   //   if (!client) return;
   //   getUserRooms(client)
@@ -122,7 +124,10 @@ export default function ChatsPage() {
 
   return (
     <div>
-      <div style={headerStyle} className="sticky bg-white dark:bg-black top-0 z-10">
+      <div
+        style={headerStyle}
+        className="sticky bg-white dark:bg-black top-0 z-10"
+      >
         <div className="flex items-center justify-between px-4 py-3 ">
           <ChatEditButton
             isEditMode={isEditMode}

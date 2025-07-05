@@ -14,6 +14,7 @@ import UnreadMsgsCount from "./UnreadMsgsCount";
 import useUnreadMessages from "@/hooks/useUnreadMsgs";
 
 import { Check } from "lucide-react";
+import { useChatStore } from "@/stores/useChatStore";
 interface ChatListItemProps {
   room: sdk.Room;
   isEditMode?: boolean;
@@ -69,6 +70,10 @@ export const ChatListItem = ({
 
   const { content, time, sender } = getLastMessagePreview(room);
 
+  const messagesByRoom = useChatStore((state) => state.messagesByRoom);
+  const messages = messagesByRoom[room.roomId] ?? [];
+  const lastMessage = messages[messages.length - 1];
+  
   return (
     <div className="flex px-2 py-2">
       {isEditMode && (
@@ -118,14 +123,11 @@ export const ChatListItem = ({
 
       <div className="flex flex-col justify-between pb-1.5">
         <div className="flex gap-1 text-sm">
-          <CheckCheck
-            className={
-              themes.theme === "dark"
-                ? "h-4 w-4 mt-0.5 text-blue-600"
-                : "h-4 w-4 mt-0.5 text-green-600"
-            }
-          />
-
+          {lastMessage?.status === "read" ? (
+            <CheckCheck className="h-4 w-4 mt-0.5 text-green-600 dark:text-blue-600"/>
+          ) : (
+            <Check className="h-4 w-4 mt-0.5 text-green-600 dark:text-blue-600"/>
+          )}
           <span className="text-muted-foreground">{time}</span>
         </div>
         {unreadMsgs && (
