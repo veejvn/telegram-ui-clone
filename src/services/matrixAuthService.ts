@@ -152,7 +152,8 @@ export class MatrixAuthService {
                 this.client = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: loginResponse.access_token,
-                    userId: loginResponse.user_id
+                    userId: loginResponse.user_id,
+                    deviceId: loginResponse.device_id,
                 });
             }
 
@@ -184,7 +185,8 @@ export class MatrixAuthService {
                 this.client = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: loginResponse.access_token,
-                    userId: loginResponse.user_id
+                    userId: loginResponse.user_id,
+                    deviceId: loginResponse.device_id,
                 });
             }
 

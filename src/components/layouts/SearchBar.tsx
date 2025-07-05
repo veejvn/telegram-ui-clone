@@ -6,6 +6,16 @@ import SearchContent from "@/components/layouts/SearchContent";
 import { searchMatrixUsers } from "@/services/matrixUserSearch";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 
+const DEFAULT_DOMAIN = "matrix.teknix.dev";
+
+const normalizeUserIdInput = (raw: string) => {
+  if (!raw) return raw;
+  let id = raw.trim();
+  if (!id.startsWith("@")) id = "@" + id;
+  if (!id.includes(":")) id += `:${DEFAULT_DOMAIN}`;
+  return id;
+};
+
 const SearchBar = () => {
   const client = useMatrixClient();
   const [searchTerm, setSearchTerm] = useState("");
@@ -17,16 +27,19 @@ const SearchBar = () => {
     const removeVietnameseTones = (str: string) =>
       str
         .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\p{Diacritic}/gu, "")
         .toLowerCase();
 
-    if (searchTerm.length > 1 && client) {
+    if (searchTerm.length > 0 && client) {
       setLoading(true);
       const noToneTerm = removeVietnameseTones(searchTerm);
+      const normalized = normalizeUserIdInput(searchTerm);
 
-      searchMatrixUsers(client, searchTerm).then((res) =>
-        setSearchResults(res)
-      );
+      console.log("Normalized search term:", normalized);
+
+      searchMatrixUsers(client, normalized).then((res) => {
+        setSearchResults(res);
+      });
 
       client
         .searchMessageText({ query: searchTerm })
@@ -53,10 +66,7 @@ const SearchBar = () => {
     <div className="relative">
       <div className="px-4 py-2">
         <div className="relative border rounded-xl bg-white dark:bg-neutral-900">
-          {/* Icon search trái */}
           <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400 dark:text-gray-500" />
-
-          {/* Input */}
           <Input
             type="text"
             placeholder="Search user..."
@@ -64,8 +74,6 @@ const SearchBar = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-
-          {/* Nút clear bên phải */}
           {searchTerm && (
             <button
               onClick={() => setSearchTerm("")}
@@ -77,8 +85,7 @@ const SearchBar = () => {
           )}
         </div>
       </div>
-
-      {searchTerm.length > 1 && (
+      {searchTerm.length > 0 && (
         <div className="absolute left-0 right-0 z-20">
           <SearchContent
             loading={loading}
