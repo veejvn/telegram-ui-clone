@@ -5,16 +5,7 @@ import { Input } from "@/components/ui/input";
 import SearchContent from "@/components/layouts/SearchContent";
 import { searchMatrixUsers } from "@/services/matrixUserSearch";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
-
-const DEFAULT_DOMAIN = "matrix.teknix.dev";
-
-const normalizeUserIdInput = (raw: string) => {
-  if (!raw) return raw;
-  let id = raw.trim();
-  if (!id.startsWith("@")) id = "@" + id;
-  if (!id.includes(":")) id += `:${DEFAULT_DOMAIN}`;
-  return id;
-};
+import * as sdk from "matrix-js-sdk";
 
 const SearchBar = () => {
   const client = useMatrixClient();
@@ -22,6 +13,22 @@ const SearchBar = () => {
   const [loading, setLoading] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [messageResults, setMessageResults] = useState<any[]>([]);
+
+  const normalizeUserIdInput = (raw: string, client: sdk.MatrixClient) => {
+    if (!raw) return raw;
+    let id = raw.trim();
+    if (!id.startsWith("@")) id = "@" + id;
+
+    if (!id.includes(":")) {
+      const domain = client
+        .getHomeserverUrl()
+        .replace(/^https?:\/\//, "")
+        .replace(/\/$/, "");
+      id += `:${domain}`;
+    }
+
+    return id;
+  };
 
   useEffect(() => {
     const removeVietnameseTones = (str: string) =>
@@ -33,9 +40,7 @@ const SearchBar = () => {
     if (searchTerm.length > 0 && client) {
       setLoading(true);
       const noToneTerm = removeVietnameseTones(searchTerm);
-      const normalized = normalizeUserIdInput(searchTerm);
-
-      console.log("Normalized search term:", normalized);
+      const normalized = normalizeUserIdInput(searchTerm, client);
 
       searchMatrixUsers(client, normalized).then((res) => {
         setSearchResults(res);

@@ -11,9 +11,9 @@ export default function FolderPage() {
   const isDark = theme === "dark";
 
   return (
-    <div className="px-4 pt-4 pb-10">
+    <div className="min-h-screen px-0 pt-0 pb-10 bg-[#efeff4] dark:bg-black transition-colors">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center px-4 pt-4 mb-6">
         <button
           type="button"
           className="text-blue-500 text-base font-medium"
@@ -21,7 +21,9 @@ export default function FolderPage() {
         >
           &lt; Back
         </button>
-        <h1 className="text-base font-semibold">Folders</h1>
+        <h1 className="text-base font-bold text-black dark:text-white">
+          Folders
+        </h1>
         <button type="button" className="text-blue-500 text-base font-medium">
           Edit
         </button>
@@ -29,40 +31,53 @@ export default function FolderPage() {
 
       {/* Folder Icon */}
       <div className="flex flex-col items-center mb-4">
-        <img src="/images/folder.png" alt="Folder" className="w-20 h-20 mb-3" />
-        <p className="text-center text-gray-500 text-sm px-6">
+        <div className="w-[140px] h-[100px] flex items-center justify-center rounded-2xl mb-4">
+          <img
+            src="/images/folder.png"
+            alt="Folder"
+            className="w-full h-full object-contain"
+            draggable={false}
+          />
+        </div>
+        <p className="text-center text-gray-500 dark:text-gray-400 text-sm px-6">
           Create folders for different groups of chats and quickly switch
           between them.
         </p>
       </div>
 
-      <div className="text-xs text-gray-400 font-semibold mb-2">FOLDERS</div>
+      <div className="text-xs text-gray-400 font-semibold mb-2 px-4">
+        FOLDERS
+      </div>
 
       {/* Folder List */}
       <div
-        className={`space-y-2 divide-y rounded-2xl border overflow-hidden mb-4 ${
-          isDark ? "border-gray-600" : "border-gray-300"
-        }`}
+        className={`
+          mb-4 mx-2 rounded-2xl bg-white dark:bg-[#1c1c1e] border border-[#e5e5ea] dark:border-[#232323] 
+          overflow-hidden shadow-sm
+        `}
       >
-        <div className="p-3">
+        <div className="px-4 py-3">
           <p className="text-blue-500 text-sm font-medium">Create a Folder</p>
         </div>
-        <div className="p-3">
-          <p className="text-sm">All Chats</p>
+        <div className="border-t border-[#e5e5ea] dark:border-[#232323] px-4 py-3">
+          <p className="text-sm text-black dark:text-white">All Chats</p>
         </div>
       </div>
 
-      <p className="text-gray-400 text-xs mb-6">
+      <p className="text-gray-400 dark:text-gray-500 text-xs mb-6 px-4">
         Tap 'Edit' to change the order or delete folders.
       </p>
 
       {/* Switch */}
       <div
-        className={`rounded-xl p-3 flex justify-between items-center border ${
-          isDark ? "bg-[#1a1a1a] border-gray-600" : "bg-white border-gray-300"
-        }`}
+        className={`
+          mx-2 rounded-2xl bg-white dark:bg-[#1c1c1e] border border-[#e5e5ea] dark:border-[#232323]
+          flex justify-between items-center px-4 py-3
+        `}
       >
-        <span className="text-sm font-medium">Show Folder Tags</span>
+        <span className="text-sm font-medium text-black dark:text-white">
+          Show Folder Tags
+        </span>
         <label className="relative inline-flex items-center cursor-pointer w-11 h-6">
           <Input
             type="checkbox"
@@ -85,7 +100,7 @@ export default function FolderPage() {
         </label>
       </div>
 
-      <p className="text-gray-400 text-xs mt-2">
+      <p className="text-gray-400 dark:text-gray-500 text-xs mt-2 px-4">
         Display folder names for each chat in the chat list.
       </p>
     </div>

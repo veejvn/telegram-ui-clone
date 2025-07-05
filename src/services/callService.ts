@@ -113,15 +113,32 @@ class CallService extends EventEmitter {
                 });
             }
 
-            this.emit('call-ended', reason);
-            this.currentCall = undefined;
-            this.currentRoomId = undefined;
-            this.localStream = undefined;
+            // ✅ Delay cleanup để tránh race condition với events đến sau
+            setTimeout(() => {
+                this.emit('call-ended', reason);
+                this.currentCall = undefined;
+                this.currentRoomId = undefined;
+                this.localStream = undefined;
+                console.log('[CallService] Call cleanup completed after delay');
+            }, 1000); // Delay 1 giây
         });
 
         c.on('error', (err: Error) => {
+            console.error('[CallService] Call error:', err);
+
+            // ✅ Handle specific WebRTC errors
+            if (err.message.includes('setRemoteDescription') || err.message.includes('stable')) {
+                console.warn('[CallService] WebRTC state conflict detected, ignoring error');
+                return; // Don't cleanup on WebRTC state conflicts
+            }
+
             this.emit('call-error', err);
-            this.currentCall = undefined;
+
+            // ✅ Delay cleanup cho error cases
+            setTimeout(() => {
+                this.currentCall = undefined;
+                console.log('[CallService] Call cleanup completed after error');
+            }, 500);
         });
     }
 
@@ -217,7 +234,20 @@ class CallService extends EventEmitter {
             });
         }
 
-        (this.currentCall as any).hangup();
+        // ✅ Call hangup với delay để tránh race condition
+        try {
+            (this.currentCall as any).hangup();
+            console.log('[CallService] Hangup called successfully');
+        } catch (err) {
+            console.warn('[CallService] Hangup failed, forcing cleanup:', err);
+            // Force cleanup nếu hangup fail
+            setTimeout(() => {
+                this.currentCall = undefined;
+                this.currentRoomId = undefined;
+                this.localStream = undefined;
+                this.emit('call-ended', 'user_hangup');
+            }, 100);
+        }
     }
 
     public async upgradeToVideo() {
