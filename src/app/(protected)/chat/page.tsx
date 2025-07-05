@@ -13,17 +13,16 @@ import ChatEditButton from "@/components/chat/ChatEditButton";
 import ChatActionBar from "@/components/chat/ChatActionBar";
 import DeleteChatModal from "@/components/chat/DeleteChatModal";
 import { getUserRooms } from "@/services/chatService";
-import { CircleFadingPlus, SquarePen } from "lucide-react";
+import { CircleFadingPlus, Loader2, SquarePen } from "lucide-react";
 import useSortedRooms from "@/hooks/useSortedRooms";
 
 export default function ChatsPage() {
   // const [rooms, setRooms] = useState<sdk.Room[]>([]);
-  const { rooms, refreshRooms } = useSortedRooms();
+  const { rooms, refreshRooms, loading } = useSortedRooms();
   const client = useMatrixClient();
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-
   // useEffect(() => {
   //   if (!client) return;
   //   getUserRooms(client)
@@ -146,7 +145,12 @@ export default function ChatsPage() {
         <SearchBar />
       </div>
 
-      {!rooms || rooms.length == 0 ? (
+      {loading ? (
+        <div className="flex flex-1 flex-col justify-center items-center min-h-[calc(100vh-112px)] pb-8">
+          <Loader2 className="w-8 h-8 animate-spin text-zinc-500 mb-2" />
+          <p className="text-muted-foreground text-sm">Loading chats...</p>
+        </div>
+      ) : rooms.length === 0 ? (
         <div className="flex flex-1 flex-col justify-between min-h-[calc(100vh-112px)] pb-8">
           <div className="flex flex-1 flex-col items-center justify-center text-center">
             <img

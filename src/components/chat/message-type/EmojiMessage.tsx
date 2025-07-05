@@ -26,6 +26,18 @@ const EmojiMessage = ({ msg, isSender }: MessagePros) => {
     isSender ? "text-white justify-end" : "text-white"
   );
 
+  const getEmojiSizeByLength = (emojiText: string) => {
+    const length = [...emojiText].length;
+    if (length <= 1) return "text-8xl";
+    if (length <= 2) return "text-7xl";
+    if (length <= 3) return "text-6xl";
+    if (length <= 4) return "text-5xl";
+    if (length <= 6) return "text-4xl";
+    if (length <= 7) return "text-3xl";
+    if (length <= 8) return "text-2xl";
+    return "text-xl";
+  };
+
   const handleCopy = async (text: string) => {
     const success = await copyToClipboard(text);
     if (success) {
@@ -47,7 +59,8 @@ const EmojiMessage = ({ msg, isSender }: MessagePros) => {
           >
             <p
               className={clsx(
-                "whitespace-pre-wrap break-words leading-snug text-end text-7xl",
+                "whitespace-pre-wrap break-words leading-snug text-end",
+                getEmojiSizeByLength(msg.text),
                 isSender ? "text-right" : "text-left"
               )}
             >

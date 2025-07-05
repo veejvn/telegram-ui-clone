@@ -1,5 +1,4 @@
-"use client";
-
+// hooks/useSortedRooms.ts
 import { useEffect, useState } from "react";
 import { Room } from "matrix-js-sdk";
 import { getUserRooms } from "@/services/chatService";
@@ -8,6 +7,7 @@ import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 export default function useSortedRooms() {
   const client = useMatrixClient();
   const [rooms, setRooms] = useState<Room[]>([]);
+  const [loading, setLoading] = useState(true); // 👈 trạng thái loading
 
   const getLastEventTimestamp = (room: Room): number => {
     const events = room.getLiveTimeline().getEvents();
@@ -17,20 +17,21 @@ export default function useSortedRooms() {
     return lastEvent?.getTs() ?? 0;
   };
 
-  const loadRooms = async () => {
-    const res = await getUserRooms(client!);
+  const refreshRooms = async () => {
+    if (!client) return;
+    setLoading(true); // 👈 start
+    const res = await getUserRooms(client);
     if (res.success && res.rooms) {
       const sorted = res.rooms.sort(
         (a, b) => getLastEventTimestamp(b) - getLastEventTimestamp(a)
       );
       setRooms(sorted);
     }
+    setLoading(false); // 👈 done
   };
 
   useEffect(() => {
-    if (!client) return;
-
-    loadRooms();
+    refreshRooms();
 
     const handleTimeline = () => {
       setRooms((prev) =>
@@ -40,11 +41,11 @@ export default function useSortedRooms() {
       );
     };
 
-    client.on("Room.timeline" as any, handleTimeline);
+    client?.on("Room.timeline" as any, handleTimeline);
     return () => {
-      client.removeListener("Room.timeline" as any, handleTimeline);
+      client?.removeListener("Room.timeline" as any, handleTimeline);
     };
   }, [client]);
 
-  return { rooms, refreshRooms: loadRooms };
+  return { rooms, loading, refreshRooms };
 }
