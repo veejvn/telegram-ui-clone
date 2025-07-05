@@ -6,6 +6,7 @@ import * as sdk from "matrix-js-sdk";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { getUserInfoInPrivateRoom } from "@/services/chatService";
 import PrivateInfoHeader from "@/components/chat/PrivateInfoHeader";
+import { getLS } from "@/tools/localStorage.tool";
 
 export default function InfoPage() {
   const params = useParams();
@@ -57,9 +58,15 @@ export default function InfoPage() {
     );
   }
 
+  const statusBarHeight = getLS("statusBarHeight");
+
+  const headerStyle = {
+    paddingTop: statusBarHeight ? Number(statusBarHeight) : 0,
+  };
+
   return (
     <div className="bg-gray-200 min-h-screen w-full">
-      <header className="mb-23">
+      <header style={headerStyle} className="mb-23">
         <PrivateInfoHeader user={user} />
       </header>
       <div>

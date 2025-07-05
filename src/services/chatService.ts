@@ -299,10 +299,10 @@ export const getUserInfoInPrivateRoom = async (
       };
     }
 
-    console.log(
-      "%c✅ Fetched user: " + user.displayName,
-      "color: green; font-weight: bold;"
-    );
+    // console.log(
+    //   "%c✅ Fetched user: " + user.displayName,
+    //   "color: green; font-weight: bold;"
+    // );
 
     return {
       success: true,

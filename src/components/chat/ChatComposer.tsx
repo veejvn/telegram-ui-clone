@@ -134,7 +134,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   }, []);
 
   return (
-    <div className="relative flex justify-between items-center bg-white dark:bg-[#1c1c1e] px-2.5 py-2 lg:py-3">
+    <div className="relative flex justify-between items-center bg-white dark:bg-[#1c1c1e] px-2.5 py-2 lg:py-3 pb-10">
       <Paperclip
         onClick={() => inputRef.current?.click()}
         className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
