@@ -1,6 +1,5 @@
 import { getCookie } from "@/utils/cookie";
 import { create } from 'zustand'
-import { getCookie } from '@/tools/cookie.tool'
 
 interface AuthState {
     isLogging: boolean
