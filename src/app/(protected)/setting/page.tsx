@@ -7,27 +7,8 @@ import ProfileIcon from "@/icons/telegram/profile.svg";
 import { useTheme } from "next-themes";
 
 import {
-  Camera,
-  AtSign,
-  User,
-  Bookmark,
-  PhoneCall,
   QrCode,
-  Folder,
-  Bell,
-  Lock,
-  Database,
-  Palette,
-  Smartphone,
-  ChevronRight,
-  Globe,
-  Star,
-  Store,
-  Gift,
-  MessageCircle,
-  HelpCircle,
-  Lightbulb,
-  BatteryCharging,
+  ChevronRight
 } from "lucide-react";
 import Link from "next/link";
 import { useUserStore } from "@/stores/useUserStore";
@@ -116,7 +97,7 @@ const group2: SettingItem[] = [
         />
       </span>
     ),
-    path: "/setting/notification-and-sounds",
+    path: "/setting/notification-and-sound",
   },
   {
     title: "Privacy and Security",
