@@ -181,6 +181,7 @@ export function VideoCall({
                         icon={speakerOn ? <Volume2 className="w-6 h-6" /> : <VolumeX className="w-6 h-6" />}
                         label={speakerOn ? 'Speaker' : 'Muted'}
                     />
+
                     <div className="flex flex-col items-center">
                         <button
                             onClick={handleEnd}
