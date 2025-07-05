@@ -1,14 +1,14 @@
 "use client";
 
 import * as sdk from "matrix-js-sdk";
+import { UserCheck } from "lucide-react";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import ContactService from "@/services/contactService";
 import { useToast } from "@/contexts/ToastProvider";
 import { useRouter } from "next/navigation";
 import { useRef } from "react";
-import { UserRoundCheck } from "lucide-react";
 
-export type SearchContentProps = {
+type SearchContentProps = {
   loading: boolean;
   searchResults: any[];
   messageResults?: any[];
@@ -19,12 +19,40 @@ const SearchContent = ({
   loading,
   searchResults,
   messageResults = [],
-  searchTerm,
 }: SearchContentProps) => {
   const client = useMatrixClient();
   const { showToast } = useToast();
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const normalizeUserIdInput = (
+    raw: string,
+    client: sdk.MatrixClient
+  ): string => {
+    if (!raw) return raw;
+    let id = raw.trim();
+    if (!id.startsWith("@")) id = "@" + id;
+    if (!id.includes(":")) {
+      const domain = client
+        .getHomeserverUrl()
+        .replace(/^https?:\/\//, "")
+        .replace(/\/$/, "");
+      id += `:${domain}`;
+    }
+    return id;
+  };
+
+  const handleAddContact = async (client: sdk.MatrixClient, rawId: string) => {
+    const userId = normalizeUserIdInput(rawId, client);
+    try {
+      const room = await ContactService.addContact(client, userId);
+      if (room) {
+        router.push(`/chat/${room.roomId}`);
+      }
+    } catch (error: any) {
+      showToast("Lỗi khi tạo phòng: " + error.message, "error");
+    }
+  };
 
   if (loading) {
     return (
@@ -66,30 +94,17 @@ const SearchContent = ({
 
             const handleUserClick = async () => {
               if (!client) return;
-
               if (isFriend) {
-                const existingRoom = client
+                const room = client
                   .getRooms()
-                  .find((room) =>
-                    room
-                      .getJoinedMembers()
-                      .some((member) => member.userId === user.user_id)
+                  .find((r) =>
+                    r.getJoinedMembers().some((m) => m.userId === user.user_id)
                   );
-                if (existingRoom) {
-                  router.push(`/chat/${existingRoom.roomId}`);
+                if (room) {
+                  router.push(`/chat/${room.roomId}`);
                 }
               } else {
-                try {
-                  const newRoom = await ContactService.addContact(
-                    client,
-                    user.user_id
-                  );
-                  if (newRoom) {
-                    router.push(`/chat/${newRoom.roomId}`);
-                  }
-                } catch (error: any) {
-                  showToast(`${error}`, "error");
-                }
+                await handleAddContact(client, user.user_id);
               }
             };
 
@@ -99,18 +114,22 @@ const SearchContent = ({
                 onClick={handleUserClick}
                 className="flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-[#232323] transition"
               >
-                <div className="relative w-10 h-10 rounded-full bg-purple-400 flex items-center justify-center font-bold text-white text-lg">
-                  {(user.display_name &&
-                    user.display_name.charAt(0).toUpperCase()) ||
-                    (user.user_id && user.user_id.charAt(1).toUpperCase()) ||
-                    "?"}
+                {/* Avatar + friend icon */}
+                <div className="relative w-10 h-10">
+                  <div className="w-10 h-10 rounded-full bg-purple-400 flex items-center justify-center font-bold text-white text-lg">
+                    {(user.display_name &&
+                      user.display_name.charAt(0).toUpperCase()) ||
+                      (user.user_id && user.user_id.charAt(1).toUpperCase()) ||
+                      "?"}
+                  </div>
                   {isFriend && (
-                    <UserRoundCheck
-                      className="absolute -bottom-1 -right-1 w-4 h-4 bg-white dark:bg-[#181818] rounded-full text-green-500"
-                      strokeWidth={2}
-                    />
+                    <div className="absolute -bottom-1 -right-1 bg-black rounded-full p-[2px]">
+                      <UserCheck className="w-3 h-3 text-green-400" />
+                    </div>
                   )}
                 </div>
+
+                {/* User Info */}
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-gray-900 dark:text-gray-100 truncate max-w-[140px]">
                     {user.display_name || user.user_id}

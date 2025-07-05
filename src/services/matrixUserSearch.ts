@@ -1,8 +1,6 @@
 "use client";
 import * as sdk from "matrix-js-sdk";
 
-const fallbackDomains = ["matrix.teknix.dev", "matrix.org"];
-
 export async function searchMatrixUsers(
   client: sdk.MatrixClient,
   searchTerm: string
@@ -11,9 +9,16 @@ export async function searchMatrixUsers(
 
   if (isLikelyUserId) {
     const hasDomain = searchTerm.includes(":");
+
+    // Lấy domain động từ client
+    const defaultDomain = client
+      .getHomeserverUrl()
+      .replace(/^https?:\/\//, "")
+      .replace(/\/$/, "");
+
     const possibleUserIds = hasDomain
       ? [searchTerm]
-      : fallbackDomains.map((domain) => `${searchTerm}:${domain}`);
+      : [`${searchTerm}:${defaultDomain}`];
 
     for (const userId of possibleUserIds) {
       try {
@@ -25,7 +30,7 @@ export async function searchMatrixUsers(
           },
         ];
       } catch (e) {
-        // thử user_id tiếp theo
+        // thử user_id tiếp theo (ở đây chỉ có 1 domain thôi)
       }
     }
     return [];
