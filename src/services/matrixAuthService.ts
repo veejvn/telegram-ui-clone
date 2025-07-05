@@ -76,12 +76,9 @@ export class MatrixAuthService {
             });
             if (registerResponse.access_token) {
                 setCookie("matrix_access_token", registerResponse.access_token);
-            }
-            if (registerResponse.user_id) {
                 setCookie("matrix_user_id", registerResponse.user_id);
-            }
-            if (registerResponse.device_id) {
-                setCookie("matrix_device_id", registerResponse.device_id);
+                if(registerResponse.device_id)
+                    setCookie("matrix_device_id", registerResponse.device_id);
             }
             clientInstance = sdk.createClient({
                 baseUrl: HOMESERVER_URL,
@@ -109,13 +106,10 @@ export class MatrixAuthService {
             })
             if (loginResponse.access_token) {
                 setCookie("matrix_access_token", loginResponse.access_token);
-            }
-            if (loginResponse.user_id) {
                 setCookie("matrix_user_id", loginResponse.user_id);
-            }
-            if (loginResponse.device_id) {
                 setCookie("matrix_device_id", loginResponse.device_id);
             }
+
             clientInstance = sdk.createClient({
                 baseUrl: HOMESERVER_URL,
                 accessToken: loginResponse.access_token,
@@ -148,9 +142,8 @@ export class MatrixAuthService {
 
             if (loginResponse.access_token) {
                 setCookie("matrix_access_token", loginResponse.access_token);
-            }
-            if (loginResponse.user_id) {
                 setCookie("matrix_user_id", loginResponse.user_id);
+                setCookie("matrix_device_id", loginResponse.device_id); // Thêm dòng này!
             }
             this.client = sdk.createClient({
                 baseUrl: HOMESERVER_URL,
@@ -179,14 +172,14 @@ export class MatrixAuthService {
 
             if (loginResponse.access_token) {
                 setCookie("matrix_access_token", loginResponse.access_token);
-            }
-            if (loginResponse.user_id) {
                 setCookie("matrix_user_id", loginResponse.user_id);
+                setCookie("matrix_device_id", loginResponse.device_id);
             }
             this.client = sdk.createClient({
                 baseUrl: HOMESERVER_URL,
                 accessToken: loginResponse.access_token,
-                userId: loginResponse.user_id
+                userId: loginResponse.user_id,
+                deviceId: loginResponse.device_id
             });
 
             return loginResponse
