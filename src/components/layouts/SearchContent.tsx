@@ -1,8 +1,7 @@
 "use client";
 
 import * as sdk from "matrix-js-sdk";
-import { UserRoundPlus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { UserCheck } from "lucide-react";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import ContactService from "@/services/contactService";
 import { useToast } from "@/contexts/ToastProvider";
@@ -20,39 +19,38 @@ const SearchContent = ({
   loading,
   searchResults,
   messageResults = [],
-  searchTerm,
 }: SearchContentProps) => {
   const client = useMatrixClient();
   const { showToast } = useToast();
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const normalize = (str: string) =>
-    str
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase();
+  const normalizeUserIdInput = (
+    raw: string,
+    client: sdk.MatrixClient
+  ): string => {
+    if (!raw) return raw;
+    let id = raw.trim();
+    if (!id.startsWith("@")) id = "@" + id;
+    if (!id.includes(":")) {
+      const domain = client
+        .getHomeserverUrl()
+        .replace(/^https?:\/\//, "")
+        .replace(/\/$/, "");
+      id += `:${domain}`;
+    }
+    return id;
+  };
 
-  const normalizedSearch = normalize(searchTerm);
-
-  const filteredUsers = searchResults.filter((user) => {
-    const displayName = normalize(user.display_name || "");
-    const userId = normalize(user.user_id || "");
-    return (
-      displayName.includes(normalizedSearch) ||
-      userId.includes(normalizedSearch)
-    );
-  });
-
-  const handleAddContact = async (
-    client: sdk.MatrixClient,
-    user_id: string
-  ) => {
+  const handleAddContact = async (client: sdk.MatrixClient, rawId: string) => {
+    const userId = normalizeUserIdInput(rawId, client);
     try {
-      const room = await ContactService.addContact(client, user_id);
-      if (room) router.push(`/chat/${room.roomId}`);
+      const room = await ContactService.addContact(client, userId);
+      if (room) {
+        router.push(`/chat/${room.roomId}`);
+      }
     } catch (error: any) {
-      showToast(`${error}`, "error");
+      showToast("Lỗi khi tạo phòng: " + error.message, "error");
     }
   };
 
@@ -64,7 +62,7 @@ const SearchContent = ({
     );
   }
 
-  if (!loading && filteredUsers.length === 0 && messageResults.length === 0) {
+  if (!loading && searchResults.length === 0 && messageResults.length === 0) {
     return (
       <div className="p-4 bg-white text-gray-400 dark:text-gray-500 text-center">
         Không tìm thấy kết quả nào.
@@ -80,13 +78,13 @@ const SearchContent = ({
       {/* USERS */}
       <div>
         <div className="font-semibold px-4 py-2 text-gray-500">Người dùng</div>
-        {filteredUsers.length === 0 ? (
+        {searchResults.length === 0 ? (
           <div className="px-4 py-2 text-gray-400 italic">
             Không tìm thấy người dùng nào.
           </div>
         ) : (
-          filteredUsers.map((user, idx) => {
-            const hasCommonRoom = client
+          searchResults.map((user, idx) => {
+            const isFriend = client
               ?.getRooms()
               .some((room) =>
                 room
@@ -94,16 +92,19 @@ const SearchContent = ({
                   .some((member) => member.userId === user.user_id)
               );
 
-            const handleUserClick = () => {
-              if (hasCommonRoom) {
+            const handleUserClick = async () => {
+              if (!client) return;
+              if (isFriend) {
                 const room = client
-                  ?.getRooms()
+                  .getRooms()
                   .find((r) =>
                     r.getJoinedMembers().some((m) => m.userId === user.user_id)
                   );
                 if (room) {
                   router.push(`/chat/${room.roomId}`);
                 }
+              } else {
+                await handleAddContact(client, user.user_id);
               }
             };
 
@@ -113,33 +114,30 @@ const SearchContent = ({
                 onClick={handleUserClick}
                 className="flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-[#232323] transition"
               >
-                <div className="w-10 h-10 rounded-full bg-purple-400 flex items-center justify-center font-bold text-white text-lg">
-                  {(user.display_name &&
-                    user.display_name.charAt(0).toUpperCase()) ||
-                    (user.user_id && user.user_id.charAt(1).toUpperCase()) ||
-                    "?"}
+                {/* Avatar + friend icon */}
+                <div className="relative w-10 h-10">
+                  <div className="w-10 h-10 rounded-full bg-purple-400 flex items-center justify-center font-bold text-white text-lg">
+                    {(user.display_name &&
+                      user.display_name.charAt(0).toUpperCase()) ||
+                      (user.user_id && user.user_id.charAt(1).toUpperCase()) ||
+                      "?"}
+                  </div>
+                  {isFriend && (
+                    <div className="absolute -bottom-1 -right-1 bg-white dark:bg-black rounded-full p-[2px] border">
+                      <UserCheck className="w-3 h-3 text-blue-400" />
+                    </div>
+                  )}
                 </div>
+
+                {/* User Info */}
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-gray-900 dark:text-gray-100 truncate max-w-[140px]">
-                    {user.display_name || "Không có tên"}
+                    {user.display_name || user.user_id}
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[180px]">
                     {user.user_id}
                   </div>
                 </div>
-                {!hasCommonRoom && (
-                  <Button
-                    onClick={(e) => {
-                      e.stopPropagation(); // Đừng để click thẻ chạy
-                      client && handleAddContact(client, user.user_id);
-                    }}
-                    size="lg"
-                    className="bg-white hover:bg-zinc-300 text-blue-500"
-                    disabled={!client}
-                  >
-                    <UserRoundPlus />
-                  </Button>
-                )}
               </div>
             );
           })

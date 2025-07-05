@@ -9,6 +9,7 @@ export interface UserInfo {
     phone?: string;
     avatarUrl?: string;
     homeserver?: string;
+    username?: string;
 }
 
 interface UserState {
