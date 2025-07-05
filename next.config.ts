@@ -19,8 +19,8 @@ const nextConfig: NextConfig = {
                 hostname: 'matrix-client.matrix.org',
             },
         ],
-    dangerouslyAllowSVG: true,
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+        dangerouslyAllowSVG: true,
+        contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     },
     eslint: {
         ignoreDuringBuilds: true,

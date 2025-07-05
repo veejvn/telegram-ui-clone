@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import * as sdk from "matrix-js-sdk";
-import { getLS, removeLS } from "@/tools/localStorage.tool";
+import { getCookie, deleteCookie } from "@/utils/cookie";
 import { waitForClientReady } from "@/lib/matrix";
 import { createUserInfo } from "@/utils/createUserInfo";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -31,9 +31,10 @@ export function MatrixClientProvider({
   useEffect(() => {
     let isMounted = true;
     const setupClient = async () => {
-      const accessToken = getLS("matrix_access_token");
-      const userId = getLS("matrix_user_id");
-      if (!accessToken || !userId) return;
+      const accessToken = getCookie("matrix_token");
+      const userId = getCookie("matrix_user_id");
+      const deviceId = getCookie("matrix_device_id");
+      if (!accessToken || !userId || !deviceId) return;
 
       try {
         const client = sdk.createClient({

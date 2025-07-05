@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState} from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { ROUTES } from "@/constants/routes";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -7,6 +7,7 @@ import LoadingSpinner from "@/components/common/LoadingSpinner";
 import BottomNavigattion from "@/components/layouts/BottomNavigation";
 import { MatrixClientProvider } from "@/contexts/MatrixClientProvider";
 import { getLS } from "@/tools/localStorage.tool";
+import { TokenExpirationToast } from "@/components/common/Toast";
 
 export default function ProtectedLayout({
   children,
@@ -49,6 +50,7 @@ export default function ProtectedLayout({
           {children}
           {shouldShowBottomNav && <BottomNavigattion />}
         </div>
+        <TokenExpirationToast />
       </main>
     </MatrixClientProvider>
   );
