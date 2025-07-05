@@ -3,7 +3,6 @@
 import * as sdk from "matrix-js-sdk";
 import { ERROR_MESSAGES } from "@/constants/error-messages"
 import { LoginFormData, RegisterFormData } from "@/types/auth";
-import { getCookie, removeCookie, setCookie } from "@/tools/cookie.tool";
 import { ILoginResponse } from "@/types/matrix";
 import { useUserStore } from "@/stores/useUserStore";
 import { setCookie, getCookie, deleteCookie } from "@/utils/cookie";
@@ -31,7 +30,6 @@ export class MatrixAuthService {
     }
 
     async sendEmailVerification(email: string): Promise<any> {
-
         const clientSecret = Math.random().toString(36).substring(2, 10);
         const sendAttempt = 1;
         try {
@@ -44,7 +42,7 @@ export class MatrixAuthService {
                     client_secret: clientSecret,
                     email: email,
                     send_attempt: sendAttempt,
-                    next_link: `${SERVER_URL}/verify-email` // URL callback sau khi verify
+                    next_link: `${SERVER_URL}/verify-email`
                 })
             });
 
@@ -78,9 +76,9 @@ export class MatrixAuthService {
             if (registerResponse.access_token) {
                 setCookie("matrix_token", registerResponse.access_token);
                 setCookie("matrix_user_id", registerResponse.user_id);
-                setCookie("matrix_device_id", registerResponse.device_id);
-                setLS("matrix_user_id", registerResponse.user_id);
-                setLS("matrix_device_id", registerResponse.device_id);
+                if (registerResponse.device_id) {
+                    setCookie("matrix_device_id", registerResponse.device_id);
+                }
                 clientInstance = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: registerResponse.access_token,
@@ -109,9 +107,9 @@ export class MatrixAuthService {
             if (loginResponse.access_token) {
                 setCookie("matrix_token", loginResponse.access_token);
                 setCookie("matrix_user_id", loginResponse.user_id);
-                setCookie("matrix_device_id", loginResponse.device_id);
-                setLS("matrix_user_id", loginResponse.user_id);
-                setLS("matrix_device_id", loginResponse.device_id);
+                if (loginResponse.device_id) {
+                    setCookie("matrix_device_id", loginResponse.device_id);
+                }
                 clientInstance = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: loginResponse.access_token,
@@ -146,9 +144,9 @@ export class MatrixAuthService {
             if (loginResponse.access_token) {
                 setCookie("matrix_token", loginResponse.access_token);
                 setCookie("matrix_user_id", loginResponse.user_id);
-                setCookie("matrix_device_id", loginResponse.device_id);
-                setLS("matrix_user_id", loginResponse.user_id);
-                setLS("matrix_device_id", loginResponse.device_id);
+                if (loginResponse.device_id) {
+                    setCookie("matrix_device_id", loginResponse.device_id);
+                }
                 this.client = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: loginResponse.access_token,
@@ -179,9 +177,9 @@ export class MatrixAuthService {
             if (loginResponse.access_token) {
                 setCookie("matrix_token", loginResponse.access_token);
                 setCookie("matrix_user_id", loginResponse.user_id);
-                setCookie("matrix_device_id", loginResponse.device_id);
-                setLS("matrix_user_id", loginResponse.user_id);
-                setLS("matrix_device_id", loginResponse.device_id);
+                if (loginResponse.device_id) {
+                    setCookie("matrix_device_id", loginResponse.device_id);
+                }
                 this.client = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: loginResponse.access_token,
@@ -220,8 +218,6 @@ export class MatrixAuthService {
             deleteCookie("matrix_token");
             deleteCookie("matrix_user_id");
             deleteCookie("matrix_device_id");
-            removeLS("matrix_user_id");
-            removeLS("matrix_device_id");
             clearUser();
             if (this.client) {
                 this.client.stopClient();
