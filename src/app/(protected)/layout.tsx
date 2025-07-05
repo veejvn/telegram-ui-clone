@@ -33,7 +33,8 @@ export default function ProtectedLayout({
   const pathname = usePathname();
   const isChatDetailPage = pathname ? /^\/chat(\/.+)+$/.test(pathname) : false;
   const isSettingPage = pathname ? pathname.startsWith("/setting/") : false;
-  const shouldShowBottomNav = !isChatDetailPage && !isSettingPage;
+  const isCallPage = pathname ? pathname.startsWith("/call/") : false;
+  const shouldShowBottomNav = !isChatDetailPage && !isSettingPage && !isCallPage;
 
   if (!isReady || !isLogging) {
     return (
