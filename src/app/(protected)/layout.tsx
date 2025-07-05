@@ -6,8 +6,8 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 import BottomNavigattion from "@/components/layouts/BottomNavigation";
 import { MatrixClientProvider } from "@/contexts/MatrixClientProvider";
-import { getLS } from "@/tools/localStorage.tool";
 import { TokenExpirationToast } from "@/components/common/Toast";
+import ProtectedClientLayout from '../../components/layouts/ProtectedClientLayout.client';
 
 export default function ProtectedLayout({
   children,
@@ -17,12 +17,6 @@ export default function ProtectedLayout({
   const router = useRouter();
   const { isLogging } = useAuthStore();
   const [isReady, setIsReady] = useState(false);
-
-  const statusBarHeight = getLS("statusBarHeight");
-
-  const mainStyle = {
-    paddingTop: statusBarHeight ? Number(statusBarHeight) : 0,
-  };
 
   useEffect(() => {
     setIsReady(true);
@@ -45,13 +39,13 @@ export default function ProtectedLayout({
   }
   return (
     <MatrixClientProvider>
-      <main>
-        <div style={mainStyle} className="flex flex-col min-h-screen">
+      <ProtectedClientLayout>
+        <div className="flex flex-col min-h-screen">
           {children}
           {shouldShowBottomNav && <BottomNavigattion />}
         </div>
         <TokenExpirationToast />
-      </main>
+      </ProtectedClientLayout>
     </MatrixClientProvider>
   );
 }

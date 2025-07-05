@@ -1,62 +1,67 @@
 "use client";
 
 import {
-  ChevronRight,
-  OctagonMinus,
-  ScanFace,
-  Timer,
-  AtSign,
-  KeyRound,
+  ChevronRight
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-
-// const privacyItemsTop = [
-//   {
-//     icon: <ShieldBan className="text-red-500" size={22} />,
-//     label: "Blocked Users",
-//     value: "None",
-//   },
-//   {
-//     icon: <ScanFace className="text-green-500" size={22} />,
-//     label: "Passcode & Face ID",
-//     value: "Off",
-//   },
-//   {
-//     icon: <KeyRound className="text-orange-400" size={22} />,
-//     label: "Two-Step Verification",
-//     value: "Off",
-//   },
-//   {
-//     icon: <Timer className="text-purple-400" size={22} />,
-//     label: "Auto-Delete Messages",
-//     value: "Off",
-//   },
-// ];
+import Image from "next/image";
 
 const privacyItemsTop = [
   {
-    icon: <OctagonMinus size={22} className="text-white" />,
+    icon: (
+      <Image
+        src="/icons-privacy/block.png"
+        alt="Blocked Users"
+        width={50}
+        height={50}
+        className="w-[50px] h-[50px] object-contain"
+      />
+    ),
     label: "Blocked Users",
     value: "None",
-    bg: "#FF3B30", // Red iOS tươi
+    bg: "#FF3B30",
   },
   {
-    icon: <ScanFace size={22} className="text-white" />,
+    icon: (
+      <Image
+        src="/icons-privacy/faceid.png"
+        alt="Blocked Users"
+        width={50}
+        height={50}
+        className="w-[50px] h-[50px] object-contain"
+      />
+    ),
     label: "Passcode & Face ID",
     value: "Off",
-    bg: "#30D158", // Green iOS tươi
+    bg: "#31C75A",
   },
   {
-    icon: <KeyRound size={22} className="text-white" />,
+    icon: (
+      <Image
+        src="/icons-privacy/key.png"
+        alt="Blocked Users"
+        width={50}
+        height={50}
+        className="w-[50px] h-[50px] object-contain"
+      />
+    ),
     label: "Two-Step Verification",
     value: "Off",
-    bg: "#FF9500", // Orange iOS tươi
+    bg: "#FF9702",
   },
   {
-    icon: <Timer size={22} className="text-white" />,
+    icon: (
+      <Image
+        src="/icons-privacy/time.png"
+        alt="Blocked Users"
+        width={50}
+        height={50}
+        className="w-[50px] h-[50px] object-contain"
+      />
+    ),
     label: "Auto-Delete Messages",
     value: "Off",
-    bg: "#AF52DE", // Purple iOS tươi
+    bg: "#AF52DE",
   },
 ];
 
@@ -95,31 +100,34 @@ export default function PrivacyAndSecurityPage() {
       </div>
 
       {/* Top Section */}
-      <div className="rounded-xl bg-white dark:bg-zinc-900 text-black dark:text-white mb-4 divide-y divide-gray-200 dark:divide-zinc-800">
-        {privacyItemsTop.map((item) => (
-          <div
-            key={item.label}
-            className="flex items-center justify-between px-4 py-3"
-          >
-            <div className="flex items-center space-x-3">
-              <div
-                className="w-9 h-9 flex items-center justify-center rounded-lg shadow-sm"
-                style={{ backgroundColor: item.bg }}
-              >
-                {item.icon}
+      <div className="rounded-xl bg-white dark:bg-zinc-900 text-black dark:text-white mb-4">
+        {privacyItemsTop.map((item, idx) => (
+          <div key={item.label}>
+            <div className="flex items-center justify-between px-4 py-3">
+              <div className="flex items-center space-x-3">
+                <div
+                  className="w-9 h-9 flex items-center justify-center rounded-lg shadow-sm"
+                  style={{ backgroundColor: item.bg }}
+                >
+                  {item.icon}
+                </div>
+                <span>{item.label}</span>
               </div>
-              <span>{item.label}</span>
+              <div className="flex items-center space-x-1">
+                <span className="text-zinc-400 text-sm">{item.value}</span>
+                <ChevronRight className="text-zinc-400" size={18} />
+              </div>
             </div>
-            <div className="flex items-center space-x-1">
-              <span className="text-zinc-400 text-sm">{item.value}</span>
-              <ChevronRight className="text-zinc-400" size={18} />
-            </div>
+            {idx < privacyItemsTop.length - 1 && (
+              <div className="border-t border-gray-200 dark:border-zinc-800 ml-16" />
+            )}
           </div>
         ))}
       </div>
 
       <p className="text-xs text-zinc-400 px-4 pb-3 mb-4">
-        Automatically delete messages for everyone after a period of time in all new chats you start.
+        Automatically delete messages for everyone after a period of time in all
+        new chats you start.
       </p>
 
       {/* Login Email */}
@@ -127,15 +135,21 @@ export default function PrivacyAndSecurityPage() {
         <div className="flex items-center px-4 py-3 space-x-3">
           <div
             className="w-9 h-9 flex items-center justify-center rounded-lg shadow-sm"
-            style={{ backgroundColor: "#6366F1" }}
+            style={{ backgroundColor: "#5955D5" }}
           >
-            <AtSign className="text-white" size={22} />
+            <Image
+              src="/icons-privacy/mail.png"
+              alt="Blocked Users"
+              width={50}
+              height={50}
+              className="w-9 h-9 object-contain rounded-[10px]"
+            />
           </div>
           <span>Login Email</span>
         </div>
       </div>
       <p className="text-xs text-zinc-400 px-4 pb-3 mb-4">
-        Change your email address for Telegram login codes.
+        Change your email address for Hii Chat login codes.
       </p>
 
       {/* Privacy Section */}
