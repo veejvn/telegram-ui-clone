@@ -11,8 +11,10 @@ import registerSchema from "@/validations/registerSchema";
 import type { RegisterFormData } from "@/types/auth";
 import { toast } from "sonner";
 import ServerStatus from "./ServerStatus";
+import { ROUTES } from "@/constants/routes";
 
-const HOMESERVER_URL = process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
+const HOMESERVER_URL =
+  process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
 
 export default function RegisterForm() {
   const router = useRouter();
@@ -30,7 +32,7 @@ export default function RegisterForm() {
         toast.success("Registration successful! Please sign in to continue.", {
           duration: 3000,
         });
-        router.push("/login");
+        router.push(ROUTES.LOGIN);
         return;
       } else {
         throw new Error("Registration failed");
@@ -39,7 +41,10 @@ export default function RegisterForm() {
       let errorMessage = ERROR_MESSAGES.GENERAL.UNKNOWN_ERROR;
 
       // Handle specific errors
-      if (error?.message?.includes("Username has already been taken") || error?.message?.includes("Username is already taken")) {
+      if (
+        error?.message?.includes("Username has already been taken") ||
+        error?.message?.includes("Username is already taken")
+      ) {
         errorMessage = ERROR_MESSAGES.AUTH.USERNAME_EXISTS;
       } else if (error?.message?.includes("Invalid username")) {
         errorMessage = ERROR_MESSAGES.AUTH.INVALID_USERNAME;
@@ -90,7 +95,8 @@ export default function RegisterForm() {
         <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
           <div className="flex items-center justify-between">
             <p className="text-xs text-blue-700 dark:text-blue-300">
-              <span className="font-medium">Server:</span> {HOMESERVER_URL.replace('https://', '')}
+              <span className="font-medium">Server:</span>{" "}
+              {HOMESERVER_URL.replace("https://", "")}
             </p>
             <ServerStatus />
           </div>

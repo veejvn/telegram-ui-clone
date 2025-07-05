@@ -7,7 +7,6 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { Message } from "@/stores/useChatStore";
 import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import clsx from "clsx";
 
 const ChatMessage = ({ msg }: { msg: Message }) => {
   const userId = useAuthStore.getState().userId;
@@ -17,6 +16,7 @@ const ChatMessage = ({ msg }: { msg: Message }) => {
   const searchParams = useSearchParams();
   const highlightId = searchParams.get("highlight");
   const [animate, setAnimate] = useState(false);
+  //console.log("sender: ", msg.sender);
 
   useEffect(() => {
     if (msg.eventId === highlightId && messageRef.current) {

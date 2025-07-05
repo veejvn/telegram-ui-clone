@@ -2,13 +2,10 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import * as sdk from "matrix-js-sdk";
-import { getLS, removeLS } from "@/tools/localStorage.tool";
+import { getCookie } from "@/tools/cookie.tool";
 import { waitForClientReady } from "@/lib/matrix";
 import { createUserInfo } from "@/utils/createUserInfo";
-import { useAuthStore } from "@/stores/useAuthStore";
 import { useRouter } from "next/navigation";
-import { useUserStore } from "@/stores/useUserStore";
-import { usePresence } from "@/hooks/usePresence";
 import { PresenceProvider } from "@/contexts/PresenceProvider";
 
 const HOMESERVER_URL =
@@ -25,15 +22,13 @@ export function MatrixClientProvider({
 }) {
   const router = useRouter();
   const [client, setClient] = useState<sdk.MatrixClient | null>(null);
-  const logout = useAuthStore((state) => state.logout);
-  const clearUser = useUserStore.getState().clearUser;
 
   useEffect(() => {
     let isMounted = true;
     const setupClient = async () => {
-      const accessToken = getLS("matrix_access_token");
-      const userId = getLS("matrix_user_id");
-      const deviceId = getLS("matrix_device_id"); // <-- thêm dòng này
+      const accessToken = getCookie("matrix_access_token");
+      const userId = getCookie("matrix_user_id");
+      const deviceId = getCookie("matrix_device_id");
 
       if (!accessToken || !userId || !deviceId) return;
 
@@ -44,23 +39,6 @@ export function MatrixClientProvider({
           userId,
           deviceId
         });
-
-        // Lắng nghe lỗi xác thực khi sync
-        // client.on("sync" as any, (state: any, prevState: any, data: any) => {
-        //   if (
-        //     state === "ERROR" &&
-        //     data?.error?.httpStatus &&
-        //     [401, 403].includes(data.error.httpStatus)
-        //   ) {
-        //     removeLS("matrix_access_token");
-        //     removeLS("matrix_user_id");
-        //     removeLS("matrix_device_id");
-        //     setClient(null);
-        //     clearUser();
-        //     logout();
-        //     window.location.href = "/login";
-        //   }
-        // });
 
         client.startClient();
 
@@ -73,13 +51,6 @@ export function MatrixClientProvider({
         if (client) {
           client.stopClient();
         }
-        // removeLS("matrix_access_token");
-        // removeLS("matrix_user_id");
-        // removeLS("matrix_device_id");
-        // setClient(null);
-        // clearUser();
-        // logout();
-        // window.location.href = "/login";
       }
     };
 
