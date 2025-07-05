@@ -49,8 +49,7 @@ export default function PrivateInfoHeader({ user }: { user: sdk.User }) {
   return (
     <>
       <div
-        className="flex justify-between relative dark:bg-[#1c1c1e]
-        py-2 px-2"
+        className="flex justify-between relative dark:bg-[#1c1c1e] py-2 px-2"
       >
         <button
           onClick={() => router.back()}

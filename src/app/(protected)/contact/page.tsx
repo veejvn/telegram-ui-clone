@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import * as sdk from "matrix-js-sdk";
-import { Trash2, Check } from "lucide-react";
+import { Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import SearchBar from "@/components/layouts/SearchBar";
@@ -51,7 +51,7 @@ const ContactPage = () => {
       setContacts(rooms);
       setTimeout(() => {
         setLoading(false);
-      }, 1000);
+      }, 500);
     };
     loadContacts();
   }, [client]);

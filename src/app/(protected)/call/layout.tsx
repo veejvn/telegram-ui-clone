@@ -5,11 +5,7 @@ const CallLayout = ({
 }: Readonly<{
   children: React.ReactNode;
 }>) => {
-    return ( 
-        <CallClientLayout>
-            {children}
-        </CallClientLayout>
-     );
-}
- 
+  return <CallClientLayout>{children}</CallClientLayout>;
+};
+
 export default CallLayout;
