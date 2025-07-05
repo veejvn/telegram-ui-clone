@@ -10,6 +10,9 @@ import * as sdk from "matrix-js-sdk";
 import { useTheme } from "next-themes";
 import React, { useEffect, useState } from "react";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
+import UnreadMsgsCount from "./UnreadMsgsCount";
+import useUnreadMessages from "@/hooks/useUnreadMsgs";
+
 import { Check } from "lucide-react";
 interface ChatListItemProps {
   room: sdk.Room;
@@ -33,6 +36,8 @@ export const ChatListItem = ({
 
   // ⚡️ trigger render
   const [_, setRefresh] = useState(0);
+
+  const unreadMsgs = useUnreadMessages(room);
 
   useEffect(() => {
     if (!client) return;
@@ -65,7 +70,7 @@ export const ChatListItem = ({
   const { content, time, sender } = getLastMessagePreview(room);
 
   return (
-    <div className="flex px-2 py-2 items-center">
+    <div className="flex px-2 py-2">
       {isEditMode && (
         <label className="mr-3 inline-flex items-center cursor-pointer">
           <input
@@ -111,15 +116,23 @@ export const ChatListItem = ({
         <p className="text-sm text-muted-foreground">{content}</p>
       </div>
 
-      <div className="flex gap-1 text-sm">
-        <CheckCheck
-          className={
-            themes.theme === "dark"
-              ? "h-4 w-4 mt-0.5 text-blue-600"
-              : "h-4 w-4 mt-0.5 text-green-600"
-          }
-        />
-        <span className="text-muted-foreground">{time}</span>
+      <div className="flex flex-col justify-between pb-1.5">
+        <div className="flex gap-1 text-sm">
+          <CheckCheck
+            className={
+              themes.theme === "dark"
+                ? "h-4 w-4 mt-0.5 text-blue-600"
+                : "h-4 w-4 mt-0.5 text-green-600"
+            }
+          />
+
+          <span className="text-muted-foreground">{time}</span>
+        </div>
+        {unreadMsgs && (
+          <div className="text-right flex justify-end">
+            <UnreadMsgsCount count={unreadMsgs.length} />
+          </div>
+        )}
       </div>
     </div>
   );
