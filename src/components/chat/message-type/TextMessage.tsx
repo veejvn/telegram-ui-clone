@@ -17,7 +17,7 @@ import ForwardIconSvg from "../icons/ForwardIconSvg";
 import BinIconSvg from "../icons/BinIconSvg";
 import { copyToClipboard } from "@/utils/copyToClipboard";
 import { toast } from "sonner";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 // 💬 Main TextMessage
 const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
