@@ -20,6 +20,7 @@ export default function MyProfilePage() {
   // Thêm logic lấy avatar từ Matrix giống trang Setting
   const client = useMatrixClient();
   const userId = useAuthStore.getState().userId;
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!client || !userId) return;
@@ -28,25 +29,9 @@ export default function MyProfilePage() {
       try {
         const profile = await client.getProfileInfo(userId);
         if (profile && profile.avatar_url) {
-          const httpUrl =
-            client.mxcUrlToHttp(profile.avatar_url, 96, 96, "crop") ?? "";
-          const isValid =
-            /^https?:\/\//.test(httpUrl) && !httpUrl.includes("M_NOT_FOUND");
-          if (isValid) {
-            // Kiểm tra HEAD để chắc chắn link tồn tại
-            try {
-              const res = await fetch(httpUrl, { method: "HEAD" });
-              if (res.ok) {
-                const apiUrl = `/api/matrix-image?url=${encodeURIComponent(
-                  httpUrl
-                )}`;
-                setUser({ avatarUrl: apiUrl });
-                return;
-              }
-            } catch {
-              // Nếu fetch lỗi, sẽ fallback
-            }
-          }
+          const httpUrl = client.mxcUrlToHttp(profile.avatar_url, 96, 96, "crop") ?? "";
+          setAvatarUrl(httpUrl);
+          setUser({ avatarUrl: httpUrl });
         }
         setUser({ avatarUrl: "" });
       } catch {
@@ -88,10 +73,10 @@ export default function MyProfilePage() {
         <Avatar
           className={`w-20 h-20 text-white text-2xl ${avatarBackgroundColor}`}
         >
-          {user?.avatarUrl ? (
+          {avatarUrl ? (
             <img
-              src={user?.avatarUrl}
-              alt="avatar"          
+              src={avatarUrl}
+              alt="avatar"
               className="h-20 w-20 rounded-full object-cover"
               width={80}
               height={80}
@@ -119,9 +104,9 @@ export default function MyProfilePage() {
 
       {/* Posts Section */}
       <div>
-        <h3 className="text-sm font-semibold dark: text-blue-600 mb-2">Posts</h3>
-        <div className="dark: text-white items-center justify-center py-12 text-center">
-          <img src="/images/no-post-yet.png" alt="No posts" className="mb-4" />
+        <h3 className="text-sm font-semibold text-black mb-2">Posts</h3>
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <img src="/chat/images/no-post-yet.png" alt="No posts" className="mb-4" />
           <p className="text-sm text-gray-500 mb-2">No posts yet...</p>
           <p className="text-xs text-gray-400 mb-4">
             Publish photos and videos to display on your profile page.
@@ -130,6 +115,7 @@ export default function MyProfilePage() {
             Add a Post
           </Button>
         </div>
+
       </div>
     </div>
   );

@@ -16,6 +16,7 @@ import { getInitials } from "@/utils/getInitials";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { getBackgroundColorClass } from "@/utils/getBackgroundColor ";
+import { avatarGroupClasses } from "@mui/material";
 
 interface SettingItem {
   title: string;
@@ -30,7 +31,7 @@ const group1: SettingItem[] = [
     icon: (
       <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#0479fd] mr-2 overflow-hidden">
         <img
-          src="/images/telegram/saved-message.jpg"
+          src="/chat/images/telegram/saved-message.jpg"
           alt="Saved Messages"
           className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
@@ -44,7 +45,7 @@ const group1: SettingItem[] = [
     icon: (
       <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#38c656] mr-2 overflow-hidden">
         <img
-          src="/images/telegram/recent-call.png"
+          src="/chat/images/telegram/recent-call.png"
           alt="Recent Calls"
           className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
@@ -58,7 +59,7 @@ const group1: SettingItem[] = [
     icon: (
       <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#fd9500] mr-2 overflow-hidden">
         <img
-          src="/images/telegram/device.jpg"
+          src="/chat/images/telegram/device.jpg"
           alt="Devices"
           className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
@@ -73,7 +74,7 @@ const group1: SettingItem[] = [
     icon: (
       <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#2dabdb] mr-2 overflow-hidden">
         <img
-          src="/images/telegram/chat-folder.jpg"
+          src="/chat/images/telegram/chat-folder.jpg"
           alt="Chat Folders"
           className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
@@ -90,7 +91,7 @@ const group2: SettingItem[] = [
     icon: (
       <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#fd3a38] mr-2 overflow-hidden">
         <img
-          src="/images/telegram/notifications-and-sounds.jpg"
+          src="/chat/images/telegram/notifications-and-sounds.jpg"
           alt="Notifications and Sounds"
           className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
@@ -104,7 +105,7 @@ const group2: SettingItem[] = [
     icon: (
       <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#8f8e94] mr-2 overflow-hidden">
         <img
-          src="/images/telegram/privacy-and-security.png"
+          src="/chat/images/telegram/privacy-and-security.png"
           alt="Privacy and Security"
           className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
@@ -118,7 +119,7 @@ const group2: SettingItem[] = [
     icon: (
       <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] mr-2 overflow-hidden bg-[#34C759] p-0">
         <img
-          src="/images/telegram/data-and-storage.png"
+          src="/chat/images/telegram/data-and-storage.png"
           alt="Data and Storage"
           className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
@@ -132,7 +133,7 @@ const group2: SettingItem[] = [
     icon: (
       <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] mr-2 overflow-hidden bg-[#30B6F6] p-0">
         <img
-          src="/images/telegram/appearance.png"
+          src="/chat/images/telegram/appearance.png"
           alt="Appearance"
           className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
@@ -146,7 +147,7 @@ const group2: SettingItem[] = [
     icon: (
       <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#FF9500] mr-2 overflow-hidden p-0">
         <img
-          src="/images/telegram/power-saving.png"
+          src="/chat/images/telegram/power-saving.png"
           alt="Power Saving"
           className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
@@ -161,7 +162,7 @@ const group2: SettingItem[] = [
     icon: (
       <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#A259E6] mr-2 overflow-hidden">
         <img
-          src="/images/telegram/language.png"
+          src="/chat/images/telegram/language.png"
           alt="Language"
           className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
@@ -179,7 +180,7 @@ const group3: SettingItem[] = [
     icon: (
       <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#ad6ef0] mr-2 overflow-hidden">
         <img
-          src="/images/telegram/premium.png"
+          src="/chat/images/telegram/premium.png"
           alt="Telegram Premium"
           className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
@@ -193,7 +194,7 @@ const group3: SettingItem[] = [
     icon: (
       <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#f99011] mr-2 overflow-hidden">
         <img
-          src="/images/telegram/my-stars.jpg"
+          src="/chat/images/telegram/my-stars.jpg"
           alt="My Stars"
           className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
@@ -207,7 +208,7 @@ const group3: SettingItem[] = [
     icon: (
       <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#e06b95] mr-2 overflow-hidden">
         <img
-          src="/images/telegram/business.png"
+          src="/chat/images/telegram/business.png"
           alt="Telegram Business"
           className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
@@ -221,7 +222,7 @@ const group3: SettingItem[] = [
     icon: (
       <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#01ace0] mr-2 overflow-hidden">
         <img
-          src="/images/telegram/send-gift.jpg"
+          src="/chat/images/telegram/send-gift.jpg"
           alt="Send a Gift"
           className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
@@ -238,7 +239,7 @@ const group4: SettingItem[] = [
     icon: (
       <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#ff9600] mr-2 overflow-hidden">
         <img
-          src="/images/telegram/ask-question.png"
+          src="/chat/images/telegram/ask-question.png"
           alt="Ask a Question"
           className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
@@ -252,7 +253,7 @@ const group4: SettingItem[] = [
     icon: (
       <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#2dabdb] mr-2 overflow-hidden">
         <img
-          src="/images/telegram/faq.png"
+          src="/chat/images/telegram/faq.png"
           alt="Telegram FAQ"
           className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
@@ -266,7 +267,7 @@ const group4: SettingItem[] = [
     icon: (
       <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#fdcb14] mr-2 overflow-hidden">
         <img
-          src="/images/telegram/features.png"
+          src="/chat/images/telegram/features.png"
           alt="Telegram Features"
           className="w-5 h-5 object-cover rounded-[6px]"
           draggable={false}
@@ -284,8 +285,8 @@ export default function SettingsPage() {
   const userId = useAuthStore.getState().userId;
   const { user, setUser } = useUserStore.getState();
   const displayName = user ? user.displayName : "Tên";
-  const phone = user?.phone || "Sđt";
   const homeserver = user?.homeserver?.replace("https://", "") || "";
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [_, setRefresh] = useState(0);
 
   // Đưa fetchAvatar ra ngoài useEffect
@@ -295,20 +296,29 @@ export default function SettingsPage() {
       const profile = await client.getProfileInfo(userId);
       if (profile && profile.avatar_url) {
         const httpUrl = client.mxcUrlToHttp(profile.avatar_url, 96, 96, "crop") ?? "";
-        const isValid = /^https?:\/\//.test(httpUrl) && !httpUrl.includes("M_NOT_FOUND");
-        if (isValid) {
-          try {
-            const res = await fetch(httpUrl, { method: "HEAD" });
-            if (res.ok) {
-              const apiUrl = `/api/matrix-image?url=${encodeURIComponent(httpUrl)}`;
-              setUser({ avatarUrl: apiUrl });
-              setRefresh((prev) => prev + 1);
-              return;
-            }
-          } catch { }
-        }
+
+        setUser({ avatarUrl: httpUrl });
+        setAvatarUrl(httpUrl);
+
+        // // Kiểm tra link HTTP thực tế
+        // const isValid = /^https?:\/\//.test(httpUrl) && !httpUrl.includes("M_NOT_FOUND");
+        // if (isValid) {
+        //   // Test link HTTP thực tế
+        //   try {
+        //     const res = await fetch(httpUrl, { method: "HEAD" });
+        //     if (res.ok) {
+        //       const apiUrl = `/chat/api/matrix-image?url=${encodeURIComponent(httpUrl)}`;
+        //       setUser({ avatarUrl: apiUrl });
+        //       setRefresh((prev) => prev + 1);
+        //       return;
+        //     }
+        //   } catch (e) {
+        //     // Nếu fetch lỗi, sẽ fallback
+        //   }
+        // }
+      } else {
+        setUser({ avatarUrl: "" });
       }
-      setUser({ avatarUrl: "" });
     } catch {
       setUser({ avatarUrl: "" });
     }
@@ -316,8 +326,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     fetchAvatar();
-    // eslint-disable-next-line
-  }, [client, userId, setUser]);
+  }, [client, userId]);
 
   const handleFileSelect = () => {
     fileInputRef.current?.click();
@@ -377,9 +386,9 @@ export default function SettingsPage() {
           </div>
           <div className="flex flex-col items-center mt-2 mb-2">
             <Avatar className={`h-28 w-28 text-4xl ${avatarBackgroundColor}`}>
-              {user?.avatarUrl ? (
+              {avatarUrl ? (
                 <img
-                  src={user.avatarUrl}
+                  src={avatarUrl}
                   alt="avatar"
                   className="h-28 w-28 rounded-full object-cover"
                   width={112}
@@ -407,11 +416,11 @@ export default function SettingsPage() {
         const isDark = theme === "dark" || (theme === "system" && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches);
 
         const profileImg = isDark
-          ? "/images/telegram/set-profile-dark.jpg"
-          : "/images/telegram/set-profile-light.jpg";
+          ? "/chat/images/telegram/set-profile-dark.jpg"
+          : "/chat/images/telegram/set-profile-light.jpg";
         const usernameImg = isDark
-          ? "/images/telegram/set-username-dark.jpg"
-          : "/images/telegram/set-username-light.jpg";
+          ? "/chat/images/telegram/set-username-dark.jpg"
+          : "/chat/images/telegram/set-username-light.jpg";
 
         return (
           <div className="mx-4 rounded-2xl bg-white dark:bg-[#181818] shadow-sm mb-4 overflow-hidden">
@@ -457,7 +466,7 @@ export default function SettingsPage() {
       icon: (
         <span className="inline-flex items-center justify-center h-7 w-7 rounded-[6px] bg-[#FF2D55] mr-2 overflow-hidden">
           <img
-            src="/images/telegram/profile.png"
+            src="/chat/images/telegram/profile.png"
             alt="My Profile"
             className="w-5 h-5 object-cover rounded-[6px]"
             draggable={false}

@@ -7,6 +7,7 @@ import { Message, MessageStatus, MessageType } from "@/stores/useChatStore";
 import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { m } from "framer-motion";
 
 export const getUserRooms = async (
   client: sdk.MatrixClient
@@ -87,12 +88,16 @@ export const getTimeline = async (
     const userId = client.getUserId();
     const messages = room.getLiveTimeline().getEvents() || [];
 
+    //console.log(messages.filter((e) => e.getType() === "m.room.message"))
+
     // ✅ Tìm eventId cuối cùng được user khác read (receipt "m.read")
     let lastReadEventId: string | null = null;
     for (let i = messages.length - 1; i >= 0; i--) {
       const event = messages[i];
+      //console.log(i, event.getId(), event.getContent().body)
       if (event.getType() === "m.room.message") {
         const receipts = room.getReceiptsForEvent(event) as any[] | undefined;
+        //console.log(receipts, event.getContent().body);
         if (receipts && receipts.length > 0) {
           const otherReceipt = receipts.find(
             (r) => r.userId !== userId && r.type === "m.read"
@@ -107,7 +112,7 @@ export const getTimeline = async (
 
     let lastReadIndex = -1;
     if (lastReadEventId) {
-      lastReadIndex = messages.findIndex((e) => e.getId() === lastReadEventId);
+      lastReadIndex = messages.filter((e) => e.getType() === "m.room.message").findIndex((e) => e.getId() === lastReadEventId);
     }
 
     // ✅ Parse message
@@ -126,6 +131,7 @@ export const getTimeline = async (
         if (sender === userId && lastReadIndex !== -1 && idx <= lastReadIndex) {
           status = "read";
         }
+        //console.log(text, sender, status, idx, lastReadIndex);
 
         let imageUrl: string | null = null;
         let videoUrl: string | null = null;

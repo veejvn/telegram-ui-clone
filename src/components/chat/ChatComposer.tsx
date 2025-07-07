@@ -190,7 +190,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
         )}
       </div>
 
-      <div className="absolute bottom-14 left-0 z-50">
+      <div className="absolute bottom-14 left-0 z-50 pb-8">
         <TypingIndicator roomId={roomId} />
       </div>
 

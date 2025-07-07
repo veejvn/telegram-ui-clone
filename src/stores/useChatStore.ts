@@ -32,14 +32,6 @@ type ChatStore = {
   setIsLoadingMore: (roomId: string, isLoading: boolean) => void;
   setHasMore: (roomId: string, hasMore: boolean) => void;
   setOldestEventId: (roomId: string, eventId: string | null) => void;
-
-  updateMessageStatus: (
-    roomId: string,
-    localId: string | null,
-    eventId: string,
-    status: MessageStatus
-  ) => void;
-  updateLastSeen: (roomId: string, userId: string, timestamp: number) => void;
 };
 
 export const useChatStore = create<ChatStore>((set, get) => ({
@@ -107,35 +99,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         ...get().oldestEventIdByRoom,
         [roomId]: eventId,
       },
-    });
-  },
-
-  updateMessageStatus: (roomId, localId, eventId, status) => {
-    const messages = get().messagesByRoom[roomId] || [];
-    set({
-      messagesByRoom: {
-        ...get().messagesByRoom,
-        [roomId]: messages.map((msg) =>
-          msg.eventId === localId || msg.eventId === eventId
-            ? { ...msg, eventId, status }
-            : msg
-        ),
-      },
-    });
-  },
-
-  updateLastSeen: (roomId, userId, timestamp) => {
-    set((state) => {
-      const roomLastSeen = state.lastSeenByRoom[roomId] || {};
-      return {
-        lastSeenByRoom: {
-          ...state.lastSeenByRoom,
-          [roomId]: {
-            ...roomLastSeen,
-            [userId]: Math.max(roomLastSeen[userId] || 0, timestamp),
-          },
-        },
-      };
     });
   },
 }));
