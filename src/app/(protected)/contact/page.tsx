@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import * as sdk from "matrix-js-sdk";
 import { Check } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import SearchBar from "@/components/layouts/SearchBar";
 import NewContactModal from "@/components/contact/NewContactModal";
@@ -68,6 +68,9 @@ const ContactPage = () => {
     paddingTop: statusBarHeight ? Number(statusBarHeight) : 0,
   };
 
+  const hide = getLS("hide") || [];
+  const options = Array.isArray(hide) ? hide : [];
+
   return (
     <>
       <div style={headerStyle}>
@@ -106,7 +109,7 @@ const ContactPage = () => {
             <NewContactModal onAddContact={handleAddContact} />
           </div>
         </div>
-        <SearchBar />
+        {!options.includes("search") && <SearchBar />}
       </div>
       <div className="px-4 py-2">
         {loading ? (
