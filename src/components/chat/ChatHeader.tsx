@@ -20,10 +20,7 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
   const client = useMatrixClient();
   const { getLastSeen } = usePresenceContext() || {};
   const currentUserId = useAuthStore.getState().userId;
-  const { roomId, type, otherUserId } = getRoomInfo(
-    room,
-    currentUserId
-  );
+  const { roomId, type, otherUserId } = getRoomInfo(room, currentUserId);
 
   const [user, setUser] = useState<sdk.User | undefined>(undefined);
 
@@ -72,27 +69,9 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
     const fetchAvatar = async () => {
       if (!client || !user || !user.avatarUrl) return;
       try {
-        const httpUrl = client.mxcUrlToHttp(user.avatarUrl, 96, 96, "crop") ?? "";
-
-        // Kiểm tra link HTTP thực tế
-        const isValid =
-          /^https?:\/\//.test(httpUrl) && !httpUrl.includes("M_NOT_FOUND");
-        if (isValid) {
-          // Test link HTTP thực tế
-          try {
-            const res = await fetch(httpUrl, { method: "HEAD" });
-            if (res.ok) {
-              const apiUrl = `/api/matrix-image?url=${encodeURIComponent(
-                httpUrl
-              )}`;
-              setAvatarUrl(apiUrl);
-              return;
-            }
-          } catch (e) {
-            // Nếu fetch lỗi, sẽ fallback
-          }
-        }
-        setAvatarUrl("");
+        const httpUrl =
+          client.mxcUrlToHttp(user.avatarUrl, 96, 96, "crop") ?? "";
+        setAvatarUrl(httpUrl);
       } catch (error) {
         setAvatarUrl("");
         console.error("Error loading avatar:", error);
@@ -102,7 +81,7 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
     fetchAvatar();
   }, [client, user]);
 
-    const statusBarHeight = getLS("statusBarHeight");
+  const statusBarHeight = getLS("statusBarHeight");
 
   const headerStyle = {
     paddingTop: statusBarHeight ? Number(statusBarHeight) : 0,

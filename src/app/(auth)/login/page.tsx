@@ -1,14 +1,11 @@
 "use client";
 import React from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/useAuthStore";
 import LoginForm from "@/components/auth/LoginForm";
-import { ROUTES } from "@/constants/routes";
 import { ModeToggle } from "@/components/common/ModeToggle";
 
 export default function LoginPage() {
-  const router = useRouter();
   const login = useAuthStore((state) => state.login);
 
   // Callback khi login thành công
@@ -22,7 +19,7 @@ export default function LoginPage() {
       <div className="relative w-full max-w-md px-4 py-8">
         <div className="flex justify-center mb-8">
           <Image
-            src="/images/logo.png"
+            src="/chat/images/logo.png"
             alt="Logo"
             width={48}
             height={48}
