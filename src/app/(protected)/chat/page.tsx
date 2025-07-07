@@ -22,8 +22,6 @@ import {
 import useSortedRooms from "@/hooks/useSortedRooms";
 import useListenRoomInvites from "@/hooks/useListenRoomInvites";
 import { getLS, removeLS } from "@/tools/localStorage.tool";
-import { MoveLeft } from "lucide-react";
-import clsx from "clsx";
 import { useSearchParams } from "next/navigation";
 
 export default function ChatsPage() {
