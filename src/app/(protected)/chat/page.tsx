@@ -13,9 +13,17 @@ import ChatEditButton from "@/components/chat/ChatEditButton";
 import ChatActionBar from "@/components/chat/ChatActionBar";
 import DeleteChatModal from "@/components/chat/DeleteChatModal";
 import { getUserRooms } from "@/services/chatService";
-import { CircleFadingPlus, Loader2, SquarePen } from "lucide-react";
+import {
+  ChevronLeft,
+  CircleFadingPlus,
+  Loader2,
+  SquarePen,
+} from "lucide-react";
 import useSortedRooms from "@/hooks/useSortedRooms";
-import { getLS } from "@/tools/localStorage.tool";
+import useListenRoomInvites from "@/hooks/useListenRoomInvites";
+import { getLS, removeLS } from "@/tools/localStorage.tool";
+import { MoveLeft } from "lucide-react";
+import clsx from "clsx";
 
 export default function ChatsPage() {
   // const [rooms, setRooms] = useState<sdk.Room[]>([]);
@@ -24,6 +32,7 @@ export default function ChatsPage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  useListenRoomInvites();
   // useEffect(() => {
   //   if (!client) return;
   //   getUserRooms(client)
@@ -120,33 +129,95 @@ export default function ChatsPage() {
     paddingTop: statusBarHeight ? Number(statusBarHeight) : 0,
   };
 
+  const [showBackButton, setShowBackButton] = useState(false);
+
+  const backUrl = getLS("backUrl");
+
+  const MAIN_APP_ORIGIN =
+    typeof window !== "undefined" ? window.location.origin : "";
+
+  useEffect(() => {
+    if (backUrl) {
+      setShowBackButton(true);
+    } else if (
+      typeof document !== "undefined" &&
+      document.referrer &&
+      document.referrer.startsWith(MAIN_APP_ORIGIN)
+    ) {
+      setShowBackButton(true);
+    } else {
+      setShowBackButton(false);
+    }
+  }, [backUrl, MAIN_APP_ORIGIN]);
+
+  const handleBack = () => {
+    if (backUrl) {
+      removeLS("backUrl");
+      window.location.href = MAIN_APP_ORIGIN + backUrl;
+    } else {
+      removeLS("backUrl");
+      window.location.href = MAIN_APP_ORIGIN;
+    }
+  };
+
+  const chatTitleClass = clsx(
+    "text-md font-semibold",
+    backUrl || showBackButton ? "ml-12" : ""
+  );
+
   return (
     <div>
-      <div style={headerStyle} className="sticky bg-white dark:bg-black top-0 z-10">
+      <div
+        style={headerStyle}
+        className="sticky bg-white dark:bg-black top-0 z-10"
+      >
         <div className="flex items-center justify-between px-4 py-3 ">
-          <ChatEditButton
-            isEditMode={isEditMode}
-            onEdit={() => setIsEditMode(true)}
-            onDone={handleDone}
-          />
-          <h1 className="text-md font-semibold">Chats</h1>
-          <div className="flex gap-3 items-center">
-            <div
-              className="text-blue-500 cursor-pointer
+          <div className="flex items-center">
+            {showBackButton && (
+              <button
+                className="text-blue-500 font-medium w-10 cursor-pointer"
+                onClick={handleBack}
+                title="Back"
+                aria-label="Back"
+              >
+                <ChevronLeft />
+              </button>
+            )}
+            {!backUrl && !showBackButton && (
+              <ChatEditButton
+                isEditMode={isEditMode}
+                onEdit={() => setIsEditMode(true)}
+                onDone={handleDone}
+              />
+            )}
+          </div>
+          <h1 className={chatTitleClass}>Chats</h1>
+          <div className="flex gap-3">
+            {showBackButton && (
+              <ChatEditButton
+                isEditMode={isEditMode}
+                onEdit={() => setIsEditMode(true)}
+                onDone={handleDone}
+              />
+            )}
+            <>
+              <div
+                className="text-blue-500 cursor-pointer
             hover:scale-105 duration-500 transition-all ease-in-out
             hover:opacity-50"
-            >
-              <CircleFadingPlus className="rotate-y-180" />
-            </div>
-            <div
-              className="text-blue-500 cursor-pointer
+              >
+                <CircleFadingPlus className="rotate-y-180" />
+              </div>
+              <div
+                className="text-blue-500 cursor-pointer
             hover:scale-105 duration-500 transition-all ease-in-out
             hover:opacity-50"
-            >
-              <Link href={"/chat/newMessage"}>
-                <SquarePen />
-              </Link>
-            </div>
+              >
+                <Link href={"/chat/newMessage"}>
+                  <SquarePen />
+                </Link>
+              </div>
+            </>
           </div>
         </div>
         <SearchBar />

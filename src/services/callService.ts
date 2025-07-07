@@ -91,13 +91,13 @@ class CallService extends EventEmitter {
 
             // ✅ Cleanup local stream tracks
             if (this.localStream) {
-                console.log('[CallService] Stopping local stream tracks:', {
-                    audioTracks: this.localStream.getAudioTracks().length,
-                    videoTracks: this.localStream.getVideoTracks().length
-                });
+                // console.log('[CallService] Stopping local stream tracks:', {
+                //     audioTracks: this.localStream.getAudioTracks().length,
+                //     videoTracks: this.localStream.getVideoTracks().length
+                // });
                 this.localStream.getTracks().forEach(track => {
                     track.stop();
-                    console.log('[CallService] Stopped track:', track.kind, track.id);
+                    // console.log('[CallService] Stopped track:', track.kind, track.id);
                 });
             }
 
@@ -108,7 +108,7 @@ class CallService extends EventEmitter {
                 senders.forEach((sender: RTCRtpSender) => {
                     if (sender.track) {
                         sender.track.stop();
-                        console.log('[CallService] Stopped peer connection track:', sender.track.kind, sender.track.id);
+                        // console.log('[CallService] Stopped peer connection track:', sender.track.kind, sender.track.id);
                     }
                 });
             }
@@ -119,16 +119,16 @@ class CallService extends EventEmitter {
                 this.currentCall = undefined;
                 this.currentRoomId = undefined;
                 this.localStream = undefined;
-                console.log('[CallService] Call cleanup completed after delay');
+                // console.log('[CallService] Call cleanup completed after delay');
             }, 1000); // Delay 1 giây
         });
 
         c.on('error', (err: Error) => {
-            console.error('[CallService] Call error:', err);
+            // console.error('[CallService] Call error:', err);
 
             // ✅ Handle specific WebRTC errors
             if (err.message.includes('setRemoteDescription') || err.message.includes('stable')) {
-                console.warn('[CallService] WebRTC state conflict detected, ignoring error');
+                // console.warn('[CallService] WebRTC state conflict detected, ignoring error');
                 return; // Don't cleanup on WebRTC state conflicts
             }
 
@@ -137,7 +137,7 @@ class CallService extends EventEmitter {
             // ✅ Delay cleanup cho error cases
             setTimeout(() => {
                 this.currentCall = undefined;
-                console.log('[CallService] Call cleanup completed after error');
+                // console.log('[CallService] Call cleanup completed after error');
             }, 500);
         });
     }
@@ -191,14 +191,14 @@ class CallService extends EventEmitter {
             // ✅ Answer với constraints (Matrix SDK sẽ tự động lấy stream)
             (this.currentCall as any).answer({ audio: true, video: isVideo });
 
-            console.log('[CallService] Answered call with local stream:', {
-                audioTracks: stream.getAudioTracks().length,
-                videoTracks: stream.getVideoTracks().length,
-                isVideo
-            });
+            // console.log('[CallService] Answered call with local stream:', {
+            //     audioTracks: stream.getAudioTracks().length,
+            //     videoTracks: stream.getVideoTracks().length,
+            //     isVideo
+            // });
 
         } catch (err) {
-            console.error('[CallService] Failed to get user media for answer:', err);
+            // console.error('[CallService] Failed to get user media for answer:', err);
             // Fallback: answer without stream (audio only)
             this.currentCall.answer();
         }
@@ -208,17 +208,17 @@ class CallService extends EventEmitter {
     public hangup() {
         if (!this.currentCall) return;
 
-        console.log('[CallService] Manual hangup called');
+        // console.log('[CallService] Manual hangup called');
 
         // ✅ Cleanup local stream tracks
         if (this.localStream) {
-            console.log('[CallService] Stopping local stream tracks on manual hangup:', {
-                audioTracks: this.localStream.getAudioTracks().length,
-                videoTracks: this.localStream.getVideoTracks().length
-            });
+            // console.log('[CallService] Stopping local stream tracks on manual hangup:', {
+            //     audioTracks: this.localStream.getAudioTracks().length,
+            //     videoTracks: this.localStream.getVideoTracks().length
+            // });
             this.localStream.getTracks().forEach(track => {
                 track.stop();
-                console.log('[CallService] Stopped track on manual hangup:', track.kind, track.id);
+                // console.log('[CallService] Stopped track on manual hangup:', track.kind, track.id);
             });
         }
 
@@ -229,7 +229,7 @@ class CallService extends EventEmitter {
             senders.forEach((sender: RTCRtpSender) => {
                 if (sender.track) {
                     sender.track.stop();
-                    console.log('[CallService] Stopped peer connection track on manual hangup:', sender.track.kind, sender.track.id);
+                    // console.log('[CallService] Stopped peer connection track on manual hangup:', sender.track.kind, sender.track.id);
                 }
             });
         }
@@ -237,9 +237,9 @@ class CallService extends EventEmitter {
         // ✅ Call hangup với delay để tránh race condition
         try {
             (this.currentCall as any).hangup();
-            console.log('[CallService] Hangup called successfully');
+            // console.log('[CallService] Hangup called successfully');
         } catch (err) {
-            console.warn('[CallService] Hangup failed, forcing cleanup:', err);
+            // console.warn('[CallService] Hangup failed, forcing cleanup:', err);
             // Force cleanup nếu hangup fail
             setTimeout(() => {
                 this.currentCall = undefined;
@@ -283,7 +283,7 @@ class CallService extends EventEmitter {
                 callAny._updateRemoteFeeds();
             }
         } catch (err) {
-            console.error('[CallService] Không thể bật camera:', err);
+            // console.error('[CallService] Không thể bật camera:', err);
             alert('Không thể bật camera: ' + (err instanceof Error ? err.message : String(err)));
         }
     }
@@ -313,14 +313,14 @@ class CallService extends EventEmitter {
                 this.localStream?.addTrack(videoTrack);
                 this.emit('local-stream', this.localStream!);
             } catch (err) {
-                console.error('[CallService] toggleCamera failed to get video track:', err);
+                // console.error('[CallService] toggleCamera failed to get video track:', err);
             }
         }
     }
     public async toggleMic(on: boolean) {
         if (!this.currentCall) return;
 
-        console.log(`[CallService] Toggling mic: ${on}`);
+        // console.log(`[CallService] Toggling mic: ${on}`);
 
         const callAny = this.currentCall as any;
         const pc = callAny.peerConn as RTCPeerConnection;
@@ -328,7 +328,7 @@ class CallService extends EventEmitter {
         const audioSender = senders?.find(s => s.track?.kind === 'audio');
 
         if (!audioSender) {
-            console.warn('[CallService] No audio sender found');
+            // console.warn('[CallService] No audio sender found');
             return;
         }
 
@@ -336,7 +336,7 @@ class CallService extends EventEmitter {
             // 🔇 MUTE: Replace track bằng silent và xoá hết audio track khỏi stream
             const silentTrack = createSilentAudioTrack();
             await audioSender.replaceTrack(silentTrack);
-            console.log('[CallService] Mic muted using silent track');
+            // console.log('[CallService] Mic muted using silent track');
 
             // Stop & remove old tracks
             this.localStream?.getAudioTracks().forEach(t => t.stop());
@@ -348,12 +348,12 @@ class CallService extends EventEmitter {
                 const newStream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 const newTrack = newStream.getAudioTracks()[0];
                 await audioSender.replaceTrack(newTrack);
-                console.log('[CallService] Mic unmuted');
+                // console.log('[CallService] Mic unmuted');
 
                 // Thêm track mới vào stream
                 this.localStream?.addTrack(newTrack);
             } catch (err) {
-                console.error('[CallService] Failed to unmute mic:', err);
+                // console.error('[CallService] Failed to unmute mic:', err);
             }
         }
 

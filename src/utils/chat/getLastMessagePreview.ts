@@ -76,6 +76,9 @@ export const getLastMessagePreview = (
     senderName = member?.name || senderId || "Unknown";
   }
 
+  const roomId = room.roomId;
+  
+
   return {
     content: text,
     time: formatTime(timestamp),

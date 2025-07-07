@@ -1,11 +1,10 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import * as sdk from "matrix-js-sdk";
 import { getCookie } from "@/tools/cookie.tool";
 import { waitForClientReady } from "@/lib/matrix";
 import { createUserInfo } from "@/utils/createUserInfo";
-import { useRouter } from "next/navigation";
 import { PresenceProvider } from "@/contexts/PresenceProvider";
 
 const HOMESERVER_URL =
@@ -20,11 +19,16 @@ export function MatrixClientProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const router = useRouter();
   const [client, setClient] = useState<sdk.MatrixClient | null>(null);
+  const clientRef = useRef<sdk.MatrixClient>(null);
 
   useEffect(() => {
     let isMounted = true;
+    if (clientRef.current) {
+      // Đã khởi tạo trước đó ➜ reuse
+      setClient(clientRef.current);
+      return;
+    }
     const setupClient = async () => {
       const accessToken = getCookie("matrix_access_token");
       const userId = getCookie("matrix_user_id");
@@ -37,16 +41,18 @@ export function MatrixClientProvider({
           baseUrl: HOMESERVER_URL,
           accessToken,
           userId,
-          deviceId
+          deviceId,
         });
 
         client.startClient();
 
-        await waitForClientReady(client);
+        await waitForClientReady(client).then(() => {
+          clientRef.current = client;
+          if (isMounted) setClient(client);
+        });
 
         createUserInfo(client);
 
-        if (isMounted) setClient(client)
       } catch (error: any) {
         if (client) {
           client.stopClient();
@@ -58,11 +64,8 @@ export function MatrixClientProvider({
 
     return () => {
       isMounted = false;
-      if (client) {
-        client.stopClient();
-      }
     };
-  }, [HOMESERVER_URL, router]);
+  }, []);
 
   return (
     <MatrixClientContext.Provider value={client}>

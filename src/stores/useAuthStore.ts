@@ -1,4 +1,3 @@
-import { getLS } from '@/tools/localStorage.tool'
 import { create } from 'zustand'
 import { getCookie } from '@/tools/cookie.tool'
 

@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import BottomNavigation from '@/components/layouts/BottomNavigation';
 import IncomingCallHandler from "@/components/call/IncomingCallHandler";
+import { getLS } from '@/tools/localStorage.tool';
 
 // Dynamic import client-only MatrixClientProvider
 const MatrixClientProvider = dynamic(
@@ -25,8 +26,9 @@ export default function ProtectedClientLayout({
     children: React.ReactNode;
 }) {
     const router = useRouter();
-    const { isLogging } = useAuthStore();
+      const isLogging = useAuthStore((state => state.isLogging));
     const [isReady, setIsReady] = useState(false);
+    const backUrl = getLS("backUrl");
 
     useEffect(() => {
         setIsReady(true);
@@ -35,11 +37,29 @@ export default function ProtectedClientLayout({
         }
     }, [isLogging, router]);
 
+    const [showBackButton, setShowBackButton] = useState(false);
+
+    const MAIN_APP_ORIGIN = typeof window !== "undefined" ? window.location.origin : "";
+
+    useEffect(() => {
+        if (backUrl) {
+        setShowBackButton(true);
+        } else if (
+        typeof document !== "undefined" &&
+        document.referrer &&
+        document.referrer.startsWith(MAIN_APP_ORIGIN)
+        ) {
+        setShowBackButton(true);
+        } else {
+        setShowBackButton(false);
+        }
+    }, [backUrl, MAIN_APP_ORIGIN]);
+
     const pathname = usePathname();
     const isChatDetailPage = pathname ? /^\/chat(\/.+)+$/.test(pathname) : false;
     const isSettingPage = pathname ? pathname.startsWith('/setting/') : false;
     const isCallPage = pathname ? pathname.startsWith("/call/") : false;
-    const shouldShowBottomNav = !isChatDetailPage && !isSettingPage && !isCallPage;
+    const shouldShowBottomNav = !isChatDetailPage && !isSettingPage && !isCallPage && !showBackButton;
 
     if (!isReady || !isLogging) {
         return (
