@@ -13,7 +13,12 @@ import ChatEditButton from "@/components/chat/ChatEditButton";
 import ChatActionBar from "@/components/chat/ChatActionBar";
 import DeleteChatModal from "@/components/chat/DeleteChatModal";
 import { getUserRooms } from "@/services/chatService";
-import { CircleFadingPlus, Loader2, SquarePen } from "lucide-react";
+import {
+  ChevronLeft,
+  CircleFadingPlus,
+  Loader2,
+  SquarePen,
+} from "lucide-react";
 import useSortedRooms from "@/hooks/useSortedRooms";
 import useListenRoomInvites from "@/hooks/useListenRoomInvites";
 import { getLS, removeLS } from "@/tools/localStorage.tool";
@@ -150,14 +155,15 @@ export default function ChatsPage() {
       removeLS("backUrl");
       window.location.href = MAIN_APP_ORIGIN + backUrl;
     } else {
+      removeLS("backUrl");
       window.location.href = MAIN_APP_ORIGIN;
     }
   };
 
   const chatTitleClass = clsx(
     "text-md font-semibold",
-    (backUrl || showBackButton) ? "ml-12" : ""
-  )
+    backUrl || showBackButton ? "ml-12" : ""
+  );
 
   return (
     <div>
@@ -174,16 +180,16 @@ export default function ChatsPage() {
                 title="Back"
                 aria-label="Back"
               >
-                <MoveLeft />
+                <ChevronLeft />
               </button>
             )}
-            {!showBackButton && (
+            {!backUrl && !showBackButton && (
               <ChatEditButton
                 isEditMode={isEditMode}
                 onEdit={() => setIsEditMode(true)}
                 onDone={handleDone}
               />
-              )}
+            )}
           </div>
           <h1 className={chatTitleClass}>Chats</h1>
           <div className="flex gap-3">
@@ -194,22 +200,24 @@ export default function ChatsPage() {
                 onDone={handleDone}
               />
             )}
-            <div
-              className="text-blue-500 cursor-pointer
+            <>
+              <div
+                className="text-blue-500 cursor-pointer
             hover:scale-105 duration-500 transition-all ease-in-out
             hover:opacity-50"
-            >
-              <CircleFadingPlus className="rotate-y-180" />
-            </div>
-            <div
-              className="text-blue-500 cursor-pointer
+              >
+                <CircleFadingPlus className="rotate-y-180" />
+              </div>
+              <div
+                className="text-blue-500 cursor-pointer
             hover:scale-105 duration-500 transition-all ease-in-out
             hover:opacity-50"
-            >
-              <Link href={"/chat/newMessage"}>
-                <SquarePen />
-              </Link>
-            </div>
+              >
+                <Link href={"/chat/newMessage"}>
+                  <SquarePen />
+                </Link>
+              </div>
+            </>
           </div>
         </div>
         <SearchBar />

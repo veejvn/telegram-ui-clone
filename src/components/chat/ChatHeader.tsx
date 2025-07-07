@@ -20,10 +20,7 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
   const client = useMatrixClient();
   const { getLastSeen } = usePresenceContext() || {};
   const currentUserId = useAuthStore.getState().userId;
-  const { roomId, type, otherUserId } = getRoomInfo(
-    room,
-    currentUserId
-  );
+  const { roomId, type, otherUserId } = getRoomInfo(room, currentUserId);
 
   const [user, setUser] = useState<sdk.User | undefined>(undefined);
 
@@ -72,7 +69,8 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
     const fetchAvatar = async () => {
       if (!client || !user || !user.avatarUrl) return;
       try {
-        const httpUrl = client.mxcUrlToHttp(user.avatarUrl, 96, 96, "crop") ?? "";
+        const httpUrl =
+          client.mxcUrlToHttp(user.avatarUrl, 96, 96, "crop") ?? "";
         setAvatarUrl(httpUrl);
       } catch (error) {
         setAvatarUrl("");
@@ -83,7 +81,7 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
     fetchAvatar();
   }, [client, user]);
 
-    const statusBarHeight = getLS("statusBarHeight");
+  const statusBarHeight = getLS("statusBarHeight");
 
   const headerStyle = {
     paddingTop: statusBarHeight ? Number(statusBarHeight) : 0,
