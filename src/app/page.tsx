@@ -8,6 +8,7 @@ import { ROUTES } from "@/constants/routes";
 export default function Home() {
   const isLogging = useAuthStore((state) => state.isLogging);
   const router = useRouter();
+  const MATRIX_BASE_URL = process.env.NEXT_PUBLIC_MATRIX_BASE_URL || "https://matrix.teknix.dev";
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -15,7 +16,7 @@ export default function Home() {
       const url = new URL(window.location.href);
       const loginToken = url.searchParams.get('loginToken');
       if (loginToken) {
-        fetch("https://matrix.teknix.dev/_matrix/client/r0/login", {
+        fetch(`${MATRIX_BASE_URL}/_matrix/client/r0/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
