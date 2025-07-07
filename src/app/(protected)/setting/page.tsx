@@ -16,6 +16,7 @@ import { getInitials } from "@/utils/getInitials";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { getBackgroundColorClass } from "@/utils/getBackgroundColor ";
+import { avatarGroupClasses } from "@mui/material";
 
 interface SettingItem {
   title: string;
@@ -284,8 +285,8 @@ export default function SettingsPage() {
   const userId = useAuthStore.getState().userId;
   const { user, setUser } = useUserStore.getState();
   const displayName = user ? user.displayName : "Tên";
-  const phone = user?.phone || "Sđt";
   const homeserver = user?.homeserver?.replace("https://", "") || "";
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [_, setRefresh] = useState(0);
 
   // Đưa fetchAvatar ra ngoài useEffect
@@ -295,20 +296,29 @@ export default function SettingsPage() {
       const profile = await client.getProfileInfo(userId);
       if (profile && profile.avatar_url) {
         const httpUrl = client.mxcUrlToHttp(profile.avatar_url, 96, 96, "crop") ?? "";
-        const isValid = /^https?:\/\//.test(httpUrl) && !httpUrl.includes("M_NOT_FOUND");
-        if (isValid) {
-          try {
-            const res = await fetch(httpUrl, { method: "HEAD" });
-            if (res.ok) {
-              const apiUrl = `/api/matrix-image?url=${encodeURIComponent(httpUrl)}`;
-              setUser({ avatarUrl: apiUrl });
-              setRefresh((prev) => prev + 1);
-              return;
-            }
-          } catch { }
-        }
+
+        setUser({ avatarUrl: httpUrl });
+        setAvatarUrl(httpUrl);
+
+        // // Kiểm tra link HTTP thực tế
+        // const isValid = /^https?:\/\//.test(httpUrl) && !httpUrl.includes("M_NOT_FOUND");
+        // if (isValid) {
+        //   // Test link HTTP thực tế
+        //   try {
+        //     const res = await fetch(httpUrl, { method: "HEAD" });
+        //     if (res.ok) {
+        //       const apiUrl = `/chat/api/matrix-image?url=${encodeURIComponent(httpUrl)}`;
+        //       setUser({ avatarUrl: apiUrl });
+        //       setRefresh((prev) => prev + 1);
+        //       return;
+        //     }
+        //   } catch (e) {
+        //     // Nếu fetch lỗi, sẽ fallback
+        //   }
+        // }
+      } else {
+        setUser({ avatarUrl: "" });
       }
-      setUser({ avatarUrl: "" });
     } catch {
       setUser({ avatarUrl: "" });
     }
@@ -316,8 +326,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     fetchAvatar();
-    // eslint-disable-next-line
-  }, [client, userId, setUser]);
+  }, [client, userId]);
 
   const handleFileSelect = () => {
     fileInputRef.current?.click();
@@ -377,9 +386,9 @@ export default function SettingsPage() {
           </div>
           <div className="flex flex-col items-center mt-2 mb-2">
             <Avatar className={`h-28 w-28 text-4xl ${avatarBackgroundColor}`}>
-              {user?.avatarUrl ? (
+              {avatarUrl ? (
                 <img
-                  src={user.avatarUrl}
+                  src={avatarUrl}
                   alt="avatar"
                   className="h-28 w-28 rounded-full object-cover"
                   width={112}
