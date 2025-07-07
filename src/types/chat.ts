@@ -5,5 +5,6 @@ export interface MessagePros { msg: Message, isSender: boolean, animate?: boolea
 export interface ChatEditButtonPros{ 
     isEditMode: boolean, 
     onEdit: () => void, 
-    onDone: () => void
+    onDone: () => void,
+    className?: string
 }
