@@ -15,8 +15,8 @@ const nextConfig = {
   async rewrites() {
     return [
       {
-        source: '/chat/:path+',
-        destination: 'http://chat-domain.com/chat/:path+',
+        source: "/chat/:path+",
+        destination: "http://chat-domain.com/chat/:path+",
       },
     ];
   },
@@ -39,7 +39,7 @@ export default nextConfig;
 ```typescript
 // filepath: d:\HocTap\TTTT\multi-zone-app\chat-app\next.config.ts
 const nextConfig = {
-  basePath: '/chat',
+  basePath: "/chat",
   // ...các config khác...
 };
 export default nextConfig;
@@ -61,11 +61,31 @@ npm start -p 3003
 
 - Truy cập `http://main-domain.com/chat/chat` (main-app) sẽ hiển thị giao diện chat-app.
 
-## 6. Hướng dẫn trở về Main App từ Chat App bằng backUrl
+## 6. Hướng dẫn truyền option từ Main App sang Chat App để ẩn/hiện các tính năng
+
+Để truyền các option (ví dụ: ẩn/hiện các nút như call, contact, setting, searchbar) từ main-app sang chat-app, bạn chỉ cần thêm các query param trên URL khi chuyển sang chat-app. Chat-app sẽ đọc các query param này và xử lý linh hoạt theo nhu cầu (ví dụ: ẩn/hiện các nút, thay đổi giao diện, ...).
+
+**Ví dụ minh họa:**
+
+- Nếu muốn ẩn các nút Call, Contact, Setting trên chat-app, bạn có thể tạo link như sau ở main-app:
+
+  `http://main-domain.com/chat/chat?hide=call,contact,setting`
+
+- Khi người dùng truy cập vào link này, chat-app sẽ nhận được thông tin cần ẩn các nút tương ứng.
+
+- Các options:
+  + call: ẩn Call ở Navigation Bar
+  + setting: ẩn Setting ở Navigation Bar
+  + contact: ẩn Contact ở Navigation Bar
+  + search: ẩn Search Bar
+  
+
+## 7. Hướng dẫn trở về Main App từ Chat App bằng backUrl
 
 Để khi truy cập từ một zone phụ (ví dụ: Blog) sang Chat Zone, người dùng có thể quay lại đúng trang trước đó, bạn có thể truyền tham số `backUrl` trên đường dẫn:
 
 **Ví dụ ở trang Blog:**
+
 ```tsx
 export default function BlogHome() {
   const backUrl = "/blog";
@@ -81,6 +101,7 @@ export default function BlogHome() {
 }
 ```
 
-**Lưu ý:**  
+**Lưu ý:**
+
 - Luôn build lại chat-app sau khi thay đổi cấu hình.
 - Nếu deploy lên production, thay đổi `destination` sang domain thực tế của chat-app.

@@ -58,6 +58,7 @@ export default function LanguagePage() {
               // placeholder="Search"  // <-- BỎ dòng này
               readOnly
               style={{ color: 'transparent', textShadow: '0 0 0 #b0b0b0' }} // Đảm bảo không hiện text
+              aria-label='input'
             />
             <span className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
               <span className="flex items-center gap-2 text-zinc-400">
