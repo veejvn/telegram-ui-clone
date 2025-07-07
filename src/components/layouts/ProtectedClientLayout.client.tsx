@@ -9,6 +9,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 import IncomingCallHandler from "@/components/call/IncomingCallHandler";
 import BottomNavigationWrapper from "@/components/layouts/BottomNavigationWrapper";
+import useRegisterPushKey from "@/hooks/useRegisterPushKey ";
 
 // Dynamic import client-only MatrixClientProvider
 const MatrixClientProvider = dynamic(
@@ -27,6 +28,9 @@ export default function ProtectedClientLayout({
   const router = useRouter();
   const isLogging = useAuthStore((state) => state.isLogging);
   const [isReady, setIsReady] = useState(false);
+  const accessToken = useAuthStore((state) => state.accessToken);
+  console.log("accessToken", accessToken);
+  useRegisterPushKey(accessToken);
 
   useEffect(() => {
     setIsReady(true);
@@ -49,7 +53,7 @@ export default function ProtectedClientLayout({
         <IncomingCallHandler />
         <main className="min-h-screen flex flex-col">
           {children}
-          <BottomNavigationWrapper/>
+          <BottomNavigationWrapper />
         </main>
       </MatrixClientProvider>
     </Suspense>
