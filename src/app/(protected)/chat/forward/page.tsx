@@ -1,7 +1,7 @@
 import ForwardHeader from "@/components/chat/ForwardHeader";
-import React from "react";
+import React, { Suspense } from "react";
 
-export default function page() {
+export default function Page() {
   return (
     <div>
       <ForwardHeader />
