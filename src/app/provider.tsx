@@ -10,8 +10,22 @@ import { Suspense } from "react";
 function BackUrlSetter() {
   const searchParams = useSearchParams();
   const backUrl = searchParams.get("backUrl");
+  const hide = searchParams.get("hide")?.split(",") || [];
+  const BASE_APP_URL = process.env.NEXT_PUBLIC_BASE_APP_URL;
+  const MAIN_APP_ORIGIN = typeof window !== "undefined" ? window.location.origin : "";
+
   if (backUrl) {
     setLS("backUrl", backUrl);
+  }
+
+  if (MAIN_APP_ORIGIN !== BASE_APP_URL) {
+    setLS("formMainApp", true);
+  }
+
+  if(searchParams.has("hide")){
+    setLS("hide", hide);
+  }else{
+    setLS("hide", [])
   }
   return null;
 }

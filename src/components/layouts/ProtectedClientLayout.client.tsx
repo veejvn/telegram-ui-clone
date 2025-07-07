@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { ROUTES } from '@/constants/routes';
 import { useAuthStore } from '@/stores/useAuthStore';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
@@ -28,7 +28,9 @@ export default function ProtectedClientLayout({
     const router = useRouter();
       const isLogging = useAuthStore((state => state.isLogging));
     const [isReady, setIsReady] = useState(false);
-    const backUrl = getLS("backUrl");
+    const searchParams = useSearchParams();
+    const hideFromQuery = searchParams.get("hide");
+    const hide = hideFromQuery ? hideFromQuery.split(",") : getLS("hide") || [];
 
     useEffect(() => {
         setIsReady(true);
@@ -37,29 +39,13 @@ export default function ProtectedClientLayout({
         }
     }, [isLogging, router]);
 
-    const [showBackButton, setShowBackButton] = useState(false);
-
-    const MAIN_APP_ORIGIN = typeof window !== "undefined" ? window.location.origin : "";
-
-    useEffect(() => {
-        if (backUrl) {
-        setShowBackButton(true);
-        } else if (
-        typeof document !== "undefined" &&
-        document.referrer &&
-        document.referrer.startsWith(MAIN_APP_ORIGIN)
-        ) {
-        setShowBackButton(true);
-        } else {
-        setShowBackButton(false);
-        }
-    }, [backUrl, MAIN_APP_ORIGIN]);
-
     const pathname = usePathname();
     const isChatDetailPage = pathname ? /^\/chat(\/.+)+$/.test(pathname) : false;
     const isSettingPage = pathname ? pathname.startsWith('/setting/') : false;
     const isCallPage = pathname ? pathname.startsWith("/call/") : false;
-    const shouldShowBottomNav = !isChatDetailPage && !isSettingPage && !isCallPage && !showBackButton;
+    const options = Array.isArray(hide) ? hide : [];
+    const onlyChat = options.length >= 3;
+    const shouldShowBottomNav = !isChatDetailPage && !isSettingPage && !isCallPage && !onlyChat;
 
     if (!isReady || !isLogging) {
         return (
@@ -74,7 +60,7 @@ export default function ProtectedClientLayout({
             <IncomingCallHandler />
             <main className="min-h-screen flex flex-col">
                 {children}
-                {shouldShowBottomNav && <BottomNavigation />}
+                {shouldShowBottomNav && <BottomNavigation hideOptions={hide}/>}
             </main>
         </MatrixClientProvider>
     );
