@@ -47,8 +47,8 @@ export default function DevicesPage() {
                     <div className="rounded-2xl p-2 mb-2 bg-transparent">
                         <Image
                             src={isDark
-                                ? "/images/icon-device/laptop-dark.png"
-                                : "/images/icon-device/laptop-light.png"
+                                ? "/chat/images/icon-device/laptop-dark.png"
+                                : "/chat/images/icon-device/laptop-light.png"
                             }
                             alt="Laptop Illustration"
                             width={120}
