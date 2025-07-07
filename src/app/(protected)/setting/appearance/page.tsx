@@ -85,7 +85,7 @@ export default function AppearancePage() {
           <div className={`rounded-2xl overflow-hidden ${isDark ? "bg-[#181818]" : "bg-white"}`}>
             <div className="w-full overflow-hidden">
               <Image
-                src={isDark ? "/images/icons-appearance/chat-theme-preview-dark.jpg" : "/images/icons-appearance/chat-theme-preview-light.jpg"}
+                src={isDark ? "/chat/images/icons-appearance/chat-theme-preview-dark.jpg" : "/chat/images/icons-appearance/chat-theme-preview-light.jpg"}
                 alt="Chat Preview"
                 width={400}
                 height={200}
