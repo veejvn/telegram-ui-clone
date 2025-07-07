@@ -88,18 +88,57 @@ class CallService extends EventEmitter {
 
         c.on('hangup', (event: any) => {
             const reason = event?.reason || 'user_hangup';
+
+            // ✅ Cleanup local stream tracks
             if (this.localStream) {
-                this.localStream.getTracks().forEach(track => track.stop());
+                console.log('[CallService] Stopping local stream tracks:', {
+                    audioTracks: this.localStream.getAudioTracks().length,
+                    videoTracks: this.localStream.getVideoTracks().length
+                });
+                this.localStream.getTracks().forEach(track => {
+                    track.stop();
+                    console.log('[CallService] Stopped track:', track.kind, track.id);
+                });
             }
-            this.emit('call-ended', reason);
-            this.currentCall = undefined;
-            this.currentRoomId = undefined;
-            this.localStream = undefined;
+
+            // ✅ Cleanup peer connection tracks
+            const callAny = call as any;
+            if (callAny.peerConn) {
+                const senders = callAny.peerConn.getSenders();
+                senders.forEach((sender: RTCRtpSender) => {
+                    if (sender.track) {
+                        sender.track.stop();
+                        console.log('[CallService] Stopped peer connection track:', sender.track.kind, sender.track.id);
+                    }
+                });
+            }
+
+            // ✅ Delay cleanup để tránh race condition với events đến sau
+            setTimeout(() => {
+                this.emit('call-ended', reason);
+                this.currentCall = undefined;
+                this.currentRoomId = undefined;
+                this.localStream = undefined;
+                console.log('[CallService] Call cleanup completed after delay');
+            }, 1000); // Delay 1 giây
         });
 
         c.on('error', (err: Error) => {
+            console.error('[CallService] Call error:', err);
+
+            // ✅ Handle specific WebRTC errors
+            if (err.message.includes('setRemoteDescription') || err.message.includes('stable')) {
+                console.warn('[CallService] WebRTC state conflict detected, ignoring error');
+                return; // Don't cleanup on WebRTC state conflicts
+            }
+
             this.emit('call-error', err);
-            this.currentCall = undefined;
+
+            // ✅ Delay cleanup cho error cases
+            setTimeout(() => {
+                this.currentCall = undefined;
+                console.log('[CallService] Call cleanup completed after error');
+            }, 500);
         });
     }
 
@@ -133,31 +172,82 @@ class CallService extends EventEmitter {
         this.emit('outgoing-call', { roomId, callType: type });
     }
 
-    public answerCall() {
+    public async answerCall() {
         if (!this.currentCall) return;
 
         const callAny = this.currentCall as any;
 
-        this.currentCall.answer();
+        try {
+            // ✅ Lấy local stream TRƯỚC khi answer
+            const isVideo = this.currentCall.type === 'video' || callAny.hasLocalUserMediaVideoTrack;
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: true,
+                video: isVideo
+            });
 
-        // Đợi local stream được SDK emit hoặc chủ động kiểm tra
-        setTimeout(() => {
-            if (callAny.localStream) {
-                this.localStream = callAny.localStream;
-                this.emit('local-stream', callAny.localStream);
-            } else {
-                console.warn('[CallService] No local stream found after answer');
-            }
-        }, 500); // Chờ 0.5s để đảm bảo stream có đủ thời gian khởi tạo
+            this.localStream = stream;
+            this.emit('local-stream', stream);
+
+            // ✅ Answer với constraints (Matrix SDK sẽ tự động lấy stream)
+            (this.currentCall as any).answer({ audio: true, video: isVideo });
+
+            console.log('[CallService] Answered call with local stream:', {
+                audioTracks: stream.getAudioTracks().length,
+                videoTracks: stream.getVideoTracks().length,
+                isVideo
+            });
+
+        } catch (err) {
+            console.error('[CallService] Failed to get user media for answer:', err);
+            // Fallback: answer without stream (audio only)
+            this.currentCall.answer();
+        }
     }
 
 
     public hangup() {
         if (!this.currentCall) return;
+
+        console.log('[CallService] Manual hangup called');
+
+        // ✅ Cleanup local stream tracks
         if (this.localStream) {
-            this.localStream.getTracks().forEach(track => track.stop());
+            console.log('[CallService] Stopping local stream tracks on manual hangup:', {
+                audioTracks: this.localStream.getAudioTracks().length,
+                videoTracks: this.localStream.getVideoTracks().length
+            });
+            this.localStream.getTracks().forEach(track => {
+                track.stop();
+                console.log('[CallService] Stopped track on manual hangup:', track.kind, track.id);
+            });
         }
-        (this.currentCall as any).hangup();
+
+        // ✅ Cleanup peer connection tracks
+        const callAny = this.currentCall as any;
+        if (callAny.peerConn) {
+            const senders = callAny.peerConn.getSenders();
+            senders.forEach((sender: RTCRtpSender) => {
+                if (sender.track) {
+                    sender.track.stop();
+                    console.log('[CallService] Stopped peer connection track on manual hangup:', sender.track.kind, sender.track.id);
+                }
+            });
+        }
+
+        // ✅ Call hangup với delay để tránh race condition
+        try {
+            (this.currentCall as any).hangup();
+            console.log('[CallService] Hangup called successfully');
+        } catch (err) {
+            console.warn('[CallService] Hangup failed, forcing cleanup:', err);
+            // Force cleanup nếu hangup fail
+            setTimeout(() => {
+                this.currentCall = undefined;
+                this.currentRoomId = undefined;
+                this.localStream = undefined;
+                this.emit('call-ended', 'user_hangup');
+            }, 100);
+        }
     }
 
     public async upgradeToVideo() {

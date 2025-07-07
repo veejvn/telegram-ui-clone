@@ -19,7 +19,7 @@ interface CallStore {
     callEndedReason?: string
     micOn: boolean
     placeCall: (roomId: string, type: CallType) => void
-    answerCall: () => void
+    answerCall: () => Promise<void>
     hangup: () => void
     reset: () => void
     toggleCamera: (on: boolean) => void
@@ -40,8 +40,17 @@ let _timer: ReturnType<typeof setInterval> | null = null
 
 const stopAllTracks = (stream?: MediaStream) => {
     if (stream) {
+        console.log('[CallStore] Stopping all tracks in stream:', {
+            audioTracks: stream.getAudioTracks().length,
+            videoTracks: stream.getVideoTracks().length
+        });
         stream.getTracks().forEach(track => {
-            try { track.stop() } catch { }
+            try {
+                track.stop();
+                console.log('[CallStore] Stopped track:', track.kind, track.id);
+            } catch (err) {
+                console.warn('[CallStore] Failed to stop track:', track.kind, track.id, err);
+            }
         })
     }
 }
@@ -145,14 +154,24 @@ const useCallStore = create<CallStore>((set, get) => {
             }
             callService.placeCall(roomId, type)
         },
-        answerCall: () => {
+        answerCall: async () => {
             set({ state: 'connecting' })
-            callService.answerCall()
+            await callService.answerCall()
         },
         hangup: () => {
             const { localStream, remoteStream } = get();
             stopAllTracks(localStream);
             stopAllTracks(remoteStream);
+
+            // ✅ Force detach video elements để tắt camera indicator
+            const videoElements = document.querySelectorAll('video');
+            videoElements.forEach(video => {
+                if (video.srcObject) {
+                    video.srcObject = null;
+                    console.log('[CallStore] Detached video element:', video);
+                }
+            });
+
             set({ localStream: undefined, remoteStream: undefined });
             callService.hangup()
         },
@@ -169,6 +188,15 @@ const useCallStore = create<CallStore>((set, get) => {
             const { localStream, remoteStream } = get();
             stopAllTracks(localStream);
             stopAllTracks(remoteStream);
+
+            // ✅ Force detach video elements để tắt camera indicator
+            const videoElements = document.querySelectorAll('video');
+            videoElements.forEach(video => {
+                if (video.srcObject) {
+                    video.srcObject = null;
+                    console.log('[CallStore] Detached video element in reset:', video);
+                }
+            });
 
             set({
                 state: 'idle',
