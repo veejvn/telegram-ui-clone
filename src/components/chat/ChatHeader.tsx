@@ -14,6 +14,7 @@ import { getUserInfoInPrivateRoom } from "@/services/chatService";
 import { getRoomInfo } from "@/utils/chat/RoomHelpers";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { usePresenceContext } from "@/contexts/PresenceProvider";
+import { getLS } from "@/tools/localStorage.tool";
 
 const ChatHeader = ({ room }: { room: sdk.Room }) => {
   const client = useMatrixClient();
@@ -82,9 +83,16 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
     fetchAvatar();
   }, [client, user]);
 
+    const statusBarHeight = getLS("statusBarHeight");
+
+  const headerStyle = {
+    paddingTop: statusBarHeight ? Number(statusBarHeight) : 0,
+  };
+
   return (
     <>
       <div
+        style={headerStyle}
         className="flex justify-between bg-white dark:bg-[#1c1c1e]
           py-2 items-center px-2 "
       >

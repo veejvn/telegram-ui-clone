@@ -13,31 +13,35 @@ import ChatEditButton from "@/components/chat/ChatEditButton";
 import ChatActionBar from "@/components/chat/ChatActionBar";
 import DeleteChatModal from "@/components/chat/DeleteChatModal";
 import { getUserRooms } from "@/services/chatService";
+import { CircleFadingPlus, Loader2, SquarePen } from "lucide-react";
+import useSortedRooms from "@/hooks/useSortedRooms";
+import useListenRoomInvites from "@/hooks/useListenRoomInvites";
 import { getLS, removeLS } from "@/tools/localStorage.tool";
 import { MoveLeft } from "lucide-react";
 import clsx from "clsx";
 
 export default function ChatsPage() {
-  const [rooms, setRooms] = useState<sdk.Room[]>([]);
+  // const [rooms, setRooms] = useState<sdk.Room[]>([]);
+  const { rooms, refreshRooms, loading } = useSortedRooms();
   const client = useMatrixClient();
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-
-  useEffect(() => {
-    if (!client) return;
-    getUserRooms(client)
-      .then((res) => {
-        if (res.success && res.rooms) {
-          setRooms(res.rooms);
-        } else {
-          console.error("Failed to fetch user rooms or rooms are undefined.");
-        }
-      })
-      .catch((error) => {
-        console.error("An error occurred while fetching user rooms:", error);
-      });
-  }, [client]);
+  useListenRoomInvites();
+  // useEffect(() => {
+  //   if (!client) return;
+  //   getUserRooms(client)
+  //     .then((res) => {
+  //       if (res.success && res.rooms) {
+  //         setRooms(res.rooms);
+  //       } else {
+  //         console.error("Failed to fetch user rooms or rooms are undefined.");
+  //       }
+  //     })
+  //     .catch((error) => {
+  //       console.error("An error occurred while fetching user rooms:", error);
+  //     });
+  // }, [client]);
 
   const handleSelectRoom = (roomId: string) => {
     setSelectedRooms((prev) =>
@@ -59,20 +63,20 @@ export default function ChatsPage() {
     setShowDeleteModal(true);
   };
 
-  const refreshRooms = () => {
-    if (!client) return;
-    getUserRooms(client)
-      .then((res) => {
-        if (res.success && res.rooms) {
-          setRooms(res.rooms);
-        } else {
-          console.error("Failed to fetch user rooms or rooms are undefined.");
-        }
-      })
-      .catch((error) => {
-        console.error("An error occurred while fetching user rooms:", error);
-      });
-  };
+  // const refreshRooms = () => {
+  //   if (!client) return;
+  //   getUserRooms(client)
+  //     .then((res) => {
+  //       if (res.success && res.rooms) {
+  //         setRooms(res.rooms);
+  //       } else {
+  //         console.error("Failed to fetch user rooms or rooms are undefined.");
+  //       }
+  //     })
+  //     .catch((error) => {
+  //       console.error("An error occurred while fetching user rooms:", error);
+  //     });
+  // };
 
   const handleDeleteMine = async () => {
     if (!client) return;
@@ -114,6 +118,12 @@ export default function ChatsPage() {
     setSelectedRooms([]);
   };
 
+  const statusBarHeight = getLS("statusBarHeight");
+
+  const headerStyle = {
+    paddingTop: statusBarHeight ? Number(statusBarHeight) : 0,
+  };
+
   const [showBackButton, setShowBackButton] = useState(false);
 
   const backUrl = getLS("backUrl");
@@ -151,8 +161,11 @@ export default function ChatsPage() {
 
   return (
     <div>
-      <div className="sticky bg-white dark:bg-black top-0 z-10">
-        <div className="flex items-center justify-between px-4 py-2">
+      <div
+        style={headerStyle}
+        className="sticky bg-white dark:bg-black top-0 z-10"
+      >
+        <div className="flex items-center justify-between px-4 py-3 ">
           <div className="flex items-center">
             {showBackButton && (
               <button
@@ -170,7 +183,7 @@ export default function ChatsPage() {
                 onEdit={() => setIsEditMode(true)}
                 onDone={handleDone}
               />
-            )}
+              )}
           </div>
           <h1 className={chatTitleClass}>Chats</h1>
           <div className="flex gap-3">
@@ -181,14 +194,33 @@ export default function ChatsPage() {
                 onDone={handleDone}
               />
             )}
-            <div className="text-blue-500">+</div>
-            <div className="text-blue-500">✏️</div>
+            <div
+              className="text-blue-500 cursor-pointer
+            hover:scale-105 duration-500 transition-all ease-in-out
+            hover:opacity-50"
+            >
+              <CircleFadingPlus className="rotate-y-180" />
+            </div>
+            <div
+              className="text-blue-500 cursor-pointer
+            hover:scale-105 duration-500 transition-all ease-in-out
+            hover:opacity-50"
+            >
+              <Link href={"/chat/newMessage"}>
+                <SquarePen />
+              </Link>
+            </div>
           </div>
         </div>
         <SearchBar />
       </div>
 
-      {!rooms || rooms.length == 0 ? (
+      {loading ? (
+        <div className="flex flex-1 flex-col justify-center items-center min-h-[calc(100vh-112px)] pb-8">
+          <Loader2 className="w-8 h-8 animate-spin text-zinc-500 mb-2" />
+          <p className="text-muted-foreground text-sm">Loading chats...</p>
+        </div>
+      ) : rooms.length === 0 ? (
         <div className="flex flex-1 flex-col justify-between min-h-[calc(100vh-112px)] pb-8">
           <div className="flex flex-1 flex-col items-center justify-center text-center">
             <img
