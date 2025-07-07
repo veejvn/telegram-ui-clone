@@ -15,40 +15,36 @@ import { getRoomInfo } from "@/utils/chat/RoomHelpers";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { usePresenceContext } from "@/contexts/PresenceProvider";
 import { getLS } from "@/tools/localStorage.tool";
+import { getDetailedStatus } from "@/utils/chat/presenceHelpers";
 
 const ChatHeader = ({ room }: { room: sdk.Room }) => {
   const client = useMatrixClient();
   const { getLastSeen } = usePresenceContext() || {};
   const currentUserId = useAuthStore.getState().userId;
-  const { roomId, type, otherUserId } = getRoomInfo(
-    room,
-    currentUserId
-  );
+  const { roomId, type, otherUserId } = getRoomInfo( room, currentUserId );
 
   const [user, setUser] = useState<sdk.User | undefined>(undefined);
+  const { getUserPresence } = usePresenceContext() || {};
+
+  // let lastSeen: Date | null = null;
+
+  // if (type === "direct" && otherUserId && getLastSeen) {
+  //   lastSeen = getLastSeen(otherUserId);
+  // }
 
   let lastSeen: Date | null = null;
+  let isActuallyOnline = false;
 
-  if (type === "direct" && otherUserId && getLastSeen) {
-    lastSeen = getLastSeen(otherUserId);
+  if (type === "direct" && otherUserId && getLastSeen && getUserPresence) {
+    const presence = getUserPresence(otherUserId);
+    lastSeen = presence?.lastActiveTs ? new Date(presence.lastActiveTs) : null;
+
+      isActuallyOnline = !!(
+      presence?.presence === "online" &&
+      presence?.currentlyActive &&
+      Date.now() - (presence?.lastActiveTs || 0) < 30 * 1000
+    );
   }
-
-  const getDetailedStatus = () => {
-    if (lastSeen) {
-      const now = new Date();
-      const diffMs = now.getTime() - lastSeen.getTime();
-      const diffMinutes = Math.floor(diffMs / (1000 * 60));
-      const diffHours = Math.floor(diffMinutes / 60);
-      const diffDays = Math.floor(diffHours / 24);
-
-      if (diffMinutes < 1) return "online";
-      if (diffMinutes < 60) return `Last seen ${diffMinutes} minutes ago`;
-      if (diffHours < 24) return `Last seen ${diffHours} hours ago`;
-      return "Last seen recently";
-      // if (diffDays < 7) return `Last seen ${diffDays} days ago`;
-    }
-    return "Last seen recently";
-  };
 
   useEffect(() => {
     if (!roomId || !client) return;
@@ -127,7 +123,7 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
           <h1 className="font-semibold text-base">{room.name}</h1>
           <div>
             <p className="text-sm text-muted-foreground">
-              {getDetailedStatus()}
+              {isActuallyOnline ? "online" : getDetailedStatus(lastSeen)}
             </p>
           </div>
         </div>
