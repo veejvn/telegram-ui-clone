@@ -24,9 +24,10 @@ function BackUrlSetter() {
   }
 
   if (searchParams.has("hide")) {
-    setLS("hide", hide);
-  } else {
-    setLS("hide", []);
+    // if (hide === null) 
+    //   setLS("hide", []);
+    // else 
+      setLS("hide", hide);
   }
   return null;
 }

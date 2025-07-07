@@ -141,12 +141,12 @@ export default function ChatsPage() {
     if (backUrl) {
       removeLS("backUrl");
       removeLS("formMainApp");
-      removeLS("hide")
+      removeLS("hide");
       window.location.href = MAIN_APP_ORIGIN + backUrl;
     } else {
       removeLS("backUrl");
       removeLS("formMainApp");
-      removeLS("hide")
+      removeLS("hide");
       window.location.href = MAIN_APP_ORIGIN;
     }
   };
