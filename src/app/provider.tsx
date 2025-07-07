@@ -12,7 +12,8 @@ function BackUrlSetter() {
   const backUrl = searchParams.get("backUrl");
   const hide = searchParams.get("hide")?.split(",") || [];
   const BASE_APP_URL = process.env.NEXT_PUBLIC_BASE_APP_URL;
-  const MAIN_APP_ORIGIN = typeof window !== "undefined" ? window.location.origin : "";
+  const MAIN_APP_ORIGIN =
+    typeof window !== "undefined" ? window.location.origin : "";
 
   if (backUrl) {
     setLS("backUrl", backUrl);
@@ -22,10 +23,10 @@ function BackUrlSetter() {
     setLS("formMainApp", true);
   }
 
-  if(searchParams.has("hide")){
+  if (searchParams.has("hide")) {
     setLS("hide", hide);
-  }else{
-    setLS("hide", [])
+  } else {
+    setLS("hide", []);
   }
   return null;
 }
@@ -47,7 +48,7 @@ export default function Providers({
           <BackUrlSetter />
         </Suspense>
         <ToastProvider>{children}</ToastProvider>
-        <Toaster/>
+        <Toaster />
       </ThemeProvider>
     </>
   );
