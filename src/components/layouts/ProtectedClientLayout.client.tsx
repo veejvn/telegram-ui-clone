@@ -10,6 +10,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 import BottomNavigation from '@/components/layouts/BottomNavigation';
 import IncomingCallHandler from "@/components/call/IncomingCallHandler";
 import { getLS } from '@/tools/localStorage.tool';
+import useRegisterPushKey from '@/hooks/useRegisterPushKey ';
 
 // Dynamic import client-only MatrixClientProvider
 const MatrixClientProvider = dynamic(
@@ -26,9 +27,12 @@ export default function ProtectedClientLayout({
     children: React.ReactNode;
 }) {
     const router = useRouter();
-      const isLogging = useAuthStore((state => state.isLogging));
+    const isLogging = useAuthStore((state => state.isLogging));
     const [isReady, setIsReady] = useState(false);
     const backUrl = getLS("backUrl");
+    const accessToken = useAuthStore((state) => state.accessToken)
+    console.log("accessToken", accessToken);
+    useRegisterPushKey(accessToken);
 
     useEffect(() => {
         setIsReady(true);
