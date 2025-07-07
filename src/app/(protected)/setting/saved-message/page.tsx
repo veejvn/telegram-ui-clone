@@ -14,7 +14,7 @@ export default function SavedMessagesPage() {
     <div className="relative w-full h-screen overflow-hidden">
       {/* Background for light mode */}
       <Image
-        src="/images/chat-bg-light.jpg"
+        src="/chat/images/chat-bg-light.jpg"
         alt="Saved Background Light"
         fill
         className="object-cover z-0 dark:hidden"
@@ -23,7 +23,7 @@ export default function SavedMessagesPage() {
 
       {/* Background for dark mode */}
       <Image
-        src="/images/chat-bg-dark.jpg"
+        src="/chat/images/chat-bg-dark.jpg"
         alt="Saved Background Dark"
         fill
         className="object-cover z-0 hidden dark:block"
@@ -64,11 +64,11 @@ export default function SavedMessagesPage() {
             </div>
             <h2 className="text-lg font-semibold mb-1 text-gray-800 dark:text-gray-200">Your Cloud Storage</h2>
             <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1 list-disc list-inside text-left">
-                <li>Forward messages here to save them</li>
-                <li>Send media and files to store them</li>
-                <li>Access this chat from any device</li>
-                <li>Use search to quickly find things</li>
-</ul>
+              <li>Forward messages here to save them</li>
+              <li>Send media and files to store them</li>
+              <li>Access this chat from any device</li>
+              <li>Use search to quickly find things</li>
+            </ul>
 
           </div>
         </div>

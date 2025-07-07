@@ -33,7 +33,7 @@ export default function FolderPage() {
       <div className="flex flex-col items-center mb-4">
         <div className="w-[140px] h-[100px] flex items-center justify-center rounded-2xl mb-4">
           <img
-            src="/images/folder.png"
+            src="/chat/images/folder.png"
             alt="Folder"
             className="w-full h-full object-contain"
             draggable={false}
@@ -87,13 +87,12 @@ export default function FolderPage() {
           />
           {/* Track */}
           <div
-            className={`w-11 h-6 rounded-full transition-colors duration-300 ${
-              showFolderTags
-                ? "bg-green-500"
-                : isDark
+            className={`w-11 h-6 rounded-full transition-colors duration-300 ${showFolderTags
+              ? "bg-green-500"
+              : isDark
                 ? "bg-gray-700"
                 : "bg-gray-300"
-            }`}
+              }`}
           />
           {/* Thumb */}
           <div className="absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 peer-checked:translate-x-5" />
