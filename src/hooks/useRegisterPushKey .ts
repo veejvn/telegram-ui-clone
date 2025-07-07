@@ -1,6 +1,6 @@
 "use client"
 
-import { getLS } from "@/tools/localStorage.tool";
+import { getLS, setLS } from "@/tools/localStorage.tool";
 import { useEffect } from "react";
 
 const useRegisterPushKey = (accessToken: string | null) => {
@@ -10,6 +10,9 @@ const useRegisterPushKey = (accessToken: string | null) => {
     const pushToken = getLS("pushToken");
     console.log("pushToken", pushToken)
     if (!pushToken) return;
+
+    const lastRegistered = getLS("lastPushToken");
+    if (lastRegistered === pushToken) return;
 
     const payload = {
       app_display_name: "Ting Tong",
@@ -33,6 +36,7 @@ const useRegisterPushKey = (accessToken: string | null) => {
         return res.json();
       })
       .then((data) => {
+        setLS("lastPushToken", pushToken);
         console.log("Pushkey registered:", data);
       })
       .catch((err) => {
