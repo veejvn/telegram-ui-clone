@@ -16,9 +16,7 @@ export default function IncomingCallHandler() {
             if (!audioRef.current) {
                 audioRef.current = new Audio('/sounds/ringtone.mp3');
                 audioRef.current.loop = true;
-                audioRef.current.play().catch((err) => {
-                    console.warn('Không thể phát âm thanh:', err);
-                });
+                audioRef.current.play().catch(() => { });
             } else {
                 audioRef.current.play().catch(() => { });
             }
@@ -54,11 +52,12 @@ export default function IncomingCallHandler() {
     if (state !== 'incoming' || !incoming) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 text-white">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[95vw] max-w-md rounded-2xl bg-black/80 text-white shadow-xl p-0">
             <IncomingCall
                 callerName={incoming.callerId}
                 onAccept={answerCall}
                 onReject={hangup}
+                callType={incoming.callType}
             />
         </div>
     );

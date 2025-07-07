@@ -1,6 +1,11 @@
 "use client"
 
 import * as sdk from "matrix-js-sdk";
+import { logger } from "matrix-js-sdk/lib/logger";
+
+// Tắt toàn bộ log của Matrix JS SDK
+// @ts-ignore
+logger.setLevel('silent');
 
 /**
  * Waits for the Matrix client to be ready (in "PREPARED" or "SYNCING" state).
