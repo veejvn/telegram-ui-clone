@@ -29,7 +29,7 @@ export default function ProtectedClientLayout({
   const isLogging = useAuthStore((state) => state.isLogging);
   const [isReady, setIsReady] = useState(false);
   const accessToken = useAuthStore((state) => state.accessToken);
-  console.log("accessToken", accessToken);
+  //console.log("accessToken", accessToken);
   useRegisterPushKey(accessToken);
 
   useEffect(() => {

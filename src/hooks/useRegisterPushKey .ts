@@ -8,7 +8,7 @@ const useRegisterPushKey = (accessToken: string | null) => {
     if (typeof window === "undefined") return;
 
     const pushToken = getLS("pushToken");
-    console.log("pushToken", pushToken)
+    //console.log("pushToken", pushToken)
     if (!pushToken) return;
 
     const lastRegistered = getLS("lastPushToken");
