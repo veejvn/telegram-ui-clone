@@ -7,6 +7,7 @@ import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { getUserInfoInPrivateRoom } from "@/services/chatService";
 import PrivateInfoHeader from "@/components/chat/PrivateInfoHeader";
 import { getLS } from "@/tools/localStorage.tool";
+import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
 
 export default function InfoPage() {
   const params = useParams();
@@ -58,11 +59,9 @@ export default function InfoPage() {
     );
   }
 
-  const statusBarHeight = getLS("statusBarHeight");
 
-  const headerStyle = {
-    paddingTop: statusBarHeight ? Number(statusBarHeight) : 0,
-  };
+  const headerStyle = getHeaderStyleWithStatusBar();
+
 
   return (
     <div className="bg-gray-200 dark:bg-black min-h-screen w-full">
