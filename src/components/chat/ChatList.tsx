@@ -109,33 +109,33 @@ export const ChatList = ({
                   </LeadingActions>
                 );
 
-                return (
-                  <SwipeableListItem
-                    key={room.roomId}
-                    trailingActions={actions}
-                    onSwipeStart={() => console.log("Swipe start")}
-                    onSwipeEnd={() => console.log("Swipe end")}
-                  >
-                    <div className="w-full hover:bg-zinc-300 dark:hover:bg-zinc-700">
-                      {isEditMode ? (
+            return (
+              <SwipeableListItem
+                key={room.roomId}
+                trailingActions={actions}
+                // onSwipeStart={() => console.log("Swipe start")}
+                // onSwipeEnd={() => console.log("Swipe end")}
+              >
+                <div className="w-full hover:bg-zinc-300 dark:hover:bg-zinc-700">
+                  {isEditMode ? (
+                    <ChatListItem
+                      room={room}
+                      isEditMode={isEditMode}
+                      checked={selectedRooms.includes(room.roomId)}
+                      onSelect={() => onSelectRoom?.(room.roomId)}
+                      isMuted={mutedRooms.includes(room.roomId)}
+                    />
+                  ) : (
+                    <Link href={`/chat/${room.roomId}`}>
+                      <div className="block w-full cursor-pointer">
                         <ChatListItem
                           room={room}
-                          isEditMode={isEditMode}
-                          checked={selectedRooms.includes(room.roomId)}
-                          onSelect={() => onSelectRoom?.(room.roomId)}
                           isMuted={mutedRooms.includes(room.roomId)}
-                        />
-                      ) : (
-                        <Link href={`/chat/${room.roomId}`}>
-                          <div className="block w-full cursor-pointer">
-                            <ChatListItem
-                              room={room}
-                              isMuted={mutedRooms.includes(room.roomId)}
-                            />
-                            {/* THÊM Ở ĐÂY */}
-                          </div>
-                        </Link>
-                      )}
+                        />{" "}
+                        {/* THÊM Ở ĐÂY */}
+                      </div>
+                    </Link>
+                  )}
 
                       {rooms.length - 1 !== idx ? (
                         <Separator className="w-[calc(100%-72px)] ml-[72px]" />

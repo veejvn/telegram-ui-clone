@@ -7,14 +7,13 @@ import {
 import { getLastMessagePreview } from "@/utils/chat/getLastMessagePreview";
 import { CheckCheck, VolumeX } from "lucide-react";
 import * as sdk from "matrix-js-sdk";
-import { useTheme } from "next-themes";
 import React, { useEffect, useState } from "react";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import UnreadMsgsCount from "./UnreadMsgsCount";
 import useUnreadMessages from "@/hooks/useUnreadMsgs";
-
 import { Check } from "lucide-react";
-import { useAuthStore } from "@/stores/useAuthStore";
+import { useReadReceipts } from "@/hooks/useReadReceipts ";
+
 interface ChatListItemProps {
   room: sdk.Room;
   isEditMode?: boolean;
@@ -30,7 +29,6 @@ export const ChatListItem = ({
   onSelect,
   isMuted = false,
 }: ChatListItemProps) => {
-  const themes = useTheme();
   const client = useMatrixClient();
   const userId = client?.getUserId();
   const HOMESERVER_URL: string =
@@ -38,7 +36,10 @@ export const ChatListItem = ({
 
   // ⚡️ trigger render
   const [_, setRefresh] = useState(0);
+
   const unreadMsgs = useUnreadMessages(room);
+
+  const lastReadReceipts = useReadReceipts(room);
 
   useEffect(() => {
     if (!client) return;
@@ -84,6 +85,7 @@ export const ChatListItem = ({
   }
 
   const { content, time, sender } = getLastMessagePreview(room);
+  //console.log(lastReadReceipts, sender);
 
   return (
     <div className="flex px-2 py-2">
@@ -134,14 +136,11 @@ export const ChatListItem = ({
 
       <div className="flex flex-col justify-between pb-1.5">
         <div className="flex gap-1 text-sm">
-          <CheckCheck
-            className={
-              themes.theme === "dark"
-                ? "h-4 w-4 mt-0.5 text-blue-600"
-                : "h-4 w-4 mt-0.5 text-green-600"
-            }
-          />
-
+          {lastReadReceipts ? (
+            <CheckCheck className="h-4 w-4 mt-0.5 text-green-600 dark:text-blue-600" />
+          ) : (
+            <Check className="h-4 w-4 mt-0.5 text-green-600 dark:text-blue-600" />
+          )}
           <span className="text-muted-foreground">{time}</span>
         </div>
         {unreadMsgs && (

@@ -10,7 +10,6 @@ import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
 export const useTimeline = (roomId: string) => {
   const addMessage = useChatStore((state) => state.addMessage);
   const setMessage = useChatStore((state) => state.setMessages);
-  const updateLastSeen = useChatStore((state) => state.updateLastSeen);
   const client = useMatrixClient();
 
   useEffect(() => {
@@ -84,7 +83,6 @@ export const useTimeline = (roomId: string) => {
       });
 
       if (sender && sender !== userId) {
-        updateLastSeen(roomId, sender, ts);
         const events = room.getLiveTimeline().getEvents();
         const lastEvent = events.length > 0 ? events[events.length - 1] : null;
         if (lastEvent) {

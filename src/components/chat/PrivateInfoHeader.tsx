@@ -17,26 +17,8 @@ export default function PrivateInfoHeader({ user }: { user: sdk.User }) {
       if (!client || !user.avatarUrl) return;
       try {
         const httpUrl = client.mxcUrlToHttp(user.avatarUrl, 96, 96, "crop") ?? "";
-  
-        // Kiểm tra link HTTP thực tế
-        const isValid =
-          /^https?:\/\//.test(httpUrl) && !httpUrl.includes("M_NOT_FOUND");
-        if (isValid) {
-          // Test link HTTP thực tế
-          try {
-            const res = await fetch(httpUrl, { method: "HEAD" });
-            if (res.ok) {
-              const apiUrl = `/api/matrix-image?url=${encodeURIComponent(
-                httpUrl
-              )}`;
-              setAvatarUrl(apiUrl);
-              return;
-            }
-          } catch (e) {
-            // Nếu fetch lỗi, sẽ fallback
-          }
-        }
-        setAvatarUrl("");
+
+        setAvatarUrl(httpUrl);
       } catch (error) {
         setAvatarUrl("");
         console.error("Error loading avatar:", error);
@@ -49,8 +31,7 @@ export default function PrivateInfoHeader({ user }: { user: sdk.User }) {
   return (
     <>
       <div
-        className="flex justify-between relativ dark:bg-[#1c1c1e]
-        py-2 px-2"
+        className="flex justify-between relative dark:bg-[#1c1c1e] py-2 px-2"
       >
         <button
           onClick={() => router.back()}

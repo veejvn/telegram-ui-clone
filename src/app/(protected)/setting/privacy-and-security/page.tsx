@@ -10,7 +10,7 @@ const privacyItemsTop = [
   {
     icon: (
       <Image
-        src="/icons-privacy/block.png"
+        src="/chat/icons-privacy/block.png"
         alt="Blocked Users"
         width={50}
         height={50}
@@ -24,7 +24,7 @@ const privacyItemsTop = [
   {
     icon: (
       <Image
-        src="/icons-privacy/faceid.png"
+        src="/chat/icons-privacy/faceid.png"
         alt="Blocked Users"
         width={50}
         height={50}
@@ -38,7 +38,7 @@ const privacyItemsTop = [
   {
     icon: (
       <Image
-        src="/icons-privacy/key.png"
+        src="/chat/icons-privacy/key.png"
         alt="Blocked Users"
         width={50}
         height={50}
@@ -52,7 +52,7 @@ const privacyItemsTop = [
   {
     icon: (
       <Image
-        src="/icons-privacy/time.png"
+        src="/chat/icons-privacy/time.png"
         alt="Blocked Users"
         width={50}
         height={50}
@@ -138,7 +138,7 @@ export default function PrivacyAndSecurityPage() {
             style={{ backgroundColor: "#5955D5" }}
           >
             <Image
-              src="/icons-privacy/mail.png"
+              src="/chat/icons-privacy/mail.png"
               alt="Blocked Users"
               width={50}
               height={50}

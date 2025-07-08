@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
 import loginSchema from "@/validations/loginSchema";
 import { MatrixAuthService } from "@/services/matrixAuthService";
 import type { LoginFormData, LoginFormProps } from "@/types/auth";
@@ -11,13 +10,14 @@ import { ErrorMessage, Field, Form, SubmitButton } from "@/components/Form";
 import { ERROR_MESSAGES, ErrorMessageValue } from "@/constants/error-messages";
 
 export default function LoginForm({ onSuccess }: LoginFormProps) {
-  const router = useRouter();
   const [error, setError] = useState("");
 
   const handleSubmit = async (data: LoginFormData) => {
     try {
       const authService = new MatrixAuthService();
-      const { success, token, userId, deviceId } = await authService.login(data);
+      const { success, token, userId, deviceId } = await authService.login(
+        data
+      );
       if (success && token) {
         onSuccess(token, userId, deviceId);
       }

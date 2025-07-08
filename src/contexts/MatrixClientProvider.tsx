@@ -1,14 +1,10 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import * as sdk from "matrix-js-sdk";
-import { getLS, removeLS } from "@/tools/localStorage.tool";
+import { getCookie } from "@/tools/cookie.tool";
 import { waitForClientReady } from "@/lib/matrix";
 import { createUserInfo } from "@/utils/createUserInfo";
-import { useAuthStore } from "@/stores/useAuthStore";
-import { useRouter } from "next/navigation";
-import { useUserStore } from "@/stores/useUserStore";
-import { usePresence } from "@/hooks/usePresence";
 import { PresenceProvider } from "@/contexts/PresenceProvider";
 
 const HOMESERVER_URL =
@@ -23,17 +19,20 @@ export function MatrixClientProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const router = useRouter();
   const [client, setClient] = useState<sdk.MatrixClient | null>(null);
-  const logout = useAuthStore((state) => state.logout);
-  const clearUser = useUserStore.getState().clearUser;
+  const clientRef = useRef<sdk.MatrixClient>(null);
 
   useEffect(() => {
     let isMounted = true;
+    if (clientRef.current) {
+      // Đã khởi tạo trước đó ➜ reuse
+      setClient(clientRef.current);
+      return;
+    }
     const setupClient = async () => {
-      const accessToken = getLS("matrix_access_token");
-      const userId = getLS("matrix_user_id");
-      const deviceId = getLS("matrix_device_id"); // <-- thêm dòng này
+      const accessToken = getCookie("matrix_access_token");
+      const userId = getCookie("matrix_user_id");
+      const deviceId = getCookie("matrix_device_id");
 
       if (!accessToken || !userId || !deviceId) return;
 
@@ -42,44 +41,22 @@ export function MatrixClientProvider({
           baseUrl: HOMESERVER_URL,
           accessToken,
           userId,
-          deviceId
+          deviceId,
         });
-
-        // Lắng nghe lỗi xác thực khi sync
-        // client.on("sync" as any, (state: any, prevState: any, data: any) => {
-        //   if (
-        //     state === "ERROR" &&
-        //     data?.error?.httpStatus &&
-        //     [401, 403].includes(data.error.httpStatus)
-        //   ) {
-        //     removeLS("matrix_access_token");
-        //     removeLS("matrix_user_id");
-        //     removeLS("matrix_device_id");
-        //     setClient(null);
-        //     clearUser();
-        //     logout();
-        //     window.location.href = "/login";
-        //   }
-        // });
 
         client.startClient();
 
-        await waitForClientReady(client);
+        await waitForClientReady(client).then(() => {
+          clientRef.current = client;
+          if (isMounted) setClient(client);
+        });
 
         createUserInfo(client);
 
-        if (isMounted) setClient(client)
       } catch (error: any) {
         if (client) {
           client.stopClient();
         }
-        // removeLS("matrix_access_token");
-        // removeLS("matrix_user_id");
-        // removeLS("matrix_device_id");
-        // setClient(null);
-        // clearUser();
-        // logout();
-        // window.location.href = "/login";
       }
     };
 
@@ -87,11 +64,8 @@ export function MatrixClientProvider({
 
     return () => {
       isMounted = false;
-      if (client) {
-        client.stopClient();
-      }
     };
-  }, [HOMESERVER_URL, router]);
+  }, []);
 
   return (
     <MatrixClientContext.Provider value={client}>
