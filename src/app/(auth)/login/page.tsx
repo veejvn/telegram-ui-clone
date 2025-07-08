@@ -1,16 +1,24 @@
 "use client";
 import React from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/useAuthStore";
 import LoginForm from "@/components/auth/LoginForm";
 import { ModeToggle } from "@/components/common/ModeToggle";
 
 export default function LoginPage() {
   const login = useAuthStore((state) => state.login);
+  const router = useRouter();
 
   // Callback khi login thành công
   const handleSuccess = (token: string, userId: string, deviceId: string) => {
     login(token, userId, deviceId);
+    console.log("🚀 Login successful, redirecting to chat...");
+    
+    // Small delay để ensure store update
+    setTimeout(() => {
+      router.push("/chat");
+    }, 100);
   };
 
   return (

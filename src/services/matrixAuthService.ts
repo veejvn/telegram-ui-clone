@@ -1,14 +1,23 @@
 "use client"
 
-import * as sdk from "matrix-js-sdk";
+import * as sdk from "@/lib/matrix-sdk";
 import { ERROR_MESSAGES } from "@/constants/error-messages"
 import { LoginFormData, RegisterFormData } from "@/types/auth";
 import { ILoginResponse } from "@/types/matrix";
 import { useUserStore } from "@/stores/useUserStore";
 import { setCookie, getCookie, deleteCookie } from "@/utils/cookie";
+import { normalizeMatrixUserId } from "@/utils/matrixHelpers";
 
-const HOMESERVER_URL: string = process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
-const SERVER_URL: string = process.env.NEXT_PUBLIC_SERVER_URL ?? "http://localhost:3002";
+// Kiểm tra env variables bắt buộc
+if (!process.env.NEXT_PUBLIC_MATRIX_BASE_URL) {
+    throw new Error("NEXT_PUBLIC_MATRIX_BASE_URL is required");
+}
+if (!process.env.NEXT_PUBLIC_SERVER_URL) {
+    throw new Error("NEXT_PUBLIC_SERVER_URL is required");
+}
+
+const HOMESERVER_URL: string = process.env.NEXT_PUBLIC_MATRIX_BASE_URL;
+const SERVER_URL: string = process.env.NEXT_PUBLIC_SERVER_URL;
 
 let clientInstance: sdk.MatrixClient | null = null;
 
@@ -57,7 +66,6 @@ export class MatrixAuthService {
                 client_secret: clientSecret
             };
         } catch (error) {
-            console.error("Send email verification error:", error);
             throw error;
         }
     }
@@ -73,24 +81,30 @@ export class MatrixAuthService {
                 },
                 initial_device_display_name: "Web Client"
             });
+            
             if (registerResponse.access_token) {
+                const normalizedUserId = normalizeMatrixUserId(registerResponse.user_id, HOMESERVER_URL);
+                
                 setCookie("matrix_token", registerResponse.access_token);
-                setCookie("matrix_user_id", registerResponse.user_id);
+                setCookie("matrix_user_id", normalizedUserId);
                 if (registerResponse.device_id) {
                     setCookie("matrix_device_id", registerResponse.device_id);
                 }
                 clientInstance = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: registerResponse.access_token,
-                    userId: registerResponse.user_id,
+                    userId: normalizedUserId,
                     deviceId: registerResponse.device_id
                 });
+                
+                return {
+                    success: true,
+                    token: registerResponse.access_token,
+                    userId: normalizedUserId
+                };
             }
-            return {
-                success: true,
-                token: registerResponse.access_token,
-                userId: registerResponse.user_id
-            };
+            
+            throw new Error("Registration failed: No access token received");
         } catch (error) {
             throw error;
         }
@@ -104,27 +118,32 @@ export class MatrixAuthService {
                 user: username,
                 password: password,
             })
+            
             if (loginResponse.access_token) {
+                const normalizedUserId = normalizeMatrixUserId(loginResponse.user_id, HOMESERVER_URL);
+                
                 setCookie("matrix_token", loginResponse.access_token);
-                setCookie("matrix_user_id", loginResponse.user_id);
+                setCookie("matrix_user_id", normalizedUserId);
                 if (loginResponse.device_id) {
                     setCookie("matrix_device_id", loginResponse.device_id);
                 }
                 clientInstance = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: loginResponse.access_token,
-                    userId: loginResponse.user_id,
+                    userId: normalizedUserId,
                     deviceId: loginResponse.device_id
                 });
+                
+                return {
+                    success: true,
+                    token: loginResponse.access_token,
+                    userId: normalizedUserId,
+                    deviceId: loginResponse.device_id
+                };
             }
-            return {
-                success: true,
-                token: loginResponse.access_token,
-                userId: loginResponse.user_id,
-                deviceId: loginResponse.device_id
-            };
+            
+            throw new Error("Login failed: No access token received");
         } catch (error: any) {
-            console.error("Login error:", error)
             throw error
         }
     }
@@ -142,22 +161,32 @@ export class MatrixAuthService {
             })
 
             if (loginResponse.access_token) {
+                const normalizedUserId = normalizeMatrixUserId(loginResponse.user_id, HOMESERVER_URL);
+                
                 setCookie("matrix_token", loginResponse.access_token);
-                setCookie("matrix_user_id", loginResponse.user_id);
+                setCookie("matrix_user_id", normalizedUserId);
                 if (loginResponse.device_id) {
                     setCookie("matrix_device_id", loginResponse.device_id);
                 }
-                this.client = sdk.createClient({
+                clientInstance = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: loginResponse.access_token,
-                    userId: loginResponse.user_id,
+                    userId: normalizedUserId,
                     deviceId: loginResponse.device_id,
                 });
+                
+                this.client = clientInstance;
+                
+                return {
+                    success: true,
+                    token: loginResponse.access_token,
+                    userId: normalizedUserId,
+                    deviceId: loginResponse.device_id
+                };
             }
 
-            return loginResponse
+            throw new Error("Login with email failed: No access token received");
         } catch (error) {
-            console.error("Login with email error:", error)
             throw error
         }
     }
@@ -175,22 +204,32 @@ export class MatrixAuthService {
             })
 
             if (loginResponse.access_token) {
+                const normalizedUserId = normalizeMatrixUserId(loginResponse.user_id, HOMESERVER_URL);
+                
                 setCookie("matrix_token", loginResponse.access_token);
-                setCookie("matrix_user_id", loginResponse.user_id);
+                setCookie("matrix_user_id", normalizedUserId);
                 if (loginResponse.device_id) {
                     setCookie("matrix_device_id", loginResponse.device_id);
                 }
-                this.client = sdk.createClient({
+                clientInstance = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: loginResponse.access_token,
-                    userId: loginResponse.user_id,
+                    userId: normalizedUserId,
                     deviceId: loginResponse.device_id,
                 });
+                
+                this.client = clientInstance;
+                
+                return {
+                    success: true,
+                    token: loginResponse.access_token,
+                    userId: normalizedUserId,
+                    deviceId: loginResponse.device_id
+                };
             }
 
-            return loginResponse
+            throw new Error("Login with phone failed: No access token received");
         } catch (error) {
-            console.error("Login with phone error:", error)
             throw error
         }
     }
@@ -211,7 +250,6 @@ export class MatrixAuthService {
                 await this.client.logout();
             }
         } catch (error) {
-            console.error("Logout failed:", error);
             // KHÔNG throw error ở đây!
         } finally {
             // Luôn xóa cookie và clear state
@@ -229,50 +267,50 @@ export class MatrixAuthService {
     // Lấy danh sách thiết bị đang đăng nhập
     async getDevices() {
         try {
-            const response = await this.client.getDevices()
-            return response.devices
+            return await this.client.getDevices();
         } catch (error) {
-            console.error("Get devices failed:", error)
-            throw error
+            throw error;
         }
     }
 
     // Đăng xuất một thiết bị cụ thể
     async logoutDevice(deviceId: string) {
         try {
-            await this.client.deleteDevice(deviceId)
+            return await this.client.deleteDevice(deviceId);
         } catch (error) {
-            console.error("Logout device failed:", error)
-            throw error
+            throw error;
         }
     }
 
     // Quên mật khẩu
     async forgotPassword(email: string) {
+        const clientSecret = Math.random().toString(36).substring(2, 10);
+        const sendAttempt = 1;
         try {
             const response = await fetch(`${HOMESERVER_URL}/_matrix/client/v3/account/password/email/requestToken`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json'
                 },
                 body: JSON.stringify({
+                    client_secret: clientSecret,
                     email: email,
-                    client_secret: Math.random().toString(36).substring(2),
-                    send_attempt: 1,
-                    next_link: `${window.location.origin}/auth/reset-password`
-                }),
+                    send_attempt: sendAttempt,
+                    next_link: `${SERVER_URL}/forgot-password`
+                })
             });
 
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || ERROR_MESSAGES.AUTH.INVALID_CREDENTIALS);
+                throw new Error(data.error || 'Failed to send password reset email');
             }
 
-            return data;
+            return {
+                sid: data.sid,
+                client_secret: clientSecret
+            };
         } catch (error) {
-            console.error("Password reset request error:", error);
             throw error;
         }
     }
@@ -284,27 +322,28 @@ export class MatrixAuthService {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json',
                 },
                 body: JSON.stringify({
                     new_password: newPassword,
                     auth: {
-                        type: 'm.login.email.identity',
+                        type: "m.login.email.identity",
                         threepid_creds: {
                             sid: opts.sid,
                             client_secret: opts.client_secret,
-                        },
-                        // session: opts.session, // Nếu server yêu cầu
-                    },
-                }),
+                            id_server: "matrix.org",
+                            id_access_token: opts.code
+                        }
+                    }
+                })
             });
-            const data = await response.json();
+
             if (!response.ok) {
-                throw new Error(data.error || 'Failed to reset password');
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to reset password');
             }
-            return data;
+
+            return await response.json();
         } catch (error) {
-            console.error("Reset password failed:", error);
             throw error;
         }
     }

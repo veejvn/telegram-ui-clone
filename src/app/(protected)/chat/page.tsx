@@ -7,7 +7,7 @@ import Link from "next/link";
 import { ChatList } from "@/components/chat/ChatList";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import * as sdk from "matrix-js-sdk";
+import * as sdk from "@/lib/matrix-sdk";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import ChatEditButton from "@/components/chat/ChatEditButton";
 import ChatActionBar from "@/components/chat/ChatActionBar";

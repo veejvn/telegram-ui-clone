@@ -1,6 +1,6 @@
 "use client"
 
-import * as sdk from "matrix-js-sdk";
+import * as sdk from "@/lib/matrix-sdk";
 import { getCookie, deleteCookie } from "@/utils/cookie";
 
 /**

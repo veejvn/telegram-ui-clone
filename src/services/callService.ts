@@ -1,7 +1,7 @@
 'use client';
 
 import { EventEmitter } from 'events';
-import * as sdk from 'matrix-js-sdk';
+import * as sdk from '@/lib/matrix-sdk';
 import { useAuthStore } from '@/stores/useAuthStore';
 
 export type CallType = 'voice' | 'video';
@@ -12,8 +12,7 @@ export interface IncomingCall {
     callType: CallType;
 }
 
-const HOMESERVER_URL: string = process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
-const { accessToken, userId, deviceId } = useAuthStore.getState();
+const HOMESERVER_URL: string = process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.teknix.dev.org";
 
 function createSilentAudioTrack(): MediaStreamTrack {
     const ctx = new AudioContext();
@@ -24,24 +23,64 @@ function createSilentAudioTrack(): MediaStreamTrack {
     return Object.assign(track, { enabled: false });
 }
 
-
 class CallService extends EventEmitter {
-    private client: sdk.MatrixClient;
+    private client: sdk.MatrixClient | null = null;
     private currentCall?: sdk.MatrixCall;
     private currentRoomId?: string;
     private localStream?: MediaStream;
 
     constructor() {
         super();
-        this.client = sdk.createClient({
-            baseUrl: HOMESERVER_URL,
-            accessToken: accessToken!,
-            userId: userId!,
-            deviceId: deviceId!,
-        });
+        this.initializeClient();
+    }
 
-        this.client.startClient({ initialSyncLimit: 10 });
-        (this.client as any).on('Call.incoming', this.onIncomingCall.bind(this));
+    private initializeClient() {
+        const { accessToken, userId, deviceId } = useAuthStore.getState();
+        
+        if (!accessToken || !userId || !deviceId) {
+            console.warn('[CallService] Missing authentication data, client not initialized');
+            return;
+        }
+
+        try {
+            this.client = sdk.createClient({
+                baseUrl: HOMESERVER_URL,
+                accessToken,
+                userId,
+                deviceId,
+            });
+
+            this.client.startClient({ initialSyncLimit: 10 });
+            (this.client as any).on('Call.incoming', this.onIncomingCall.bind(this));
+            
+            console.log('[CallService] Client initialized successfully with userId:', userId);
+        } catch (error) {
+            console.error('[CallService] Failed to initialize client:', error);
+            this.client = null;
+        }
+    }
+
+    // Re-initialize client if needed (for example after login)
+    public reinitialize() {
+        if (this.client) {
+            try {
+                this.client.stopClient();
+                (this.client as any).removeAllListeners();
+            } catch (error) {
+                console.warn('[CallService] Error stopping previous client:', error);
+            }
+        }
+        this.initializeClient();
+    }
+
+    private getClient(): sdk.MatrixClient {
+        if (!this.client) {
+            this.initializeClient();
+            if (!this.client) {
+                throw new Error('[CallService] Matrix client not available');
+            }
+        }
+        return this.client;
     }
 
     private onIncomingCall(call: sdk.MatrixCall) {
@@ -53,7 +92,6 @@ class CallService extends EventEmitter {
 
         const isVideo = call.hasLocalUserMediaVideoTrack || call.type === 'video';
         const callType: CallType = isVideo ? 'video' : 'voice';
-
 
         this.emit('incoming-call', {
             roomId: call.roomId!,
@@ -145,7 +183,8 @@ class CallService extends EventEmitter {
     public async placeCall(roomId: string, type: CallType) {
         if (this.currentCall && this.currentRoomId === roomId) return;
 
-        const call = this.client.createCall(roomId);
+        const client = this.getClient();
+        const call = client.createCall(roomId);
         if (!call) return;
 
         this.currentCall = call;
@@ -198,12 +237,10 @@ class CallService extends EventEmitter {
             });
 
         } catch (err) {
-            console.error('[CallService] Failed to get user media for answer:', err);
-            // Fallback: answer without stream (audio only)
-            this.currentCall.answer();
+            console.error('[CallService] Answer call failed:', err);
+            this.emit('call-error', err);
         }
     }
-
 
     public hangup() {
         if (!this.currentCall) return;

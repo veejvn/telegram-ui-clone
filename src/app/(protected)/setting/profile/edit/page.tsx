@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { MatrixAuthService } from "@/services/matrixAuthService";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { callService } from "@/services/callService";
 
 export default function EditProfilePage() {
     const router = useRouter();
@@ -26,9 +27,40 @@ export default function EditProfilePage() {
             const authService = new MatrixAuthService();
             await authService.logout();
             logout();
-            router.push("/login");
+            
+            // ✅ Cleanup callService
+            if (callService) {
+                try {
+                    callService.hangup(); // End any active calls
+                    // callService sẽ tự cleanup khi không có auth data
+                } catch (error) {
+                    console.warn("CallService cleanup warning:", error);
+                }
+            }
+            
+            // Đảm bảo cookies được xóa hoàn toàn bằng cách force clear tất cả
+            document.cookie = "matrix_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            document.cookie = "matrix_user_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            document.cookie = "matrix_device_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            
+            // Clear localStorage nếu có
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('matrix') || key.startsWith('mx_')) {
+                    localStorage.removeItem(key);
+                }
+            });
+            
+            // Sử dụng window.location.href thay vì router.push để force page reload
+            // Điều này đảm bảo page.tsx sẽ check lại từ đầu với cookies đã bị xóa
+            window.location.href = "/login";
         } catch (error) {
             console.error("Logout error:", error);
+            // Ngay cả khi có lỗi, vẫn force clear và redirect
+            document.cookie = "matrix_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            document.cookie = "matrix_user_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            document.cookie = "matrix_device_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            logout();
+            window.location.href = "/login";
         }
     };
 

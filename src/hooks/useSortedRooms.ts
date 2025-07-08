@@ -1,6 +1,6 @@
 // hooks/useSortedRooms.ts
 import { useEffect, useState } from "react";
-import { Room } from "matrix-js-sdk";
+import { Room } from "@/lib/matrix-sdk";
 import { getUserRooms } from "@/services/chatService";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 
