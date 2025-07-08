@@ -164,47 +164,45 @@ export default function ChatsPage() {
               You have no{"\n"}conversations yet.
             </p>
           </div>
-          <div className="w-full pb-30 px-15">
+          <div className="w-full pb-12 px-15">
             <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white text-base rounded-lg py-6 cursor-pointer">
               <Link href={"/chat/newMessage"}>New Message</Link>
             </Button>
           </div>
         </div>
       ) : (
-        <ScrollArea tabIndex={-1}>
-          <div className="flex flex-col px-2 pb-[64px] spacy-y-2">
-            <ChatList
-              rooms={rooms}
-              isEditMode={isEditMode}
-              selectedRooms={selectedRooms}
-              onSelectRoom={handleSelectRoom}
-              onMute={() => {}}
-              onDelete={async (roomId, type) => {
-                if (!client) return;
+        <div className="mb-3">
+          <ChatList
+            rooms={rooms}
+            isEditMode={isEditMode}
+            selectedRooms={selectedRooms}
+            onSelectRoom={handleSelectRoom}
+            onMute={() => {}}
+            onDelete={async (roomId, type) => {
+              if (!client) return;
 
-                if (type === "me") {
-                  await client.leave(roomId);
-                  await client.forget(roomId);
-                } else if (type === "both") {
-                  await client.sendEvent(
-                    roomId,
-                    "m.room.delete_for_everyone" as any,
-                    {
-                      by: client.getUserId(),
-                    }
-                  );
-                  await client.leave(roomId);
-                  await client.forget(roomId);
-                }
+              if (type === "me") {
+                await client.leave(roomId);
+                await client.forget(roomId);
+              } else if (type === "both") {
+                await client.sendEvent(
+                  roomId,
+                  "m.room.delete_for_everyone" as any,
+                  {
+                    by: client.getUserId(),
+                  }
+                );
+                await client.leave(roomId);
+                await client.forget(roomId);
+              }
 
-                refreshRooms();
-              }}
-              onArchive={(roomId) => {
-                alert("Archive: " + roomId);
-              }}
-            />
-          </div>
-        </ScrollArea>
+              refreshRooms();
+            }}
+            onArchive={(roomId) => {
+              alert("Archive: " + roomId);
+            }}
+          />
+        </div>
       )}
 
       {isEditMode && (
