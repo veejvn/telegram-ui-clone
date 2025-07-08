@@ -9,7 +9,8 @@ import { clearMatrixAuthCookies } from "@/utils/clearAuthCookies";
 import { callService } from "@/services/callService";
 
 export default function Home() {
-  const { isLogging, login } = useAuthStore();
+  const isLogging = useAuthStore((state) => state.isLogging);
+  const login = useAuthStore((state) => state.login);
   const router = useRouter();
   const MATRIX_BASE_URL = process.env.NEXT_PUBLIC_MATRIX_BASE_URL || "https://matrix.teknix.dev";
 
@@ -53,7 +54,7 @@ export default function Home() {
 
               // Clean URL and redirect
               window.history.replaceState({}, '', '/');
-              router.replace("/chat");
+              router.replace(ROUTES.CHAT);
               return;
             } else {
               router.push(ROUTES.LOGIN);
@@ -99,7 +100,7 @@ export default function Home() {
         
         // ✅ THÊM CHECK ĐỂ TRÁNH RACE CONDITION SAU LOGOUT
         // Nếu không có cả token và user ID thì chắc chắn đã logout
-        if (!existingToken || !existingUserId) {
+        if (!isLogging) {
           router.push(ROUTES.LOGIN);
           return;
         }
@@ -116,7 +117,7 @@ export default function Home() {
           if (whoAmIResponse.ok) {
             // ✅ Đảm bảo callService có client nếu session hợp lệ
             callService.reinitialize();
-            router.push("/chat");
+            router.push(ROUTES.CHAT);
             return;
           } else {
             clearMatrixAuthCookies();

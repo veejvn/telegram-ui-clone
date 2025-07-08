@@ -19,10 +19,10 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       const authService = new MatrixAuthService();
       const result = await authService.login(data);
       
-      console.log("Login response:", result);
+      //console.log("Login response:", result);
       
       if (result.success && result.token && result.userId && result.deviceId) {
-        console.log("🎉 Login successful, calling onSuccess...");
+        //console.log("🎉 Login successful, calling onSuccess...");
         onSuccess(result.token, result.userId, result.deviceId);
       } else {
         throw new Error("Login failed: Missing required data in response");
@@ -46,7 +46,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         errorMessage = ERROR_MESSAGES.NETWORK.CONNECTION_ERROR;
       } else if (error?.message) {
         // Show actual error for debugging
-        errorMessage = `Lỗi: ${error.message}`;
+        errorMessage = `Error: ${error.message}`;
       }
 
       setError(errorMessage);

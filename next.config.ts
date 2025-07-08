@@ -1,22 +1,23 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+    basePath: '/chat',
     reactStrictMode: true,
     transpilePackages: ['matrix-js-sdk'],
     images: {
         remotePatterns: [
             {
                 protocol: 'https',
-                hostname: 'matrix.org',
+                hostname: 'matrix.teknix.dev',
                 pathname: '/_matrix/media/**',
             },
             {
                 protocol: 'https',
-                hostname: '*.matrix.org',
+                hostname: '*.matrix.teknix.dev',
             },
             {
                 protocol: 'https',
-                hostname: 'matrix-client.matrix.org',
+                hostname: 'matrix-client.matrix.teknix.dev',
             },
         ],
         dangerouslyAllowSVG: true,
