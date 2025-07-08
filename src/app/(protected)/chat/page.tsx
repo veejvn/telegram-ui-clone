@@ -22,8 +22,7 @@ import {
 import useSortedRooms from "@/hooks/useSortedRooms";
 import useListenRoomInvites from "@/hooks/useListenRoomInvites";
 import { getLS, removeLS } from "@/tools/localStorage.tool";
-import { MoveLeft } from "lucide-react";
-import clsx from "clsx";
+import { useSearchParams } from "next/navigation";
 
 export default function ChatsPage() {
   // const [rooms, setRooms] = useState<sdk.Room[]>([]);
@@ -129,41 +128,33 @@ export default function ChatsPage() {
     paddingTop: statusBarHeight ? Number(statusBarHeight) : 0,
   };
 
-  const [showBackButton, setShowBackButton] = useState(false);
+  // const [showBackButton, setShowBackButton] = useState(false);
 
   const backUrl = getLS("backUrl");
+
+  const formMainApp = getLS("formMainApp");
 
   const MAIN_APP_ORIGIN =
     typeof window !== "undefined" ? window.location.origin : "";
 
-  useEffect(() => {
-    if (backUrl) {
-      setShowBackButton(true);
-    } else if (
-      typeof document !== "undefined" &&
-      document.referrer &&
-      document.referrer.startsWith(MAIN_APP_ORIGIN)
-    ) {
-      setShowBackButton(true);
-    } else {
-      setShowBackButton(false);
-    }
-  }, [backUrl, MAIN_APP_ORIGIN]);
-
   const handleBack = () => {
     if (backUrl) {
       removeLS("backUrl");
+      removeLS("formMainApp");
+      removeLS("hide");
       window.location.href = MAIN_APP_ORIGIN + backUrl;
     } else {
       removeLS("backUrl");
+      removeLS("formMainApp");
+      removeLS("hide");
       window.location.href = MAIN_APP_ORIGIN;
     }
   };
 
-  const chatTitleClass = clsx(
-    "text-md font-semibold",
-    backUrl || showBackButton ? "ml-12" : ""
-  );
+  const searchParams = useSearchParams();
+  const hideFromQuery = searchParams.get("hide");
+  const hide = hideFromQuery ? hideFromQuery.split(",") : getLS("hide") || [];
+  const options = Array.isArray(hide) ? hide : [];
 
   return (
     <div>
@@ -173,7 +164,7 @@ export default function ChatsPage() {
       >
         <div className="flex items-center justify-between px-4 py-3 ">
           <div className="flex items-center">
-            {showBackButton && (
+            {formMainApp && (
               <button
                 className="text-blue-500 font-medium w-10 cursor-pointer"
                 onClick={handleBack}
@@ -183,7 +174,7 @@ export default function ChatsPage() {
                 <ChevronLeft />
               </button>
             )}
-            {!backUrl && !showBackButton && (
+            {!formMainApp && (
               <ChatEditButton
                 isEditMode={isEditMode}
                 onEdit={() => setIsEditMode(true)}
@@ -191,36 +182,38 @@ export default function ChatsPage() {
               />
             )}
           </div>
-          <h1 className={chatTitleClass}>Chats</h1>
+          <h1>Chats</h1>
           <div className="flex gap-3">
-            {showBackButton && (
+            {formMainApp && (
               <ChatEditButton
                 isEditMode={isEditMode}
                 onEdit={() => setIsEditMode(true)}
                 onDone={handleDone}
               />
             )}
-            <>
-              <div
-                className="text-blue-500 cursor-pointer
+            {!formMainApp && (
+              <>
+                <div
+                  className="text-blue-500 cursor-pointer
             hover:scale-105 duration-500 transition-all ease-in-out
             hover:opacity-50"
-              >
-                <CircleFadingPlus className="rotate-y-180" />
-              </div>
-              <div
-                className="text-blue-500 cursor-pointer
+                >
+                  <CircleFadingPlus className="rotate-y-180" />
+                </div>
+                <div
+                  className="text-blue-500 cursor-pointer
             hover:scale-105 duration-500 transition-all ease-in-out
             hover:opacity-50"
-              >
-                <Link href={"/chat/newMessage"}>
-                  <SquarePen />
-                </Link>
-              </div>
-            </>
+                >
+                  <Link href={"/chat/newMessage"}>
+                    <SquarePen />
+                  </Link>
+                </div>
+              </>
+            )}
           </div>
         </div>
-        <SearchBar />
+        {!options.includes("search") && <SearchBar />}
       </div>
 
       {loading ? (
@@ -242,47 +235,45 @@ export default function ChatsPage() {
               You have no{"\n"}conversations yet.
             </p>
           </div>
-          <div className="w-full pb-30 px-15">
+          <div className="w-full pb-12 px-15">
             <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white text-base rounded-lg py-6 cursor-pointer">
               <Link href={"/chat/newMessage"}>New Message</Link>
             </Button>
           </div>
         </div>
       ) : (
-        <ScrollArea tabIndex={-1}>
-          <div className="flex flex-col px-2 pb-[64px] spacy-y-2">
-            <ChatList
-              rooms={rooms}
-              isEditMode={isEditMode}
-              selectedRooms={selectedRooms}
-              onSelectRoom={handleSelectRoom}
-              onMute={() => {}}
-              onDelete={async (roomId, type) => {
-                if (!client) return;
+        <div className="mb-3">
+          <ChatList
+            rooms={rooms}
+            isEditMode={isEditMode}
+            selectedRooms={selectedRooms}
+            onSelectRoom={handleSelectRoom}
+            onMute={() => {}}
+            onDelete={async (roomId, type) => {
+              if (!client) return;
 
-                if (type === "me") {
-                  await client.leave(roomId);
-                  await client.forget(roomId);
-                } else if (type === "both") {
-                  await client.sendEvent(
-                    roomId,
-                    "m.room.delete_for_everyone" as any,
-                    {
-                      by: client.getUserId(),
-                    }
-                  );
-                  await client.leave(roomId);
-                  await client.forget(roomId);
-                }
+              if (type === "me") {
+                await client.leave(roomId);
+                await client.forget(roomId);
+              } else if (type === "both") {
+                await client.sendEvent(
+                  roomId,
+                  "m.room.delete_for_everyone" as any,
+                  {
+                    by: client.getUserId(),
+                  }
+                );
+                await client.leave(roomId);
+                await client.forget(roomId);
+              }
 
-                refreshRooms();
-              }}
-              onArchive={(roomId) => {
-                alert("Archive: " + roomId);
-              }}
-            />
-          </div>
-        </ScrollArea>
+              refreshRooms();
+            }}
+            onArchive={(roomId) => {
+              alert("Archive: " + roomId);
+            }}
+          />
+        </div>
       )}
 
       {isEditMode && (
