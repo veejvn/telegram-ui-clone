@@ -41,7 +41,7 @@ class CallService extends EventEmitter {
 
         this.client.startClient({ initialSyncLimit: 10 });
         (this.client as any).on('Call.incoming', this.onIncomingCall.bind(this));
-        this.client.on('event', (event: any) => {
+        (this.client as any).on('event', (event: any) => {
             console.log('[MatrixClient] Event:', {
                 type: event.getType ? event.getType() : event.type,
                 sender: event.getSender ? event.getSender() : event.sender,
