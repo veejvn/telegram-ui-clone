@@ -14,6 +14,7 @@ import {
 import "react-swipeable-list/dist/styles.css";
 import React, { useState } from "react";
 import { Volume2, VolumeX, Trash2, Archive } from "lucide-react";
+import { ScrollArea } from "../ui/scroll-area";
 
 interface ChatListProps {
   rooms: sdk.Room[];
@@ -49,62 +50,64 @@ export const ChatList = ({
 
   return (
     <>
-      <SwipeableList fullSwipe={false} type={SwipeableListType.IOS}>
-        {rooms
-          .filter((room) => !!room && !!room.roomId)
-          .map((room: sdk.Room, idx) => {
-            const actions = (
-              <LeadingActions>
-                <SwipeAction onClick={() => handleMute(room.roomId)}>
-                  <div className="bg-[#ffcc00] w-[80px] h-full flex flex-col items-center justify-center text-center">
-                    <div className="flex flex-col items-center justify-center h-full w-full">
-                      {mutedRooms.includes(room.roomId) ? (
-                        <>
-                          <Volume2 className="w-6 h-6 text-white mb-1" />
-                          <span className="text-sm font-medium text-white">
-                            Unmute
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <VolumeX className="w-6 h-6 text-white mb-1" />
-                          <span className="text-sm font-medium text-white">
-                            Mute
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </SwipeAction>
+      <ScrollArea tabIndex={-1}>
+        <div className="flex flex-col px-2 pb-[64px] spacy-y-2">
+          <SwipeableList fullSwipe={false} type={SwipeableListType.IOS}>
+            {rooms
+              .filter((room) => !!room && !!room.roomId)
+              .map((room: sdk.Room, idx) => {
+                const actions = (
+                  <LeadingActions>
+                    <SwipeAction onClick={() => handleMute(room.roomId)}>
+                      <div className="bg-[#ffcc00] w-[80px] h-full flex flex-col items-center justify-center text-center">
+                        <div className="flex flex-col items-center justify-center h-full w-full">
+                          {mutedRooms.includes(room.roomId) ? (
+                            <>
+                              <Volume2 className="w-6 h-6 text-white mb-1" />
+                              <span className="text-sm font-medium text-white">
+                                Unmute
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <VolumeX className="w-6 h-6 text-white mb-1" />
+                              <span className="text-sm font-medium text-white">
+                                Mute
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </SwipeAction>
 
-                <SwipeAction
-                  onClick={() => {
-                    setDeleteRoomId(room.roomId);
-                    setDeleteRoomName(room.name);
-                  }}
-                >
-                  <div className="bg-[#ff4d4f] w-[80px] h-full flex flex-col items-center justify-center text-center">
-                    <div className="flex flex-col items-center justify-center h-full w-full">
-                      <Trash2 className="w-6 h-6 text-white mb-1" />
-                      <span className="text-sm font-medium text-white">
-                        Delete
-                      </span>
-                    </div>
-                  </div>
-                </SwipeAction>
+                    <SwipeAction
+                      onClick={() => {
+                        setDeleteRoomId(room.roomId);
+                        setDeleteRoomName(room.name);
+                      }}
+                    >
+                      <div className="bg-[#ff4d4f] w-[80px] h-full flex flex-col items-center justify-center text-center">
+                        <div className="flex flex-col items-center justify-center h-full w-full">
+                          <Trash2 className="w-6 h-6 text-white mb-1" />
+                          <span className="text-sm font-medium text-white">
+                            Delete
+                          </span>
+                        </div>
+                      </div>
+                    </SwipeAction>
 
-                <SwipeAction onClick={() => onArchive?.(room.roomId)}>
-                  <div className="bg-[#7a8a99] w-[80px] h-full flex flex-col items-center justify-center text-center">
-                    <div className="flex flex-col items-center justify-center h-full w-full">
-                      <Archive className="w-6 h-6 text-white mb-1" />
-                      <span className="text-sm font-medium text-white">
-                        Archive
-                      </span>
-                    </div>
-                  </div>
-                </SwipeAction>
-              </LeadingActions>
-            );
+                    <SwipeAction onClick={() => onArchive?.(room.roomId)}>
+                      <div className="bg-[#7a8a99] w-[80px] h-full flex flex-col items-center justify-center text-center">
+                        <div className="flex flex-col items-center justify-center h-full w-full">
+                          <Archive className="w-6 h-6 text-white mb-1" />
+                          <span className="text-sm font-medium text-white">
+                            Archive
+                          </span>
+                        </div>
+                      </div>
+                    </SwipeAction>
+                  </LeadingActions>
+                );
 
             return (
               <SwipeableListItem
@@ -134,46 +137,48 @@ export const ChatList = ({
                     </Link>
                   )}
 
-                  {rooms.length - 1 !== idx ? (
-                    <Separator className="w-[calc(100%-72px)] ml-[72px]" />
-                  ) : (
-                    <Separator />
-                  )}
+                      {rooms.length - 1 !== idx ? (
+                        <Separator className="w-[calc(100%-72px)] ml-[72px]" />
+                      ) : (
+                        <Separator />
+                      )}
+                    </div>
+                  </SwipeableListItem>
+                );
+              })}
+          </SwipeableList>
+          {deleteRoomId && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+              <div className="bg-white w-full max-w-md rounded-lg p-6">
+                <h3 className="text-lg font-semibold mb-4">
+                  Permanently delete the chat with <b>{deleteRoomName}</b>?
+                </h3>
+                <div className="flex flex-col gap-2">
+                  <button
+                    className="w-full py-2 text-red-500 font-semibold border-b"
+                    onClick={() => {
+                      onDelete?.(deleteRoomId, "me");
+                      setDeleteRoomId(null);
+                      setDeleteRoomName(null);
+                    }}
+                  >
+                    Delete just for me
+                  </button>
+                  <button
+                    className="w-full py-2 text-blue-500 font-medium"
+                    onClick={() => {
+                      setDeleteRoomId(null);
+                      setDeleteRoomName(null);
+                    }}
+                  >
+                    Cancel
+                  </button>
                 </div>
-              </SwipeableListItem>
-            );
-          })}
-      </SwipeableList>
-      {deleteRoomId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white w-full max-w-md rounded-lg p-6">
-            <h3 className="text-lg font-semibold mb-4">
-              Permanently delete the chat with <b>{deleteRoomName}</b>?
-            </h3>
-            <div className="flex flex-col gap-2">
-              <button
-                className="w-full py-2 text-red-500 font-semibold border-b"
-                onClick={() => {
-                  onDelete?.(deleteRoomId, "me");
-                  setDeleteRoomId(null);
-                  setDeleteRoomName(null);
-                }}
-              >
-                Delete just for me
-              </button>
-              <button
-                className="w-full py-2 text-blue-500 font-medium"
-                onClick={() => {
-                  setDeleteRoomId(null);
-                  setDeleteRoomName(null);
-                }}
-              >
-                Cancel
-              </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
-      )}
+      </ScrollArea>
     </>
   );
 };

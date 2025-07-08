@@ -13,6 +13,7 @@ import UnreadMsgsCount from "./UnreadMsgsCount";
 import useUnreadMessages from "@/hooks/useUnreadMsgs";
 import { Check } from "lucide-react";
 import { useReadReceipts } from "@/hooks/useReadReceipts ";
+
 interface ChatListItemProps {
   room: sdk.Room;
   isEditMode?: boolean;
@@ -29,6 +30,7 @@ export const ChatListItem = ({
   isMuted = false,
 }: ChatListItemProps) => {
   const client = useMatrixClient();
+  const userId = client?.getUserId();
   const HOMESERVER_URL: string =
     process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
 
@@ -65,7 +67,22 @@ export const ChatListItem = ({
     };
   }, [client, room.roomId]);
 
-  const avatarUrl = room.getAvatarUrl(HOMESERVER_URL, 60, 60, "crop", false);
+  let avatarUrl = room.getAvatarUrl(HOMESERVER_URL, 60, 60, "crop", false);
+  const members = room.getMembers();
+  const isGroup = members.length > 2;
+  if (!isGroup) {
+    const otherMember = members.find((member) => member.userId !== userId);
+    avatarUrl =
+      otherMember?.getAvatarUrl(
+        HOMESERVER_URL,
+        60,
+        60,
+        "crop",
+        false,
+        true,
+        false
+      ) || "";
+  }
 
   const { content, time, sender } = getLastMessagePreview(room);
   //console.log(lastReadReceipts, sender);
