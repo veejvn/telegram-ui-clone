@@ -1,4 +1,5 @@
-import React from "react";
+"use client";
+import React, { useEffect, useState } from "react";
 import { clsx } from "clsx";
 import { Check, CheckCheck } from "lucide-react";
 import { MessagePros } from "@/types/chat";
@@ -22,8 +23,8 @@ import { useParams, useRouter } from "next/navigation";
 // 💬 Main TextMessage
 const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
   const theme = useTheme();
-  const router = useRouter();
-
+  const [open, setOpen] = useState(false);
+  const [triggered, setTriggered] = useState(false);
   const router = useRouter();
 
   const textClass = clsx(
@@ -54,8 +55,18 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
     router.push("/chat/forward");
   };
 
+  useEffect(() => {
+    let timeout: any;
+    if (triggered) {
+      timeout = setTimeout(() => setOpen(true), 350); // delay 300ms
+    } else {
+      setOpen(false);
+    }
+    return () => clearTimeout(timeout);
+  }, [triggered]);
+
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setTriggered}>
       <DropdownMenuTrigger asChild>
         <div
           className={clsx(
