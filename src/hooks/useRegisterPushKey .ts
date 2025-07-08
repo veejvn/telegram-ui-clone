@@ -4,6 +4,9 @@ import { getLS, setLS } from "@/tools/localStorage.tool";
 import { useEffect } from "react";
 
 const useRegisterPushKey = (accessToken: string | null) => {
+
+  const PUSH_TOKEN_DOMAIN = process.env.NEXT_PUBLIC_PUSH_TOKEN_DOMAIN  || ""
+
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -22,7 +25,7 @@ const useRegisterPushKey = (accessToken: string | null) => {
         pushkey: pushToken,
       };
   
-      fetch("https://xhub-sb-matrix-gw.blocktrend.xyz/api/v1/matrix/pushers", {
+      fetch(PUSH_TOKEN_DOMAIN, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
