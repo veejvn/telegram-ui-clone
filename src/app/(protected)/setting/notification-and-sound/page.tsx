@@ -41,9 +41,8 @@ const NotificationToggle = ({
           onChange={() => setEnabled(!enabled)}
         />
         <div
-          className={`w-11 h-6 rounded-full transition-colors duration-300 ${
-            enabled ? "bg-green-500" : isDark ? "bg-[#3a3a3c]" : "bg-[#d1d1d6]"
-          }`}
+          className={`w-11 h-6 rounded-full transition-colors duration-300 ${enabled ? "bg-green-500" : isDark ? "bg-[#3a3a3c]" : "bg-[#d1d1d6]"
+            }`}
         />
         <div className="absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 peer-checked:translate-x-5" />
       </label>
@@ -71,7 +70,7 @@ export default function NotificationSettings() {
       label: "Private Chats",
       icon: (
         <img
-          src="/icons/private-chat.png"
+          src="/chat/icons/private-chat.png"
           alt="Private Chat"
           className="w-9 h-9 object-cover rounded-[10px]"
         />
@@ -85,7 +84,7 @@ export default function NotificationSettings() {
       label: "Group Chats",
       icon: (
         <img
-          src="/icons/group-chat.png"
+          src="/chat/icons/group-chat.png"
           alt="Group Chat"
           className="w-9 h-9 object-cover rounded-[10px]"
         />
@@ -98,7 +97,7 @@ export default function NotificationSettings() {
       label: "Channels",
       icon: (
         <img
-          src="/icons/channel.png"
+          src="/chat/icons/channel.png"
           alt="Channel"
           className="w-9 h-9 object-cover rounded-[10px]"
         />
@@ -111,7 +110,7 @@ export default function NotificationSettings() {
       label: "Stories",
       icon: (
         <img
-          src="/icons/story.png"
+          src="/chat/icons/story.png"
           alt="Stories"
           className="w-9 h-9 object-cover rounded-[10px]"
         />
@@ -125,7 +124,7 @@ export default function NotificationSettings() {
       label: "Reactions",
       icon: (
         <img
-          src="/icons/reaction.png"
+          src="/chat/icons/reaction.png"
           alt="Reactions"
           className="w-12 h-12 object-cover rounded-[10px]"
         />
@@ -175,11 +174,10 @@ export default function NotificationSettings() {
                 </div>
                 {/* Phần chữ + border-b */}
                 <div
-                  className={`flex-1 min-w-0 py-[12px] min-h-[60px] ${
-                    idx !== messageItems.length - 1
+                  className={`flex-1 min-w-0 py-[12px] min-h-[60px] ${idx !== messageItems.length - 1
                       ? "border-b border-[#E5E5EA] dark:border-[#2c2c2e]"
                       : ""
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center">
                     {/* Label + description */}

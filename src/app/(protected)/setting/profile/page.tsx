@@ -105,7 +105,7 @@ export default function MyProfilePage() {
       {/* Posts Section */}
       <div>
         <h3 className="text-sm font-semibold text-black mb-2">Posts</h3>
-        <div className="bg-gray-100 rounded-xl flex flex-col items-center justify-center py-12 text-center">
+        <div className="flex flex-col items-center justify-center py-12 text-center">
           <img src="/chat/images/no-post-yet.png" alt="No posts" className="mb-4" />
           <p className="text-sm text-gray-500 mb-2">No posts yet...</p>
           <p className="text-xs text-gray-400 mb-4">
@@ -115,6 +115,7 @@ export default function MyProfilePage() {
             Add a Post
           </Button>
         </div>
+
       </div>
     </div>
   );
