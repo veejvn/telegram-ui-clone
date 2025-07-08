@@ -60,21 +60,25 @@ let _hasListener = false;
 const useCallStore = create<CallStore>((set, get) => {
     if (!_hasListener) {
         callService.on('outgoing-call', () => {
+            console.log('[useCallStore] outgoing-call event');
             outgoingAudio?.play().catch(() => { })
             set({ state: 'ringing', incoming: undefined, callDuration: 0, callEndedReason: undefined })
         })
 
         callService.on('incoming-call', (data: IncomingCall) => {
+            console.log('[useCallStore] incoming-call event', data);
             ringtoneAudio?.play().catch(() => { });
             set({ state: 'incoming', incoming: { ...data }, callDuration: 0, callEndedReason: undefined });
         });
 
 
         callService.on('local-stream', (stream: MediaStream) => {
+            console.log('[useCallStore] local-stream event', stream);
             set({ localStream: stream })
         })
 
         callService.on('remote-stream', (stream: MediaStream) => {
+            console.log('[useCallStore] remote-stream event', stream);
             outgoingAudio?.pause()
             ringtoneAudio?.pause()
             if (outgoingAudio) outgoingAudio.currentTime = 0
@@ -89,13 +93,13 @@ const useCallStore = create<CallStore>((set, get) => {
             }, 1000)
         })
 
-        // Lắng nghe sự kiện mic-toggled từ CallService
         callService.on('mic-toggled', (isOn: boolean) => {
-            // console.log(`[CallStore] Mic toggled from service: ${isOn}`);
+            console.log('[useCallStore] mic-toggled event', isOn);
             set({ micOn: isOn });
         })
 
         callService.on('call-ended', (reason?: string) => {
+            console.log('[useCallStore] call-ended event', reason);
             if (_timer) {
                 clearInterval(_timer)
                 _timer = null
@@ -119,6 +123,7 @@ const useCallStore = create<CallStore>((set, get) => {
         })
 
         callService.on('call-error', () => {
+            console.log('[useCallStore] call-error event');
             if (_timer) {
                 clearInterval(_timer)
                 _timer = null
@@ -139,6 +144,16 @@ const useCallStore = create<CallStore>((set, get) => {
             })
         })
 
+        callService.on('video-upgrade-request', ({ roomId, from }) => {
+            console.log('[useCallStore] video-upgrade-request event', { roomId, from });
+            set({ state: 'connected' });
+        });
+
+        callService.on('video-upgraded', () => {
+            console.log('[useCallStore] video-upgraded event');
+            set({ videoUpgradeRequest: undefined });
+        });
+
         _hasListener = true;
     }
 
@@ -148,17 +163,20 @@ const useCallStore = create<CallStore>((set, get) => {
         micOn: true,
         placeCall: (roomId, type) => {
             const { state } = get();
+            console.log('[useCallStore] placeCall', { roomId, type, state });
             if (state === 'ringing' || state === 'connecting' || state === 'connected') {
-                // console.warn(`[CallStore] Already have active call for this room (${roomId}), state=${state}`);
+                console.warn(`[useCallStore] Already have active call for this room (${roomId}), state=${state}`);
                 return;
             }
             callService.placeCall(roomId, type)
         },
         answerCall: async () => {
+            console.log('[useCallStore] answerCall');
             set({ state: 'connecting' })
             await callService.answerCall()
         },
         hangup: () => {
+            console.log('[useCallStore] hangup');
             const { localStream, remoteStream } = get();
             stopAllTracks(localStream);
             stopAllTracks(remoteStream);
@@ -168,7 +186,7 @@ const useCallStore = create<CallStore>((set, get) => {
             videoElements.forEach(video => {
                 if (video.srcObject) {
                     video.srcObject = null;
-                    // console.log('[CallStore] Detached video element:', video);
+                    console.log('[useCallStore] Detached video element:', video);
                 }
             });
 
@@ -176,6 +194,7 @@ const useCallStore = create<CallStore>((set, get) => {
             callService.hangup()
         },
         reset: () => {
+            console.log('[useCallStore] reset');
             if (_timer) {
                 clearInterval(_timer)
                 _timer = null
@@ -194,7 +213,7 @@ const useCallStore = create<CallStore>((set, get) => {
             videoElements.forEach(video => {
                 if (video.srcObject) {
                     video.srcObject = null;
-                    // console.log('[CallStore] Detached video element in reset:', video);
+                    console.log('[useCallStore] Detached video element in reset:', video);
                 }
             });
 
@@ -209,17 +228,16 @@ const useCallStore = create<CallStore>((set, get) => {
             });
         },
         toggleCamera: (on: boolean) => {
-            // console.log(`[CallStore] Toggle camera requested: ${on}`);
+            console.log('[useCallStore] toggleCamera', on);
             try {
                 callService.toggleCamera(on);
             } catch (e) {
-                // console.warn('[CallStore] toggleCamera failed:', e);
+                console.warn('[useCallStore] toggleCamera failed:', e);
             }
         },
 
         toggleMic: (on) => {
-            // console.log(`[CallStore] Toggle mic requested: ${on}`);
-
+            console.log('[useCallStore] toggleMic', on);
             // Cập nhật trạng thái UI ngay lập tức
             set({ micOn: on });
 
@@ -227,54 +245,63 @@ const useCallStore = create<CallStore>((set, get) => {
             try {
                 callService.toggleMic(on);
             } catch (e) {
-                // console.warn('[CallStore] toggleMic failed:', e);
+                console.warn('[useCallStore] toggleMic failed:', e);
                 // Revert lại trạng thái nếu thất bại
                 set({ micOn: !on });
             }
         },
 
-        // Thêm các method mạnh hơn
         hardMute: () => {
-            // console.log('[CallStore] Hard mute requested');
+            console.log('[useCallStore] hardMute');
             set({ micOn: false });
             try {
                 if ('hardMute' in callService) {
                     (callService as any).hardMute();
                 }
             } catch (e) {
-                // console.warn('[CallStore] hardMute failed:', e);
+                console.warn('[useCallStore] hardMute failed:', e);
             }
         },
 
         muteWithSilentTrack: () => {
-            // console.log('[CallStore] Mute with silent track requested');
+            console.log('[useCallStore] muteWithSilentTrack');
             set({ micOn: false });
             try {
                 if ('muteWithSilentTrack' in callService) {
                     (callService as any).muteWithSilentTrack();
                 }
             } catch (e) {
-                // console.warn('[CallStore] muteWithSilentTrack failed:', e);
+                console.warn('[useCallStore] muteWithSilentTrack failed:', e);
             }
         },
 
         recreateAudioTrack: async () => {
-            // console.log('[CallStore] Recreate audio track requested');
+            console.log('[useCallStore] recreateAudioTrack');
             try {
                 if ('recreateAudioTrack' in callService) {
                     await (callService as any).recreateAudioTrack();
                     set({ micOn: true });
                 }
             } catch (e) {
-                // console.warn('[CallStore] recreateAudioTrack failed:', e);
+                console.warn('[useCallStore] recreateAudioTrack failed:', e);
             }
         },
 
         upgradeToVideo: async () => {
+            console.log('[useCallStore] upgradeToVideo');
             try {
                 await callService.upgradeToVideo();
             } catch (err) {
-                // console.error("[CallStore] upgradeToVideo error:", err);
+                console.error('[useCallStore] upgradeToVideo error:', err);
+            }
+        },
+
+        requestAndUpgradeToVideo: async () => {
+            console.log('[useCallStore] requestAndUpgradeToVideo');
+            try {
+                await callService.requestAndUpgradeToVideo();
+            } catch (err) {
+                console.error('[useCallStore] requestAndUpgradeToVideo error:', err);
             }
         },
     }

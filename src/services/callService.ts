@@ -42,6 +42,29 @@ class CallService extends EventEmitter {
 
         this.client.startClient({ initialSyncLimit: 10 });
         (this.client as any).on('Call.incoming', this.onIncomingCall.bind(this));
+        this.client.on('event', (event: any) => {
+            console.log('[MatrixClient] Event:', {
+                type: event.getType ? event.getType() : event.type,
+                sender: event.getSender ? event.getSender() : event.sender,
+                roomId: event.getRoomId ? event.getRoomId() : event.room_id,
+                content: event.getContent ? event.getContent() : event.content,
+                raw: event
+            });
+
+            // Bổ sung: lắng nghe m.call.hangup ở cấp client
+            const type = event.getType ? event.getType() : event.type;
+            if (type === 'm.call.hangup') {
+                const content = event.getContent ? event.getContent() : event.content;
+                const callId = content?.call_id;
+                if (this.currentCall && this.currentCall.callId === callId) {
+                    console.log('[CallService] Global hangup detected for currentCall', callId);
+                    this.emit('call-ended', 'remote_hangup');
+                    this.currentCall = undefined;
+                    this.currentRoomId = undefined;
+                    this.localStream = undefined;
+                }
+            }
+        });
     }
 
     private onIncomingCall(call: sdk.MatrixCall) {
@@ -88,16 +111,17 @@ class CallService extends EventEmitter {
 
         c.on('hangup', (event: any) => {
             const reason = event?.reason || 'user_hangup';
+            console.log('[CallService] hangup event received', reason, event);
 
             // ✅ Cleanup local stream tracks
             if (this.localStream) {
-                // console.log('[CallService] Stopping local stream tracks:', {
-                //     audioTracks: this.localStream.getAudioTracks().length,
-                //     videoTracks: this.localStream.getVideoTracks().length
-                // });
+                console.log('[CallService] Stopping local stream tracks:', {
+                    audioTracks: this.localStream.getAudioTracks().length,
+                    videoTracks: this.localStream.getVideoTracks().length
+                });
                 this.localStream.getTracks().forEach(track => {
                     track.stop();
-                    // console.log('[CallService] Stopped track:', track.kind, track.id);
+                    console.log('[CallService] Stopped track:', track.kind, track.id);
                 });
             }
 
@@ -108,7 +132,7 @@ class CallService extends EventEmitter {
                 senders.forEach((sender: RTCRtpSender) => {
                     if (sender.track) {
                         sender.track.stop();
-                        // console.log('[CallService] Stopped peer connection track:', sender.track.kind, sender.track.id);
+                        console.log('[CallService] Stopped peer connection track:', sender.track.kind, sender.track.id);
                     }
                 });
             }
@@ -119,7 +143,7 @@ class CallService extends EventEmitter {
                 this.currentCall = undefined;
                 this.currentRoomId = undefined;
                 this.localStream = undefined;
-                // console.log('[CallService] Call cleanup completed after delay');
+                console.log('[CallService] Call cleanup completed after delay');
             }, 1000); // Delay 1 giây
         });
 
