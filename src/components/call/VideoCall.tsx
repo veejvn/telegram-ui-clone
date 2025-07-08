@@ -30,6 +30,16 @@ export function VideoCall({
     } = useCallStore();
 
     const state = callState ?? storeState;
+    const prevState = useRef(state);
+    useEffect(() => {
+        // chỉ fire onEndCall khi có transition từ active -> ended/error
+        const wasActive = ['incoming', 'ringing', 'connecting', 'connected'].includes(prevState.current);
+        const isFinal = state === 'ended' || state === 'error';
+        if (wasActive && isFinal) {
+            onEndCall();
+        }
+        prevState.current = state;
+    }, [state, onEndCall]);
     const [cameraOn, setCameraOn] = useState(true);
     const [speakerOn, setSpeakerOn] = useState(true);
     const [internalDuration, setInternalDuration] = useState(0);

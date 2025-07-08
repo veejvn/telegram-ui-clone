@@ -33,6 +33,17 @@ export function VoiceCall({
     } = useCallStore();
 
     const state = callState ?? storeState;
+    // ref để giữ trạng thái trước đó
+    const prevState = useRef(state);
+    useEffect(() => {
+        // chỉ fire onEndCall khi có transition từ active -> ended/error
+        const wasActive = ['incoming', 'ringing', 'connecting', 'connected'].includes(prevState.current);
+        const isFinal = state === 'ended' || state === 'error';
+        if (wasActive && isFinal) {
+            onEndCall();
+        }
+        prevState.current = state;
+    }, [state, onEndCall]);
     const [isSpeakerOn, setIsSpeakerOn] = useState(true);
     const [internalCallDuration, setInternalCallDuration] = useState(0);
 

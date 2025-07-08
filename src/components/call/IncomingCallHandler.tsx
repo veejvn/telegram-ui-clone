@@ -1,5 +1,4 @@
 'use client';
-
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import useCallStore from '@/stores/useCallStore';
@@ -7,7 +6,7 @@ import IncomingCall from './IncomingCall';
 
 export default function IncomingCallHandler() {
     const router = useRouter();
-    const { state, incoming, answerCall, hangup } = useCallStore();
+    const { state, incoming, answerCall, rejectCall } = useCallStore(); // ✅ Sử dụng rejectCall thay vì hangup
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
     // Phát âm thanh khi có cuộc gọi đến
@@ -16,9 +15,13 @@ export default function IncomingCallHandler() {
             if (!audioRef.current) {
                 audioRef.current = new Audio('/sounds/ringtone.mp3');
                 audioRef.current.loop = true;
-                audioRef.current.play().catch(() => { });
+                audioRef.current.play().catch((err) => {
+                    console.warn('[IncomingCallHandler] Failed to play ringtone:', err);
+                });
             } else {
-                audioRef.current.play().catch(() => { });
+                audioRef.current.play().catch((err) => {
+                    console.warn('[IncomingCallHandler] Failed to resume ringtone:', err);
+                });
             }
         }
 
@@ -49,6 +52,20 @@ export default function IncomingCallHandler() {
         }
     }, [state, incoming, router]);
 
+    // ✅ Xử lý khi cuộc gọi kết thúc (bị từ chối hoặc lỗi)
+    useEffect(() => {
+        if (state === 'ended' || state === 'error') {
+            // Delay một chút để user thấy trạng thái, sau đó reset
+            const timer = setTimeout(() => {
+                // Reset state về idle sau khi xử lý xong
+                useCallStore.getState().reset();
+            }, 1000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [state]);
+
+    // ✅ Chỉ hiển thị khi thực sự có cuộc gọi đến
     if (state !== 'incoming' || !incoming) return null;
 
     return (
@@ -56,7 +73,7 @@ export default function IncomingCallHandler() {
             <IncomingCall
                 callerName={incoming.callerId}
                 onAccept={answerCall}
-                onReject={hangup}
+                onReject={rejectCall} // ✅ Sử dụng rejectCall thay vì hangup
                 callType={incoming.callType}
             />
         </div>

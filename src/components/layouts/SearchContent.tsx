@@ -56,7 +56,7 @@ const SearchContent = ({
 
   if (loading) {
     return (
-      <div className="p-4 bg-white text-gray-400 dark:text-gray-500 text-center">
+      <div className="p-4 bg-neutral-100 dark:bg-neutral-900 text-gray-600 dark:text-gray-400 text-center">
         Đang tìm kiếm...
       </div>
     );
@@ -64,7 +64,7 @@ const SearchContent = ({
 
   if (!loading && searchResults.length === 0 && messageResults.length === 0) {
     return (
-      <div className="p-4 bg-white text-gray-400 dark:text-gray-500 text-center">
+      <div className="p-4 bg-neutral-100 dark:bg-neutral-900 text-gray-600 dark:text-gray-400 text-center">
         Không tìm thấy kết quả nào.
       </div>
     );
