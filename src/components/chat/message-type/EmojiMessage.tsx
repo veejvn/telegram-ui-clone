@@ -14,13 +14,14 @@ import CopyIconSvg from "../icons/CopyIconSvg";
 import ForwardIconSvg from "../icons/ForwardIconSvg";
 import BinIconSvg from "../icons/BinIconSvg";
 import { useTheme } from "next-themes";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { copyToClipboard } from "@/utils/copyToClipboard";
 import { toast } from "sonner";
 
 const EmojiMessage = ({ msg, isSender }: MessagePros) => {
   const theme = useTheme();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [triggered, setTriggered] = useState(false);
   const textClass = clsx(
     "flex items-center gap-1 text-xs",
     isSender ? "text-white justify-end" : "text-white"
@@ -47,14 +48,23 @@ const EmojiMessage = ({ msg, isSender }: MessagePros) => {
     }
   };
 
+  useEffect(() => {
+    let timeout: any;
+    if (triggered) {
+      timeout = setTimeout(() => setOpen(true), 350); // delay 300ms
+    } else {
+      setOpen(false);
+    }
+    return () => clearTimeout(timeout);
+  }, [triggered]);
   return (
     <div className={"rounded-lg py-2"}>
-      <DropdownMenu onOpenChange={setMenuOpen}>
-        <DropdownMenuTrigger>
+      <DropdownMenu open={open} onOpenChange={setTriggered}>
+        <DropdownMenuTrigger asChild>
           <div
             className={clsx(
               "rounded-lg",
-              menuOpen && "backdrop-blur-sm bg-black/10 dark:bg-white/10"
+              open && "backdrop-blur-sm bg-black/10 dark:bg-white/10"
             )}
           >
             <p
@@ -67,26 +77,26 @@ const EmojiMessage = ({ msg, isSender }: MessagePros) => {
               {msg.text}
             </p>
           </div>
-          <DropdownMenuContent>
-            <DropdownMenuItem
-              className="flex justify-between items-center"
-              onClick={() => handleCopy(msg.text)}
-            >
-              <p>Copy</p>
-              <CopyIconSvg isDark={theme.theme === "dark"} />
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="flex justify-between items-center">
-              <p>Forward</p>
-              <ForwardIconSvg isDark={theme.theme === "dark"} />
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="flex justify-between items-center">
-              <p className="text-red-500">Delete</p>
-              <BinIconSvg />
-            </DropdownMenuItem>
-          </DropdownMenuContent>
         </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem
+            className="flex justify-between items-center"
+            onClick={() => handleCopy(msg.text)}
+          >
+            <p>Copy</p>
+            <CopyIconSvg isDark={theme.theme === "dark"} />
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem className="flex justify-between items-center">
+            <p>Forward</p>
+            <ForwardIconSvg isDark={theme.theme === "dark"} />
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem className="flex justify-between items-center">
+            <p className="text-red-500">Delete</p>
+            <BinIconSvg />
+          </DropdownMenuItem>
+        </DropdownMenuContent>
       </DropdownMenu>
       <div className={textClass}>
         <p
