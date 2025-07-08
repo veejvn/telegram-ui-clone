@@ -30,7 +30,7 @@ const useRegisterPushKey = (accessToken: string | null) => {
         profile_tag: "default",
       };
 
-      console.log(payload)
+      //console.log(payload)
   
       fetch(PUSH_TOKEN_DOMAIN, {
         method: "POST",
@@ -49,7 +49,7 @@ const useRegisterPushKey = (accessToken: string | null) => {
       })
       .then((data) => {
         //localStorage.setItem("lastPushToken", pushToken);
-        console.log("Pushkey registered:", data);
+        //console.log("Pushkey registered:", data);
       })
       .catch((err) => {
         console.error("Pushkey error:", err);
