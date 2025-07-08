@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { User, Mic, MicOff, PhoneOff, Volume2, VolumeX, Video } from 'lucide-react';
-import { Avatar } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import useCallStore from '@/stores/useCallStore';
+import {
+    User, Mic, MicOff, PhoneOff,
+    Volume2, VolumeX, Video, ChevronLeft, Lock
+} from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import useCallStore from '@/stores/useCallStore';
 
 interface VoiceCallProps {
     contactName: string;
@@ -19,7 +19,6 @@ interface VoiceCallProps {
 
 export function VoiceCall({
     contactName,
-    contactAvatar,
     callState,
     callDuration,
     onEndCall,
@@ -76,117 +75,120 @@ export function VoiceCall({
         router.replace(`/call/video?calleeId=${calleeId}&contact=${encodeURIComponent(contact)}`);
     };
 
-    const renderCallStatus = () => {
-        if (state === 'connected') {
-            return formatDuration(callDuration ?? internalCallDuration);
-        }
-        if (state === 'ringing') {
-            return 'Đang đổ chuông...';
-        }
-        if (state === 'connecting') {
-            return 'Đang kết nối...';
-        }
-        if (state === 'ended') {
-            return 'Cuộc gọi đã kết thúc';
-        }
-        if (state === 'incoming') {
-            return 'Có cuộc gọi đến...';
-        }
-        return 'Đang gọi...';
-    };
-
     const handleToggleMic = () => {
-        console.log(`[VoiceCall] Toggle Mic: ${!micOn}`);
         toggleMic(!micOn);
     };
 
+    const isRinging = state === 'ringing' || state === 'connecting' || state === 'incoming';
+
     return (
-        <div className="relative flex flex-col items-center justify-center min-h-screen dark:bg-black">
-            <audio ref={audioRef} autoPlay hidden />
-
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-black via-black to-black" />
-
-            <div className="relative flex flex-col items-center space-y-8 p-4 z-10">
-                <div className="relative">
-                    <Avatar className="w-40 h-40 border-4 border-[#0088CC]/20">
-                        {contactAvatar ? (
-                            <img src={contactAvatar} alt={contactName} className="rounded-full object-cover" />
-                        ) : (
-                            <div className="w-full h-full bg-gradient-to-br dark:from-[#0088CC]/20 dark:to-[#0088CC]/10 flex items-center justify-center">
-                                <User className="w-20 h-20 dark:text-[#0088CC]/60" />
-                            </div>
-                        )}
-                    </Avatar>
-                    {state === 'ringing' && (
-                        <div className="absolute -inset-4 animate-ping rounded-full border-4 border-[#0088CC]/20" />
-                    )}
+        <div
+            className="relative flex flex-col items-center justify-between min-h-screen w-full"
+            style={{
+                background: isRinging
+                    ? 'linear-gradient(160deg, #a18cd1 0%, #fbc2eb 100%)'
+                    : 'linear-gradient(160deg, #6fb0d2 0%, #a3e4a0 100%)',
+            }}
+        >
+            {/* Header */}
+            <div className="w-full flex items-center justify-between px-4 pt-4">
+                <button className="flex items-center gap-1 text-white/90 text-lg">
+                    <ChevronLeft className="w-5 h-5" />
+                    Back
+                </button>
+                <div className="bg-blue-500 text-white rounded-full px-3 py-0.5 text-xs font-bold">
+                    TELEGRAM
                 </div>
-
-                <div className="text-center space-y-2">
-                    <h2 className="text-2xl font-bold dark:text-white">{contactName}</h2>
-                    <p className="text-[#0088CC] font-medium">{renderCallStatus()}</p>
-                </div>
-
-                <div className="flex items-center justify-center space-x-6">
-                    {/* Mic toggle */}
-                    <div className="flex flex-col items-center">
-                        <Button
-                            size="lg"
-                            variant="ghost"
-                            className={cn(
-                                'rounded-full w-16 h-16 transition-all duration-200 border',
-                                !micOn ? 'bg-red-600/80 hover:bg-red-700/80' : 'dark:bg-[#2C2C2E]'
-                            )}
-                            onClick={handleToggleMic}
-                        >
-                            {!micOn ? <MicOff className="h-8 w-8 text-white" /> : <Mic className="h-8 w-8 dark:text-white" />}
-                        </Button>
-                        <span className="text-xs dark:text-white/80">{micOn ? 'Mute' : 'Unmute'}</span>
-                    </div>
-
-                    {/* End call */}
-                    <div className="flex flex-col items-center">
-                        <Button
-                            size="lg"
-                            variant="destructive"
-                            className="rounded-full w-16 h-16 bg-[#FF3B30] hover:bg-[#FF453A] transition-all duration-200"
-                            onClick={handleEnd}
-                        >
-                            <PhoneOff className="h-8 w-8 dark:text-white" />
-                        </Button>
-                        <span className="text-xs dark:text-white/80">End</span>
-                    </div>
-
-                    {/* Speaker toggle */}
-                    <div className="flex flex-col items-center">
-                        <Button
-                            size="lg"
-                            variant="ghost"
-                            className={cn(
-                                'rounded-full w-16 h-16 transition-all duration-200 border',
-                                isSpeakerOn ? 'dark:bg-[#2C2C2E]' : 'bg-red-600/80 hover:bg-red-700/80'
-                            )}
-                            onClick={() => setIsSpeakerOn((v) => !v)}
-                        >
-                            {isSpeakerOn ? <Volume2 className="h-8 w-8 dark:text-white" /> : <VolumeX className="h-8 w-8 text-white" />}
-                        </Button>
-                        <span className="text-xs dark:text-white/80">{isSpeakerOn ? 'Speaker On' : 'Speaker Off'}</span>
-                    </div>
-
-                    {/* Switch to video */}
-                    <div className="flex flex-col items-center">
-                        <Button
-                            size="lg"
-                            variant="ghost"
-                            className="rounded-full w-16 h-16 dark:bg-[#2C2C2E] transition-all duration-200 border"
-                            onClick={handleSwitchToVideo}
-                        >
-                            <Video className="h-8 w-8 dark:text-white" />
-                        </Button>
-                        <span className="text-xs dark:text-white/80">Switch to Video</span>
-                    </div>
+                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                    <User className="w-5 h-5 text-white/80" />
                 </div>
             </div>
+
+            {/* Emoji & Encryption */}
+            <div className="mt-4 flex flex-col items-center">
+                <div className="text-3xl">🏦💵🚜🙀</div>
+                <div className="mt-2 bg-white/20 rounded-xl px-4 py-1 text-white text-sm flex items-center gap-1">
+                    <Lock className="w-4 h-4" /> Encryption key of this call
+                </div>
+            </div>
+
+            {/* Avatar with Pulse */}
+            <div className="flex flex-col items-center mt-12">
+                <div className="relative w-40 h-40">
+                    <div className="pulse-ring"></div>
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-br from-purple-400 to-pink-300 border-4 border-white/30 flex items-center justify-center z-10">
+                        <span className="text-6xl text-white font-bold">
+                            {contactName?.[0]?.toUpperCase() || 'U'}
+                        </span>
+                    </div>
+                </div>
+
+                <div className="mt-6 text-center">
+                    <div className="text-white text-2xl font-semibold">{contactName}</div>
+                    {isRinging ? (
+                        <div className="text-white/90 text-lg mt-1 font-normal tracking-wide">Requesting ...</div>
+                    ) : (
+                        <div className="flex items-center justify-center gap-2 mt-1">
+                            <span className="text-white/80 text-sm">📶</span>
+                            <span className="text-white/80 text-lg font-mono">{formatDuration(callDuration ?? internalCallDuration)}</span>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Controls */}
+            <div className="flex items-center justify-center gap-6 mb-12 mt-auto">
+                {/* Speaker */}
+                <div className="flex flex-col items-center">
+                    <button
+                        className={`w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-1 backdrop-blur ${isRinging ? 'opacity-60' : ''}`}
+                        onClick={() => setIsSpeakerOn(!isSpeakerOn)}
+                        disabled={isRinging}
+                    >
+                        {isSpeakerOn ? <Volume2 className="w-8 h-8 text-white" /> : <VolumeX className="w-8 h-8 text-white/60" />}
+                    </button>
+                    <span className="text-xs text-white/80">speaker</span>
+                </div>
+
+                {/* Video */}
+                <div className="flex flex-col items-center">
+                    <button
+                        className={`w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-1 backdrop-blur ${isRinging ? 'opacity-60' : ''}`}
+                        onClick={handleSwitchToVideo}
+                        disabled={isRinging}
+                    >
+                        <Video className="w-8 h-8 text-white" />
+                    </button>
+                    <span className="text-xs text-white/80">video</span>
+                </div>
+
+                {/* Mute */}
+                <div className="flex flex-col items-center">
+                    <button
+                        className={`w-16 h-16 rounded-full flex items-center justify-center mb-1 backdrop-blur ${micOn ? 'bg-white/20' : 'bg-red-500/80'} ${isRinging ? 'opacity-60' : ''}`}
+                        onClick={handleToggleMic}
+                        disabled={isRinging}
+                    >
+                        {micOn ? <Mic className="w-8 h-8 text-white" /> : <MicOff className="w-8 h-8 text-white" />}
+                    </button>
+                    <span className="text-xs text-white/80">mute</span>
+                </div>
+
+                {/* End */}
+                <div className="flex flex-col items-center">
+                    <button
+                        className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center mb-1"
+                        onClick={handleEnd}
+                    >
+                        <PhoneOff className="w-8 h-8 text-white" />
+                    </button>
+                    <span className="text-xs text-white/80">end</span>
+                </div>
+            </div>
+
+            <audio ref={audioRef} autoPlay />
         </div>
     );
 }
+
+

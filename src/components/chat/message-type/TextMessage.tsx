@@ -24,6 +24,8 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
   const theme = useTheme();
   const router = useRouter();
 
+  const router = useRouter();
+
   const textClass = clsx(
     "rounded-2xl px-4 py-1.5",
     isSender

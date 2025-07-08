@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Volume2, VolumeX } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Volume2, VolumeX, ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useCallStore from '@/stores/useCallStore';
 
@@ -39,6 +39,9 @@ export function VideoCall({
 
     const [lastLocalTrackId, setLastLocalTrackId] = useState<string | undefined>();
 
+    // Thêm trạng thái preview
+    const [showPreview, setShowPreview] = useState(false);
+
     useEffect(() => {
         if (localVideoRef.current && localStream) {
             const videoTrack = localStream.getVideoTracks()[0];
@@ -48,7 +51,6 @@ export function VideoCall({
             }
         }
     }, [localStream]);
-
 
     // Attach remote video
     // Dưới useEffect gán remoteStream
@@ -66,9 +68,6 @@ export function VideoCall({
             });
         }
     }, [remoteStream]);
-
-
-
 
     // Toggle speaker
     useEffect(() => {
@@ -88,6 +87,15 @@ export function VideoCall({
         };
     }, [state]);
 
+    // Khi bắt đầu gọi video, show preview trước
+    useEffect(() => {
+        if (state === 'calling' && cameraOn) {
+            setShowPreview(true);
+        } else {
+            setShowPreview(false);
+        }
+    }, [state, cameraOn]);
+
     const formatDuration = (seconds: number) => {
         const m = Math.floor(seconds / 60).toString().padStart(2, '0');
         const s = (seconds % 60).toString().padStart(2, '0');
@@ -99,99 +107,113 @@ export function VideoCall({
         onEndCall();
     };
 
+    // Khi showPreview, có thể return null hoặc logic khác nếu cần
+    if (showPreview) {
+        return null;
+    }
+
     return (
-        <div className="relative w-full h-screen dark:bg-[#7c7c80] dark:text-white overflow-hidden">
-            {/* Remote video */}
-            {state === 'connected' ? (
-                <video
-                    ref={remoteVideoRef}
-                    autoPlay
-                    playsInline
-                    className="absolute inset-0 w-full h-full object-cover opacity-80"
-                />
-            ) : (
-                <div className="absolute inset-0 dark:bg-black flex items-center justify-center dark:text-white text-xl font-medium">
-                    Đang chờ đối phương chấp nhận...
+        <div className="relative w-full h-screen overflow-hidden bg-black">
+            {/* Remote video background */}
+            <video
+                ref={remoteVideoRef}
+                autoPlay
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover"
+                style={{ zIndex: 1, background: '#000' }}
+            />
+
+            {/* Local PiP */}
+            {cameraOn && (
+                <div className="absolute bottom-32 right-4 w-28 h-44 rounded-2xl overflow-hidden border border-white/20 shadow-lg z-20 bg-black/40">
+                    <video
+                        ref={localVideoRef}
+                        autoPlay
+                        playsInline
+                        muted
+                        className="w-full h-full object-cover"
+                    />
                 </div>
             )}
 
-            {/* Local PiP */}
-            <div className="absolute top-4 right-4 w-32 aspect-[3/4] rounded-2xl overflow-hidden border border-white/20 shadow-lg">
-                <video
-                    ref={localVideoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    className="w-full h-full object-cover"
-                />
-                {!cameraOn && (
-                    <div className="absolute inset-0 dark:bg-[#7c7c80] flex items-center justify-center">
-                        <VideoOff className="w-8 h-8 dark:text-gray-400" />
-                    </div>
-                )}
-            </div>
+            {/* Thông báo khi tắt camera */}
+            {!cameraOn && (
+                <div className="absolute bottom-36 right-6 z-30 bg-black/70 rounded-full px-4 py-2 flex items-center gap-2 shadow-lg">
+                    <VideoOff className="w-5 h-5 text-white/80" />
+                    <span className="text-white text-sm font-medium">Your camera is off</span>
+                </div>
+            )}
 
-            {/* Call Info */}
-            <div className="absolute top-6 left-6 text-left">
-                <h2 className="text-2xl font-semibold">{contactName}</h2>
-                <div className="flex items-center gap-2 mt-1">
-                    <div className="w-2 h-2 rounded-full bg-[#0088CC]" />
-                    <span className="text-sm dark:text-gray-300">
-                        {{
-                            ringing: 'Đang kết nối...',
-                            connecting: 'Đang kết nối...',
-                            incoming: 'Cuộc gọi đến...',
-                            connected: formatDuration(callDuration ?? internalDuration),
-                            ended: 'Cuộc gọi đã kết thúc',
-                            error: 'Lỗi cuộc gọi',
-                            idle: '',
-                        }[state]}
-                    </span>
+            {/* Header */}
+            <div className="absolute top-0 left-0 w-full flex flex-col items-center pt-6 z-30">
+                <div className="flex items-center justify-between w-full px-4">
+                    <button className="flex items-center gap-1 text-white/90 text-lg" onClick={handleEnd}>
+                        <ChevronLeft className="w-5 h-5" />
+                        Back
+                    </button>
+                    <div className="bg-blue-500 text-white rounded-full px-3 py-0.5 text-xs font-bold">TELEGRAM</div>
+                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                        <Video className="w-5 h-5 text-white/80" />
+                    </div>
+                </div>
+                <div className="mt-2 text-2xl">🧱🐷🐱🚂</div>
+                <div className="mt-2 text-center">
+                    <div className="text-white text-2xl font-semibold drop-shadow">{contactName}</div>
+                    <div className="flex items-center justify-center gap-2 mt-1">
+                        <span className="text-white/80 text-base">📶</span>
+                        <span className="text-white/80 text-lg font-mono">{formatDuration(callDuration ?? internalDuration)}</span>
+                    </div>
                 </div>
             </div>
 
             {/* Controls */}
-            <div className="absolute bottom-24 inset-x-0 pb-6 pt-20 bg-gradient-to-t dark:from-[#1C1C1E] dark:via-[#1C1C1E]/80 dark:to-transparent">
-                <div className="flex justify-center gap-8">
-                    <ControlButton
-                        onClick={() => toggleMic(!micOn)}
-                        active={micOn}
-                        icon={micOn ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
-                        label={micOn ? 'Mute' : 'Unmute'}
-                    />
-                    <ControlButton
-                        onClick={async () => {
+            <div className="absolute bottom-8 left-0 w-full flex items-center justify-center gap-6 z-30">
+                {/* Flip camera */}
+                <div className="flex flex-col items-center">
+                    <button
+                        className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-1 backdrop-blur"
+                        onClick={() => {/* TODO: implement flip camera */ }}
+                    >
+                        <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l2 2 2-2m-2 2V7m-6 0l-2-2-2 2m2-2v12" /></svg>
+                    </button>
+                    <span className="text-xs text-white/80">flip</span>
+                </div>
+                {/* Video */}
+                <div className="flex flex-col items-center">
+                    <button
+                        className={`w-16 h-16 rounded-full flex items-center justify-center mb-1 backdrop-blur ${cameraOn ? 'bg-white/20' : 'bg-red-500/80'}`}
+                        onClick={() => {
                             if (!cameraOn) {
-                                // Lần đầu bật video: renegotiate
-                                await upgradeToVideo();
+                                upgradeToVideo();
                             } else {
-                                // Tắt video chỉ disable track
-                                await toggleCamera(false);
+                                toggleCamera(false);
                             }
                             setCameraOn(!cameraOn);
                         }}
-
-                        active={cameraOn}
-                        icon={cameraOn ? <Video className="w-6 h-6" /> : <VideoOff className="w-6 h-6" />}
-                        label={cameraOn ? 'Stop Video' : 'Start Video'}
-                    />
-                    <ControlButton
-                        onClick={() => setSpeakerOn((v) => !v)}
-                        active={speakerOn}
-                        icon={speakerOn ? <Volume2 className="w-6 h-6" /> : <VolumeX className="w-6 h-6" />}
-                        label={speakerOn ? 'Speaker' : 'Muted'}
-                    />
-                    <div className="flex flex-col items-center">
-                        <button
-                            onClick={handleEnd}
-                            className="w-14 h-14 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition-colors mb-2"
-                            title="End Call"
-                            aria-label="End Call"
-                        >
-                            <PhoneOff className="w-6 h-6" />
-                        </button>
-                        <span className="text-xs dark:text-white/80">End</span>
-                    </div>
+                    >
+                        {cameraOn ? <Video className="w-8 h-8 text-white" /> : <VideoOff className="w-8 h-8 text-white" />}
+                    </button>
+                    <span className="text-xs text-white/80">video</span>
+                </div>
+                {/* Mute */}
+                <div className="flex flex-col items-center">
+                    <button
+                        className={`w-16 h-16 rounded-full flex items-center justify-center mb-1 backdrop-blur ${micOn ? 'bg-white/20' : 'bg-red-500/80'}`}
+                        onClick={() => toggleMic(!micOn)}
+                    >
+                        {micOn ? <Mic className="w-8 h-8 text-white" /> : <MicOff className="w-8 h-8 text-white" />}
+                    </button>
+                    <span className="text-xs text-white/80">mute</span>
+                </div>
+                {/* End */}
+                <div className="flex flex-col items-center">
+                    <button
+                        className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center mb-1"
+                        onClick={handleEnd}
+                    >
+                        <PhoneOff className="w-8 h-8 text-white" />
+                    </button>
+                    <span className="text-xs text-white/80">end</span>
                 </div>
             </div>
         </div>

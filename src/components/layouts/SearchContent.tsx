@@ -123,8 +123,8 @@ const SearchContent = ({
                       "?"}
                   </div>
                   {isFriend && (
-                    <div className="absolute -bottom-1 -right-1 bg-black rounded-full p-[2px]">
-                      <UserCheck className="w-3 h-3 text-green-400" />
+                    <div className="absolute -bottom-1 -right-1 bg-white dark:bg-black rounded-full p-[2px] border">
+                      <UserCheck className="w-3 h-3 text-blue-400" />
                     </div>
                   )}
                 </div>

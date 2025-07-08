@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import * as sdk from "matrix-js-sdk";
-import { Trash2, Check } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Check } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import SearchBar from "@/components/layouts/SearchBar";
 import NewContactModal from "@/components/contact/NewContactModal";
@@ -27,6 +27,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import ContactService from "@/services/contactService";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
+import { getLS } from "@/tools/localStorage.tool";
+import { ROUTES } from "@/constants/routes";
 
 interface Contact {
   firstName: string;
@@ -49,7 +51,7 @@ const ContactPage = () => {
       setContacts(rooms);
       setTimeout(() => {
         setLoading(false);
-      }, 1000);
+      }, 500);
     };
     loadContacts();
   }, [client]);
@@ -57,12 +59,21 @@ const ContactPage = () => {
   const handleAddContact = (contact: Contact) => {};
 
   const handleSettingClick = () => {
-    router.push("/setting");
+    router.push(ROUTES.SETTING);
   };
+
+  const statusBarHeight = getLS("statusBarHeight");
+
+  const headerStyle = {
+    paddingTop: statusBarHeight ? Number(statusBarHeight) : 0,
+  };
+
+  const hide = getLS("hide") || [];
+  const options = Array.isArray(hide) ? hide : [];
 
   return (
     <>
-      <div className="">
+      <div style={headerStyle}>
         <div className="flex items-center justify-between px-4 py-2">
           <Popover>
             <PopoverTrigger asChild>
@@ -98,15 +109,12 @@ const ContactPage = () => {
             <NewContactModal onAddContact={handleAddContact} />
           </div>
         </div>
-        <SearchBar />
+        {!options.includes("search") && <SearchBar />}
       </div>
       <div className="px-4 py-2">
         {loading ? (
           <div className="flex flex-1 flex-col justify-center items-center px-6 text-center">
-            <div
-              className="size-30 mt-10 mb-8 animate-pulse bg-gray-200 rounded-full"
-              style={{ width: 120, height: 120 }}
-            />
+            <div className="size-30 mt-10 mb-8 animate-pulse bg-gray-200 rounded-full" />
             <h2 className="text-xl font-semibold my-4">Loading contacts...</h2>
           </div>
         ) : contacts.length === 0 ? (

@@ -131,7 +131,7 @@ export const ChatList = ({
                             <ChatListItem
                               room={room}
                               isMuted={mutedRooms.includes(room.roomId)}
-                            />
+                            />{" "}
                             {/* THÊM Ở ĐÂY */}
                           </div>
                         </Link>

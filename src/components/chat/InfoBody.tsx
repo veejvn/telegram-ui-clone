@@ -37,7 +37,6 @@ const mediaItems = [
 ];
 
 export default function InfoBody({ user }: { user: sdk.User }) {
-
   return (
     <>
       <div className="text-center px-4">
@@ -52,7 +51,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
           <div
             className="flex flex-col justify-end gap-0.5 items-center 
              w-[75px] h-[50px] cursor-pointer      
-          bg-white rounded-lg py-1 group"
+          bg-white dark:bg-black rounded-lg py-1 group"
           >
             <Phone className="text-[#155dfc]" />
             <p className="text-xs text-[#155dfc]">call</p>
@@ -62,7 +61,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
           <div
             className="flex flex-col justify-end items-center
              w-[75px] h-[50px] cursor-pointer     
-          bg-white rounded-lg py-1 group"
+          bg-white dark:bg-black rounded-lg py-1 group"
           >
             <Video className="text-[#155dfc]" />
             <p className="text-xs text-[#155dfc]">video</p>
@@ -72,7 +71,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
           <div
             className="flex flex-col justify-end items-center 
              w-[75px] h-[50px] group cursor-pointer  
-          bg-white rounded-lg  py-1"
+          bg-white dark:bg-black rounded-lg  py-1"
           >
             <Bell className="text-[#155dfc]" />
             <p className="text-xs text-[#155dfc]">mute</p>
@@ -82,7 +81,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
           <div
             className="flex flex-col justify-end items-center
             group cursor-pointer
-          bg-white rounded-lg  w-[75px] h-[50px] py-1"
+          bg-white dark:bg-black rounded-lg w-[75px] h-[50px] py-1"
           >
             <Search className="text-[#155dfc]" />
             <p className="text-xs text-[#155dfc]">search</p>
@@ -94,7 +93,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
               <div
                 className="flex flex-col justify-end items-center 
                 group cursor-pointer
-              bg-white rounded-lg  w-[75px] h-[50px] py-1"
+              bg-white dark:bg-black rounded-lg w-[75px] h-[50px] py-1"
               >
                 <Ellipsis className="text-[#155dfc]" />
                 <p className="text-xs text-[#155dfc]">more</p>
@@ -112,11 +111,11 @@ export default function InfoBody({ user }: { user: sdk.User }) {
         </div>
 
         {/* more info */}
-        <div className="bg-white ps-5 text-start py-4 flex flex-col mt-7 rounded-lg gap-3">
+        <div className="bg-white dark:bg-black ps-5 text-start py-4 flex flex-col mt-7 rounded-lg gap-3">
           {/* phone */}
           <div>
             <p className="text-sm">mobile</p>
-            <p className="text-[#155dfc]">+84 11 222 33 44</p>
+            <p className="text-[#155dfc] dark:bg-black">+84 11 222 33 44</p>
           </div>
         </div>
 
@@ -137,10 +136,10 @@ export default function InfoBody({ user }: { user: sdk.User }) {
               </TabsTrigger>
             </TabsList>
             <TabsContent value="media">
-              <div className="grid grid-cols-3 gap-0.5 bg-white p-1 rounded-lg">
+              <div className="grid grid-cols-3 gap-0.5 bg-white dark:bg-black p-1 rounded-lg">
                 <div className="">
                   <Image
-                    src="/images/folder.png"
+                    src="/chat/images/folder.png"
                     alt="image"
                     width={500}
                     height={500}
@@ -148,7 +147,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                 </div>
                 <div>
                   <Image
-                    src="/images/contact.png"
+                    src="/chat/images/contact.png"
                     alt="image"
                     width={500}
                     height={500}
@@ -156,7 +155,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                 </div>
                 <div>
                   <Image
-                    src="/images/logo.png"
+                    src="/chat/images/logo.png"
                     alt="image"
                     width={500}
                     height={500}
@@ -164,7 +163,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                 </div>
                 <div>
                   <Image
-                    src="/images/logo.png"
+                    src="/chat/images/logo.png"
                     alt="image"
                     width={500}
                     height={500}
@@ -172,7 +171,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                 </div>
                 <div>
                   <Image
-                    src="/images/contact.png"
+                    src="/chat/images/contact.png"
                     alt="image"
                     width={500}
                     height={500}
@@ -180,7 +179,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                 </div>
                 <div>
                   <Image
-                    src="/images/folder.png"
+                    src="/chat/images/folder.png"
                     alt="image"
                     width={500}
                     height={500}
@@ -189,7 +188,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
               </div>
             </TabsContent>
             <TabsContent value="link">
-              <Card className="w-full max-w-md mx-auto bg-white shadow-sm pt-3 pb-0">
+              <Card className="w-full max-w-md mx-auto bg-white dark:bg-black shadow-sm pt-3 pb-0">
                 <CardContent className="px-2">
                   {/* Media Items */}
                   <div className="space-y-4">
