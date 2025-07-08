@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import * as sdk from "matrix-js-sdk";
 import {
@@ -11,6 +13,9 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TabsContent } from "@radix-ui/react-tabs";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
+import { useRouter } from "next/navigation";
+import { callService } from "@/services/callService";
+import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 
 const mediaItems = [
   {
@@ -37,64 +42,83 @@ const mediaItems = [
 ];
 
 export default function InfoBody({ user }: { user: sdk.User }) {
+  const client = useMatrixClient();
+  const router = useRouter();
+
+  const ensureRoomExists = async (): Promise<string | null> => {
+    const existingRoom = client
+      ?.getRooms()
+      .find(
+        (room: sdk.Room) =>
+          room.getJoinedMemberCount() === 2 &&
+          room.getJoinedMembers().some((m) => m.userId === user.userId)
+      );
+    if (existingRoom) return existingRoom.roomId;
+
+    try {
+      const res = await client?.createRoom({
+        invite: [user.userId],
+        is_direct: true,
+      });
+      return res?.room_id || null;
+    } catch (err) {
+      console.error("Failed to create room:", err);
+      return null;
+    }
+  };
+
+  const handleStartCall = async (type: "voice" | "video") => {
+    const roomId = await ensureRoomExists();
+    if (!roomId) return;
+
+    // ✅ Gọi mới
+    await callService.placeCall(roomId, type);
+
+    // ✅ Điều hướng đến trang call
+    router.push(
+      `/call/${type}?calleeId=${encodeURIComponent(
+        roomId
+      )}&contact=${encodeURIComponent(user.userId)}`
+    );
+  };
+
   return (
     <>
       <div className="text-center px-4">
         <p className="text-xl font-semibold">{user.displayName}</p>
 
-        {/* add user's presence */}
         <p className="text-sm text-muted-foreground">last seen 27/02/25</p>
 
-        {/* features */}
         <div className="flex justify-center gap-2 my-4">
-          {/* call */}
           <div
-            className="flex flex-col justify-end gap-0.5 items-center 
-             w-[75px] h-[50px] cursor-pointer      
-          bg-white dark:bg-black rounded-lg py-1 group"
+            className="flex flex-col justify-end gap-0.5 items-center w-[75px] h-[50px] cursor-pointer bg-white dark:bg-black rounded-lg py-1 group"
+            onClick={() => handleStartCall("voice")}
           >
             <Phone className="text-[#155dfc]" />
             <p className="text-xs text-[#155dfc]">call</p>
           </div>
 
-          {/* video */}
           <div
-            className="flex flex-col justify-end items-center
-             w-[75px] h-[50px] cursor-pointer     
-          bg-white dark:bg-black rounded-lg py-1 group"
+            className="flex flex-col justify-end items-center w-[75px] h-[50px] cursor-pointer bg-white dark:bg-black rounded-lg py-1 group"
+            onClick={() => handleStartCall("video")}
           >
             <Video className="text-[#155dfc]" />
             <p className="text-xs text-[#155dfc]">video</p>
           </div>
 
-          {/* mute */}
-          <div
-            className="flex flex-col justify-end items-center 
-             w-[75px] h-[50px] group cursor-pointer  
-          bg-white dark:bg-black rounded-lg  py-1"
-          >
+          <div className="flex flex-col justify-end items-center w-[75px] h-[50px] group cursor-pointer bg-white dark:bg-black rounded-lg py-1">
             <Bell className="text-[#155dfc]" />
             <p className="text-xs text-[#155dfc]">mute</p>
           </div>
 
-          {/* search */}
-          <div
-            className="flex flex-col justify-end items-center
-            group cursor-pointer
-          bg-white dark:bg-black rounded-lg w-[75px] h-[50px] py-1"
-          >
+          <div className="flex flex-col justify-end items-center group cursor-pointer bg-white dark:bg-black rounded-lg w-[75px] h-[50px] py-1">
             <Search className="text-[#155dfc]" />
             <p className="text-xs text-[#155dfc]">search</p>
           </div>
 
-          {/* more */}
           <Popover>
             <PopoverTrigger>
-              <div
-                className="flex flex-col justify-end items-center 
-                group cursor-pointer
-              bg-white dark:bg-black rounded-lg w-[75px] h-[50px] py-1"
-              >
+              <div className="flex flex-col justify-end items-center group cursor-pointer bg-white dark:bg-black rounded-lg w-[75px] h-[50px] py-1">
                 <Ellipsis className="text-[#155dfc]" />
                 <p className="text-xs text-[#155dfc]">more</p>
               </div>
@@ -110,9 +134,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
           </Popover>
         </div>
 
-        {/* more info */}
         <div className="bg-white dark:bg-black ps-5 text-start py-4 flex flex-col mt-7 rounded-lg gap-3">
-          {/* phone */}
           <div>
             <p className="text-sm">mobile</p>
             <p className="text-[#155dfc] dark:bg-black">+84 11 222 33 44</p>
@@ -137,13 +159,13 @@ export default function InfoBody({ user }: { user: sdk.User }) {
             </TabsList>
             <TabsContent value="media">
               <div className="grid grid-cols-3 gap-0.5 bg-white dark:bg-black p-1 rounded-lg">
-                <div className="">
+                <div>
                   <Image
                     src="/chat/images/folder.png"
                     alt="image"
                     width={500}
                     height={500}
-                  ></Image>
+                  />
                 </div>
                 <div>
                   <Image
@@ -151,7 +173,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                     alt="image"
                     width={500}
                     height={500}
-                  ></Image>
+                  />
                 </div>
                 <div>
                   <Image
@@ -159,7 +181,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                     alt="image"
                     width={500}
                     height={500}
-                  ></Image>
+                  />
                 </div>
                 <div>
                   <Image
@@ -167,7 +189,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                     alt="image"
                     width={500}
                     height={500}
-                  ></Image>
+                  />
                 </div>
                 <div>
                   <Image
@@ -175,7 +197,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                     alt="image"
                     width={500}
                     height={500}
-                  ></Image>
+                  />
                 </div>
                 <div>
                   <Image
@@ -183,21 +205,19 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                     alt="image"
                     width={500}
                     height={500}
-                  ></Image>
+                  />
                 </div>
               </div>
             </TabsContent>
             <TabsContent value="link">
               <Card className="w-full max-w-md mx-auto bg-white dark:bg-black shadow-sm pt-3 pb-0">
                 <CardContent className="px-2">
-                  {/* Media Items */}
                   <div className="space-y-4">
                     {mediaItems.map((item) => (
                       <div
                         key={item.id}
                         className="flex items-center space-x-4"
                       >
-                        {/* Icon */}
                         <div
                           className={`w-10 h-10 ${item.bgColor} rounded-lg flex items-center justify-center`}
                         >
@@ -205,8 +225,6 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                             {item.icon}
                           </span>
                         </div>
-
-                        {/* Content */}
                         <div className="flex flex-col">
                           <span className="text-gray-900 font-medium text-sm">
                             {item.name}
