@@ -10,11 +10,15 @@ const useRegisterPushKey = (accessToken: string | null) => {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const pushToken = getLS("pushToken");
-
+    let pushToken = localStorage.getItem("pushToken");
+    if (pushToken && pushToken.startsWith('"') && pushToken.endsWith('"')) {
+      pushToken = JSON.parse(pushToken);
+    }
     if (pushToken && accessToken){
-      const lastRegistered = getLS("lastPushToken");
-      if (lastRegistered === pushToken) return;
+      //console.log(pushToken)
+      //console.log(accessToken)
+      //const lastRegistered = localStorage.getItem("lastPushToken");
+      //if (lastRegistered === pushToken) return;
   
       const payload = {
         app_display_name: "Ting Tong",
@@ -23,7 +27,10 @@ const useRegisterPushKey = (accessToken: string | null) => {
         kind: "http",
         lang: "en_US",
         pushkey: pushToken,
+        profile_tag: "default",
       };
+
+      console.log(payload)
   
       fetch(PUSH_TOKEN_DOMAIN, {
         method: "POST",
@@ -33,13 +40,16 @@ const useRegisterPushKey = (accessToken: string | null) => {
         },
         body: JSON.stringify(payload),
       })
-      .then((res) => {
-        if (!res.ok) throw new Error("Pushkey registration failed");
+      .then(async (res) => {
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`Pushkey registration failed: ${errorText}`);
+        }
         return res.json();
       })
       .then((data) => {
-        setLS("lastPushToken", pushToken);
-        //console.log("Pushkey registered:", data);
+        //localStorage.setItem("lastPushToken", pushToken);
+        console.log("Pushkey registered:", data);
       })
       .catch((err) => {
         console.error("Pushkey error:", err);
