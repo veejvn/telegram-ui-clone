@@ -1,5 +1,6 @@
 "use client";
 
+import NoZoom from "@/components/common/NoZoom";
 import { ThemeProvider } from "@/contexts/ThemeProvider";
 import { Toaster } from "@/contexts/toaster";
 import { ToastProvider } from "@/contexts/ToastProvider";
@@ -48,6 +49,7 @@ export default function Providers({
         <Suspense fallback={null}>
           <BackUrlSetter />
         </Suspense>
+        <NoZoom/>
         <ToastProvider>{children}</ToastProvider>
         <Toaster />
       </ThemeProvider>
