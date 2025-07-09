@@ -1,6 +1,5 @@
 "use client";
 
-import NoZoom from "@/components/common/NoZoom";
 import { ThemeProvider } from "@/contexts/ThemeProvider";
 import { Toaster } from "@/contexts/toaster";
 import { ToastProvider } from "@/contexts/ToastProvider";
