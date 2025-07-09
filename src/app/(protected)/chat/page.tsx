@@ -24,10 +24,12 @@ import useListenRoomInvites from "@/hooks/useListenRoomInvites";
 import { getLS, removeLS } from "@/tools/localStorage.tool";
 import { useSearchParams } from "next/navigation";
 import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
+import { useRoomStore } from "@/stores/useRoomStore";
 
 export default function ChatsPage() {
   // const [rooms, setRooms] = useState<sdk.Room[]>([]);
-  const { rooms, refreshRooms, loading } = useSortedRooms();
+  const { refreshRooms, loading } = useSortedRooms();
+  const rooms = useRoomStore((state) => state.rooms);
   const client = useMatrixClient();
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
