@@ -84,6 +84,11 @@ const SearchContent = ({
           </div>
         ) : (
           searchResults.map((user, idx) => {
+            const avatarUrl =
+              client && user.avatar_url
+                ? client.mxcUrlToHttp(user.avatar_url, 60, 60, "crop")
+                : undefined;
+
             const isFriend = client
               ?.getRooms()
               .some((room) =>
@@ -116,12 +121,21 @@ const SearchContent = ({
               >
                 {/* Avatar + friend icon */}
                 <div className="relative w-10 h-10">
-                  <div className="w-10 h-10 rounded-full bg-purple-400 flex items-center justify-center font-bold text-white text-lg">
-                    {(user.display_name &&
-                      user.display_name.charAt(0).toUpperCase()) ||
-                      (user.user_id && user.user_id.charAt(1).toUpperCase()) ||
-                      "?"}
-                  </div>
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt="avatar"
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-purple-400 flex items-center justify-center font-bold text-white text-lg">
+                      {(user.display_name &&
+                        user.display_name.charAt(0).toUpperCase()) ||
+                        (user.user_id &&
+                          user.user_id.charAt(1).toUpperCase()) ||
+                        "?"}
+                    </div>
+                  )}
                   {isFriend && (
                     <div className="absolute -bottom-1 -right-1 bg-white dark:bg-black rounded-full p-[2px] border">
                       <UserCheck className="w-3 h-3 text-blue-400" />
