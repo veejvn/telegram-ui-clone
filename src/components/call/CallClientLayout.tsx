@@ -1,17 +1,15 @@
 "use client";
 
 import { getLS } from "@/tools/localStorage.tool";
+import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
 
 const CallClientLayout = ({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) => {
-  const statusBarHeight = getLS("statusBarHeight");
 
-  const headerStyle = {
-    paddingTop: statusBarHeight ? Number(statusBarHeight) : 0,
-  };
+  const headerStyle = getHeaderStyleWithStatusBar();
 
   return <div style={headerStyle}>{children}</div>;
 };

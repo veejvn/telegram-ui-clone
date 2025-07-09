@@ -23,6 +23,7 @@ import useSortedRooms from "@/hooks/useSortedRooms";
 import useListenRoomInvites from "@/hooks/useListenRoomInvites";
 import { getLS, removeLS } from "@/tools/localStorage.tool";
 import { useSearchParams } from "next/navigation";
+import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
 
 export default function ChatsPage() {
   // const [rooms, setRooms] = useState<sdk.Room[]>([]);
@@ -122,11 +123,7 @@ export default function ChatsPage() {
     setSelectedRooms([]);
   };
 
-  const statusBarHeight = getLS("statusBarHeight");
-
-  const headerStyle = {
-    paddingTop: statusBarHeight ? Number(statusBarHeight) : 0,
-  };
+  const headerStyle = getHeaderStyleWithStatusBar();
 
   // const [showBackButton, setShowBackButton] = useState(false);
 

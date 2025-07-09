@@ -124,18 +124,21 @@ class CallService extends EventEmitter {
             }
         });
 
+        // ✅ FIX: Thêm xử lý sự kiện từ chối cuộc gọi
+        c.on('reject', (event: any) => {
+            console.log('[CallService] Call rejected by remote party');
+            this.emit('call-ended', 'rejected');
+            this.cleanup();
+        });
+
         c.on('hangup', (event: any) => {
             const reason = event?.reason || 'user_hangup';
+            console.log('[CallService] Call hangup:', reason);
 
             // ✅ Cleanup local stream tracks
             if (this.localStream) {
-                // console.log('[CallService] Stopping local stream tracks:', {
-                //     audioTracks: this.localStream.getAudioTracks().length,
-                //     videoTracks: this.localStream.getVideoTracks().length
-                // });
                 this.localStream.getTracks().forEach(track => {
                     track.stop();
-                    // console.log('[CallService] Stopped track:', track.kind, track.id);
                 });
             }
 
@@ -146,7 +149,6 @@ class CallService extends EventEmitter {
                 senders.forEach((sender: RTCRtpSender) => {
                     if (sender.track) {
                         sender.track.stop();
-                        // console.log('[CallService] Stopped peer connection track:', sender.track.kind, sender.track.id);
                     }
                 });
             }
@@ -154,30 +156,34 @@ class CallService extends EventEmitter {
             // ✅ Delay cleanup để tránh race condition với events đến sau
             setTimeout(() => {
                 this.emit('call-ended', reason);
-                this.currentCall = undefined;
-                this.currentRoomId = undefined;
-                this.localStream = undefined;
-                // console.log('[CallService] Call cleanup completed after delay');
-            }, 1000); // Delay 1 giây
+                this.cleanup();
+            }, 1000);
         });
 
         c.on('error', (err: Error) => {
-            // console.error('[CallService] Call error:', err);
+            console.error('[CallService] Call error:', err);
 
             // ✅ Handle specific WebRTC errors
             if (err.message.includes('setRemoteDescription') || err.message.includes('stable')) {
-                // console.warn('[CallService] WebRTC state conflict detected, ignoring error');
-                return; // Don't cleanup on WebRTC state conflicts
+                console.warn('[CallService] WebRTC state conflict detected, ignoring error');
+                return;
             }
 
             this.emit('call-error', err);
 
             // ✅ Delay cleanup cho error cases
             setTimeout(() => {
-                this.currentCall = undefined;
-                // console.log('[CallService] Call cleanup completed after error');
+                this.cleanup();
             }, 500);
         });
+    }
+
+    // ✅ FIX: Thêm method cleanup riêng
+    private cleanup() {
+        this.currentCall = undefined;
+        this.currentRoomId = undefined;
+        this.localStream = undefined;
+        console.log('[CallService] Call cleanup completed');
     }
 
     public async placeCall(roomId: string, type: CallType) {
@@ -186,10 +192,10 @@ class CallService extends EventEmitter {
         const client = this.getClient();
         const call = client.createCall(roomId);
         if (!call) return;
+        this.registerCallEvents(call);
 
         this.currentCall = call;
         this.currentRoomId = roomId;
-        this.registerCallEvents(call);
 
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: type === 'video' });
         this.localStream = stream;
@@ -217,7 +223,6 @@ class CallService extends EventEmitter {
         const callAny = this.currentCall as any;
 
         try {
-            // ✅ Lấy local stream TRƯỚC khi answer
             const isVideo = this.currentCall.type === 'video' || callAny.hasLocalUserMediaVideoTrack;
             const stream = await navigator.mediaDevices.getUserMedia({
                 audio: true,
@@ -227,36 +232,51 @@ class CallService extends EventEmitter {
             this.localStream = stream;
             this.emit('local-stream', stream);
 
-            // ✅ Answer với constraints (Matrix SDK sẽ tự động lấy stream)
             (this.currentCall as any).answer({ audio: true, video: isVideo });
 
-            // console.log('[CallService] Answered call with local stream:', {
-            //     audioTracks: stream.getAudioTracks().length,
-            //     videoTracks: stream.getVideoTracks().length,
-            //     isVideo
-            // });
+            console.log('[CallService] Answered call with local stream:', {
+                audioTracks: stream.getAudioTracks().length,
+                videoTracks: stream.getVideoTracks().length,
+                isVideo
+            });
 
         } catch (err) {
-            // console.error('[CallService] Failed to get user media for answer:', err);
-            // Fallback: answer without stream (audio only)
+            console.error('[CallService] Failed to get user media for answer:', err);
             this.currentCall.answer();
+        }
+    }
+
+    // ✅ FIX: Thêm method để từ chối cuộc gọi
+    public rejectCall() {
+        if (!this.currentCall) return;
+
+        console.log('[CallService] Rejecting call');
+
+        try {
+            // Matrix SDK method để từ chối cuộc gọi
+            (this.currentCall as any).reject();
+
+            // Emit event để UI biết cuộc gọi đã bị từ chối
+            this.emit('call-ended', 'rejected');
+
+            // Cleanup
+            this.cleanup();
+        } catch (err) {
+            console.error('[CallService] Failed to reject call:', err);
+            // Fallback: force cleanup
+            this.cleanup();
         }
     }
 
     public hangup() {
         if (!this.currentCall) return;
 
-        // console.log('[CallService] Manual hangup called');
+        console.log('[CallService] Manual hangup called');
 
         // ✅ Cleanup local stream tracks
         if (this.localStream) {
-            // console.log('[CallService] Stopping local stream tracks on manual hangup:', {
-            //     audioTracks: this.localStream.getAudioTracks().length,
-            //     videoTracks: this.localStream.getVideoTracks().length
-            // });
             this.localStream.getTracks().forEach(track => {
                 track.stop();
-                // console.log('[CallService] Stopped track on manual hangup:', track.kind, track.id);
             });
         }
 
@@ -267,7 +287,6 @@ class CallService extends EventEmitter {
             senders.forEach((sender: RTCRtpSender) => {
                 if (sender.track) {
                     sender.track.stop();
-                    // console.log('[CallService] Stopped peer connection track on manual hangup:', sender.track.kind, sender.track.id);
                 }
             });
         }
@@ -275,15 +294,12 @@ class CallService extends EventEmitter {
         // ✅ Call hangup với delay để tránh race condition
         try {
             (this.currentCall as any).hangup();
-            // console.log('[CallService] Hangup called successfully');
+            console.log('[CallService] Hangup called successfully');
         } catch (err) {
-            // console.warn('[CallService] Hangup failed, forcing cleanup:', err);
-            // Force cleanup nếu hangup fail
+            console.warn('[CallService] Hangup failed, forcing cleanup:', err);
             setTimeout(() => {
-                this.currentCall = undefined;
-                this.currentRoomId = undefined;
-                this.localStream = undefined;
                 this.emit('call-ended', 'user_hangup');
+                this.cleanup();
             }, 100);
         }
     }
@@ -307,58 +323,51 @@ class CallService extends EventEmitter {
                 callAny.peerConn?.addTrack?.(videoTrack, videoStream);
             }
 
-            // Combine lại stream
             const audioTracks = this.localStream?.getAudioTracks() ?? [];
             const newStream = new MediaStream([...audioTracks, videoTrack]);
             callAny.localStream = newStream;
             this.localStream = newStream;
 
-            // Trigger UI update
             this.emit('local-stream', newStream);
 
-            // Trigger renegotiation
             if (typeof callAny._updateRemoteFeeds === 'function') {
                 callAny._updateRemoteFeeds();
             }
         } catch (err) {
-            // console.error('[CallService] Không thể bật camera:', err);
+            console.error('[CallService] Không thể bật camera:', err);
             alert('Không thể bật camera: ' + (err instanceof Error ? err.message : String(err)));
         }
     }
+
     public async toggleCamera(on: boolean) {
         if (!this.currentCall) return;
 
         const callAny = this.currentCall as any;
         const pc = callAny.peerConn as RTCPeerConnection;
-        // tìm sender đang gửi video
         const videoSender = pc.getSenders().find(s => s.track?.kind === 'video');
 
         if (videoSender && videoSender.track) {
-            // Chỉ enable/disable track
             videoSender.track.enabled = on;
-            // Đồng bộ lên localStream
             this.localStream?.getVideoTracks().forEach(t => t.enabled = on);
             this.emit('local-stream', this.localStream!);
         } else if (on) {
-            // Trường hợp chưa có video track, mới add track
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 const videoTrack = stream.getVideoTracks()[0];
 
-                // thêm vào peer connection
                 pc.addTrack(videoTrack, stream);
-                // thêm vào localStream hiện có
                 this.localStream?.addTrack(videoTrack);
                 this.emit('local-stream', this.localStream!);
             } catch (err) {
-                // console.error('[CallService] toggleCamera failed to get video track:', err);
+                console.error('[CallService] toggleCamera failed to get video track:', err);
             }
         }
     }
+
     public async toggleMic(on: boolean) {
         if (!this.currentCall) return;
 
-        // console.log(`[CallService] Toggling mic: ${on}`);
+        console.log(`[CallService] Toggling mic: ${on}`);
 
         const callAny = this.currentCall as any;
         const pc = callAny.peerConn as RTCPeerConnection;
@@ -366,39 +375,33 @@ class CallService extends EventEmitter {
         const audioSender = senders?.find(s => s.track?.kind === 'audio');
 
         if (!audioSender) {
-            // console.warn('[CallService] No audio sender found');
+            console.warn('[CallService] No audio sender found');
             return;
         }
 
         if (!on) {
-            // 🔇 MUTE: Replace track bằng silent và xoá hết audio track khỏi stream
             const silentTrack = createSilentAudioTrack();
             await audioSender.replaceTrack(silentTrack);
-            // console.log('[CallService] Mic muted using silent track');
+            console.log('[CallService] Mic muted using silent track');
 
-            // Stop & remove old tracks
             this.localStream?.getAudioTracks().forEach(t => t.stop());
             const videoTracks = this.localStream?.getVideoTracks() ?? [];
             this.localStream = new MediaStream(videoTracks);
         } else {
-            // 🔊 UNMUTE: Tạo lại track từ getUserMedia
             try {
                 const newStream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 const newTrack = newStream.getAudioTracks()[0];
                 await audioSender.replaceTrack(newTrack);
-                // console.log('[CallService] Mic unmuted');
+                console.log('[CallService] Mic unmuted');
 
-                // Thêm track mới vào stream
                 this.localStream?.addTrack(newTrack);
             } catch (err) {
-                // console.error('[CallService] Failed to unmute mic:', err);
+                console.error('[CallService] Failed to unmute mic:', err);
             }
         }
 
         this.emit('mic-toggled', on);
     }
-
-
 }
 
 export const callService = new CallService();

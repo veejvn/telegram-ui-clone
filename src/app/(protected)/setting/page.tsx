@@ -14,6 +14,7 @@ import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { getBackgroundColorClass } from "@/utils/getBackgroundColor ";
 import { avatarGroupClasses } from "@mui/material";
+import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
 
 interface SettingItem {
   title: string;
@@ -280,7 +281,8 @@ export default function SettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const client = useMatrixClient();
   const userId = useAuthStore.getState().userId;
-  const { user, setUser } = useUserStore.getState();
+  const user = useUserStore((state) => state.user);
+  const setUser = useUserStore((state) => state.setUser);
   const displayName = user ? user.displayName : "Tên";
   const homeserver = user?.homeserver?.replace("https://", "") || "";
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -323,7 +325,7 @@ export default function SettingsPage() {
   };
 
   useEffect(() => {
-    fetchAvatar();
+    if(!user?.avatarUrl) fetchAvatar();
   }, [client, userId]);
 
   const handleFileSelect = () => {
@@ -384,9 +386,9 @@ export default function SettingsPage() {
           </div>
           <div className="flex flex-col items-center mt-2 mb-2">
             <Avatar className={`h-28 w-28 text-4xl ${avatarBackgroundColor}`}>
-              {avatarUrl ? (
+              {user?.avatarUrl ? (
                 <img
-                  src={avatarUrl}
+                  src={user?.avatarUrl}
                   alt="avatar"
                   className="h-28 w-28 rounded-full object-cover"
                   width={112}
@@ -611,8 +613,10 @@ export default function SettingsPage() {
     },
   ];
 
+  const headerStyle = getHeaderStyleWithStatusBar();
+
   return (
-    <div className="min-h-screen bg-[#f5f6fa] dark:bg-[#101014] pb-8">
+    <div style={headerStyle} className="bg-[#f5f6fa] dark:bg-[#101014] pb-8">
       {sections.map((section, index) => (
         <React.Fragment key={section.key || section.path || index}>
           {"render" in section && typeof section.render === "function" ? (
