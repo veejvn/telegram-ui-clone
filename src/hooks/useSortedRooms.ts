@@ -3,10 +3,12 @@ import { useEffect, useState } from "react";
 import { Room } from "@/lib/matrix-sdk";
 import { getUserRooms } from "@/services/chatService";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
+import { useRoomStore } from "@/stores/useRoomStore";
 
 export default function useSortedRooms() {
   const client = useMatrixClient();
-  const [rooms, setRooms] = useState<Room[]>([]);
+  // const [rooms, setRooms] = useState<Room[]>([]);
+  const { setRooms } = useRoomStore.getState()
   const [loading, setLoading] = useState(true); // 👈 trạng thái loading
 
   const getLastEventTimestamp = (room: Room): number => {
@@ -34,11 +36,11 @@ export default function useSortedRooms() {
     refreshRooms();
 
     const handleTimeline = () => {
-      setRooms((prev) =>
-        [...prev].sort(
-          (a, b) => getLastEventTimestamp(b) - getLastEventTimestamp(a)
-        )
-      );
+      // Lấy rooms hiện tại từ store, sort lại và set
+      const currentRooms = useRoomStore.getState().rooms;
+      setRooms([
+        ...currentRooms
+      ].sort((a, b) => getLastEventTimestamp(b) - getLastEventTimestamp(a)));
     };
 
     client?.on("Room.timeline" as any, handleTimeline);
@@ -47,5 +49,5 @@ export default function useSortedRooms() {
     };
   }, [client]);
 
-  return { rooms, loading, refreshRooms };
+  return { loading, refreshRooms };
 }
