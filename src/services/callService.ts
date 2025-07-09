@@ -53,9 +53,9 @@ class CallService extends EventEmitter {
             this.client.startClient({ initialSyncLimit: 10 });
             (this.client as any).on('Call.incoming', this.onIncomingCall.bind(this));
             
-            console.log('[CallService] Client initialized successfully with userId:', userId);
+            //console.log('[CallService] Client initialized successfully with userId:', userId);
         } catch (error) {
-            console.error('[CallService] Failed to initialize client:', error);
+            //console.error('[CallService] Failed to initialize client:', error);
             this.client = null;
         }
     }
@@ -67,7 +67,7 @@ class CallService extends EventEmitter {
                 this.client.stopClient();
                 (this.client as any).removeAllListeners();
             } catch (error) {
-                console.warn('[CallService] Error stopping previous client:', error);
+                //console.warn('[CallService] Error stopping previous client:', error);
             }
         }
         this.initializeClient();

@@ -9,17 +9,19 @@ import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import React, { useEffect, useState } from "react";
 import { getBackgroundColorClass } from "@/utils/getBackgroundColor ";
-import { ClassNames } from "@emotion/react";
+import { normalizeMatrixUserId } from "@/utils/matrixHelpers";
 
 export default function MyProfilePage() {
   const router = useRouter();
   const { user, setUser } = useUserStore.getState();
   const displayName = user ? user.displayName : "Your Name";
   const phone = user?.phone || true;
+  const homeserver = user?.homeserver
 
   // Thêm logic lấy avatar từ Matrix giống trang Setting
   const client = useMatrixClient();
   const userId = useAuthStore.getState().userId;
+  const decodedUserId = userId?.replace(/=40/g, "@");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -49,6 +51,8 @@ export default function MyProfilePage() {
   }, [client, userId]);
 
   const avatarBackgroundColor = getBackgroundColorClass(userId);
+
+  //console.log(userId)
 
   return (
     <div className="dark:bg-black dark:text-white min-h-screen px-4 pt-6 pb-10">
@@ -89,7 +93,7 @@ export default function MyProfilePage() {
           )}
         </Avatar>
         <h2 className="text-xl font-semibold">{displayName}</h2>
-        <span className="text-sm text-blue-500">{userId}</span>
+        <span className="text-sm text-blue-500">{decodedUserId}</span>
         <span className="text-gray-500 text-sm">{user?.status}</span>
 
       </div>

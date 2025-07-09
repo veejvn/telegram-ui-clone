@@ -113,7 +113,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         <button
           className="w-full flex items-center justify-center py-2 px-4 rounded-full border border-blue-600 bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 transition font-medium"
           onClick={() => {
-            const redirectUrl = `${process.env.NEXT_PUBLIC_MATRIX_BASE_URL}/_matrix/client/r0/login/sso/redirect?redirectUrl=${encodeURIComponent(window.location.origin)}`;
+            const redirectUrl = `${process.env.NEXT_PUBLIC_MATRIX_BASE_URL}/_matrix/client/r0/login/sso/redirect?redirectUrl=${encodeURIComponent(window.location.origin)}/chat`;
             window.location.href = redirectUrl;
           }}
         >

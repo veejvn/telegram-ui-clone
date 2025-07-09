@@ -6,10 +6,7 @@ import { useRouter } from "next/navigation";
 import ProfileIcon from "@/icons/telegram/profile.svg";
 import { useTheme } from "next-themes";
 
-import {
-  QrCode,
-  ChevronRight,
-} from "lucide-react";
+import { QrCode, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useUserStore } from "@/stores/useUserStore";
 import { getInitials } from "@/utils/getInitials";
@@ -295,7 +292,8 @@ export default function SettingsPage() {
     try {
       const profile = await client.getProfileInfo(userId);
       if (profile && profile.avatar_url) {
-        const httpUrl = client.mxcUrlToHttp(profile.avatar_url, 96, 96, "crop") ?? "";
+        const httpUrl =
+          client.mxcUrlToHttp(profile.avatar_url, 96, 96, "crop") ?? "";
 
         setUser({ avatarUrl: httpUrl });
         setAvatarUrl(httpUrl);
@@ -413,7 +411,11 @@ export default function SettingsPage() {
       key: "actions",
       render: () => {
         const { theme } = useTheme();
-        const isDark = theme === "dark" || (theme === "system" && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        const isDark =
+          theme === "dark" ||
+          (theme === "system" &&
+            typeof window !== "undefined" &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches);
 
         const profileImg = isDark
           ? "/chat/images/telegram/set-profile-dark.jpg"
@@ -485,7 +487,9 @@ export default function SettingsPage() {
               key={item.title}
               className={
                 "flex items-center justify-between px-4 py-2 " +
-                (idx !== group1.length - 1 ? "border-b border-[#f0f0f0] dark:border-[#232323] " : "") +
+                (idx !== group1.length - 1
+                  ? "border-b border-[#f0f0f0] dark:border-[#232323] "
+                  : "") +
                 "text-black dark:text-white"
               }
               href={item.path || "#"}
@@ -496,7 +500,9 @@ export default function SettingsPage() {
               </div>
               <div className="flex items-center space-x-2">
                 {item.extra && (
-                  <span className="text-[15px] text-gray-400 font-normal">{item.extra}</span>
+                  <span className="text-[15px] text-gray-400 font-normal">
+                    {item.extra}
+                  </span>
                 )}
                 <ChevronRight className="h-5 w-5 text-gray-400" />
               </div>
@@ -514,7 +520,9 @@ export default function SettingsPage() {
               key={item.title}
               className={
                 "flex items-center justify-between px-4 py-3 " +
-                (idx !== group2.length - 1 ? "border-b border-[#f0f0f0] dark:border-[#232323] " : "") +
+                (idx !== group2.length - 1
+                  ? "border-b border-[#f0f0f0] dark:border-[#232323] "
+                  : "") +
                 "text-black dark:text-white"
               }
               href={item.path || "#"}
@@ -531,7 +539,9 @@ export default function SettingsPage() {
               </div>
               <div className="flex items-center space-x-2">
                 {item.extra && (
-                  <span className="text-[15px] text-gray-400 font-normal">{item.extra}</span>
+                  <span className="text-[15px] text-gray-400 font-normal">
+                    {item.extra}
+                  </span>
                 )}
                 <ChevronRight className="h-5 w-5 text-gray-400" />
               </div>
@@ -549,7 +559,9 @@ export default function SettingsPage() {
               key={item.title}
               className={
                 "flex items-center justify-between px-4 py-2 " +
-                (idx !== group3.length - 1 ? "border-b border-[#f0f0f0] dark:border-[#232323] " : "") +
+                (idx !== group3.length - 1
+                  ? "border-b border-[#f0f0f0] dark:border-[#232323] "
+                  : "") +
                 "text-black dark:text-white"
               }
               href={item.path || "#"}
@@ -573,7 +585,9 @@ export default function SettingsPage() {
               key={item.title}
               className={
                 "flex items-center justify-between px-4 py-2 " +
-                (idx !== group4.length - 1 ? "border-b border-[#f0f0f0] dark:border-[#232323] " : "") +
+                (idx !== group4.length - 1
+                  ? "border-b border-[#f0f0f0] dark:border-[#232323] "
+                  : "") +
                 "text-black dark:text-white"
               }
               href={item.path || "#"}
@@ -584,7 +598,9 @@ export default function SettingsPage() {
               </div>
               <div className="flex items-center space-x-2">
                 {item.extra && (
-                  <span className="text-[15px] text-gray-400 font-normal">{item.extra}</span>
+                  <span className="text-[15px] text-gray-400 font-normal">
+                    {item.extra}
+                  </span>
                 )}
                 <ChevronRight className="h-5 w-5 text-gray-400" />
               </div>

@@ -52,7 +52,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
             
             // Validate final user ID
             if (isValidMatrixUserId(finalUserId)) {
-                console.log("🔐 Auth store login:", { accessToken: "***", userId: finalUserId, deviceId });
+                //console.log("🔐 Auth store login:", { accessToken: "***", userId: finalUserId, deviceId });
                 set({ isLogging: true, accessToken, userId: finalUserId, deviceId });
             } else {
                 console.error("Cannot login with invalid user ID:", finalUserId);

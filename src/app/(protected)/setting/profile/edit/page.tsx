@@ -52,7 +52,7 @@ export default function EditProfilePage() {
             
             // Sử dụng window.location.href thay vì router.push để force page reload
             // Điều này đảm bảo page.tsx sẽ check lại từ đầu với cookies đã bị xóa
-            window.location.href = "/login";
+            window.location.href = "/chat/login";
         } catch (error) {
             console.error("Logout error:", error);
             // Ngay cả khi có lỗi, vẫn force clear và redirect

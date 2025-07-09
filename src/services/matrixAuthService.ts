@@ -12,12 +12,12 @@ import { normalizeMatrixUserId } from "@/utils/matrixHelpers";
 if (!process.env.NEXT_PUBLIC_MATRIX_BASE_URL) {
     throw new Error("NEXT_PUBLIC_MATRIX_BASE_URL is required");
 }
-if (!process.env.NEXT_PUBLIC_SERVER_URL) {
+if (!process.env.NEXT_PUBLIC_BASE_APP_URL) {
     throw new Error("NEXT_PUBLIC_SERVER_URL is required");
 }
 
 const HOMESERVER_URL: string = process.env.NEXT_PUBLIC_MATRIX_BASE_URL;
-const SERVER_URL: string = process.env.NEXT_PUBLIC_SERVER_URL;
+const SERVER_URL: string = process.env.NEXT_PUBLIC_BASE_APP_URL;
 
 let clientInstance: sdk.MatrixClient | null = null;
 

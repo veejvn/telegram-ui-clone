@@ -17,7 +17,7 @@ export function clearMatrixAuthCookies(): void {
       }
     });
     
-    console.log('✅ Matrix authentication cookies and localStorage cleared');
+    //console.log('✅ Matrix authentication cookies and localStorage cleared');
   }
 }
 

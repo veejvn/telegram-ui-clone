@@ -36,7 +36,7 @@ export function MatrixClientProvider({
 
   const handleLogout = () => {
     clearMatrixAuthCookies();
-    window.location.href = '/login';
+    window.location.href = '/chat/login';
   };
 
   useEffect(() => {
