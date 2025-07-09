@@ -110,7 +110,7 @@ const ChatPage = () => {
       <div className="absolute inset-0 z-0 bg-chat" />
 
       {/* Nội dung có thể scroll */}
-      <div className="relative z-10 flex flex-col h-full">
+      <div className="relative z-10 flex flex-col h-dvh">
         {/* Header cố định */}
         <div className="sticky top-0 z-20">
           <ChatHeader room={room} />
