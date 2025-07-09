@@ -53,7 +53,7 @@ const useRegisterPushKey = (accessToken: string | null) => {
           //console.log("Pushkey registered:", data);
         })
         .catch((err) => {
-          //console.error("Pushkey error:", err);
+          console.error("Pushkey error:", err);
         });
       }
     })

@@ -9,30 +9,31 @@ import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import React, { useEffect, useState } from "react";
 import { getBackgroundColorClass } from "@/utils/getBackgroundColor ";
-import { normalizeMatrixUserId } from "@/utils/matrixHelpers";
+import { extractUsernameFromMatrixId, normalizeMatrixUserId } from "@/utils/matrixHelpers";
 
 export default function MyProfilePage() {
   const router = useRouter();
   const { user, setUser } = useUserStore.getState();
-  const displayName = user ? user.displayName : "Your Name";
+  let displayName = user ? user.displayName : "Your Name";
+  if(displayName.startsWith("@")){
+    displayName = extractUsernameFromMatrixId(displayName.replace(/=40/g, "@"))
+  }
   const phone = user?.phone || true;
-  const homeserver = user?.homeserver
 
   // Thêm logic lấy avatar từ Matrix giống trang Setting
   const client = useMatrixClient();
   const userId = useAuthStore.getState().userId;
   const decodedUserId = userId?.replace(/=40/g, "@");
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!client || !userId) return;
+    if(user?.avatarUrl) return;
 
     const fetchAvatar = async () => {
       try {
         const profile = await client.getProfileInfo(userId);
         if (profile && profile.avatar_url) {
           const httpUrl = client.mxcUrlToHttp(profile.avatar_url, 96, 96, "crop") ?? "";
-          setAvatarUrl(httpUrl);
           setUser({ avatarUrl: httpUrl });
         }
         setUser({ avatarUrl: "" });
@@ -77,9 +78,9 @@ export default function MyProfilePage() {
         <Avatar
           className={`w-20 h-20 text-white text-2xl ${avatarBackgroundColor}`}
         >
-          {avatarUrl ? (
+          {user?.avatarUrl ? (
             <img
-              src={avatarUrl}
+              src={user?.avatarUrl}
               alt="avatar"
               className="h-20 w-20 rounded-full object-cover"
               width={80}

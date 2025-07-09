@@ -10,6 +10,7 @@ import {
 } from "@/utils/matrixHelpers";
 import { clearMatrixAuthCookies } from "@/utils/clearAuthCookies";
 import { callService } from "@/services/callService";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
 
 export default function Home() {
   const isLogging = useAuthStore((state) => state.isLogging);
@@ -155,10 +156,11 @@ export default function Home() {
   }, [router]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center">
-        <div className="animate-pulse">Đang kiểm tra xác thực...</div>
-      </div>
-    </div>
+    // <div className="flex items-center justify-center min-h-screen">
+    //   <div className="text-center">
+    //     <div className="animate-pulse">Đang kiểm tra xác thực...</div>
+    //   </div>
+    // </div>
+    <LoadingSpinner/>
   );
 }

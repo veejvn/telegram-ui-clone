@@ -13,8 +13,8 @@ import { getInitials } from "@/utils/getInitials";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { getBackgroundColorClass } from "@/utils/getBackgroundColor ";
-import { avatarGroupClasses } from "@mui/material";
 import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
+import { extractUsernameFromMatrixId } from "@/utils/matrixHelpers";
 
 interface SettingItem {
   title: string;
@@ -283,9 +283,11 @@ export default function SettingsPage() {
   const userId = useAuthStore.getState().userId;
   const user = useUserStore((state) => state.user);
   const setUser = useUserStore((state) => state.setUser);
-  const displayName = user ? user.displayName : "Tên";
+  let displayName = user ? user.displayName : "Yor Name";
+  if(displayName.startsWith("@")){
+    displayName = extractUsernameFromMatrixId(displayName.replace(/=40/g, "@"))
+  }
   const homeserver = user?.homeserver?.replace("https://", "") || "";
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [_, setRefresh] = useState(0);
 
   // Đưa fetchAvatar ra ngoài useEffect
@@ -298,7 +300,6 @@ export default function SettingsPage() {
           client.mxcUrlToHttp(profile.avatar_url, 96, 96, "crop") ?? "";
 
         setUser({ avatarUrl: httpUrl });
-        setAvatarUrl(httpUrl);
 
         // // Kiểm tra link HTTP thực tế
         // const isValid = /^https?:\/\//.test(httpUrl) && !httpUrl.includes("M_NOT_FOUND");
@@ -326,7 +327,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if(!user?.avatarUrl) fetchAvatar();
-  }, [client, userId]);
+  }, [client]);
 
   const handleFileSelect = () => {
     fileInputRef.current?.click();
@@ -403,7 +404,7 @@ export default function SettingsPage() {
             </Avatar>
             <div className="mt-3 text-lg font-bold">{displayName}</div>
             <div className="text-sm text-blue-500 font-medium">
-              Homeserver: {homeserver}
+              homeserver: {homeserver}  
             </div>
           </div>
         </div>
