@@ -161,6 +161,8 @@ export default function Home() {
     //     <div className="animate-pulse">Đang kiểm tra xác thực...</div>
     //   </div>
     // </div>
-    <LoadingSpinner/>
+    <div className="flex items-center justify-center min-h-screen">
+      <LoadingSpinner />
+    </div>
   );
 }
