@@ -9,28 +9,31 @@ import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import React, { useEffect, useState } from "react";
 import { getBackgroundColorClass } from "@/utils/getBackgroundColor ";
-import { ClassNames } from "@emotion/react";
+import { extractUsernameFromMatrixId, normalizeMatrixUserId } from "@/utils/matrixHelpers";
 
 export default function MyProfilePage() {
   const router = useRouter();
   const { user, setUser } = useUserStore.getState();
-  const displayName = user ? user.displayName : "Your Name";
+  let displayName = user ? user.displayName : "Your Name";
+  if(displayName.startsWith("@")){
+    displayName = extractUsernameFromMatrixId(displayName.replace(/=40/g, "@"))
+  }
   const phone = user?.phone || true;
 
   // Thêm logic lấy avatar từ Matrix giống trang Setting
   const client = useMatrixClient();
   const userId = useAuthStore.getState().userId;
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const decodedUserId = userId?.replace(/=40/g, "@");
 
   useEffect(() => {
     if (!client || !userId) return;
+    if(user?.avatarUrl) return;
 
     const fetchAvatar = async () => {
       try {
         const profile = await client.getProfileInfo(userId);
         if (profile && profile.avatar_url) {
           const httpUrl = client.mxcUrlToHttp(profile.avatar_url, 96, 96, "crop") ?? "";
-          setAvatarUrl(httpUrl);
           setUser({ avatarUrl: httpUrl });
         }
         setUser({ avatarUrl: "" });
@@ -49,6 +52,8 @@ export default function MyProfilePage() {
   }, [client, userId]);
 
   const avatarBackgroundColor = getBackgroundColorClass(userId);
+
+  //console.log(userId)
 
   return (
     <div className="dark:bg-black dark:text-white min-h-screen px-4 pt-6 pb-10">
@@ -73,9 +78,9 @@ export default function MyProfilePage() {
         <Avatar
           className={`w-20 h-20 text-white text-2xl ${avatarBackgroundColor}`}
         >
-          {avatarUrl ? (
+          {user?.avatarUrl ? (
             <img
-              src={avatarUrl}
+              src={user?.avatarUrl}
               alt="avatar"
               className="h-20 w-20 rounded-full object-cover"
               width={80}
@@ -89,7 +94,7 @@ export default function MyProfilePage() {
           )}
         </Avatar>
         <h2 className="text-xl font-semibold">{displayName}</h2>
-        <span className="text-sm text-blue-500">{userId}</span>
+        <span className="text-sm text-blue-500">{decodedUserId}</span>
         <span className="text-gray-500 text-sm">{user?.status}</span>
 
       </div>
