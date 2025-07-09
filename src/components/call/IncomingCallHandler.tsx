@@ -3,6 +3,8 @@ import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import useCallStore from '@/stores/useCallStore';
 import IncomingCall from './IncomingCall';
+import { incomingCallStyleWithStatusBar } from '@/utils/getHeaderStyleWithStatusBar';
+
 
 export default function IncomingCallHandler() {
     const router = useRouter();
@@ -68,8 +70,10 @@ export default function IncomingCallHandler() {
     // ✅ Chỉ hiển thị khi thực sự có cuộc gọi đến
     if (state !== 'incoming' || !incoming) return null;
 
+    const incomingCallStyle = incomingCallStyleWithStatusBar()
+
     return (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[95vw] max-w-md rounded-2xl bg-black/80 text-white shadow-xl p-0">
+        <div style={incomingCallStyle} className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[95vw] max-w-md rounded-2xl bg-black/80 text-white shadow-xl p-0">
             <IncomingCall
                 callerName={incoming.callerId}
                 onAccept={answerCall}

@@ -29,6 +29,7 @@ import ContactService from "@/services/contactService";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { getLS } from "@/tools/localStorage.tool";
 import { ROUTES } from "@/constants/routes";
+import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
 
 interface Contact {
   firstName: string;
@@ -62,11 +63,8 @@ const ContactPage = () => {
     router.push(ROUTES.SETTING);
   };
 
-  const statusBarHeight = getLS("statusBarHeight");
+  const headerStyle = getHeaderStyleWithStatusBar();
 
-  const headerStyle = {
-    paddingTop: statusBarHeight ? Number(statusBarHeight) : 0,
-  };
 
   const hide = getLS("hide") || [];
   const options = Array.isArray(hide) ? hide : [];
