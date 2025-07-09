@@ -121,8 +121,8 @@ const ChatPage = () => {
           <ScrollArea className="flex-1 min-h-0 space-y-1">
             <ChatMessages roomId={roomId} messagesEndRef={messagesEndRef} />
           </ScrollArea>
-          <ChatComposer roomId={roomId} />
         </div>
+        <ChatComposer roomId={roomId} />
       </div>
     </div>
   );
