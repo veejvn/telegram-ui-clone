@@ -27,6 +27,7 @@ export async function searchMatrixUsers(
           {
             user_id: userId,
             display_name: profile?.displayname || "",
+            avatar_url: profile?.avatar_url || "",
           },
         ];
       } catch (e) {
@@ -41,5 +42,10 @@ export async function searchMatrixUsers(
     limit: 100,
   });
 
-  return Array.isArray(res?.results) ? res.results : [];
+  return Array.isArray(res?.results)
+    ? res.results.map((u: any) => ({
+        ...u,
+        avatar_url: u.avatar_url || "",
+      }))
+    : [];
 }
