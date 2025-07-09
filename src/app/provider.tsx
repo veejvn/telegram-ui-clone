@@ -49,7 +49,6 @@ export default function Providers({
         <Suspense fallback={null}>
           <BackUrlSetter />
         </Suspense>
-        <NoZoom/>
         <ToastProvider>{children}</ToastProvider>
         <Toaster />
       </ThemeProvider>
