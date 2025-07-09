@@ -3,27 +3,29 @@ import { useEffect } from "react";
 
 export default function NoZoom() {
   useEffect(() => {
-    // Chặn pinch-zoom và double-tap zoom (iOS)
+    // Chặn gesture zoom trên iOS
     const preventDefault = (e: any) => e.preventDefault();
 
     document.addEventListener("gesturestart", preventDefault);
     document.addEventListener("gesturechange", preventDefault);
     document.addEventListener("gestureend", preventDefault);
 
-    // Chỉ chặn touchmove khi đang pinch-zoom (e.scale !== 1)
-    const touchMoveHandler = (e: any) => {
-      // e.scale chỉ tồn tại trên iOS khi pinch, còn lại undefined
-      if (typeof e.scale === "number" && e.scale !== 1) {
+    // Chặn double-tap zoom trên iOS bằng cách chặn double-tap
+    let lastTouchEnd = 0;
+    const onTouchEnd = (e: TouchEvent) => {
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) {
         e.preventDefault();
       }
+      lastTouchEnd = now;
     };
-    document.addEventListener("touchmove", touchMoveHandler, { passive: false });
+    document.addEventListener("touchend", onTouchEnd, false);
 
     return () => {
       document.removeEventListener("gesturestart", preventDefault);
       document.removeEventListener("gesturechange", preventDefault);
       document.removeEventListener("gestureend", preventDefault);
-      document.removeEventListener("touchmove", touchMoveHandler);
+      document.removeEventListener("touchend", onTouchEnd);
     };
   }, []);
 
