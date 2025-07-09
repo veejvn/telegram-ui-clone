@@ -6,10 +6,7 @@ import { useRouter } from "next/navigation";
 import ProfileIcon from "@/icons/telegram/profile.svg";
 import { useTheme } from "next-themes";
 
-import {
-  QrCode,
-  ChevronRight,
-} from "lucide-react";
+import { QrCode, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useUserStore } from "@/stores/useUserStore";
 import { getInitials } from "@/utils/getInitials";
@@ -17,6 +14,7 @@ import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { getBackgroundColorClass } from "@/utils/getBackgroundColor ";
 import { avatarGroupClasses } from "@mui/material";
+import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
 
 interface SettingItem {
   title: string;
@@ -283,7 +281,8 @@ export default function SettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const client = useMatrixClient();
   const userId = useAuthStore.getState().userId;
-  const { user, setUser } = useUserStore.getState();
+  const user = useUserStore((state) => state.user);
+  const setUser = useUserStore((state) => state.setUser);
   const displayName = user ? user.displayName : "Tên";
   const homeserver = user?.homeserver?.replace("https://", "") || "";
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -295,7 +294,8 @@ export default function SettingsPage() {
     try {
       const profile = await client.getProfileInfo(userId);
       if (profile && profile.avatar_url) {
-        const httpUrl = client.mxcUrlToHttp(profile.avatar_url, 96, 96, "crop") ?? "";
+        const httpUrl =
+          client.mxcUrlToHttp(profile.avatar_url, 96, 96, "crop") ?? "";
 
         setUser({ avatarUrl: httpUrl });
         setAvatarUrl(httpUrl);
@@ -325,7 +325,7 @@ export default function SettingsPage() {
   };
 
   useEffect(() => {
-    fetchAvatar();
+    if(!user?.avatarUrl) fetchAvatar();
   }, [client, userId]);
 
   const handleFileSelect = () => {
@@ -386,9 +386,9 @@ export default function SettingsPage() {
           </div>
           <div className="flex flex-col items-center mt-2 mb-2">
             <Avatar className={`h-28 w-28 text-4xl ${avatarBackgroundColor}`}>
-              {avatarUrl ? (
+              {user?.avatarUrl ? (
                 <img
-                  src={avatarUrl}
+                  src={user?.avatarUrl}
                   alt="avatar"
                   className="h-28 w-28 rounded-full object-cover"
                   width={112}
@@ -413,7 +413,11 @@ export default function SettingsPage() {
       key: "actions",
       render: () => {
         const { theme } = useTheme();
-        const isDark = theme === "dark" || (theme === "system" && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        const isDark =
+          theme === "dark" ||
+          (theme === "system" &&
+            typeof window !== "undefined" &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches);
 
         const profileImg = isDark
           ? "/chat/images/telegram/set-profile-dark.jpg"
@@ -485,7 +489,9 @@ export default function SettingsPage() {
               key={item.title}
               className={
                 "flex items-center justify-between px-4 py-2 " +
-                (idx !== group1.length - 1 ? "border-b border-[#f0f0f0] dark:border-[#232323] " : "") +
+                (idx !== group1.length - 1
+                  ? "border-b border-[#f0f0f0] dark:border-[#232323] "
+                  : "") +
                 "text-black dark:text-white"
               }
               href={item.path || "#"}
@@ -496,7 +502,9 @@ export default function SettingsPage() {
               </div>
               <div className="flex items-center space-x-2">
                 {item.extra && (
-                  <span className="text-[15px] text-gray-400 font-normal">{item.extra}</span>
+                  <span className="text-[15px] text-gray-400 font-normal">
+                    {item.extra}
+                  </span>
                 )}
                 <ChevronRight className="h-5 w-5 text-gray-400" />
               </div>
@@ -514,7 +522,9 @@ export default function SettingsPage() {
               key={item.title}
               className={
                 "flex items-center justify-between px-4 py-3 " +
-                (idx !== group2.length - 1 ? "border-b border-[#f0f0f0] dark:border-[#232323] " : "") +
+                (idx !== group2.length - 1
+                  ? "border-b border-[#f0f0f0] dark:border-[#232323] "
+                  : "") +
                 "text-black dark:text-white"
               }
               href={item.path || "#"}
@@ -531,7 +541,9 @@ export default function SettingsPage() {
               </div>
               <div className="flex items-center space-x-2">
                 {item.extra && (
-                  <span className="text-[15px] text-gray-400 font-normal">{item.extra}</span>
+                  <span className="text-[15px] text-gray-400 font-normal">
+                    {item.extra}
+                  </span>
                 )}
                 <ChevronRight className="h-5 w-5 text-gray-400" />
               </div>
@@ -549,7 +561,9 @@ export default function SettingsPage() {
               key={item.title}
               className={
                 "flex items-center justify-between px-4 py-2 " +
-                (idx !== group3.length - 1 ? "border-b border-[#f0f0f0] dark:border-[#232323] " : "") +
+                (idx !== group3.length - 1
+                  ? "border-b border-[#f0f0f0] dark:border-[#232323] "
+                  : "") +
                 "text-black dark:text-white"
               }
               href={item.path || "#"}
@@ -573,7 +587,9 @@ export default function SettingsPage() {
               key={item.title}
               className={
                 "flex items-center justify-between px-4 py-2 " +
-                (idx !== group4.length - 1 ? "border-b border-[#f0f0f0] dark:border-[#232323] " : "") +
+                (idx !== group4.length - 1
+                  ? "border-b border-[#f0f0f0] dark:border-[#232323] "
+                  : "") +
                 "text-black dark:text-white"
               }
               href={item.path || "#"}
@@ -584,7 +600,9 @@ export default function SettingsPage() {
               </div>
               <div className="flex items-center space-x-2">
                 {item.extra && (
-                  <span className="text-[15px] text-gray-400 font-normal">{item.extra}</span>
+                  <span className="text-[15px] text-gray-400 font-normal">
+                    {item.extra}
+                  </span>
                 )}
                 <ChevronRight className="h-5 w-5 text-gray-400" />
               </div>
@@ -595,8 +613,10 @@ export default function SettingsPage() {
     },
   ];
 
+  const headerStyle = getHeaderStyleWithStatusBar();
+
   return (
-    <div className="min-h-screen bg-[#f5f6fa] dark:bg-[#101014] pb-8">
+    <div style={headerStyle} className="bg-[#f5f6fa] dark:bg-[#101014] pb-8">
       {sections.map((section, index) => (
         <React.Fragment key={section.key || section.path || index}>
           {"render" in section && typeof section.render === "function" ? (

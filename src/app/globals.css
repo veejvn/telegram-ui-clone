@@ -121,6 +121,15 @@
   }
 }
 
+.bg-chat {
+  @apply bg-cover bg-center bg-no-repeat;
+  background-image: url("../../public/images/chat-bg-light.jpg");
+}
+
+.dark .bg-chat {
+  background-image: url("../../public/images/chat-bg-dark.jpg");
+}
+
 @keyframes flashBackground {
   0% {
     background-color: rgb(220, 248, 198);

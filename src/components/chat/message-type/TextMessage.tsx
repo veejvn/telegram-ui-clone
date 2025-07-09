@@ -76,10 +76,9 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
         >
           {/* 🡐 Tail cho tin nhận */}
           {!isSender && (
-            <BubbleTail
-              isSender={false}
-              fillColor={theme.theme === "dark" ? "#282434" : "#FFFFFF"}
-            />
+            <div className="text-[#FFFFFF] dark:text-[#282434]">
+              <BubbleTail isSender={false} fillColor="currentColor" />
+            </div>
           )}
 
           {/* 💬 Nội dung tin nhắn */}
@@ -102,10 +101,9 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
 
           {/* 🡒 Tail cho tin gửi */}
           {isSender && (
-            <BubbleTail
-              isSender={true}
-              fillColor={theme.theme === "dark" ? "#6f42c1" : "#DCF8C6"}
-            />
+            <div className="text-[#DCF8C6] dark:text-[#6f42c1]">
+              <BubbleTail isSender={true} fillColor="currentColor" />
+            </div>
           )}
         </div>
       </DropdownMenuTrigger>
@@ -115,7 +113,7 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
           onClick={() => handleCopy(msg.text)}
         >
           <p>Copy</p>
-          <CopyIconSvg isDark={theme.theme === "dark"} />
+          <CopyIconSvg isDark={theme.resolvedTheme === "dark"} />
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
@@ -123,7 +121,7 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
           onClick={handleForward}
         >
           <p>Forward</p>
-          <ForwardIconSvg isDark={theme.theme === "dark"} />
+          <ForwardIconSvg isDark={theme.resolvedTheme === "dark"} />
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem className="flex justify-between items-center">

@@ -1,6 +1,5 @@
 "use client"
 
-import { getLS, setLS } from "@/tools/localStorage.tool";
 import { useEffect } from "react";
 
 const useRegisterPushKey = (accessToken: string | null) => {
@@ -10,42 +9,54 @@ const useRegisterPushKey = (accessToken: string | null) => {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const pushToken = getLS("pushToken");
+    const pushConfigs = [
+      { tokenKey: "pushToken", profileTag: "fcm" },
+      { tokenKey: "voipToken", profileTag: "voip" },
+    ];
 
-    if (pushToken && accessToken){
-      const lastRegistered = getLS("lastPushToken");
-      if (lastRegistered === pushToken) return;
+    pushConfigs.forEach(({ tokenKey, profileTag }) => {
+      let pushToken = localStorage.getItem(tokenKey);
+      if (pushToken && pushToken.startsWith('"') && pushToken.endsWith('"')) {
+        pushToken = JSON.parse(pushToken);
+      }
+      if (pushToken && accessToken){
+        //console.log(pushToken, profileTag)
+    
+        const payload = {
+          app_display_name: "Ting Tong",
+          app_id: "ting.tong.app",
+          device_display_name: "Ting Tong",
+          kind: "http",
+          lang: "en_US",
+          pushkey: pushToken,
+          profile_tag: profileTag,
+        };
   
-      const payload = {
-        app_display_name: "Ting Tong",
-        app_id: "ting.tong.app",
-        device_display_name: "Ting Tong",
-        kind: "http",
-        lang: "en_US",
-        pushkey: pushToken,
-      };
-  
-      fetch(PUSH_TOKEN_DOMAIN, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`, // Token từ client chat
-        },
-        body: JSON.stringify(payload),
-      })
-      .then((res) => {
-        if (!res.ok) throw new Error("Pushkey registration failed");
-        return res.json();
-      })
-      .then((data) => {
-        setLS("lastPushToken", pushToken);
-        //console.log("Pushkey registered:", data);
-      })
-      .catch((err) => {
-        console.error("Pushkey error:", err);
-      });
-    }
-
+        //console.log(payload)
+    
+        fetch(PUSH_TOKEN_DOMAIN, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`, // Token từ client chat
+          },
+          body: JSON.stringify(payload),
+        })
+        .then(async (res) => {
+          if (!res.ok) {
+            const errorText = await res.text();
+            throw new Error(`Pushkey registration failed: ${errorText}`);
+          }
+          return res.json();
+        })
+        .then((data) => {
+          //console.log("Pushkey registered:", data);
+        })
+        .catch((err) => {
+          //console.error("Pushkey error:", err);
+        });
+      }
+    })
   }, [accessToken]);
 };
 
