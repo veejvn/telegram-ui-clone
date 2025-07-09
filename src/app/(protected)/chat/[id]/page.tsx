@@ -110,18 +110,18 @@ const ChatPage = () => {
       <div className="absolute inset-0 z-0 bg-chat" />
 
       {/* Nội dung có thể scroll */}
-      <div className="relative z-10 flex flex-col h-dvh min-h-0">
+      <div className="relative z-10 flex flex-col h-full">
         {/* Header cố định */}
         <div className="sticky top-0 z-20">
           <ChatHeader room={room} />
         </div>
 
         {/* Chat content scrollable */}
-        <div className="flex flex-col flex-1 min-h-0">
-          <ScrollArea className="flex-1 min-h-0 space-y-1">
-            <ChatMessages roomId={roomId} messagesEndRef={messagesEndRef} />
-          </ScrollArea>
-        </div>
+
+        <ScrollArea className="flex-1 min-h-0 space-y-1">
+          <ChatMessages roomId={roomId} messagesEndRef={messagesEndRef} />
+        </ScrollArea>
+
         <ChatComposer roomId={roomId} />
       </div>
     </div>
