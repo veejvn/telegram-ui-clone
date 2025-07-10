@@ -13,7 +13,7 @@ export default function ForwardSearchBar() {
     >
       <div
         className=" flex items-center 
-      bg-gray-300/75 w-full rounded-lg h-8 px-3 justify-center gap-1"
+      bg-gray-300/75 dark:bg-gray-700/75 w-full rounded-lg h-8 px-3 justify-center gap-1"
         onClick={() => setIsFocus(true)}
         onBlur={() => setIsFocus(false)}
       >

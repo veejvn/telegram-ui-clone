@@ -18,7 +18,7 @@ export default function ForwardHeader() {
   return (
     <>
       {/* Header + Search */}
-      <div className="bg-gray-100 pt-2">
+      <div className="bg-gray-100 dark:bg-black pt-2">
         <div className="flex justify-between items-center px-4 py-1">
           <p
             className="text-blue-600 cursor-pointer hover:opacity-50 hover:scale-105 duration-500 transition-all ease-in-out"

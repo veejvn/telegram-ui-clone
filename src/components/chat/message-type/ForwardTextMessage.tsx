@@ -48,7 +48,7 @@ const ForwardTextMessage = ({
   const client = useMatrixClient();
   const { text, originalSender, originalSenderId } = forwardMessage;
   const [avatarUrl, setAvatarUrl] = useState<string>("");
-  console.log(avatarUrl);
+  //console.log(avatarUrl);
 
   useEffect(() => {
     if (!client || !originalSenderId) return;

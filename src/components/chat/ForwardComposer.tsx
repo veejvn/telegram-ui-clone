@@ -216,7 +216,7 @@ export default function ForwardComposer() {
             )}
           </button>
         ) : (
-          <button disabled>
+          <button disabled aria-label="input">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
