@@ -7,7 +7,7 @@ import Link from "next/link";
 import { ChatList } from "@/components/chat/ChatList";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import * as sdk from "matrix-js-sdk";
+import * as sdk from "@/lib/matrix-sdk";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import ChatEditButton from "@/components/chat/ChatEditButton";
 import ChatActionBar from "@/components/chat/ChatActionBar";
@@ -23,10 +23,13 @@ import useSortedRooms from "@/hooks/useSortedRooms";
 import useListenRoomInvites from "@/hooks/useListenRoomInvites";
 import { getLS, removeLS } from "@/tools/localStorage.tool";
 import { useSearchParams } from "next/navigation";
+import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
+import { useRoomStore } from "@/stores/useRoomStore";
 
 export default function ChatsPage() {
   // const [rooms, setRooms] = useState<sdk.Room[]>([]);
-  const { rooms, refreshRooms, loading } = useSortedRooms();
+  const { refreshRooms, loading } = useSortedRooms();
+  const rooms = useRoomStore((state) => state.rooms);
   const client = useMatrixClient();
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
@@ -122,11 +125,7 @@ export default function ChatsPage() {
     setSelectedRooms([]);
   };
 
-  const statusBarHeight = getLS("statusBarHeight");
-
-  const headerStyle = {
-    paddingTop: statusBarHeight ? Number(statusBarHeight) : 0,
-  };
+  const headerStyle = getHeaderStyleWithStatusBar();
 
   // const [showBackButton, setShowBackButton] = useState(false);
 
@@ -235,7 +234,7 @@ export default function ChatsPage() {
               You have no{"\n"}conversations yet.
             </p>
           </div>
-          <div className="w-full pb-12 px-15">
+          <div className="w-full pb-30 px-15">
             <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white text-base rounded-lg py-6 cursor-pointer">
               <Link href={"/chat/newMessage"}>New Message</Link>
             </Button>

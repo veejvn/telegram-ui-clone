@@ -14,9 +14,11 @@ import { toast } from "sonner";
 import styles from "./page.module.css";
 import { sendReadReceipt } from "@/services/chatService";
 import { useUserStore } from "@/stores/useUserStore";
+import clsx from "clsx";
 
 const ChatPage = () => {
-  const { theme } = useTheme();
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [joining, setJoining] = useState(false);
   const [room, setRoom] = useState<sdk.Room | null>();
   const param = useParams();
@@ -29,6 +31,7 @@ const ChatPage = () => {
       : "";
   const roomId = user ? param.id?.slice(0, 19) + ":" + homeserver : "";
   const router = useRouter();
+
   useEffect(() => {
     if (!client) return;
 
@@ -41,8 +44,8 @@ const ChatPage = () => {
   useEffect(() => {
     if (!client || !room) return;
     const isInvite = room?.getMyMembership() === "invite";
-    if(isInvite){
-      joinRoom()
+    if (isInvite) {
+      joinRoom();
     }
     // Lấy event cuối cùng trong room (nếu có)
     const events = room.getLiveTimeline().getEvents();
@@ -51,6 +54,12 @@ const ChatPage = () => {
       sendReadReceipt(client, lastEvent);
     }
   }, [room, client]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
 
   if (!room) return null;
   // Kiểm tra trạng thái invite
@@ -91,15 +100,17 @@ const ChatPage = () => {
 
   return (
     <div className="relative h-screen overflow-hidden">
-      <div
-        className={`fixed inset-0 z-0 bg-cover bg-center bg-no-repeat ${
-          theme === "dark" ? styles["chat-bg-dark"] : styles["chat-bg-light"]
-        }`}
-        aria-hidden="true"
-      />
+      {/* <div
+        className={`fixed inset-0 z-0 bg-cover bg-center bg-no-repeat 
+          ${theme === "dark" ? styles["chat-bg-dark"] : styles["chat-bg-light"]}
+          `}
+           aria-hidden="true"
+      /> */}
+
+      <div className="absolute inset-0 z-0 bg-chat" />
 
       {/* Nội dung có thể scroll */}
-      <div className="relative z-10 flex flex-col h-full">
+      <div className="relative z-10 flex flex-col h-screen">
         {/* Header cố định */}
         <div className="sticky top-0 z-20">
           <ChatHeader room={room} />

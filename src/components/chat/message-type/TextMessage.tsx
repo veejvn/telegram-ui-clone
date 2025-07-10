@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { clsx } from "clsx";
 import { Check, CheckCheck } from "lucide-react";
 import { MessagePros } from "@/types/chat";
@@ -26,6 +26,7 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
   const [open, setOpen] = useState(false);
   const [triggered, setTriggered] = useState(false);
   const router = useRouter();
+  const holdTimeout = useRef<number | null>(null);
 
   const textClass = clsx(
     "rounded-2xl px-4 py-1.5",
@@ -36,7 +37,7 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
   );
 
   const timeClass = clsx(
-    "flex items-center gap-1 text-xs mt-1",
+    "flex items-center gap-1 text-xs mt-1 select-none",
     isSender
       ? "text-green-500 justify-end dark:text-white"
       : "text-gray-400 dark:text-gray-400"
@@ -58,17 +59,39 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
   useEffect(() => {
     let timeout: any;
     if (triggered) {
-      timeout = setTimeout(() => setOpen(true), 350); // delay 300ms
+      timeout = setTimeout(() => setOpen(true), 1500); // delay 300ms
     } else {
       setOpen(false);
     }
     return () => clearTimeout(timeout);
   }, [triggered]);
 
+  // const handleHoldStart = () => {
+  //   // Nếu menu đã mở thì không làm gì
+  //   if (open) return;
+  //   holdTimeout.current = window.setTimeout(() => {
+  //     setOpen(true);
+  //   }, 3000);
+  // };
+  
+  // const handleHoldEnd = () => {
+  //   // Nếu chưa đủ 3s thì clear timeout, không mở menu
+  //   if (!open && holdTimeout.current) {
+  //     clearTimeout(holdTimeout.current);
+  //     holdTimeout.current = null;
+  //   }
+  //   // Nếu menu đã mở thì không đóng ở đây (để user chọn menu)
+  // };
+
   return (
     <DropdownMenu open={open} onOpenChange={setTriggered}>
       <DropdownMenuTrigger asChild>
         <div
+          // onMouseDown={handleHoldStart}
+          // onMouseUp={handleHoldEnd}
+          // onMouseLeave={handleHoldEnd}
+          // onTouchStart={handleHoldStart}
+          // onTouchEnd={handleHoldEnd}
           className={clsx(
             "flex items-end", // Đảm bảo tail căn đáy với bubble
             isSender ? "justify-end" : "justify-start"
@@ -76,16 +99,15 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
         >
           {/* 🡐 Tail cho tin nhận */}
           {!isSender && (
-            <BubbleTail
-              isSender={false}
-              fillColor={theme.theme === "dark" ? "#282434" : "#FFFFFF"}
-            />
+            <div className="text-[#FFFFFF] dark:text-[#282434]">
+              <BubbleTail isSender={false} fillColor="currentColor" />
+            </div>
           )}
 
           {/* 💬 Nội dung tin nhắn */}
           <div className="flex flex-col  ">
             <div className={textClass}>
-              <p className={"whitespace-pre-wrap break-words leading-snug"}>
+              <p className={"whitespace-pre-wrap break-words leading-snug select-none"}>
                 {msg.text}
               </p>
               <div className={timeClass}>
@@ -102,10 +124,9 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
 
           {/* 🡒 Tail cho tin gửi */}
           {isSender && (
-            <BubbleTail
-              isSender={true}
-              fillColor={theme.theme === "dark" ? "#6f42c1" : "#DCF8C6"}
-            />
+            <div className="text-[#DCF8C6] dark:text-[#6f42c1]">
+              <BubbleTail isSender={true} fillColor="currentColor" />
+            </div>
           )}
         </div>
       </DropdownMenuTrigger>
@@ -115,7 +136,7 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
           onClick={() => handleCopy(msg.text)}
         >
           <p>Copy</p>
-          <CopyIconSvg isDark={theme.theme === "dark"} />
+          <CopyIconSvg isDark={theme.resolvedTheme === "dark"} />
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
@@ -123,7 +144,7 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
           onClick={handleForward}
         >
           <p>Forward</p>
-          <ForwardIconSvg isDark={theme.theme === "dark"} />
+          <ForwardIconSvg isDark={theme.resolvedTheme === "dark"} />
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem className="flex justify-between items-center">

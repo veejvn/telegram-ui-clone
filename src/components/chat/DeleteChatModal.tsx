@@ -32,7 +32,7 @@ const DeleteChatModal: React.FC<DeleteChatModalProps> = ({
         >
           Delete for me
         </Button>
-        <Button className="w-full" variant="ghost" onClick={onClose}>
+        <Button className="w-full dark:text-black" variant="ghost" onClick={onClose}>
           Cancel
         </Button>
       </div>

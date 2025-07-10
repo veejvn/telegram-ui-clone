@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import SearchContent from "@/components/layouts/SearchContent";
 import { searchMatrixUsers } from "@/services/matrixUserSearch";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
-import * as sdk from "matrix-js-sdk";
+import * as sdk from "@/lib/matrix-sdk";
 
 const SearchBar = () => {
   const client = useMatrixClient();
