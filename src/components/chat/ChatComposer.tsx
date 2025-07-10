@@ -264,7 +264,6 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             size={35}
           />
         )}
-      </div>
     </div>
   );
 };

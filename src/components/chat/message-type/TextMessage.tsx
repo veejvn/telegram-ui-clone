@@ -29,7 +29,7 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
   const [triggered, setTriggered] = useState(false);
   const client = useMatrixClient();
   const router = useRouter();
-  const holdTimeout = useRef<number | null>(null);
+  const { addMessage } = useForwardStore.getState();
 
   const textClass = clsx(
     "rounded-2xl px-4 py-1.5",
