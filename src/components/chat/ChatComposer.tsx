@@ -222,23 +222,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             </div>
           )}
         </div>
-          {showEmojiPicker && (
-            <div className="absolute bottom-12 right-2 z-50">
-              <EmojiPicker
-                width={300}
-                height={350}
-                onEmojiClick={handleEmojiClick}
-                theme={
-                  theme.theme === "dark" ? EmojiTheme.DARK : EmojiTheme.LIGHT
-                }
-              />
-            </div>
-          )}
-        </div>
 
-        <div className="absolute bottom-14 left-0 z-50 pb-8">
-          <TypingIndicator roomId={roomId} />
-        </div>
         <div className="absolute bottom-14 left-0 z-50 pb-8">
           <TypingIndicator roomId={roomId} />
         </div>
@@ -264,6 +248,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             size={35}
           />
         )}
+      </div>
     </div>
   );
 };
