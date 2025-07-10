@@ -7,6 +7,8 @@ type State =
     | 'incoming'
     | 'connecting'
     | 'connected'
+    | 'waiting-for-recipient' // 🆕
+    | 'recalling'             // 🆕
     | 'ended'
     | 'error'
 
@@ -18,9 +20,10 @@ interface CallStore {
     callDuration: number
     callEndedReason?: string
     micOn: boolean
-    placeCall: (roomId: string, type: CallType) => void
+    recallCountdown?: number // 🆕
+    placeCall: (roomId: string, type: CallType) => void | Promise<void>
     answerCall: () => Promise<void>
-    rejectCall: () => void  // ✅ FIX: Thêm method rejectCall
+    rejectCall: () => void
     hangup: () => void
     reset: () => void
     toggleCamera: (on: boolean) => void
@@ -29,6 +32,8 @@ interface CallStore {
     muteWithSilentTrack: () => void
     recreateAudioTrack: () => Promise<void>
     upgradeToVideo: () => Promise<void>
+    startRecallWatcher: (userId: string, roomId: string, type: CallType) => void // 🆕
+    recallCall: (roomId: string, type: CallType) => Promise<void> // 🆕
 }
 
 const outgoingAudio = typeof Audio !== 'undefined' ? new Audio('/chat/sounds/outgoing.mp3') : null
@@ -146,13 +151,38 @@ const useCallStore = create<CallStore>((set, get) => {
         state: 'idle',
         callDuration: 0,
         micOn: true,
-        placeCall: (roomId, type) => {
+        // 🆕 Thay thế placeCall để kiểm tra presence trước khi gọi
+        placeCall: async (roomId, type) => {
             const { state } = get();
             if (state === 'ringing' || state === 'connecting' || state === 'connected') {
                 console.warn(`[CallStore] Already have active call for this room (${roomId}), state=${state}`);
                 return;
             }
-            callService.placeCall(roomId, type)
+            // 🆕 Lấy client từ window (nếu đã inject), hoặc bạn nên truyền client vào store/action
+            const client = (window as any).matrixClient;
+            if (!client) {
+                console.warn('[CallStore] Matrix client not available');
+                return;
+            }
+            // Hàm này bạn cần implement đúng với app của bạn
+            const getRecipientIdFromRoom = (roomId: string): string => {
+                const myId = client.getUserId?.();
+                const room = client.getRoom?.(roomId);
+                if (!room) return '';
+                const members = room.getJoinedMembers?.();
+                if (!members) return '';
+                const other = members.find((m: any) => m.userId !== myId);
+                return other?.userId || '';
+            };
+            const userId = getRecipientIdFromRoom(roomId);
+            const user = client.getUser?.(userId);
+            if (user?.presence === 'offline') {
+                set({ state: 'waiting-for-recipient', recallCountdown: 30 });
+                get().startRecallWatcher(userId, roomId, type);
+                return;
+            }
+            await callService.placeCall(roomId, type);
+            set({ state: 'ringing' });
         },
         answerCall: async () => {
             set({ state: 'connecting' })
@@ -281,6 +311,41 @@ const useCallStore = create<CallStore>((set, get) => {
             } catch (err) {
                 console.error("[CallStore] upgradeToVideo error:", err);
             }
+        },
+        // 🆕 Theo dõi recipient online và countdown recall
+        startRecallWatcher: (userId, roomId, type) => {
+            let countdown = 30;
+            set({ recallCountdown: countdown });
+            const interval = setInterval(() => {
+                countdown -= 1;
+                set({ recallCountdown: countdown });
+                if (countdown <= 0) {
+                    clearInterval(interval);
+                    set({
+                        state: 'ended',
+                        callEndedReason: 'recipient-offline-timeout',
+                        recallCountdown: undefined,
+                    });
+                }
+            }, 1000);
+            const client = (window as any).matrixClient;
+            if (!client) return;
+            const onPresence = (event: any) => {
+                if (event.getType?.() !== 'm.presence') return;
+                if (event.getSender?.() !== userId) return;
+                if (event.getContent?.().presence === 'online') {
+                    clearInterval(interval);
+                    client.removeListener('event', onPresence);
+                    get().recallCall(roomId, type);
+                }
+            };
+            client.on('event', onPresence);
+        },
+        // 🆕 recallCall: chuyển sang recalling rồi gọi lại
+        recallCall: async (roomId, type) => {
+            set({ state: 'recalling', recallCountdown: undefined });
+            await callService.placeCall(roomId, type);
+            set({ state: 'ringing' });
         },
     }
 })
