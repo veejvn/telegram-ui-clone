@@ -4,6 +4,8 @@ import { Switch } from "@headlessui/react";
 import { Slider } from "@mui/material";
 import { Check, ChevronRight, Image, Play, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
+
 export default function AutoDownloadSettings() {
   const [autoDownload, setAutoDownload] = useState(true);
   const [sliderValue, setSliderValue] = useState(100);
@@ -34,7 +36,10 @@ export default function AutoDownloadSettings() {
   return (
     <div className="min-h-screen bg-[#f6f6f6] dark:bg-black text-black dark:text-white p-4 space-y-6 font-sans">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div
+        className="flex items-center justify-between mb-6"
+        style={getHeaderStyleWithStatusBar()}
+      >
         <button
           type="button"
           onClick={() => router.back()}
@@ -56,15 +61,13 @@ export default function AutoDownloadSettings() {
         <Switch
           checked={autoDownload}
           onChange={setAutoDownload}
-          className={`${
-            autoDownload ? "bg-green-500" : "bg-zinc-300 dark:bg-zinc-700"
-          }
+          className={`${autoDownload ? "bg-green-500" : "bg-zinc-300 dark:bg-zinc-700"
+            }
             relative inline-flex h-6 w-11 items-center rounded-full`}
         >
           <span
-            className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-[#18181b] transition-transform duration-200 ${
-              autoDownload ? "translate-x-5" : "translate-x-1"
-            }`}
+            className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-[#18181b] transition-transform duration-200 ${autoDownload ? "translate-x-5" : "translate-x-1"
+              }`}
           />
         </Switch>
       </div>
@@ -75,7 +78,7 @@ export default function AutoDownloadSettings() {
         </p>
         <Slider
           value={sliderValue}
-          onChange={(e, newValue) => setSliderValue(newValue)}
+          onChange={(e, newValue) => setSliderValue(newValue as number)}
           min={0}
           max={100}
           className="text-blue-500"

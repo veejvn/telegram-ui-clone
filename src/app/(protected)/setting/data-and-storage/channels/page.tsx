@@ -1,33 +1,51 @@
 "use client";
 import { useState } from "react";
 import { Switch } from "@headlessui/react";
-import { ChevronRight,  Image as ImageIcon, Play, Plus } from "lucide-react";
+import { ChevronRight, Image as ImageIcon, Play, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
+import Head from "next/head";
+import { useTheme } from "next-themes";
 
 export default function AutoDownloadSettings() {
   const [photoSave, setPhotoSave] = useState(false);
   const [videoSave, setVideoSave] = useState(false);
   const router = useRouter();
+  const { theme } = useTheme();
+
+  // Xác định dark/light mode
+  const isDark =
+    theme === "dark" ||
+    (theme === "system" &&
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+  // Lấy style header tránh status bar
+  const headerStyle = getHeaderStyleWithStatusBar();
 
   return (
     <div className="min-h-screen bg-[#f6f6f6] dark:bg-black text-black dark:text-white p-4 space-y-6 font-sans">
-       {/* Header */}
-    <div className="flex items-center justify-between mb-6">
-      <button
-        type="button"
-        onClick={() => router.back()}
-        className="text-blue-400"
-      >
-        &lt; Back
-      </button>
-      <div className="w-16" />
-    </div>
+      {/* Meta status bar màu đúng với theme */}
+      <Head>
+        <meta name="theme-color" content={isDark ? "#18181b" : "#f6f6f6"} />
+      </Head>
 
-    <h1 className="text-center font-semibold text-2xl mb-4">Channels</h1>
+      {/* Header né status bar */}
+      <div className="flex items-center justify-between mb-6" style={headerStyle}>
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="text-blue-400"
+        >
+          &lt; Back
+        </button>
+        <div className="w-16" />
+      </div>
+
+      <h1 className="text-center font-semibold text-2xl mb-4">Channels</h1>
 
       <div>
         <p className="text-sm text-zinc-400 dark:text-zinc-300 mb-2">SAVE TO PHOTOS</p>
-
         <div className="bg-white dark:bg-[#18181b] rounded-xl divide-y divide-zinc-200 dark:divide-zinc-700 border border-zinc-200 dark:border-zinc-700">
           <div className="flex justify-between items-center p-4">
             <div className="flex items-center space-x-3">
@@ -37,18 +55,15 @@ export default function AutoDownloadSettings() {
             <Switch
               checked={photoSave}
               onChange={setPhotoSave}
-              className={`${
-                photoSave ? "bg-green-500" : "bg-zinc-300 dark:bg-zinc-700"
-              } relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200`}
+              className={`${photoSave ? "bg-green-500" : "bg-zinc-300 dark:bg-zinc-700"
+                } relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200`}
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-[#18181b] transition-transform duration-200 ${
-                  photoSave ? "translate-x-5" : "translate-x-1"
-                }`}
+                className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-[#18181b] transition-transform duration-200 ${photoSave ? "translate-x-5" : "translate-x-1"
+                  }`}
               />
             </Switch>
           </div>
-
           <div className="flex justify-between items-center p-4">
             <div className="flex items-center space-x-3">
               <Play className="text-blue-500" />
@@ -57,14 +72,12 @@ export default function AutoDownloadSettings() {
             <Switch
               checked={videoSave}
               onChange={setVideoSave}
-              className={`${
-                videoSave ? "bg-green-500" : "bg-zinc-300 dark:bg-zinc-700"
-              } relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200`}
+              className={`${videoSave ? "bg-green-500" : "bg-zinc-300 dark:bg-zinc-700"
+                } relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200`}
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-[#18181b] transition-transform duration-200 ${
-                  videoSave ? "translate-x-5" : "translate-x-1"
-                }`}
+                className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-[#18181b] transition-transform duration-200 ${videoSave ? "translate-x-5" : "translate-x-1"
+                  }`}
               />
             </Switch>
           </div>

@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight, ChevronLeft } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -17,6 +17,9 @@ import {
 import { MatrixAuthService } from "@/services/matrixAuthService";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { callService } from "@/services/callService";
+import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
+import Head from "next/head";
+import { useTheme } from "next-themes";
 
 export default function EditProfilePage() {
     const router = useRouter();
@@ -27,35 +30,28 @@ export default function EditProfilePage() {
             const authService = new MatrixAuthService();
             await authService.logout();
             logout();
-            
-            // ✅ Cleanup callService
+
             if (callService) {
                 try {
-                    callService.hangup(); // End any active calls
-                    // callService sẽ tự cleanup khi không có auth data
+                    callService.hangup();
                 } catch (error) {
                     console.warn("CallService cleanup warning:", error);
                 }
             }
-            
-            // Đảm bảo cookies được xóa hoàn toàn bằng cách force clear tất cả
+
             document.cookie = "matrix_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
             document.cookie = "matrix_user_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
             document.cookie = "matrix_device_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-            
-            // Clear localStorage nếu có
+
             Object.keys(localStorage).forEach(key => {
                 if (key.startsWith('matrix') || key.startsWith('mx_')) {
                     localStorage.removeItem(key);
                 }
             });
-            
-            // Sử dụng window.location.href thay vì router.push để force page reload
-            // Điều này đảm bảo page.tsx sẽ check lại từ đầu với cookies đã bị xóa
+
             window.location.href = "/chat/login";
         } catch (error) {
             console.error("Logout error:", error);
-            // Ngay cả khi có lỗi, vẫn force clear và redirect
             document.cookie = "matrix_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
             document.cookie = "matrix_user_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
             document.cookie = "matrix_device_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
@@ -69,14 +65,26 @@ export default function EditProfilePage() {
     const [bio, setBio] = useState("");
     const phone = "";
 
+    // Header style & status bar màu auto theo theme
+    const headerStyle = getHeaderStyleWithStatusBar();
+    const { theme } = useTheme();
+    const isDark =
+        theme === "dark" ||
+        (theme === "system" &&
+            typeof window !== "undefined" &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches);
+
     return (
         <div className="min-h-screen bg-[#f4f4f7] text-black dark:bg-black dark:text-white">
+            <Head>
+                <meta name="theme-color" content={isDark ? "#101014" : "#fff"} />
+            </Head>
             {/* Top Bar */}
-            <div className="flex justify-between items-center px-4 py-3 text-sm font-medium">
-                <button onClick={() => router.back()} className="text-sky-600 flex items-center gap-1">
+            <div className="flex justify-between items-center px-4 py-3 text-sm font-medium" style={headerStyle}>
+                <button onClick={() => router.back()} className="text-sky-600 dark:text-sky-400 flex items-center gap-1">
                     Cancel
                 </button>
-                <button className="text-sky-600">Done</button>
+                <button className="text-sky-600 dark:text-sky-400">Done</button>
             </div>
 
             {/* Avatar - iOS style */}
@@ -91,7 +99,7 @@ export default function EditProfilePage() {
                         <path d="M12 9.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5Zm-2.6-5.1.3-.4c.3-.4.8-.8 1.4-.8h2.8c.6 0 1.1.3 1.4.8l.3.4.7 1H19a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1.9l.7-1Zm6.6 7.6a4 4 0 1 0-8 0 4 4 0 0 0 8 0Z" />
                     </svg>
                 </div>
-                <p className="text-[#007aff] text-sm mt-2 font-medium cursor-pointer dark:text-[#4aa3ff]">
+                <p className="text-[#007aff] dark:text-[#4aa3ff] text-sm mt-2 font-medium cursor-pointer">
                     Set New Photo
                 </p>
             </div>
@@ -126,7 +134,7 @@ export default function EditProfilePage() {
                     className="w-full bg-white dark:bg-neutral-900 dark:text-white rounded-lg px-4 py-3 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none"
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                    You can add a few lines about yourself. Choose who can see your bio in <span className="text-sky-600">Settings</span>.
+                    You can add a few lines about yourself. Choose who can see your bio in <span className="text-sky-600 dark:text-sky-400">Settings</span>.
                 </p>
 
                 {/* Date of Birth */}
@@ -135,7 +143,7 @@ export default function EditProfilePage() {
                     <span className="text-gray-500 text-sm">Add</span>
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Only your contacts can see your birthday. <span className="text-sky-600">Change ›</span>
+                    Only your contacts can see your birthday. <span className="text-sky-600 dark:text-sky-400">Change ›</span>
                 </p>
 
                 {/* Info Rows - grouped with dividers and rounded corners */}
@@ -157,10 +165,9 @@ export default function EditProfilePage() {
                     </div>
                 </div>
 
-
                 {/* Add Another Account */}
                 <div className="space-y-2">
-                    <button className="w-full bg-white dark:bg-neutral-900 rounded-lg px-4 py-3 text-sky-600 text-sm font-medium">
+                    <button className="w-full bg-white dark:bg-neutral-900 rounded-lg px-4 py-3 text-sky-600 dark:text-sky-400 text-sm font-medium">
                         Add Another Account
                     </button>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
