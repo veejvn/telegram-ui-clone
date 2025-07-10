@@ -16,6 +16,7 @@ export type Message = {
   fileName?: string | null;
   status: MessageStatus;
   type?: MessageType;
+  isForward?: boolean;
 };
 
 type ChatStore = {

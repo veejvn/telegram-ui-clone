@@ -16,12 +16,14 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { usePresenceContext } from "@/contexts/PresenceProvider";
 import { getLS } from "@/tools/localStorage.tool";
 import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
+import { useForwardStore } from "@/stores/useForwardStore";
 
 const ChatHeader = ({ room }: { room: sdk.Room }) => {
   const client = useMatrixClient();
   const { getLastSeen } = usePresenceContext() || {};
   const currentUserId = useAuthStore.getState().userId;
   const { roomId, type, otherUserId } = getRoomInfo(room, currentUserId);
+  const clearMessages = useForwardStore((state) => state.clearMessages);
 
   const [user, setUser] = useState<sdk.User | undefined>(undefined);
 
@@ -95,6 +97,11 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
           href={"/chat"}
           className="flex text-blue-600
             cursor-pointer hover:opacity-70"
+          onClick={() => {
+            setTimeout(() => {
+              clearMessages();
+            }, 300);
+          }}
         >
           <ChevronLeft />
           <p>Back</p>

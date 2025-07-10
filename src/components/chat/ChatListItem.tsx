@@ -62,6 +62,7 @@ export const ChatListItem = ({
 
     client.on("Room.timeline" as any, onTimeline);
     client.on("RoomMember.presence" as any, onPresence);
+
     return () => {
       client.removeListener("Room.timeline" as any, onTimeline);
       client.removeListener("RoomMember.presence" as any, onPresence);
@@ -137,7 +138,7 @@ export const ChatListItem = ({
 
       <div className="flex flex-col justify-between pb-1.5">
         <div className="flex gap-1 text-sm">
-          {lastReadReceipts ? (
+          {unreadMsgs.length < 1 ? (
             <CheckCheck className="h-4 w-4 mt-0.5 text-green-600 dark:text-blue-600" />
           ) : (
             <Check className="h-4 w-4 mt-0.5 text-green-600 dark:text-blue-600" />

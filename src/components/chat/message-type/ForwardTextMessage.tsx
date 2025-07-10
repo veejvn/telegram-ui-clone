@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { clsx } from "clsx";
 import { Check, CheckCheck } from "lucide-react";
 import { MessagePros } from "@/types/chat";
@@ -21,15 +21,46 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useForwardStore } from "@/stores/useForwardStore";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/ChatAvatar";
 
-// 💬 Main TextMessage
-const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
+type ForwardTextMessageProps = MessagePros & {
+  forwardMessage: {
+    text: string;
+    originalSender: string;
+    originalSenderId: string;
+  };
+};
+
+const ForwardTextMessage = ({
+  msg,
+  isSender,
+  animate,
+  forwardMessage,
+}: ForwardTextMessageProps) => {
   const theme = useTheme();
   const [open, setOpen] = useState(false);
   const [triggered, setTriggered] = useState(false);
-  const client = useMatrixClient();
   const router = useRouter();
-  const { addMessage } = useForwardStore.getState();
+  const client = useMatrixClient();
+  const { text, originalSender, originalSenderId } = forwardMessage;
+  const [avatarUrl, setAvatarUrl] = useState<string>("");
+  //console.log(avatarUrl);
+
+  useEffect(() => {
+    if (!client || !originalSenderId) return;
+
+    const user = client.getUser(originalSenderId);
+    const mxcUrl = user?.avatarUrl;
+
+    if (mxcUrl) {
+      const httpUrl = client.mxcUrlToHttp(mxcUrl, 96, 96, "crop") ?? "";
+      setAvatarUrl(httpUrl);
+    }
+  }, [client, originalSenderId]);
 
   const textClass = clsx(
     "rounded-2xl px-4 py-1.5",
@@ -40,7 +71,7 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
   );
 
   const timeClass = clsx(
-    "flex items-center gap-1 text-xs mt-1 select-none",
+    "flex items-center gap-1 text-xs mt-1",
     isSender
       ? "text-green-500 justify-end dark:text-white"
       : "text-gray-400 dark:text-gray-400"
@@ -58,11 +89,12 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
   const handleForward = async () => {
     if (!msg.text || !msg.sender || !msg.time || !client) return;
 
+    const { addMessage } = useForwardStore.getState();
     router.push("/chat/forward");
 
     setTimeout(() => {
       addMessage({
-        text: msg.text,
+        text: text,
         senderId: msg.sender,
         sender: msg.senderDisplayName!,
         time: msg.time,
@@ -73,39 +105,17 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
   useEffect(() => {
     let timeout: any;
     if (triggered) {
-      timeout = setTimeout(() => setOpen(true), 1500); // delay 300ms
+      timeout = setTimeout(() => setOpen(true), 350); // delay 300ms
     } else {
       setOpen(false);
     }
     return () => clearTimeout(timeout);
   }, [triggered]);
 
-  // const handleHoldStart = () => {
-  //   // Nếu menu đã mở thì không làm gì
-  //   if (open) return;
-  //   holdTimeout.current = window.setTimeout(() => {
-  //     setOpen(true);
-  //   }, 3000);
-  // };
-  
-  // const handleHoldEnd = () => {
-  //   // Nếu chưa đủ 3s thì clear timeout, không mở menu
-  //   if (!open && holdTimeout.current) {
-  //     clearTimeout(holdTimeout.current);
-  //     holdTimeout.current = null;
-  //   }
-  //   // Nếu menu đã mở thì không đóng ở đây (để user chọn menu)
-  // };
-
   return (
     <DropdownMenu open={open} onOpenChange={setTriggered}>
       <DropdownMenuTrigger asChild>
         <div
-          // onMouseDown={handleHoldStart}
-          // onMouseUp={handleHoldEnd}
-          // onMouseLeave={handleHoldEnd}
-          // onTouchStart={handleHoldStart}
-          // onTouchEnd={handleHoldEnd}
           className={clsx(
             "flex items-end", // Đảm bảo tail căn đáy với bubble
             isSender ? "justify-end" : "justify-start"
@@ -121,10 +131,35 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
           {/* 💬 Nội dung tin nhắn */}
           <div className="flex flex-col  ">
             <div className={textClass}>
-              <p className={"whitespace-pre-wrap break-words leading-snug select-none"}>
-                {msg.text}
+              <p
+                className={
+                  "whitespace-pre-wrap break-words leading-snug text-sm"
+                }
+              >
+                Forwarded from
               </p>
-
+              <p
+                className={
+                  "whitespace-pre-wrap break-words leading-snug flex gap-1 text-sm"
+                }
+              >
+                <Avatar className="h-5 w-5">
+                  {avatarUrl ? (
+                    <AvatarImage src={avatarUrl} alt="avatar" />
+                  ) : (
+                    <>
+                      <AvatarImage src="" alt="Unknow" />
+                      <AvatarFallback className="bg-purple-400 text-white text-[10px] font-bold">
+                        {originalSender.slice(0, 1).toUpperCase()}
+                      </AvatarFallback>
+                    </>
+                  )}
+                </Avatar>
+                {originalSender}
+              </p>
+              <p className={"whitespace-pre-wrap break-words leading-snug"}>
+                {text}
+              </p>
               <div className={timeClass}>
                 {formatMsgTime(msg.time)}
                 {isSender &&
@@ -171,4 +206,4 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
   );
 };
 
-export default TextMessage;
+export default ForwardTextMessage;
