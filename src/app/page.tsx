@@ -24,7 +24,9 @@ export default function Home() {
       try {
         // Kiểm tra có login token hoặc access token trong URL không
         const urlParams = new URLSearchParams(window.location.search);
-        const loginToken = urlParams.get("loginToken");
+        const loginToken =
+          urlParams.get("loginToken") || getCookie("loginToken");
+        //console.log(loginToken);
         const hash = window.location.hash;
         const hasAccessTokenInHash = hash.includes("access_token");
 
@@ -44,6 +46,7 @@ export default function Home() {
             );
 
             const data = await response.json();
+            //console.log(data)
 
             if (
               response.ok &&
@@ -54,7 +57,6 @@ export default function Home() {
               // Clear any existing auth first
               clearMatrixAuthCookies();
 
-              //console.log(data.user_id)
 
               // Set new credentials
               setCookie("matrix_token", data.access_token, 7);
@@ -72,7 +74,11 @@ export default function Home() {
               router.replace(ROUTES.CHAT);
               return;
             } else {
-              router.push(ROUTES.LOGIN);
+              if(isLogging){
+                router.push(ROUTES.CHAT);
+              }else{
+                router.push(ROUTES.LOGIN);
+              }
               return;
             }
           } catch (error) {
@@ -115,7 +121,7 @@ export default function Home() {
 
         // ✅ THÊM CHECK ĐỂ TRÁNH RACE CONDITION SAU LOGOUT
         // Nếu không có cả token và user ID thì chắc chắn đã logout
-        if (!isLogging) {
+        if (!existingToken && !existingUserId) {
           router.push(ROUTES.LOGIN);
           return;
         }
