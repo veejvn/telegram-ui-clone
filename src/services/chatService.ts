@@ -2,12 +2,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import * as sdk from "matrix-js-sdk";
+import * as sdk from "@/lib/matrix-sdk";
 import { Message, MessageStatus, MessageType } from "@/stores/useChatStore";
 import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { m } from "framer-motion";
+import { MessagePros } from "@/types/chat";
+import { convertEventsToMessages } from "@/utils/chat/convertEventsToMessages";
 
 export const getUserRooms = async (
   client: sdk.MatrixClient

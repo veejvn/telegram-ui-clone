@@ -13,13 +13,19 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
   const [error, setError] = useState("");
 
   const handleSubmit = async (data: LoginFormData) => {
+    setError(""); // Clear previous errors
+    
     try {
       const authService = new MatrixAuthService();
-      const { success, token, userId, deviceId } = await authService.login(
-        data
-      );
-      if (success && token) {
-        onSuccess(token, userId, deviceId);
+      const result = await authService.login(data);
+      
+      //console.log("Login response:", result);
+      
+      if (result.success && result.token && result.userId && result.deviceId) {
+        //console.log("🎉 Login successful, calling onSuccess...");
+        onSuccess(result.token, result.userId, result.deviceId);
+      } else {
+        throw new Error("Login failed: Missing required data in response");
       }
     } catch (error: any) {
       let errorMessage: string = ERROR_MESSAGES.GENERAL.UNKNOWN_ERROR;
@@ -38,6 +44,9 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         error?.message?.includes("NetworkError")
       ) {
         errorMessage = ERROR_MESSAGES.NETWORK.CONNECTION_ERROR;
+      } else if (error?.message) {
+        // Show actual error for debugging
+        errorMessage = `Error: ${error.message}`;
       }
 
       setError(errorMessage);
@@ -75,7 +84,15 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           type="password"
           placeholder="••••••••"
         />
-        <ErrorMessage message={error}></ErrorMessage>
+        
+        {/* Better error display */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-4">
+            <div className="text-sm font-medium">❌ Đăng nhập thất bại</div>
+            <div className="text-sm mt-1">{error}</div>
+          </div>
+        )}
+        
         <div className="flex items-center justify-between text-sm my-5">
           <Link href="/register" className="text-blue-600 hover:text-blue-800">
             Create account
@@ -83,6 +100,26 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         </div>
         <SubmitButton>Sign In</SubmitButton>
       </Form>
+
+      {/* Divider */}
+      <div className="flex items-center my-4">
+        <div className="flex-grow h-px bg-gray-300 dark:bg-gray-600" />
+        <span className="mx-2 text-gray-500 text-sm">HOẶC</span>
+        <div className="flex-grow h-px bg-gray-300 dark:bg-gray-600" />
+      </div>
+
+      {/* SSO/Provider Button */}
+      <div className="space-y-3">
+        <button
+          className="w-full flex items-center justify-center py-2 px-4 rounded-full border border-blue-600 bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 transition font-medium"
+          onClick={() => {
+            const redirectUrl = `${process.env.NEXT_PUBLIC_MATRIX_BASE_URL}/_matrix/client/r0/login/sso/redirect?redirectUrl=${encodeURIComponent(window.location.origin)}/chat`;
+            window.location.href = redirectUrl;
+          }}
+        >
+          Đăng nhập với SSO (Keycloak)
+        </button>
+      </div>
     </motion.div>
   );
 }

@@ -10,6 +10,7 @@ import LoadingSpinner from "@/components/common/LoadingSpinner";
 import IncomingCallHandler from "@/components/call/IncomingCallHandler";
 import BottomNavigationWrapper from "@/components/layouts/BottomNavigationWrapper";
 import useRegisterPushKey from "@/hooks/useRegisterPushKey ";
+import { TokenExpirationToast } from "@/components/common/Toast";
 
 // Dynamic import client-only MatrixClientProvider
 const MatrixClientProvider = dynamic(
@@ -55,6 +56,7 @@ export default function ProtectedClientLayout({
           {children}
           <BottomNavigationWrapper />
         </main>
+        <TokenExpirationToast />
       </MatrixClientProvider>
     </Suspense>
   );

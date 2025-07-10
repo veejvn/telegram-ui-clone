@@ -149,7 +149,7 @@ export const ChatList = ({
           </SwipeableList>
           {deleteRoomId && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-              <div className="bg-white w-full max-w-md rounded-lg p-6">
+              <div className="bg-white dark:bg-zinc-800 w-full max-w-md rounded-lg p-6">
                 <h3 className="text-lg font-semibold mb-4">
                   Permanently delete the chat with <b>{deleteRoomName}</b>?
                 </h3>

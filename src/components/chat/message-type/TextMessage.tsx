@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { clsx } from "clsx";
 import { Check, CheckCheck } from "lucide-react";
 import { MessagePros } from "@/types/chat";
@@ -29,7 +29,7 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
   const [triggered, setTriggered] = useState(false);
   const client = useMatrixClient();
   const router = useRouter();
-  const { addMessage } = useForwardStore.getState();
+  const holdTimeout = useRef<number | null>(null);
 
   const textClass = clsx(
     "rounded-2xl px-4 py-1.5",
@@ -40,7 +40,7 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
   );
 
   const timeClass = clsx(
-    "flex items-center gap-1 text-xs mt-1",
+    "flex items-center gap-1 text-xs mt-1 select-none",
     isSender
       ? "text-green-500 justify-end dark:text-white"
       : "text-gray-400 dark:text-gray-400"
@@ -73,17 +73,39 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
   useEffect(() => {
     let timeout: any;
     if (triggered) {
-      timeout = setTimeout(() => setOpen(true), 350);
+      timeout = setTimeout(() => setOpen(true), 1500); // delay 300ms
     } else {
       setOpen(false);
     }
     return () => clearTimeout(timeout);
   }, [triggered]);
 
+  // const handleHoldStart = () => {
+  //   // Nếu menu đã mở thì không làm gì
+  //   if (open) return;
+  //   holdTimeout.current = window.setTimeout(() => {
+  //     setOpen(true);
+  //   }, 3000);
+  // };
+  
+  // const handleHoldEnd = () => {
+  //   // Nếu chưa đủ 3s thì clear timeout, không mở menu
+  //   if (!open && holdTimeout.current) {
+  //     clearTimeout(holdTimeout.current);
+  //     holdTimeout.current = null;
+  //   }
+  //   // Nếu menu đã mở thì không đóng ở đây (để user chọn menu)
+  // };
+
   return (
     <DropdownMenu open={open} onOpenChange={setTriggered}>
       <DropdownMenuTrigger asChild>
         <div
+          // onMouseDown={handleHoldStart}
+          // onMouseUp={handleHoldEnd}
+          // onMouseLeave={handleHoldEnd}
+          // onTouchStart={handleHoldStart}
+          // onTouchEnd={handleHoldEnd}
           className={clsx(
             "flex items-end", // Đảm bảo tail căn đáy với bubble
             isSender ? "justify-end" : "justify-start"
@@ -99,7 +121,7 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
           {/* 💬 Nội dung tin nhắn */}
           <div className="flex flex-col  ">
             <div className={textClass}>
-              <p className={"whitespace-pre-wrap break-words leading-snug"}>
+              <p className={"whitespace-pre-wrap break-words leading-snug select-none"}>
                 {msg.text}
               </p>
 
