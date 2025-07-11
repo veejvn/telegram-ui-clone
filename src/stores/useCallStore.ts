@@ -58,6 +58,10 @@ const stopAllTracks = (stream?: MediaStream) => {
 
 let _hasListener = false;
 
+// 🆕 Biến toàn cục để quản lý watcher/timer recall
+let _recallInterval: ReturnType<typeof setInterval> | null = null;
+let _recallListener: ((event: any) => void) | null = null;
+
 const useCallStore = create<CallStore>((set, get) => {
     if (!_hasListener) {
         callService.on('outgoing-call', () => {
@@ -154,8 +158,9 @@ const useCallStore = create<CallStore>((set, get) => {
         // 🆕 Thay thế placeCall để kiểm tra presence trước khi gọi
         placeCall: async (roomId, type) => {
             const { state } = get();
-            if (state === 'ringing' || state === 'connecting' || state === 'connected') {
-                console.warn(`[CallStore] Already have active call for this room (${roomId}), state=${state}`);
+            // 🆕 Không cho phép gọi mới khi đang waiting/recalling
+            if (['ringing', 'connecting', 'connected', 'waiting-for-recipient', 'recalling'].includes(state)) {
+                console.warn(`[CallStore] Already have active or pending call for this room (${roomId}), state=${state}`);
                 return;
             }
             // 🆕 Lấy client từ window (nếu đã inject), hoặc bạn nên truyền client vào store/action
@@ -209,6 +214,15 @@ const useCallStore = create<CallStore>((set, get) => {
         },
 
         hangup: () => {
+            if (_recallInterval) {
+                clearInterval(_recallInterval);
+                _recallInterval = null;
+            }
+            if (_recallListener) {
+                const client = (window as any).matrixClient;
+                if (client) client.removeListener('event', _recallListener);
+                _recallListener = null;
+            }
             const { localStream, remoteStream } = get();
             stopAllTracks(localStream);
             stopAllTracks(remoteStream);
@@ -224,6 +238,15 @@ const useCallStore = create<CallStore>((set, get) => {
             callService.hangup()
         },
         reset: () => {
+            if (_recallInterval) {
+                clearInterval(_recallInterval);
+                _recallInterval = null;
+            }
+            if (_recallListener) {
+                const client = (window as any).matrixClient;
+                if (client) client.removeListener('event', _recallListener);
+                _recallListener = null;
+            }
             if (_timer) {
                 clearInterval(_timer)
                 _timer = null
@@ -314,13 +337,26 @@ const useCallStore = create<CallStore>((set, get) => {
         },
         // 🆕 Theo dõi recipient online và countdown recall
         startRecallWatcher: (userId, roomId, type) => {
+            // 🆕 Cleanup watcher/timer cũ nếu có
+            if (_recallInterval) {
+                clearInterval(_recallInterval);
+                _recallInterval = null;
+            }
+            if (_recallListener) {
+                const client = (window as any).matrixClient;
+                if (client) client.removeListener('event', _recallListener);
+                _recallListener = null;
+            }
             let countdown = 30;
             set({ recallCountdown: countdown });
-            const interval = setInterval(() => {
+            _recallInterval = setInterval(() => {
                 countdown -= 1;
                 set({ recallCountdown: countdown });
                 if (countdown <= 0) {
-                    clearInterval(interval);
+                    if (_recallInterval) {
+                        clearInterval(_recallInterval);
+                        _recallInterval = null;
+                    }
                     set({
                         state: 'ended',
                         callEndedReason: 'recipient-offline-timeout',
@@ -330,16 +366,20 @@ const useCallStore = create<CallStore>((set, get) => {
             }, 1000);
             const client = (window as any).matrixClient;
             if (!client) return;
-            const onPresence = (event: any) => {
+            _recallListener = (event: any) => {
                 if (event.getType?.() !== 'm.presence') return;
                 if (event.getSender?.() !== userId) return;
                 if (event.getContent?.().presence === 'online') {
-                    clearInterval(interval);
-                    client.removeListener('event', onPresence);
+                    if (_recallInterval) {
+                        clearInterval(_recallInterval);
+                        _recallInterval = null;
+                    }
+                    client.removeListener('event', _recallListener!);
+                    _recallListener = null;
                     get().recallCall(roomId, type);
                 }
             };
-            client.on('event', onPresence);
+            client.on('event', _recallListener);
         },
         // 🆕 recallCall: chuyển sang recalling rồi gọi lại
         recallCall: async (roomId, type) => {
