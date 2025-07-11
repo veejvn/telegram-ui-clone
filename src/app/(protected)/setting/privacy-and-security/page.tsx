@@ -1,8 +1,10 @@
 "use client";
 
-import {
-  ChevronRight
-} from "lucide-react";
+import React from "react";
+import Head from "next/head";
+import { useTheme } from "next-themes";
+import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
+import { ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
@@ -81,11 +83,25 @@ const privacyItems = [
 
 export default function PrivacyAndSecurityPage() {
   const router = useRouter();
+  const { theme } = useTheme();
+
+  const isDark =
+    theme === "dark" ||
+    (theme === "system" &&
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+  const headerStyle = getHeaderStyleWithStatusBar();
 
   return (
     <div className="bg-[#f6f6f6] dark:bg-black min-h-screen text-black dark:text-white px-4 pt-6 pb-24">
+      {/* Status bar color */}
+      <Head>
+        <meta name="theme-color" content={isDark ? "#101014" : "#f6f6f6"} />
+      </Head>
+
       {/* Header */}
-      <div className="flex items-center mb-4">
+      <div className="flex items-center mb-4" style={headerStyle}>
         <button
           type="button"
           className="text-blue-400 mr-4 cursor-pointer"

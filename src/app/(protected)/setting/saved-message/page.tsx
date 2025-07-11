@@ -2,16 +2,30 @@
 
 import React from "react";
 import Image from "next/image";
+import Head from "next/head";
+import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Paperclip, Search, Mic, Clock } from "lucide-react";
+import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
 
 export default function SavedMessagesPage() {
   const router = useRouter();
+  const { theme } = useTheme();
+  const isDark =
+    theme === "dark" ||
+    (theme === "system" && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+  const headerStyle = getHeaderStyleWithStatusBar();
 
   return (
     <div className="relative w-full h-screen overflow-hidden">
+      {/* Status bar color */}
+      <Head>
+        <meta name="theme-color" content={isDark ? "#101014" : "#fff"} />
+      </Head>
+
       {/* Background for light mode */}
       <Image
         src="/chat/images/chat-bg-light.jpg"
@@ -36,14 +50,13 @@ export default function SavedMessagesPage() {
       {/* Content */}
       <div className="relative z-20 flex flex-col justify-between h-full">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 pt-4">
+        <div className="flex items-center justify-between px-4 pt-4" style={headerStyle}>
           <button onClick={() => router.back()} className="text-blue-500 text-base font-medium">
             ← Back
           </button>
           <h1 className="text-lg font-semibold text-black dark:text-white">Saved Messages</h1>
           <div className="flex items-center space-x-2">
             <Search className="w-5 h-5 text-gray-500" />
-            {/* ModeToggle removed */}
           </div>
         </div>
 
@@ -69,7 +82,6 @@ export default function SavedMessagesPage() {
               <li>Access this chat from any device</li>
               <li>Use search to quickly find things</li>
             </ul>
-
           </div>
         </div>
 

@@ -87,7 +87,17 @@ export const ChatListItem = ({
   }
 
   const { content, time, sender } = getLastMessagePreview(room);
-  //console.log(lastReadReceipts, sender);
+
+  // Lấy userId của sender thực sự của tin nhắn cuối cùng
+  const timeline = room.getLiveTimeline().getEvents();
+  const lastValidEvent = [...timeline].reverse().find((event) => {
+    return (
+      event.getType() === "m.room.message" &&
+      !event.isRedacted() &&
+      !!event.getContent()?.msgtype
+    );
+  });
+  const lastMessageSenderId = lastValidEvent?.getSender();
 
   return (
     <div className="flex px-2 py-2">
@@ -138,11 +148,13 @@ export const ChatListItem = ({
 
       <div className="flex flex-col justify-between pb-1.5">
         <div className="flex gap-1 text-sm">
-          {unreadMsgs.length < 1 ? (
-            <CheckCheck className="h-4 w-4 mt-0.5 text-green-600 dark:text-blue-600" />
-          ) : (
-            <Check className="h-4 w-4 mt-0.5 text-green-600 dark:text-blue-600" />
-          )}
+          {/* Chỉ hiển thị dấu check nếu tin nhắn cuối cùng là của mình */}
+          {lastMessageSenderId === userId &&
+            (lastReadReceipts ? (
+              <CheckCheck className="h-4 w-4 mt-0.5 text-green-600 dark:text-blue-600" />
+            ) : (
+              <Check className="h-4 w-4 mt-0.5 text-green-600 dark:text-blue-600" />
+            ))}
           <span className="text-muted-foreground">{time}</span>
         </div>
         {unreadMsgs && (

@@ -7,27 +7,30 @@ import { useUserStore } from "@/stores/useUserStore";
 import { getInitials } from "@/utils/getInitials";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { getBackgroundColorClass } from "@/utils/getBackgroundColor ";
-import { extractUsernameFromMatrixId, normalizeMatrixUserId } from "@/utils/matrixHelpers";
+import { extractUsernameFromMatrixId } from "@/utils/matrixHelpers";
+import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
+import Head from "next/head";
+import { useTheme } from "next-themes";
 
 export default function MyProfilePage() {
   const router = useRouter();
   const { user, setUser } = useUserStore.getState();
   let displayName = user ? user.displayName : "Your Name";
-  if(displayName.startsWith("@")){
-    displayName = extractUsernameFromMatrixId(displayName.replace(/=40/g, "@"))
+  if (displayName.startsWith("@")) {
+    displayName = extractUsernameFromMatrixId(displayName.replace(/=40/g, "@"));
   }
   const phone = user?.phone || true;
 
-  // Thêm logic lấy avatar từ Matrix giống trang Setting
+  // Logic lấy avatar từ Matrix giống trang Setting
   const client = useMatrixClient();
   const userId = useAuthStore.getState().userId;
   const decodedUserId = userId?.replace(/=40/g, "@");
 
   useEffect(() => {
     if (!client || !userId) return;
-    if(user?.avatarUrl) return;
+    if (user?.avatarUrl) return;
 
     const fetchAvatar = async () => {
       try {
@@ -35,8 +38,9 @@ export default function MyProfilePage() {
         if (profile && profile.avatar_url) {
           const httpUrl = client.mxcUrlToHttp(profile.avatar_url, 96, 96, "crop") ?? "";
           setUser({ avatarUrl: httpUrl });
+        } else {
+          setUser({ avatarUrl: "" });
         }
-        setUser({ avatarUrl: "" });
       } catch {
         setUser({ avatarUrl: "" });
       }
@@ -53,21 +57,31 @@ export default function MyProfilePage() {
 
   const avatarBackgroundColor = getBackgroundColorClass(userId);
 
-  //console.log(userId)
+  // Status bar màu theo theme
+  const { theme } = useTheme();
+  const isDark =
+    theme === "dark" ||
+    (theme === "system" &&
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const headerStyle = getHeaderStyleWithStatusBar();
 
   return (
     <div className="dark:bg-black dark:text-white min-h-screen px-4 pt-6 pb-10">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <Head>
+        <meta name="theme-color" content={isDark ? "#101014" : "#fff"} />
+      </Head>
+      {/* Header né status bar */}
+      <div className="flex justify-between items-center mb-6" style={headerStyle}>
         <button
           onClick={() => router.back()}
-          className="text-blue-600 text-sm font-medium pl-1"
+          className="text-blue-600 dark:text-blue-400 text-sm font-medium pl-1"
         >
           Back
         </button>
         <button
           onClick={() => router.push("/setting/profile/edit")}
-          className="text-blue-600 text-sm font-medium pl-1"
+          className="text-blue-600 dark:text-blue-400 text-sm font-medium pl-1"
         >
           Edit
         </button>
@@ -96,20 +110,19 @@ export default function MyProfilePage() {
         <h2 className="text-xl font-semibold">{displayName}</h2>
         <span className="text-sm text-blue-500">{decodedUserId}</span>
         <span className="text-gray-500 text-sm">{user?.status}</span>
-
       </div>
 
       {/* Mobile Info */}
       {phone && (
         <div className="bg-gray-100 dark:bg-gray-900 rounded-xl p-4 mb-6">
           <div className="text-xs dark:text-white mb-1">mobile</div>
-          <div className="text-blue-600 text-sm font-medium">{phone}</div>
+          <div className="text-blue-600 dark:text-blue-400 text-sm font-medium">{phone}</div>
         </div>
       )}
 
       {/* Posts Section */}
       <div>
-        <h3 className="text-sm font-semibold text-black mb-2">Posts</h3>
+        <h3 className="text-sm font-semibold text-black dark:text-white mb-2">Posts</h3>
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <img src="/chat/images/no-post-yet.png" alt="No posts" className="mb-4" />
           <p className="text-sm text-gray-500 mb-2">No posts yet...</p>
@@ -120,7 +133,6 @@ export default function MyProfilePage() {
             Add a Post
           </Button>
         </div>
-
       </div>
     </div>
   );
