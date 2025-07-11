@@ -1,12 +1,21 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useRef, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import * as sdk from "@/lib/matrix-sdk";
-import { getCookie, deleteCookie, setCookie } from "@/utils/cookie";
+import { getCookie } from "@/utils/cookie";
 import { waitForClientReady } from "@/lib/matrix";
 import { createUserInfo } from "@/utils/createUserInfo";
 import { PresenceProvider } from "@/contexts/PresenceProvider";
-import { normalizeMatrixUserId, isValidMatrixUserId } from "@/utils/matrixHelpers";
+import {
+  normalizeMatrixUserId,
+  isValidMatrixUserId,
+} from "@/utils/matrixHelpers";
 import { clearMatrixAuthCookies } from "@/utils/clearAuthCookies";
 import { ErrorDisplay } from "@/components/common/ErrorDisplay";
 
@@ -36,12 +45,12 @@ export function MatrixClientProvider({
 
   const handleLogout = () => {
     clearMatrixAuthCookies();
-    window.location.href = '/chat/login';
+    window.location.href = "/chat/login";
   };
 
   useEffect(() => {
     if (error) return; // Don't re-initialize if there's an error
-    
+
     let isMounted = true;
     let currentClient: sdk.MatrixClient | null = null;
 
@@ -56,7 +65,8 @@ export function MatrixClientProvider({
         const accessToken = getCookie("matrix_token");
         const rawUserId = getCookie("matrix_user_id");
         const deviceId = getCookie("matrix_device_id");
-        
+        console.log(accessToken, rawUserId, deviceId);
+
         if (!accessToken || !rawUserId || !deviceId) {
           console.log("[MatrixClientProvider] Missing auth credentials");
           setError("Thiếu thông tin xác thực. Vui lòng đăng nhập lại.");
@@ -65,44 +75,61 @@ export function MatrixClientProvider({
 
         // Normalize user ID to ensure correct format
         const userId = normalizeMatrixUserId(rawUserId, HOMESERVER_URL);
-        
+
         // Validate normalized user ID
         if (!isValidMatrixUserId(userId)) {
-          console.error("[MatrixClientProvider] Invalid Matrix User ID format:", userId);
-          setError(`User ID không hợp lệ: ${userId}. Format cần: @username:domain`);
+          console.error(
+            "[MatrixClientProvider] Invalid Matrix User ID format:",
+            userId
+          );
+          setError(
+            `User ID không hợp lệ: ${userId}. Format cần: @username:domain`
+          );
           return;
         }
-
-
 
         // ✅ Khai báo actualUserId ở đây để sử dụng sau
         let actualUserId = userId;
 
         // ✅ KIỂM TRA WHOAMI TRƯỚC KHI KHỞI TẠO CLIENT
         try {
-          const whoAmIResponse = await fetch(`${HOMESERVER_URL}/_matrix/client/v3/account/whoami`, {
-            headers: {
-              'Authorization': `Bearer ${accessToken}`,
-              'Content-Type': 'application/json'
+          const whoAmIResponse = await fetch(
+            `${HOMESERVER_URL}/_matrix/client/v3/account/whoami`,
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+              },
             }
-          });
+          );
 
           if (!whoAmIResponse.ok) {
             const errorData = await whoAmIResponse.json();
-            throw new Error(`WhoAmI failed (${whoAmIResponse.status}): ${errorData.error || 'Unknown error'}`);
+            throw new Error(
+              `WhoAmI failed (${whoAmIResponse.status}): ${
+                errorData.error || "Unknown error"
+              }`
+            );
           }
 
           const whoAmIData = await whoAmIResponse.json();
           const tokenUserId = whoAmIData.user_id;
-          
-
 
           // ✅ SỬ DỤNG USER ID CHÍNH XÁC TỪ TOKEN
           if (tokenUserId !== userId && tokenUserId !== rawUserId) {
             // Update cookie với user ID chính xác
-            setCookie("matrix_user_id", tokenUserId, 30);
+            const res = await fetch("/chat/api/set-cookie", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                userId: tokenUserId,
+              }),
+              credentials: "include", // 👈 đảm bảo cookie được gửi kèm trong các request sau
+            });
             actualUserId = tokenUserId;
-            
+
             // Force reload để tránh filter conflicts
             setTimeout(() => {
               window.location.reload();
@@ -116,19 +143,20 @@ export function MatrixClientProvider({
             actualUserId = userId;
           }
         } catch (tokenError: any) {
-          console.error("[MatrixClientProvider] Token verification failed:", tokenError);
+          console.error(
+            "[MatrixClientProvider] Token verification failed:",
+            tokenError
+          );
           setError(`Lỗi xác thực token: ${tokenError.message}
 
 Chi tiết:
 - Stored User ID: ${userId}
-- Token: ${accessToken ? '***EXISTS***' : 'MISSING'}
+- Token: ${accessToken ? "***EXISTS***" : "MISSING"}
 - Error: ${tokenError.message}
 
 Vui lòng đăng nhập lại.`);
           return;
         }
-
-
 
         currentClient = sdk.createClient({
           baseUrl: HOMESERVER_URL,
@@ -138,44 +166,53 @@ Vui lòng đăng nhập lại.`);
         });
 
         // Lắng nghe lỗi xác thực khi sync
-        currentClient.on("sync" as any, (state: any, prevState: any, data: any) => {
-          if (state === "ERROR") {
-            console.error("[MatrixClientProvider] Sync error:", data?.error);
-            
-            if (data?.error?.httpStatus && [401, 403].includes(data?.error?.httpStatus)) {
-              const errorMsg = `Lỗi xác thực (${data.error.httpStatus}): ${data.error.message || 'Không có quyền truy cập'}. 
+        currentClient.on(
+          "sync" as any,
+          (state: any, prevState: any, data: any) => {
+            if (state === "ERROR") {
+              console.error("[MatrixClientProvider] Sync error:", data?.error);
+
+              if (
+                data?.error?.httpStatus &&
+                [401, 403].includes(data?.error?.httpStatus)
+              ) {
+                const errorMsg = `Lỗi xác thực (${data.error.httpStatus}): ${
+                  data.error.message || "Không có quyền truy cập"
+                }. 
               
 Chi tiết: ${JSON.stringify(data.error, null, 2)}`;
-              
-              console.error("[MatrixClientProvider] Authentication error details:", data.error);
-              setError(errorMsg);
-              
-              // Stop client
-              if (currentClient) {
-                currentClient.stopClient();
-                currentClient = null;
-                clientRef.current = null;
-                if (isMounted) setClient(null);
-              }
-            } else {
-              // Other sync errors
-              const errorMsg = `Lỗi đồng bộ: ${data?.error?.message || 'Không xác định'}
+
+                console.error(
+                  "[MatrixClientProvider] Authentication error details:",
+                  data.error
+                );
+                setError(errorMsg);
+
+                // Stop client
+                if (currentClient) {
+                  currentClient.stopClient();
+                  currentClient = null;
+                  clientRef.current = null;
+                  if (isMounted) setClient(null);
+                }
+              } else {
+                // Other sync errors
+                const errorMsg = `Lỗi đồng bộ: ${
+                  data?.error?.message || "Không xác định"
+                }
               
 Chi tiết: ${JSON.stringify(data?.error, null, 2)}`;
-              console.error("[MatrixClientProvider] Sync error:", errorMsg);
-              setError(errorMsg);
+                console.error("[MatrixClientProvider] Sync error:", errorMsg);
+                setError(errorMsg);
+              }
+            } else if (state === "PREPARED") {
+            } else if (state === "SYNCING") {
             }
-          } else if (state === "PREPARED") {
-    
-          } else if (state === "SYNCING") {
-    
           }
-        });
+        );
 
         // Handle client errors
-        currentClient.on("clientWellKnown" as any, (wellKnown: any) => {
-  
-        });
+        currentClient.on("clientWellKnown" as any, (wellKnown: any) => {});
 
         currentClient.on("event" as any, (event: any) => {
           // Handle important events if needed
@@ -184,43 +221,45 @@ Chi tiết: ${JSON.stringify(data?.error, null, 2)}`;
           }
         });
 
-
         currentClient.startClient();
 
         await waitForClientReady(currentClient);
-        
+
         if (isMounted && currentClient) {
           clientRef.current = currentClient;
           setClient(currentClient);
-          
+
           // Create user info after client is ready
           createUserInfo(currentClient);
-  
         }
-
       } catch (error: any) {
         console.error("[MatrixClientProvider] Failed to setup client:", error);
-        
-        const errorMsg = `Lỗi khởi tạo Matrix client: ${error?.message || 'Không xác định'}
+
+        const errorMsg = `Lỗi khởi tạo Matrix client: ${
+          error?.message || "Không xác định"
+        }
 
 Chi tiết:
-- HTTP Status: ${error?.httpStatus || 'N/A'}
-- Error Code: ${error?.errcode || 'N/A'}
+- HTTP Status: ${error?.httpStatus || "N/A"}
+- Error Code: ${error?.errcode || "N/A"}
 - URL: ${HOMESERVER_URL}
 
-Stack trace: ${error?.stack || 'N/A'}`;
+Stack trace: ${error?.stack || "N/A"}`;
 
         setError(errorMsg);
-        
+
         if (currentClient) {
           try {
             currentClient.stopClient();
           } catch (stopError) {
-            console.warn("[MatrixClientProvider] Error stopping client:", stopError);
+            console.warn(
+              "[MatrixClientProvider] Error stopping client:",
+              stopError
+            );
           }
           currentClient = null;
         }
-        
+
         if (isMounted) {
           setClient(null);
         }
@@ -244,7 +283,13 @@ Stack trace: ${error?.stack || 'N/A'}`;
 
   // Show error screen if there's an error
   if (error) {
-    return <ErrorDisplay error={error} onRetry={handleRetry} onLogout={handleLogout} />;
+    return (
+      <ErrorDisplay
+        error={error}
+        onRetry={handleRetry}
+        onLogout={handleLogout}
+      />
+    );
   }
 
   return (

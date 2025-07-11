@@ -2,7 +2,7 @@
 import { useEffect } from "react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useRouter } from "next/navigation";
-import { getCookie, setCookie } from "@/utils/cookie";
+import { getCookie } from "@/utils/cookie";
 import { ROUTES } from "@/constants/routes";
 import {
   normalizeMatrixUserId,
@@ -57,11 +57,18 @@ export default function Home() {
               // Clear any existing auth first
               clearMatrixAuthCookies();
 
-
-              // Set new credentials
-              setCookie("matrix_token", data.access_token, 7);
-              setCookie("matrix_user_id", data.user_id, 7);
-              setCookie("matrix_device_id", data.device_id, 7);
+              const res = await fetch("/chat/api/set-cookie", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  token: data.access_token,
+                  userId: data.user_id,
+                  deviceId: data.device_id,
+                }),
+                credentials: "include", // 👈 đảm bảo cookie được gửi kèm trong các request sau
+              });
 
               // ✅ Update useAuthStore với credentials mới
               login(data.access_token, data.user_id, data.device_id);
@@ -74,9 +81,9 @@ export default function Home() {
               router.replace(ROUTES.CHAT);
               return;
             } else {
-              if(isLogging){
+              if (isLogging) {
                 router.push(ROUTES.CHAT);
-              }else{
+              } else {
                 router.push(ROUTES.LOGIN);
               }
               return;
@@ -98,9 +105,18 @@ export default function Home() {
             // Clear any existing auth first
             clearMatrixAuthCookies();
 
-            setCookie("matrix_token", accessToken, 7);
-            setCookie("matrix_user_id", userId, 7);
-            if (deviceId) setCookie("matrix_device_id", deviceId, 7);
+            const res = await fetch("/chat/api/set-cookie", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                token: accessToken,
+                userId: userId,
+                deviceId: deviceId,
+              }),
+              credentials: "include", // 👈 đảm bảo cookie được gửi kèm trong các request sau
+            });
 
             // ✅ Update useAuthStore với credentials mới
             login(accessToken, userId, deviceId || "");

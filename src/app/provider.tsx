@@ -1,6 +1,5 @@
 "use client";
 
-import AuthTokenHandler from "@/components/auth/AuthTokenHandler";
 import { ThemeProvider } from "@/contexts/ThemeProvider";
 import { Toaster } from "@/contexts/toaster";
 import { ToastProvider } from "@/contexts/ToastProvider";

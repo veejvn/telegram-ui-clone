@@ -5,8 +5,8 @@ import { ERROR_MESSAGES } from "@/constants/error-messages"
 import { LoginFormData, RegisterFormData } from "@/types/auth";
 import { ILoginResponse } from "@/types/matrix";
 import { useUserStore } from "@/stores/useUserStore";
-import { setCookie, getCookie, deleteCookie } from "@/utils/cookie";
 import { normalizeMatrixUserId } from "@/utils/matrixHelpers";
+import { deleteCookie, getCookie } from "@/utils/cookie";
 
 // Kiểm tra env variables bắt buộc
 if (!process.env.NEXT_PUBLIC_MATRIX_BASE_URL) {
@@ -85,11 +85,11 @@ export class MatrixAuthService {
             if (registerResponse.access_token) {
                 const normalizedUserId = normalizeMatrixUserId(registerResponse.user_id, HOMESERVER_URL);
                 
-                setCookie("matrix_token", registerResponse.access_token);
-                setCookie("matrix_user_id", normalizedUserId);
-                if (registerResponse.device_id) {
-                    setCookie("matrix_device_id", registerResponse.device_id);
-                }
+                // setCookie("matrix_token", registerResponse.access_token);
+                // setCookie("matrix_user_id", normalizedUserId);
+                // if (registerResponse.device_id) {
+                //     setCookie("matrix_device_id", registerResponse.device_id);
+                // }
                 clientInstance = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: registerResponse.access_token,
@@ -119,14 +119,34 @@ export class MatrixAuthService {
                 password: password,
             })
             
-            if (loginResponse.access_token) {
+            if (loginResponse.access_token && loginResponse.user_id && loginResponse.device_id) {
                 const normalizedUserId = normalizeMatrixUserId(loginResponse.user_id, HOMESERVER_URL);
                 
-                setCookie("matrix_token", loginResponse.access_token);
-                setCookie("matrix_user_id", normalizedUserId);
-                if (loginResponse.device_id) {
-                    setCookie("matrix_device_id", loginResponse.device_id);
-                }
+                // setCookie("matrix_token", loginResponse.access_token);
+                // setCookie("matrix_user_id", normalizedUserId);
+                // if (loginResponse.device_id) {
+                //     setCookie("matrix_device_id", loginResponse.device_id);
+                // }
+                const res = await fetch("/chat/api/set-cookie", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                      token: loginResponse.access_token,
+                      userId: normalizedUserId,
+                      deviceId: loginResponse.device_id
+                    }),
+                    credentials: "include" // 👈 đảm bảo cookie được gửi kèm trong các request sau
+                });
+                console.log(res)
+                if(!res.ok) 
+                    return{
+                        success: false,
+                        token: "",
+                        userId: "",
+                        deviceId: ""
+                    }
                 clientInstance = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: loginResponse.access_token,
@@ -163,11 +183,11 @@ export class MatrixAuthService {
             if (loginResponse.access_token) {
                 const normalizedUserId = normalizeMatrixUserId(loginResponse.user_id, HOMESERVER_URL);
                 
-                setCookie("matrix_token", loginResponse.access_token);
-                setCookie("matrix_user_id", normalizedUserId);
-                if (loginResponse.device_id) {
-                    setCookie("matrix_device_id", loginResponse.device_id);
-                }
+                // setCookie("matrix_token", loginResponse.access_token);
+                // setCookie("matrix_user_id", normalizedUserId);
+                // if (loginResponse.device_id) {
+                //     setCookie("matrix_device_id", loginResponse.device_id);
+                // }
                 clientInstance = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: loginResponse.access_token,
@@ -206,11 +226,11 @@ export class MatrixAuthService {
             if (loginResponse.access_token) {
                 const normalizedUserId = normalizeMatrixUserId(loginResponse.user_id, HOMESERVER_URL);
                 
-                setCookie("matrix_token", loginResponse.access_token);
-                setCookie("matrix_user_id", normalizedUserId);
-                if (loginResponse.device_id) {
-                    setCookie("matrix_device_id", loginResponse.device_id);
-                }
+                // setCookie("matrix_token", loginResponse.access_token);
+                // setCookie("matrix_user_id", normalizedUserId);
+                // if (loginResponse.device_id) {
+                //     setCookie("matrix_device_id", loginResponse.device_id);
+                // }
                 clientInstance = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: loginResponse.access_token,
