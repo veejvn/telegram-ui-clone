@@ -90,6 +90,30 @@ export function VoiceCall({
         toggleMic(!micOn);
     };
 
+    // Speaker/earpiece logic for mobile
+    const [audioOutput, setAudioOutput] = useState<'speaker' | 'earpiece'>('speaker');
+
+    // Detect mobile device
+    const isMobile = typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+    const handleToggleSpeaker = async () => {
+        if (audioRef.current && 'setSinkId' in audioRef.current && isMobile) {
+            const newOutput = audioOutput === 'speaker' ? 'earpiece' : 'speaker';
+            try {
+                await (audioRef.current as any).setSinkId(newOutput === 'speaker' ? 'speaker' : 'default');
+                setAudioOutput(newOutput);
+            } catch (err) {
+                alert('Không thể chuyển loa: ' + (err instanceof Error ? err.message : String(err)));
+            }
+        } else {
+            // Toggle mute for desktop or unsupported mobile
+            if (audioRef.current) {
+                audioRef.current.muted = !audioRef.current.muted;
+                setIsSpeakerOn(!audioRef.current.muted);
+            }
+        }
+    };
+
     const isRinging = state === 'ringing' || state === 'connecting' || state === 'incoming';
 
     return (
@@ -149,19 +173,28 @@ export function VoiceCall({
 
             {/* Controls */}
             <div className="flex items-center justify-center gap-6 mb-12 mt-auto">
-                {/* Speaker */}
+                {/* Speaker/Earpiece */}
                 <div className="flex flex-col items-center">
                     <button
                         className={`w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-1 backdrop-blur ${isRinging ? 'opacity-60' : ''}`}
-                        onClick={() => setIsSpeakerOn(!isSpeakerOn)}
+                        onClick={handleToggleSpeaker}
                         disabled={isRinging}
                     >
-                        {isSpeakerOn ? <Volume2 className="w-8 h-8 text-white" /> : <VolumeX className="w-8 h-8 text-white/60" />}
+                        {isMobile
+                            ? (audioOutput === 'speaker' ? <Volume2 className="w-8 h-8 text-white" /> : <VolumeX className="w-8 h-8 text-white/60" />)
+                            : (isSpeakerOn ? <Volume2 className="w-8 h-8 text-white" /> : <VolumeX className="w-8 h-8 text-white/60" />)
+                        }
                     </button>
-                    <span className="text-xs text-white/80">speaker</span>
+                    <span className="text-xs text-white/80">
+                        {isMobile
+                            ? (audioOutput === 'speaker' ? 'loa ngoài' : 'loa trong')
+                            : (isSpeakerOn ? 'bật tiếng' : 'tắt tiếng')
+                        }
+                    </span>
                 </div>
 
-                {/* Video */}
+                {/* Video (temporarily hidden) */}
+                {/*
                 <div className="flex flex-col items-center">
                     <button
                         className={`w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-1 backdrop-blur ${isRinging ? 'opacity-60' : ''}`}
@@ -172,6 +205,7 @@ export function VoiceCall({
                     </button>
                     <span className="text-xs text-white/80">video</span>
                 </div>
+                */}
 
                 {/* Mute */}
                 <div className="flex flex-col items-center">
