@@ -41,7 +41,7 @@ export function MatrixClientProvider({
 
   useEffect(() => {
     if (error) return; // Don't re-initialize if there's an error
-    
+
     let isMounted = true;
     let currentClient: sdk.MatrixClient | null = null;
 
@@ -56,7 +56,7 @@ export function MatrixClientProvider({
         const accessToken = getCookie("matrix_token");
         const rawUserId = getCookie("matrix_user_id");
         const deviceId = getCookie("matrix_device_id");
-        
+
         if (!accessToken || !rawUserId || !deviceId) {
           console.log("[MatrixClientProvider] Missing auth credentials");
           setError("Thiếu thông tin xác thực. Vui lòng đăng nhập lại.");
@@ -65,7 +65,7 @@ export function MatrixClientProvider({
 
         // Normalize user ID to ensure correct format
         const userId = normalizeMatrixUserId(rawUserId, HOMESERVER_URL);
-        
+
         // Validate normalized user ID
         if (!isValidMatrixUserId(userId)) {
           console.error("[MatrixClientProvider] Invalid Matrix User ID format:", userId);
@@ -94,7 +94,7 @@ export function MatrixClientProvider({
 
           const whoAmIData = await whoAmIResponse.json();
           const tokenUserId = whoAmIData.user_id;
-          
+
 
 
           // ✅ SỬ DỤNG USER ID CHÍNH XÁC TỪ TOKEN
@@ -102,7 +102,7 @@ export function MatrixClientProvider({
             // Update cookie với user ID chính xác
             setCookie("matrix_user_id", tokenUserId, 30);
             actualUserId = tokenUserId;
-            
+
             // Force reload để tránh filter conflicts
             setTimeout(() => {
               window.location.reload();
@@ -141,15 +141,15 @@ Vui lòng đăng nhập lại.`);
         currentClient.on("sync" as any, (state: any, prevState: any, data: any) => {
           if (state === "ERROR") {
             console.error("[MatrixClientProvider] Sync error:", data?.error);
-            
+
             if (data?.error?.httpStatus && [401, 403].includes(data?.error?.httpStatus)) {
               const errorMsg = `Lỗi xác thực (${data.error.httpStatus}): ${data.error.message || 'Không có quyền truy cập'}. 
               
 Chi tiết: ${JSON.stringify(data.error, null, 2)}`;
-              
+
               console.error("[MatrixClientProvider] Authentication error details:", data.error);
               setError(errorMsg);
-              
+
               // Stop client
               if (currentClient) {
                 currentClient.stopClient();
@@ -166,15 +166,15 @@ Chi tiết: ${JSON.stringify(data?.error, null, 2)}`;
               setError(errorMsg);
             }
           } else if (state === "PREPARED") {
-    
+
           } else if (state === "SYNCING") {
-    
+
           }
         });
 
         // Handle client errors
         currentClient.on("clientWellKnown" as any, (wellKnown: any) => {
-  
+
         });
 
         currentClient.on("event" as any, (event: any) => {
@@ -188,19 +188,22 @@ Chi tiết: ${JSON.stringify(data?.error, null, 2)}`;
         currentClient.startClient();
 
         await waitForClientReady(currentClient);
-        
+
         if (isMounted && currentClient) {
           clientRef.current = currentClient;
           setClient(currentClient);
-          
+          // Thêm dòng này để inject client vào window cho useCallStore
+          if (typeof window !== 'undefined') {
+            (window as any).matrixClient = currentClient;
+          }
           // Create user info after client is ready
           createUserInfo(currentClient);
-  
+
         }
 
       } catch (error: any) {
         console.error("[MatrixClientProvider] Failed to setup client:", error);
-        
+
         const errorMsg = `Lỗi khởi tạo Matrix client: ${error?.message || 'Không xác định'}
 
 Chi tiết:
@@ -211,7 +214,7 @@ Chi tiết:
 Stack trace: ${error?.stack || 'N/A'}`;
 
         setError(errorMsg);
-        
+
         if (currentClient) {
           try {
             currentClient.stopClient();
@@ -220,7 +223,7 @@ Stack trace: ${error?.stack || 'N/A'}`;
           }
           currentClient = null;
         }
-        
+
         if (isMounted) {
           setClient(null);
         }
