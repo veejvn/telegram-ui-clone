@@ -1,6 +1,10 @@
 // src/utils/getHeaderStyle.ts
 import { getLS } from "@/tools/localStorage.tool"; // thay đường dẫn đúng
+
 import React from "react";
+
+
+
 
 const statusBarHeight = getLS("statusBarHeight");
 
@@ -16,9 +20,9 @@ export function getMarginStyleWithStatusBar() {
   };
 }
 
-export function incomingCallStyleWithStatusBar() : React.CSSProperties{
-     const topValue = statusBarHeight ? Number(statusBarHeight) + 16 : 16; // 16 = 4*4px (top-4)
-     return {
-       top: topValue,
-     };
+export function incomingCallStyleWithStatusBar(): React.CSSProperties {
+  const topValue = statusBarHeight ? Number(statusBarHeight) + 16 : 16; // 16 = 4*4px (top-4)
+  return {
+    top: topValue,
+  };
 }
