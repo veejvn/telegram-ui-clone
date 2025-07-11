@@ -1,9 +1,11 @@
-// src/app/(app)/setting/recent-calls/page.tsx
 'use client';
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { PhoneCall, ChevronLeft } from 'lucide-react';
+import Head from "next/head";
+import { useTheme } from "next-themes";
+import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
 
 interface CallRecord {
     id: number;
@@ -20,17 +22,34 @@ const dummyCalls: CallRecord[] = [
 
 export default function RecentCallsPage() {
     const router = useRouter();
+    const { theme } = useTheme();
+    const isDark =
+        theme === "dark" ||
+        (theme === "system" &&
+            typeof window !== "undefined" &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+    const headerStyle = getHeaderStyleWithStatusBar();
 
     return (
         <div className="p-4 space-y-4">
-            {/* Back Button */}
-            <button
-                onClick={() => router.back()}
-                className="flex items-center space-x-2 text-sm"
+            {/* Set status bar color */}
+            <Head>
+                <meta name="theme-color" content={isDark ? "#101014" : "#fff"} />
+            </Head>
+            {/* Header né status bar */}
+            <div
+                className="flex items-center mb-2"
+                style={{ ...headerStyle }}
             >
-                <ChevronLeft className="h-5 w-5" />
-                <span>Settings</span>
-            </button>
+                <button
+                    onClick={() => router.back()}
+                    className="flex items-center space-x-2 text-sm"
+                >
+                    <ChevronLeft className="h-5 w-5" />
+                    <span>Settings</span>
+                </button>
+            </div>
 
             <h1 className="text-2xl font-semibold">Recent Calls</h1>
             {dummyCalls.map(call => (

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar"; // <-- import hàm này
 
 export default function AutoDownloadSettings() {
   const [useProxy, setUseProxy] = useState(false);
@@ -9,19 +10,22 @@ export default function AutoDownloadSettings() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white p-4 space-y-6 font-sans">
-       {/* Header */}
-    <div className="flex items-center justify-between mb-6">
-      <button
-        type="button"
-        onClick={() => router.back()}
-        className="text-blue-400"
+      {/* Header */}
+      <div
+        className="flex items-center justify-between mb-6"
+        style={getHeaderStyleWithStatusBar()} // <-- Né status bar
       >
-        &lt; Back
-      </button>
-      <div className="w-16" />
-    </div>
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="text-blue-400"
+        >
+          &lt; Back
+        </button>
+        <div className="w-16" />
+      </div>
 
-    <h1 className="text-center font-semibold text-2xl mb-4">Proxy</h1>
+      <h1 className="text-center font-semibold text-2xl mb-4">Proxy</h1>
 
       <div className="bg-white dark:bg-neutral-900 border border-zinc-200 dark:border-zinc-700 rounded-xl">
         <div className="flex items-center justify-between p-4">

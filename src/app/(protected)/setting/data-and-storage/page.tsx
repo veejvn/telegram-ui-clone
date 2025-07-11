@@ -5,6 +5,9 @@ import { Switch } from "@headlessui/react";
 import { ChevronRight, RotateCcw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
+import Head from "next/head";
+import { useTheme } from "next-themes";
 
 // ----- ICON COMPONENT -----
 const SettingIcon = ({ type }: { type: string }) => {
@@ -25,7 +28,7 @@ const SettingItem = ({
   noBorder = false,
   iconType,
   imgSrc,
-  forceIconWrapper = false, 
+  forceIconWrapper = false,
 }: {
   title: string;
   value?: string;
@@ -35,7 +38,7 @@ const SettingItem = ({
   noBorder?: boolean;
   iconType?: string;
   imgSrc?: string;
-  forceIconWrapper?: boolean; 
+  forceIconWrapper?: boolean;
 }) => (
   <div onClick={onClick} className="cursor-pointer">
     <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-[#18181b]">
@@ -113,16 +116,26 @@ export default function DataAndStoragePage() {
   const [pauseMusic, setPauseMusic] = useState(true);
   const [raiseToListen, setRaiseToListen] = useState(true);
 
+  // --- Theme + status bar ---
+  const { theme } = useTheme();
+  const isDark =
+    theme === "dark" ||
+    (theme === "system" && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const headerStyle = getHeaderStyleWithStatusBar();
+
   return (
     <div className="bg-[#f6f6f6] dark:bg-black min-h-screen text-black dark:text-white px-4 pt-6 pb-24">
-      <div className="flex items-center mb-4">
+      <Head>
+        <meta name="theme-color" content={isDark ? "#000" : "#f6f6f6"} />
+      </Head>
+      {/* Header né status bar */}
+      <div className="flex items-center mb-4" style={headerStyle}>
         <button
           type="button"
           className="text-blue-500 mr-4"
           onClick={() => router.push("/setting")}
         >
-          {" "}
-          &lt; Back{" "}
+          &lt; Back
         </button>
         <h1 className="text-2xl font-bold flex-1 text-center">
           Data and Storage
@@ -191,7 +204,7 @@ export default function DataAndStoragePage() {
           title="Group Chats"
           value="Off"
           forceIconWrapper
-          onClick={() => router.push("/setting/data-and-storage/group")}
+          onClick={() => router.push("/setting/data-and-storage/group-chats")}
         />
         <SettingItem
           imgSrc="/chat/icons/channel.png"
@@ -215,14 +228,12 @@ export default function DataAndStoragePage() {
           <Switch
             checked={useLessData}
             onChange={setUseLessData}
-            className={`${
-              useLessData ? "bg-green-500" : "bg-zinc-400"
-            } relative inline-flex h-8 w-12 items-center rounded-full transition-colors`}
+            className={`${useLessData ? "bg-green-500" : "bg-zinc-400"
+              } relative inline-flex h-8 w-12 items-center rounded-full transition-colors`}
           >
             <span
-              className={`${
-                useLessData ? "translate-x-5" : "translate-x-1"
-              } inline-block h-7 w-7 transform bg-white rounded-full shadow transition-transform`}
+              className={`${useLessData ? "translate-x-5" : "translate-x-1"
+                } inline-block h-7 w-7 transform bg-white rounded-full shadow transition-transform`}
             />
           </Switch>
         </div>
@@ -292,14 +303,12 @@ export default function DataAndStoragePage() {
               >
                 <div
                   onClick={() => toggle(!state)}
-                  className={`w-12 h-8 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-300 ${
-                    state ? "bg-green-500" : "bg-zinc-400"
-                  }`}
+                  className={`w-12 h-8 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-300 ${state ? "bg-green-500" : "bg-zinc-400"
+                    }`}
                 >
                   <div
-                    className={`bg-white w-7 h-7 rounded-full shadow-md transform transition-transform duration-300 ${
-                      state ? "translate-x-5" : ""
-                    }`}
+                    className={`bg-white w-7 h-7 rounded-full shadow-md transform transition-transform duration-300 ${state ? "translate-x-5" : ""
+                      }`}
                   />
                 </div>
               </div>

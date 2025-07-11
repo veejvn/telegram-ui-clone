@@ -20,6 +20,9 @@ import TurboIcon from "@/icons/telegram/TurboIcon";
 import BlackIcon from "@/icons/telegram/BlackIcon";
 import AquaIcon from "@/icons/telegram/AquaIcon";
 
+import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
+import Head from "next/head";
+
 interface SettingItem {
   title: string;
   icon?: React.ReactNode;
@@ -68,18 +71,29 @@ export default function AppearancePage() {
     theme === "dark" ||
     (theme === "system" && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches);
 
+  // Lấy style header né status bar
+  const headerStyle = getHeaderStyleWithStatusBar();
+
   return (
     <div className={`min-h-screen pb-6 ${isDark ? "bg-[#101014] text-white" : "bg-[#f5f6fa] text-black"}`}>
-      <div className="flex flex-col items-center gap-4 pt-4">
-        <div className="w-[92%] flex items-center justify-between mb-2">
-          <button onClick={() => router.back()} className="flex items-center text-sm text-blue-500">
-            <ChevronLeft className="w-5 h-5 mr-1" />
-            Back
-          </button>
-          <h1 className="text-base font-semibold">Appearance</h1>
-          <div className="w-10" />
-        </div>
+      <Head>
+        <meta name="theme-color" content={isDark ? "#101014" : "#f5f6fa"} />
+      </Head>
 
+      {/* Header né status bar */}
+      <div
+        style={headerStyle}
+        className="w-[92%] mx-auto flex items-center justify-between mb-2 pt-4"
+      >
+        <button onClick={() => router.back()} className="flex items-center text-sm text-blue-500">
+          <ChevronLeft className="w-5 h-5 mr-1" />
+          Back
+        </button>
+        <h1 className="text-base font-semibold">Appearance</h1>
+        <div className="w-10" />
+      </div>
+
+      <div className="flex flex-col items-center gap-4">
         <div className="mt-2 w-[92%]">
           <h2 className="uppercase text-xs text-gray-400 font-semibold mb-2 px-1">Color Theme</h2>
           <div className={`rounded-2xl overflow-hidden ${isDark ? "bg-[#181818]" : "bg-white"}`}>
