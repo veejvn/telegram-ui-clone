@@ -142,7 +142,7 @@ export const ChatListItem = ({
           <h1 className="text-[18px] mb-0.5">{room.name}</h1>
           {isMuted && <VolumeX className="w-4 h-4 text-zinc-400" />}
         </div>
-        <p className="text-sm ">{sender}</p>
+        {/* <p className="text-sm ">{sender}</p> */}
         <p className="text-sm text-muted-foreground">{content}</p>
       </div>
 
