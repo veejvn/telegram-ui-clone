@@ -5,7 +5,7 @@ import { MatrixClient, Room, MatrixEvent } from 'matrix-js-sdk';
 import { useMatrixClient } from '@/contexts/MatrixClientProvider';
 
 export const useReadReceipts = (room: Room) => {
-  const [lastReadReceipts, setLastReadReceipts] = useState<boolean>(false);
+  const [lastReadReceipts, setLastReadReceipts] = useState<boolean | null>(false);
   const client = useMatrixClient();
   const roomId = room.roomId;
   
@@ -16,18 +16,24 @@ export const useReadReceipts = (room: Room) => {
     const timeline = room.getLiveTimeline();
     const events = timeline.getEvents();
 
-    // 1. Lấy tin nhắn cuối cùng bạn gửi
+    // 1. Lấy tin nhắn cuối cùng của mình (người nhận)
     const messages = events.filter((e) => e.getType() === "m.room.message");
     const myMessages = messages.filter((m) => m.getSender() === userId);
-    const lastMyMessage = myMessages[myMessages.length - 1];
-    //console.log(lastMyMessage.getContent())
-    if (!lastMyMessage) {
+    if (myMessages.length === 0) {
       setLastReadReceipts(false);
       return;
     }
+    const lastMyMessage = myMessages[myMessages.length - 1];
 
+    // 2. Kiểm tra xem người gửi đã đọc tin nhắn này chưa
+    // Giả sử bạn biết userId của người gửi là `otherUserId`
+    // Nếu là 1-1 chat, bạn có thể lấy từ room.getJoinedMembers()
+    const otherMembers = room.getJoinedMembers().filter(m => m.userId !== userId);
+    const otherUserId = otherMembers[0]?.userId;
     const usersReadUpTo = room.getUsersReadUpTo(lastMyMessage);
-    const hasOtherRead = usersReadUpTo.some(uid => uid !== userId);
+    const hasOtherRead = otherUserId ? usersReadUpTo.includes(otherUserId) : false;
+    //console.log(usersReadUpTo, hasOtherRead);
+
     setLastReadReceipts(hasOtherRead);
   }, [client, room]);
 
