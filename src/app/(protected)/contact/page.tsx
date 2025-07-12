@@ -6,6 +6,7 @@ import * as sdk from "matrix-js-sdk";
 import { Check, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import SearchBar from "@/components/layouts/SearchBar"; // <--- Sử dụng SearchBar tự quản lý
 import NewContactModal from "@/components/contact/NewContactModal";
 import { Avatar } from "@/components/ui/avatar";
 import {
@@ -43,7 +44,6 @@ const ContactPage = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [showNewContact, setShowNewContact] = useState(false);
-  const [search, setSearch] = useState(""); // <--- NEW: state for search
 
   useEffect(() => {
     if (!client) return;
@@ -69,18 +69,7 @@ const ContactPage = () => {
   const hide = getLS("hide") || [];
   const options = Array.isArray(hide) ? hide : [];
 
-  // ---- FILTERED CONTACTS BY SEARCH ----
-  const filteredContacts = search
-    ? contacts.filter((room) => {
-      if (!client) return true;
-      const other = room
-        .getJoinedMembers()
-        .find((m) => m.userId !== client.getUserId());
-      const target =
-        (other?.name || "") + " " + (other?.userId || "");
-      return target.toLowerCase().includes(search.toLowerCase());
-    })
-    : contacts;
+  // KHÔNG filter contacts theo search nữa!
 
   // --- UI RENDER ---
   return (
@@ -97,14 +86,16 @@ const ContactPage = () => {
             <PopoverContent className="w-44 p-0 ml-3 rounded-2xl">
               <div className="flex flex-col">
                 <Button
-                  className={`flex items-center justify-between px-4 py-2 bg-white text-black hover:bg-zinc-200 text-left rounded-none rounded-t-2xl ${sortBy === "lastSeen" ? "font-bold" : ""}`}
+                  className={`flex items-center justify-between px-4 py-2 bg-white text-black hover:bg-zinc-200 text-left rounded-none rounded-t-2xl ${sortBy === "lastSeen" ? "font-bold" : ""
+                    }`}
                   onClick={() => setSortBy("lastSeen")}
                 >
                   By Last Seen
                   {sortBy === "lastSeen" && <Check />}
                 </Button>
                 <Button
-                  className={`flex items-center justify-between px-4 py-2 bg-white text-black hover:bg-zinc-200 text-left rounded-none rounded-b-2xl ${sortBy === "name" ? "font-bold" : ""}`}
+                  className={`flex items-center justify-between px-4 py-2 bg-white text-black hover:bg-zinc-200 text-left rounded-none rounded-b-2xl ${sortBy === "name" ? "font-bold" : ""
+                    }`}
                   onClick={() => setSortBy("name")}
                 >
                   By Name
@@ -125,33 +116,9 @@ const ContactPage = () => {
             </Button>
           </div>
         </div>
-        {/* --- SEARCH BAR, THÊM LOGIC --- */}
+        {/* --- SEARCHBAR: chỉ cần render, không truyền prop --- */}
         {!options.includes("search") && (
-          <div className="px-4 py-2">
-            <div className="relative">
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="
-                  w-full pl-10 pr-4 py-2 rounded-xl
-                  bg-white dark:bg-zinc-900
-                  text-black dark:text-white
-                  placeholder-gray-500 dark:placeholder-gray-400
-                  border-none
-                  focus:outline-none
-                  transition-colors
-                "
-                placeholder="Search"
-              />
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
-                {/* SVG kính lúp */}
-                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <circle cx="11" cy="11" r="7" />
-                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
-              </span>
-            </div>
-          </div>
+          <SearchBar />
         )}
       </div>
       <div className="px-4 py-2">
@@ -258,12 +225,12 @@ const ContactPage = () => {
               Contacts
             </div>
             <ul className="divide-y divide-gray-200 dark:divide-zinc-800">
-              {filteredContacts.length === 0 ? (
+              {contacts.length === 0 ? (
                 <li className="py-6 text-center text-gray-400 dark:text-gray-500 select-none">
                   No contacts found.
                 </li>
               ) : (
-                filteredContacts.map((room) => {
+                contacts.map((room) => {
                   const other = client
                     ? room.getJoinedMembers().find((m) => m.userId !== client.getUserId())
                     : undefined;
