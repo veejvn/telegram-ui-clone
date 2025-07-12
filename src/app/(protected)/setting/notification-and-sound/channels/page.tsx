@@ -2,6 +2,9 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
+import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
+import Head from "next/head";
+import { useTheme } from "next-themes";
 
 export default function Channels() {
   const router = useRouter();
@@ -9,10 +12,22 @@ export default function Channels() {
   const [messagePreview, setMessagePreview] = useState(true);
   const [sound, setSound] = useState(false);
 
+  // Thêm theme và header style
+  const { theme } = useTheme();
+  const isDark =
+    theme === "dark" ||
+    (theme === "system" &&
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const headerStyle = getHeaderStyleWithStatusBar();
+
   return (
     <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white p-4">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <Head>
+        <meta name="theme-color" content={isDark ? "#101014" : "#fff"} />
+      </Head>
+      {/* Header né status bar */}
+      <div className="flex items-center justify-between mb-6" style={headerStyle}>
         <button
           type="button"
           onClick={() => router.back()}

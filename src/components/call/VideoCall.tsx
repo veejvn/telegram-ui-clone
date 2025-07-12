@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Mic, MicOff, Video, VideoOff, PhoneOff, Volume2, VolumeX, ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useCallStore from '@/stores/useCallStore';
+import { callService } from '@/services/callService';
 
 interface VideoCallProps {
     contactName: string;
@@ -122,6 +123,36 @@ export function VideoCall({
         return null;
     }
 
+    const [cameraFacingMode, setCameraFacingMode] = useState<'user' | 'environment'>('user');
+
+    // Flip camera handler
+    const handleFlipCamera = async () => {
+        const newFacingMode = cameraFacingMode === 'user' ? 'environment' : 'user';
+        try {
+            const newStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: { exact: newFacingMode } },
+                audio: false,
+            });
+            // Replace video track in localStream and peer connection
+            const newVideoTrack = newStream.getVideoTracks()[0];
+            if (localVideoRef.current) {
+                localVideoRef.current.srcObject = newStream;
+            }
+            // Replace track in peer connection if possible
+            if (callService && (callService as any).currentCall) {
+                const callAny = (callService as any).currentCall;
+                const pc = callAny.peerConn;
+                const videoSender = pc.getSenders().find((s: RTCRtpSender) => s.track && s.track.kind === 'video');
+                if (videoSender) {
+                    await videoSender.replaceTrack(newVideoTrack);
+                }
+            }
+            setCameraFacingMode(newFacingMode);
+        } catch (err) {
+            alert('Không thể chuyển camera: ' + (err instanceof Error ? err.message : String(err)));
+        }
+    };
+
     return (
         <div className="relative w-full h-screen overflow-hidden bg-black">
             {/* Remote video background */}
@@ -141,7 +172,7 @@ export function VideoCall({
                         autoPlay
                         playsInline
                         muted
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover" style={{ transform: 'scaleX(-1)' }}
                     />
                 </div>
             )}
@@ -182,7 +213,7 @@ export function VideoCall({
                 <div className="flex flex-col items-center">
                     <button
                         className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-1 backdrop-blur"
-                        onClick={() => {/* TODO: implement flip camera */ }}
+                        onClick={handleFlipCamera}
                     >
                         <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l2 2 2-2m-2 2V7m-6 0l-2-2-2 2m2-2v12" /></svg>
                     </button>
