@@ -60,7 +60,9 @@ export default function InfoPage() {
   }
 
 
-  const headerStyle = getHeaderStyleWithStatusBar();
+  // Override backgroundColor về đen nếu có
+  const headerStyleRaw = getHeaderStyleWithStatusBar();
+  const headerStyle = { ...headerStyleRaw, backgroundColor: '#000' };
 
 
   return (

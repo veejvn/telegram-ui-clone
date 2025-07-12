@@ -40,13 +40,34 @@ export const ChatList = ({
   const [deleteRoomName, setDeleteRoomName] = useState<string | null>(null);
 
   const handleMute = (roomId: string) => {
-    setMutedRooms((prev) =>
-      prev.includes(roomId)
-        ? prev.filter((id) => id !== roomId)
-        : [...prev, roomId]
-    );
+    setMutedRooms((prev) => {
+      if (prev.includes(roomId)) {
+        localStorage.removeItem(`mute-${roomId}`);
+        return prev.filter((id) => id !== roomId);
+      } else {
+        localStorage.setItem(
+          `mute-${roomId}`,
+          JSON.stringify({ isMuted: true, muteUntil: null })
+        );
+        return [...prev, roomId];
+      }
+    });
     onMute?.(roomId);
   };
+
+  React.useEffect(() => {
+    const muted: string[] = [];
+    rooms.forEach((room) => {
+      const stored = localStorage.getItem(`mute-${room.roomId}`);
+      if (stored) {
+        try {
+          const data = JSON.parse(stored);
+          if (data.isMuted) muted.push(room.roomId);
+        } catch {}
+      }
+    });
+    setMutedRooms(muted);
+  }, [rooms]);
 
   return (
     <>
