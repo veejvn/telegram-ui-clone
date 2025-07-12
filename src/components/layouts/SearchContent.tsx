@@ -165,31 +165,57 @@ const SearchContent = ({
       {/* MESSAGES */}
       <div>
         <div className="font-semibold px-4 py-2 text-gray-500">Tin nhắn</div>
-        {messageResults.length === 0 ? (
+        {messageResults.filter(
+          (msg) =>
+            !msg.result?.content?.isForward &&
+            (() => {
+              try {
+                const body = msg.result?.content?.body;
+                const parsed = JSON.parse(body);
+                return !parsed.forward;
+              } catch {
+                return true;
+              }
+            })()
+        ).length === 0 ? (
           <div className="px-4 py-2 text-gray-400 italic">
             Không tìm thấy tin nhắn nào.
           </div>
         ) : (
-          messageResults.map((msg, idx) => (
-            <div
-              key={msg.result?.event_id || idx}
-              className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#232323] cursor-pointer"
-              onClick={() => {
-                const roomId = msg.result?.room_id;
-                const eventId = msg.result?.event_id;
-                if (roomId && eventId) {
-                  router.push(`/chat/${roomId}?highlight=${eventId}`);
-                }
-              }}
-            >
-              <div className="text-sm text-gray-900 dark:text-gray-100 truncate">
-                {msg.result?.content?.body}
+          messageResults
+            .filter(
+              (msg) =>
+                !msg.result?.content?.isForward &&
+                (() => {
+                  try {
+                    const body = msg.result?.content?.body;
+                    const parsed = JSON.parse(body);
+                    return !parsed.forward;
+                  } catch {
+                    return true;
+                  }
+                })()
+            )
+            .map((msg, idx) => (
+              <div
+                key={msg.result?.event_id || idx}
+                className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#232323] cursor-pointer"
+                onClick={() => {
+                  const roomId = msg.result?.room_id;
+                  const eventId = msg.result?.event_id;
+                  if (roomId && eventId) {
+                    router.push(`/chat/${roomId}?highlight=${eventId}`);
+                  }
+                }}
+              >
+                <div className="text-sm text-gray-900 dark:text-gray-100 truncate">
+                  {msg.result?.content?.body}
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                  {msg.result?.sender}
+                </div>
               </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                {msg.result?.sender}
-              </div>
-            </div>
-          ))
+            ))
         )}
       </div>
     </div>
