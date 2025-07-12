@@ -14,7 +14,6 @@ import { getUserInfoInPrivateRoom } from "@/services/chatService";
 import { getRoomInfo } from "@/utils/chat/RoomHelpers";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { usePresenceContext } from "@/contexts/PresenceProvider";
-import { getLS } from "@/tools/localStorage.tool";
 import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
 import { useForwardStore } from "@/stores/useForwardStore";
 import { getDetailedStatus } from "@/utils/chat/presencesHelpers";
@@ -23,6 +22,7 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
   const client = useMatrixClient();
   const { getLastSeen } = usePresenceContext() || {};
   const currentUserId = useAuthStore.getState().userId;
+
   const { roomId, type, otherUserId } = getRoomInfo(room, currentUserId);
   const clearMessages = useForwardStore((state) => state.clearMessages);
 

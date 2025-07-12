@@ -28,30 +28,6 @@ import { getDetailedStatus } from "@/utils/chat/presencesHelpers";
 import { usePresenceContext } from "@/contexts/PresenceProvider";
 import { useIgnoreStore } from "@/stores/useIgnoreStore";
 
-const mediaItems = [
-  {
-    id: 1,
-    name: "Youtube",
-    url: "http://youtube.com",
-    icon: "Y",
-    bgColor: "bg-gray-100",
-  },
-  {
-    id: 2,
-    name: "Google",
-    url: "http://google.com",
-    icon: "G",
-    bgColor: "bg-gray-100",
-  },
-  {
-    id: 3,
-    name: "Matrix",
-    url: "http://Matrix.org",
-    icon: "M",
-    bgColor: "bg-gray-100",
-  },
-];
-
 export default function InfoBody({ user }: { user: sdk.User }) {
   const client = useMatrixClient();
   const router = useRouter();
@@ -95,9 +71,6 @@ export default function InfoBody({ user }: { user: sdk.User }) {
   };
 
   // 👉 LẤY TOÀN BỘ TIN NHẮN TỪ STORE
-  const allMessages = Object.values(
-    useChatStore.getState().messagesByRoom
-  ).flat();
   const messagesByRoom = useChatStore((state) => state.messagesByRoom);
 
   // Get the roomId for the direct chat with this user
