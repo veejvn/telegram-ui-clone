@@ -17,10 +17,24 @@ export interface NewContactModalProps {
     lastName: string;
     phones: string[];
   }) => void;
+  onClose?: () => void; // Thêm dòng này
+  open?: boolean; // Thêm dòng này
+  onOpenChange?: (open: boolean) => void; // Thêm dòng này
 }
 
-const NewContactModal = ({ onAddContact }: NewContactModalProps) => {
-  const [open, setOpen] = useState(false);
+const NewContactModal = ({
+  onAddContact,
+  onClose,
+  open,
+  onOpenChange,
+}: NewContactModalProps) => {
+  // Nếu nhận open/onOpenChange từ cha thì dùng, không thì tự quản lý
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled =
+    typeof open === "boolean" && typeof onOpenChange === "function";
+  const modalOpen = isControlled ? open : internalOpen;
+  const setModalOpen = isControlled ? onOpenChange! : setInternalOpen;
+
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phones, setPhones] = useState<string[]>([""]);
@@ -39,26 +53,35 @@ const NewContactModal = ({ onAddContact }: NewContactModalProps) => {
       setFirstName("");
       setLastName("");
       setPhones([""]);
-      setOpen(false);
+      setModalOpen(false);
+      if (onClose) onClose();
     }
+  };
+
+  const handleCancel = () => {
+    setModalOpen(false);
+    if (onClose) onClose();
   };
 
   return (
     <>
-      <Button
-        className="text-blue-500 border bg-transparent hover:bg-zinc-300"
-        onClick={() => setOpen(true)}
-      >
-        <Plus className="h-5 w-5" />
-      </Button>
+      {/* Chỉ render nút + nếu không controlled từ cha */}
+      {!isControlled && (
+        <Button
+          className="text-blue-500 border bg-transparent hover:bg-zinc-300"
+          onClick={() => setModalOpen(true)}
+        >
+          <Plus className="h-5 w-5" />
+        </Button>
+      )}
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="max-w-md p-6">
-          <DialogTitle/>
-          <DialogDescription/>
+          <DialogTitle />
+          <DialogDescription />
           <div className="flex justify-between items-center text-sm mb-4">
             <Button
-              onClick={() => setOpen(false)}
+              onClick={handleCancel}
               className="text-blue-400 bg-transparent hover:bg-zinc-300 dark:hover:bg-zinc-800 border dark:border-none px-1"
               type="button"
             >
@@ -105,7 +128,9 @@ const NewContactModal = ({ onAddContact }: NewContactModalProps) => {
                 >
                   <CircleMinus className="size-full" />
                 </Button>
-                <span className="text-blue-500  text-sm w-16 select-none">di động</span>
+                <span className="text-blue-500  text-sm w-16 select-none">
+                  di động
+                </span>
                 <Input
                   className="flex-1"
                   placeholder="+"
@@ -124,7 +149,9 @@ const NewContactModal = ({ onAddContact }: NewContactModalProps) => {
               >
                 <CirclePlus className="size-ful" />
               </Button>
-              <span className="content-center text-blue-400 text-sm select-none">add phone</span>
+              <span className="content-center text-blue-400 text-sm select-none">
+                add phone
+              </span>
             </div>
           </div>
         </DialogContent>
