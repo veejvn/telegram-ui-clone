@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { CircleUserRound, Phone, MessageCircle, Settings } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { getLS } from "@/tools/localStorage.tool";
 
 const BottomNavigattion = ({ hideOptions }: { hideOptions?: string[] }) => {
-  const options = Array.isArray(hideOptions) ? hideOptions : [];
+  //const fromMainApp = getLS("fromMainApp")
+  const options = (Array.isArray(hideOptions)) ? hideOptions : [];
   const pathname = usePathname();
   const isActive = (href: string) => {
     if (href === "/chat") return pathname?.startsWith("/chat");

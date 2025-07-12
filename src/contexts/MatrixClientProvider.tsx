@@ -8,7 +8,6 @@ import React, {
   useState,
 } from "react";
 import * as sdk from "@/lib/matrix-sdk";
-import { getCookie } from "@/utils/cookie";
 import { waitForClientReady } from "@/lib/matrix";
 import { createUserInfo } from "@/utils/createUserInfo";
 import { PresenceProvider } from "@/contexts/PresenceProvider";
@@ -18,6 +17,9 @@ import {
 } from "@/utils/matrixHelpers";
 import { clearMatrixAuthCookies } from "@/utils/clearAuthCookies";
 import { ErrorDisplay } from "@/components/common/ErrorDisplay";
+import { useAuthStore } from "@/stores/useAuthStore";
+import useRegisterPushKey from "@/hooks/useRegisterPushKey ";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
 
 const HOMESERVER_URL =
   process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
@@ -34,6 +36,9 @@ export function MatrixClientProvider({
   const [client, setClient] = useState<sdk.MatrixClient | null>(null);
   const [error, setError] = useState<string | null>(null);
   const clientRef = useRef<sdk.MatrixClient | null>(null);
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const rawUserId = useAuthStore((state) => state.userId);
+  const deviceId = useAuthStore((state) => state.deviceId);
 
   const handleRetry = () => {
     setError(null);
@@ -48,12 +53,14 @@ export function MatrixClientProvider({
     window.location.href = "/chat/login";
   };
 
+  useRegisterPushKey(accessToken);
+
   useEffect(() => {
     if (error) return; // Don't re-initialize if there's an error
 
     let isMounted = true;
     let currentClient: sdk.MatrixClient | null = null;
-
+    if (!accessToken || !rawUserId || !deviceId) return;
     if (clientRef.current) {
       // Đã khởi tạo trước đó ➜ reuse
       setClient(clientRef.current);
@@ -62,10 +69,7 @@ export function MatrixClientProvider({
 
     const setupClient = async () => {
       try {
-        const accessToken = getCookie("matrix_token");
-        const rawUserId = getCookie("matrix_user_id");
-        const deviceId = getCookie("matrix_device_id");
-        console.log(accessToken, rawUserId, deviceId);
+        //console.log(accessToken, rawUserId, deviceId);
 
         if (!accessToken || !rawUserId || !deviceId) {
           console.log("[MatrixClientProvider] Missing auth credentials");
@@ -150,8 +154,6 @@ export function MatrixClientProvider({
           setError(`Lỗi xác thực token: ${tokenError.message}
 
 Chi tiết:
-- Stored User ID: ${userId}
-- Token: ${accessToken ? "***EXISTS***" : "MISSING"}
 - Error: ${tokenError.message}
 
 Vui lòng đăng nhập lại.`);
@@ -211,15 +213,15 @@ Chi tiết: ${JSON.stringify(data?.error, null, 2)}`;
           }
         );
 
-        // Handle client errors
-        currentClient.on("clientWellKnown" as any, (wellKnown: any) => {});
+        // // Handle client errors
+        // currentClient.on("clientWellKnown" as any, (wellKnown: any) => {});
 
-        currentClient.on("event" as any, (event: any) => {
-          // Handle important events if needed
-          if (event.getType() === "m.room.message") {
-            // Message event
-          }
-        });
+        // currentClient.on("event" as any, (event: any) => {
+        //   // Handle important events if needed
+        //   if (event.getType() === "m.room.message") {
+        //     // Message event
+        //   }
+        // });
 
         currentClient.startClient();
 
@@ -275,20 +277,24 @@ Stack trace: ${error?.stack || "N/A"}`;
           currentClient.stopClient();
           (currentClient as any).removeAllListeners();
         } catch (error) {
-          console.warn("[MatrixClientProvider] Error during cleanup:", error);
+          //console.warn("[MatrixClientProvider] Error during cleanup:", error);
         }
       }
     };
-  }, [error]);
+  }, []);
 
   // Show error screen if there's an error
   if (error) {
+    console.log(error);
     return (
-      <ErrorDisplay
-        error={error}
-        onRetry={handleRetry}
-        onLogout={handleLogout}
-      />
+      // <ErrorDisplay
+      //   error={error}
+      //   onRetry={handleRetry}
+      //   onLogout={handleLogout}
+      // />
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner />
+      </div>
     );
   }
 

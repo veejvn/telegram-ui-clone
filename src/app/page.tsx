@@ -2,12 +2,7 @@
 import { useEffect } from "react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useRouter } from "next/navigation";
-import { getCookie } from "@/utils/cookie";
 import { ROUTES } from "@/constants/routes";
-import {
-  normalizeMatrixUserId,
-  isValidMatrixUserId,
-} from "@/utils/matrixHelpers";
 import { clearMatrixAuthCookies } from "@/utils/clearAuthCookies";
 import { callService } from "@/services/callService";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
@@ -24,12 +19,27 @@ export default function Home() {
       try {
         // Kiểm tra có login token hoặc access token trong URL không
         const urlParams = new URLSearchParams(window.location.search);
-        const loginToken =
-          urlParams.get("loginToken") || getCookie("loginToken");
-        //console.log(loginToken);
+        let loginToken = urlParams.get("loginToken");
         const hash = window.location.hash;
         const hasAccessTokenInHash = hash.includes("access_token");
 
+        if (!loginToken) {
+          const ssoTokenRes = await fetch("/chat/api/get-sso-token", {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+          });
+          if (ssoTokenRes.ok) {
+            const data = await ssoTokenRes.json();
+            if (data.ssoToken) {
+              loginToken = data.ssoToken;
+            }
+          }
+        }
+
+        //console.log(loginToken);
         // ✅ ƯU TIÊN XỬ LÝ SSO LOGIN TOKEN TRƯỚC
         if (loginToken) {
           try {
@@ -132,12 +142,25 @@ export default function Home() {
         }
 
         // ✅ CHỈ CHECK EXISTING TOKEN NẾU KHÔNG CÓ SSO TOKEN
-        const existingToken = getCookie("matrix_token");
-        const existingUserId = getCookie("matrix_user_id");
+        const res = await fetch("/chat/api/session", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        });
+        if (!res.ok) {
+          window.location.href = "/chat/login";
+          return;
+        }
+        const { accessToken, userId, deviceId } = await res.json();
+
+        // const existingToken = getCookie("matrix_token");
+        // const existingUserId = getCookie("matrix_user_id");
 
         // ✅ THÊM CHECK ĐỂ TRÁNH RACE CONDITION SAU LOGOUT
         // Nếu không có cả token và user ID thì chắc chắn đã logout
-        if (!existingToken && !existingUserId) {
+        if (!accessToken && !userId && !deviceId) {
           router.push(ROUTES.LOGIN);
           return;
         }
@@ -148,7 +171,7 @@ export default function Home() {
             `${MATRIX_BASE_URL}/_matrix/client/v3/account/whoami`,
             {
               headers: {
-                Authorization: `Bearer ${existingToken}`,
+                Authorization: `Bearer ${accessToken}`,
                 "Content-Type": "application/json",
               },
             }

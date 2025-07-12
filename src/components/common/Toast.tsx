@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { checkTokenValidity } from "@/lib/matrix";
+import { useAuthStore } from '@/stores/useAuthStore';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -21,6 +22,8 @@ export default function Toast({
 }: ToastProps) {
     const [isVisible, setIsVisible] = useState(true);
     const { toast } = useToast();
+    const accessToken = useAuthStore((state) => state.accessToken)
+    const userId = useAuthStore((state) => state.userId)
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -33,7 +36,7 @@ export default function Toast({
 
     useEffect(() => {
         const checkToken = async () => {
-            const isValid = await checkTokenValidity();
+            const isValid = await checkTokenValidity(accessToken || "", userId || "");
             if (!isValid) {
                 toast({
                     title: "Phiên đăng nhập hết hạn",
@@ -119,10 +122,12 @@ export default function Toast({
 
 export function TokenExpirationToast() {
     const { toast } = useToast();
+    const accessToken = useAuthStore((state) => state.accessToken)
+    const userId = useAuthStore((state) => state.userId)
 
     useEffect(() => {
         const checkToken = async () => {
-            const isValid = await checkTokenValidity();
+            const isValid = await checkTokenValidity(accessToken || "", userId || "");
             if (!isValid) {
                 toast({
                     title: "Phiên đăng nhập hết hạn",

@@ -11,6 +11,8 @@ import IncomingCallHandler from "@/components/call/IncomingCallHandler";
 import BottomNavigationWrapper from "@/components/layouts/BottomNavigationWrapper";
 import useRegisterPushKey from "@/hooks/useRegisterPushKey ";
 import { TokenExpirationToast } from "@/components/common/Toast";
+import GetCookie from "@/components/auth/GetCookie";
+import { ToastProvider } from "@/contexts/ToastProvider";
 
 // Dynamic import client-only MatrixClientProvider
 const MatrixClientProvider = dynamic(
@@ -29,27 +31,23 @@ export default function ProtectedClientLayout({
   const router = useRouter();
   const isLogging = useAuthStore((state) => state.isLogging);
   const [isReady, setIsReady] = useState(false);
+
+  const [checked, setChecked] = useState(false);
   const accessToken = useAuthStore((state) => state.accessToken);
   //console.log("accessToken", accessToken);
-  useRegisterPushKey(accessToken);
+
+  // Luôn gọi hook này, không phụ thuộc vào điều kiện
 
   useEffect(() => {
-    setIsReady(true);
-    if (!isLogging) {
-      router.replace(ROUTES.LOGIN);
-    }
-  }, [isLogging, router]);
-
-  if (!isReady || !isLogging) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <LoadingSpinner />
-      </div>
-    );
-  }
+    // Khi accessToken thay đổi, đánh dấu đã kiểm tra xong
+    if (accessToken) setChecked(true);
+  }, [accessToken]);
 
   return (
     <Suspense fallback={null}>
+      {!checked ? (
+        <GetCookie />
+      ) : (
       <MatrixClientProvider>
         <IncomingCallHandler />
         <main className="min-h-screen flex flex-col">
@@ -58,6 +56,7 @@ export default function ProtectedClientLayout({
         </main>
         <TokenExpirationToast />
       </MatrixClientProvider>
+      )}
     </Suspense>
   );
 }

@@ -7,12 +7,16 @@ export async function POST(req: NextRequest) {
 //   if (!token || !userId) {
 //     return NextResponse.json({ error: "Missing token or userId" }, { status: 400 });
 //   }
+  const isProduction = process.env.NODE_ENV === "production" || process.env.NEXT_PUBLIC_ENV === "production";
+  // console.log("NODE_ENV:", process.env.NODE_ENV);
+  // console.log("NEXT_PUBLIC_ENV:", process.env.NEXT_PUBLIC_ENV);
+  // console.log("isProduction:", isProduction);
 
   const response = NextResponse.json({ success: true });
   if(token){
     response.cookies.set("matrix_token", token, {
     httpOnly: true,
-    secure: false,
+    secure: isProduction,
     sameSite: "lax",
     path: "/",
     maxAge: 604800,
@@ -21,7 +25,7 @@ export async function POST(req: NextRequest) {
   if(userId){
     response.cookies.set("matrix_user_id", userId, {
     httpOnly: true,
-    secure: false,
+    secure: isProduction,
     sameSite: "lax",
     path: "/",
     maxAge: 604800,
@@ -30,7 +34,7 @@ export async function POST(req: NextRequest) {
   if (deviceId) {
     response.cookies.set("matrix_device_id", deviceId, {
       httpOnly: true,
-      secure: false,
+      secure: isProduction,
       sameSite: "lax",
       path: "/",
       maxAge: 604800,
