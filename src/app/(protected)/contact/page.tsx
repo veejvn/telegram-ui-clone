@@ -43,6 +43,7 @@ const ContactPage = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [showNewContact, setShowNewContact] = useState(false);
+  const [search, setSearch] = useState(""); // <--- NEW: state for search
 
   useEffect(() => {
     if (!client) return;
@@ -67,6 +68,19 @@ const ContactPage = () => {
 
   const hide = getLS("hide") || [];
   const options = Array.isArray(hide) ? hide : [];
+
+  // ---- FILTERED CONTACTS BY SEARCH ----
+  const filteredContacts = search
+    ? contacts.filter((room) => {
+      if (!client) return true;
+      const other = room
+        .getJoinedMembers()
+        .find((m) => m.userId !== client.getUserId());
+      const target =
+        (other?.name || "") + " " + (other?.userId || "");
+      return target.toLowerCase().includes(search.toLowerCase());
+    })
+    : contacts;
 
   // --- UI RENDER ---
   return (
@@ -111,19 +125,22 @@ const ContactPage = () => {
             </Button>
           </div>
         </div>
+        {/* --- SEARCH BAR, THÊM LOGIC --- */}
         {!options.includes("search") && (
           <div className="px-4 py-2">
             <div className="relative">
               <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 className="
-        w-full pl-10 pr-4 py-2 rounded-xl
-        bg-white dark:bg-zinc-900
-        text-black dark:text-white
-        placeholder-gray-500 dark:placeholder-gray-400
-        border-none
-        focus:outline-none
-        transition-colors
-      "
+                  w-full pl-10 pr-4 py-2 rounded-xl
+                  bg-white dark:bg-zinc-900
+                  text-black dark:text-white
+                  placeholder-gray-500 dark:placeholder-gray-400
+                  border-none
+                  focus:outline-none
+                  transition-colors
+                "
                 placeholder="Search"
               />
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
@@ -230,7 +247,6 @@ const ContactPage = () => {
               <UserPlus className="mr-2" size={20} />
               Invite Friends
             </Button>
-            {/* Modal controlled bằng open/onOpenChange */}
             <NewContactModal
               open={showNewContact}
               onOpenChange={setShowNewContact}
@@ -242,31 +258,37 @@ const ContactPage = () => {
               Contacts
             </div>
             <ul className="divide-y divide-gray-200 dark:divide-zinc-800">
-              {contacts.map((room) => {
-                const other = client
-                  ? room.getJoinedMembers().find((m) => m.userId !== client.getUserId())
-                  : undefined;
-                return (
-                  <li
-                    key={room.roomId}
-                    className="flex items-center gap-3 py-3 px-2 hover:bg-blue-50 dark:hover:bg-zinc-800 transition-colors rounded-lg cursor-pointer"
-                  >
-                    <Avatar className="flex items-center justify-center w-10 h-10 text-base bg-zinc-300 dark:bg-zinc-700">
-                      {other?.name?.[0]?.toUpperCase() ||
-                        other?.userId?.[1]?.toUpperCase() ||
-                        "?"}
-                    </Avatar>
-                    <div className="flex flex-col flex-1 min-w-0">
-                      <span className="font-medium truncate text-gray-900 dark:text-white">
-                        {other?.name || other?.userId}
-                      </span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                        {other?.userId}
-                      </span>
-                    </div>
-                  </li>
-                );
-              })}
+              {filteredContacts.length === 0 ? (
+                <li className="py-6 text-center text-gray-400 dark:text-gray-500 select-none">
+                  No contacts found.
+                </li>
+              ) : (
+                filteredContacts.map((room) => {
+                  const other = client
+                    ? room.getJoinedMembers().find((m) => m.userId !== client.getUserId())
+                    : undefined;
+                  return (
+                    <li
+                      key={room.roomId}
+                      className="flex items-center gap-3 py-3 px-2 hover:bg-blue-50 dark:hover:bg-zinc-800 transition-colors rounded-lg cursor-pointer"
+                    >
+                      <Avatar className="flex items-center justify-center w-10 h-10 text-base bg-zinc-300 dark:bg-zinc-700">
+                        {other?.name?.[0]?.toUpperCase() ||
+                          other?.userId?.[1]?.toUpperCase() ||
+                          "?"}
+                      </Avatar>
+                      <div className="flex flex-col flex-1 min-w-0">
+                        <span className="font-medium truncate text-gray-900 dark:text-white">
+                          {other?.name || other?.userId}
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                          {other?.userId}
+                        </span>
+                      </div>
+                    </li>
+                  );
+                })
+              )}
             </ul>
           </div>
         )}
