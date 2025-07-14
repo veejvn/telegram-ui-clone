@@ -7,6 +7,8 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import IncomingCallHandler from "@/components/call/IncomingCallHandler";
 import BottomNavigationWrapper from "@/components/layouts/BottomNavigationWrapper";
 import { TokenExpirationToast } from "@/components/common/Toast";
+import { InviteChatBot } from "@/components/common/InviteChatBot";
+import { ChatBotStatus } from "@/components/common/ChatBotStatus";
 import GetCookie from "@/components/auth/GetCookie";
 import { ToastProvider } from "@/contexts/ToastProvider";
 
@@ -46,6 +48,7 @@ export default function ProtectedClientLayout({
             {children}
             <BottomNavigationWrapper />
           </main>
+          <InviteChatBot />
           <TokenExpirationToast />
         </MatrixClientProvider>
       )}

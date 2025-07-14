@@ -7,6 +7,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { Message } from "@/stores/useChatStore";
 import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import ForwardTextMessage from "./message-type/ForwardTextMessage";
 
 const ChatMessage = ({ msg }: { msg: Message }) => {
   const userId = useAuthStore.getState().userId;
@@ -16,7 +17,6 @@ const ChatMessage = ({ msg }: { msg: Message }) => {
   const searchParams = useSearchParams();
   const highlightId = searchParams.get("highlight");
   const [animate, setAnimate] = useState(false);
-  //console.log("sender: ", msg.sender);
 
   useEffect(() => {
     if (msg.eventId === highlightId && messageRef.current) {
@@ -30,10 +30,41 @@ const ChatMessage = ({ msg }: { msg: Message }) => {
     }
   }, [highlightId, msg.eventId]);
 
+  const handleForwardMsg = () => {
+    //  Nếu chưa có flag, thử parse JSON
+    if ((type === "text" || type === "emoji") && typeof msg.text === "string") {
+      try {
+        const parsed = JSON.parse(msg.text);
+        if (parsed.forward && parsed.text && parsed.originalSender) {
+          return {
+            text: parsed.text,
+            originalSenderId: parsed.originalSenderId,
+            originalSender: parsed.originalSender,
+          };
+        }
+      } catch (e) {
+        return null;
+      }
+    }
+
+    return null;
+  };
+
+  const forwardInfo = handleForwardMsg();
+
   const renderContent = () => {
     switch (type) {
       case "text":
-        return <TextMessage msg={msg} isSender={isSender} animate={animate} />;
+        return forwardInfo ? (
+          <ForwardTextMessage
+            msg={msg}
+            isSender={isSender}
+            animate={animate}
+            forwardMessage={forwardInfo}
+          />
+        ) : (
+          <TextMessage msg={msg} isSender={isSender} animate={animate} />
+        );
       case "emoji":
         return <EmojiMessage msg={msg} isSender={isSender} />;
       case "image":

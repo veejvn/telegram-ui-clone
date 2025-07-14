@@ -31,11 +31,34 @@ export const useTimeline = (roomId: string) => {
       if (toStart || room.roomId !== roomId) return;
       if (event.getType() !== "m.room.message") return;
 
+      // const content = event.getContent();
+      // const userId = client.getUserId();
+      // const sender = event.getSender();
+      // const senderDisplayName = event.sender?.name ?? sender;
+      // const text = content.body;
+
       const content = event.getContent();
       const userId = client.getUserId();
       const sender = event.getSender();
-      const senderDisplayName = event.sender?.name ?? sender;
-      const text = content.body;
+
+      let text = content.body;
+      let senderDisplayName = event.sender?.name ?? sender;
+      let isForward = false;
+
+      // ✅ Check nếu message là forward (JSON string)
+      if (typeof text === "string") {
+        try {
+          const parsed = JSON.parse(text);
+          if (parsed.forward && parsed.text && parsed.originalSender) {
+            isForward = true;
+            text = parsed.text;
+            senderDisplayName = parsed.originalSender;
+          }
+        } catch (err) {
+          // Not JSON, ignore
+        }
+      }
+
       const ts = event.getTs();
       const time = new Date(ts).toLocaleString();
 
@@ -80,6 +103,7 @@ export const useTimeline = (roomId: string) => {
         time,
         status: "sent",
         type,
+        isForward,
       });
 
       if (sender && sender !== userId) {

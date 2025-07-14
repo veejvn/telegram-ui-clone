@@ -9,11 +9,13 @@ import {
 } from "@/services/chatService";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useTheme } from "next-themes";
-import EmojiPicker, { Theme as EmojiTheme } from "emoji-picker-react";
 import { useChatStore } from "@/stores/useChatStore";
 import TypingIndicator from "./TypingIndicator";
 import useTyping from "@/hooks/useTyping";
+import EmojiPicker, { Theme as EmojiTheme } from "emoji-picker-react";
+import ForwardMsgPreview from "./ForwardMsgPreview";
 import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
+import { useForwardStore } from "@/stores/useForwardStore";
 
 const ChatComposer = ({ roomId }: { roomId: string }) => {
   const [text, setText] = useState("");
@@ -27,6 +29,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   const [isTyping, setIsTyping] = useState(false);
   useTyping(roomId);
   const { addMessage } = useChatStore.getState();
+  const { messages: forwardMessages, clearMessages } = useForwardStore();
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -39,41 +42,69 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   };
 
   const handleSend = () => {
+    if (!client) return;
+
     const trimmed = text.trim();
-    if (!trimmed || !client) return;
-    const localId = "local_" + Date.now(); // Fake ID tạm thời
     const userId = client.getUserId();
     const now = new Date();
 
-    // 🧠 Hiển thị ngay trên UI (thêm vào store)
-    addMessage(roomId, {
-      eventId: localId,
-      sender: userId ?? undefined,
-      senderDisplayName: userId ?? undefined,
-      text: trimmed,
-      time: now.toLocaleString(),
-      timestamp: now.getTime(),
-      status: "sent",
-      type: isOnlyEmojis(trimmed) ? "emoji" : undefined,
-    });
+    //  1. Gửi message thường trước nếu có nội dung
+    if (trimmed) {
+      const localId = "local_" + Date.now();
 
-    // 🧹 Reset UI
-    setText("");
-    setShowEmojiPicker(false);
-    setIsTyping(false);
-    sendTypingEvent(client, roomId, false);
-    // 🔁 Gửi lên Matrix
-    setTimeout(() => {
-      sendMessage(roomId, trimmed, client)
-        .then((res) => {
-          if (!res.success) {
-            console.log("Send Failed!");
-          }
-        })
-        .catch((err) => {
-          console.log("Send Error:", err);
+      addMessage(roomId, {
+        eventId: localId,
+        sender: userId ?? undefined,
+        senderDisplayName: userId ?? undefined,
+        text: trimmed,
+        time: now.toLocaleString(),
+        timestamp: now.getTime(),
+        status: "sent",
+        type: isOnlyEmojis(trimmed) ? "emoji" : "text",
+      });
+
+      setText("");
+      setShowEmojiPicker(false);
+      setIsTyping(false);
+      sendTypingEvent(client, roomId, false);
+
+      setTimeout(() => {
+        sendMessage(roomId, trimmed, client)
+          .then((res) => {
+            if (!res.success) console.log("Send Failed!");
+          })
+          .catch((err) => console.log("Send Error:", err));
+      }, 1000);
+    }
+
+    //  2. Gửi các forward messages nếu có
+    if (forwardMessages.length > 0) {
+      forwardMessages.forEach((fwd) => {
+        const localId = "fwd_" + Date.now() + Math.random();
+        const forwardBody = JSON.stringify({
+          forward: true,
+          originalSenderId: fwd.senderId,
+          originalSender: fwd.sender,
+          text: fwd.text,
         });
-    }, 1000);
+
+        addMessage(roomId, {
+          eventId: localId,
+          sender: userId ?? undefined,
+          senderDisplayName: fwd.sender,
+          text: forwardBody,
+          time: now.toLocaleString(),
+          timestamp: now.getTime(),
+          status: "sent",
+          type: "text",
+          isForward: true,
+        });
+
+        sendMessage(roomId, forwardBody, client);
+      });
+
+      clearMessages();
+    }
   };
 
   const handleEmojiClick = (emojiData: any) => {
@@ -133,9 +164,11 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     };
   }, []);
 
+
+
   return (
     <div className="bg-white dark:bg-[#1c1c1e]">
-      {/* <div>forward preview here</div> */}
+      {forwardMessages.length > 0 && <ForwardMsgPreview />}
       <div className="relative flex justify-between items-center px-2.5 py-2 lg:py-3 pb-10">
         <Paperclip
           onClick={() => inputRef.current?.click()}
@@ -196,7 +229,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
           <TypingIndicator roomId={roomId} />
         </div>
 
-        {text.trim() ? (
+        {text.trim() || forwardMessages.length > 0 ? (
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"

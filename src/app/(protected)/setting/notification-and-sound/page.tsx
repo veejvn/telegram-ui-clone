@@ -4,7 +4,10 @@ import { useRouter } from "next/navigation";
 import { User, Users, MessageCircle, Heart, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useTheme } from "next-themes";
+import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
+import Head from "next/head";
 
+// ----- TOGGLE COMPONENT -----
 type NotificationToggleProps = {
   label: string;
   description?: string;
@@ -50,6 +53,7 @@ const NotificationToggle = ({
   );
 };
 
+// ----- MAIN PAGE -----
 export default function NotificationSettings() {
   const router = useRouter();
   const [privateChats, setPrivateChats] = useState(true);
@@ -65,6 +69,11 @@ export default function NotificationSettings() {
   const [countUnread, setCountUnread] = useState(true);
   const [newContacts, setNewContacts] = useState(true);
 
+  const { theme } = useTheme();
+  const isDark = theme === "dark" ||
+    (theme === "system" && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const headerStyle = getHeaderStyleWithStatusBar();
+
   const messageItems = [
     {
       label: "Private Chats",
@@ -75,7 +84,7 @@ export default function NotificationSettings() {
           className="w-9 h-9 object-cover rounded-[10px]"
         />
       ),
-      iconBg: "", // Không cần nền vì PNG đã có
+      iconBg: "",
       value: privateChats,
       route: "private-chats",
       description: "1 exception",
@@ -138,8 +147,11 @@ export default function NotificationSettings() {
 
   return (
     <div className="p-6 space-y-6 overflow-y-auto bg-white dark:bg-black min-h-screen">
-      {/* Header */}
-      <div className="flex items-center mb-4">
+      <Head>
+        <meta name="theme-color" content={isDark ? "#101014" : "#fff"} />
+      </Head>
+      {/* Header né status bar */}
+      <div className="flex items-center mb-4" style={headerStyle}>
         <button
           type="button"
           className="text-blue-400 mr-4"
@@ -175,8 +187,8 @@ export default function NotificationSettings() {
                 {/* Phần chữ + border-b */}
                 <div
                   className={`flex-1 min-w-0 py-[12px] min-h-[60px] ${idx !== messageItems.length - 1
-                      ? "border-b border-[#E5E5EA] dark:border-[#2c2c2e]"
-                      : ""
+                    ? "border-b border-[#E5E5EA] dark:border-[#2c2c2e]"
+                    : ""
                     }`}
                 >
                   <div className="flex items-center">

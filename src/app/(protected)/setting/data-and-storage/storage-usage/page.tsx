@@ -12,6 +12,7 @@ import { PieChart } from "react-minimal-pie-chart";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import AutoRemoveSettings from "@/components/common/AutoRemoveSettings";
+import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar"; // <-- THÊM DÒNG NÀY
 
 export default function StorageUsagePage() {
   const router = useRouter();
@@ -27,7 +28,10 @@ export default function StorageUsagePage() {
   return (
     <div className="bg-[#f6f6f6] dark:bg-black min-h-screen text-black dark:text-white px-4 pt-6 pb-24">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div
+        className="flex items-center justify-between mb-6"
+        style={getHeaderStyleWithStatusBar()} // <-- Áp dụng né status bar
+      >
         <button
           type="button"
           onClick={() => router.back()}
@@ -88,11 +92,10 @@ export default function StorageUsagePage() {
         {usageData.map((item, idx) => (
           <div
             key={item.label}
-            className={`flex items-center justify-between px-4 py-3 ${
-              idx !== usageData.length - 1
+            className={`flex items-center justify-between px-4 py-3 ${idx !== usageData.length - 1
                 ? "border-b border-zinc-200 dark:border-zinc-700"
                 : ""
-            }`}
+              }`}
           >
             <div className="flex items-center space-x-2">
               <div

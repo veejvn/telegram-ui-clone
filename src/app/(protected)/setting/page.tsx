@@ -284,7 +284,7 @@ export default function SettingsPage() {
   const user = useUserStore((state) => state.user);
   const setUser = useUserStore((state) => state.setUser);
   let displayName = user ? user.displayName : "Yor Name";
-  if(displayName.startsWith("@")){
+  if (displayName.startsWith("@")) {
     displayName = extractUsernameFromMatrixId(displayName.replace(/=40/g, "@"))
   }
   const homeserver = user?.homeserver?.replace("https://", "") || "";
@@ -326,7 +326,7 @@ export default function SettingsPage() {
   };
 
   useEffect(() => {
-    if(!user?.avatarUrl) fetchAvatar();
+    if (!user?.avatarUrl) fetchAvatar();
   }, [client]);
 
   const handleFileSelect = () => {
@@ -404,7 +404,7 @@ export default function SettingsPage() {
             </Avatar>
             <div className="mt-3 text-lg font-bold">{displayName}</div>
             <div className="text-sm text-blue-500 font-medium">
-              homeserver: {homeserver}  
+              homeserver: {homeserver}
             </div>
           </div>
         </div>
