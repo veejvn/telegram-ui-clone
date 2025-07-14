@@ -2,15 +2,16 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { QrCode, ChevronLeft } from 'lucide-react';
-import { MdPhoneIphone } from 'react-icons/md'; // icon điện thoại
-import Image from 'next/image'; // dùng để hiển thị ảnh minh họa
+import { MdPhoneIphone } from 'react-icons/md';
+import Image from 'next/image';
+import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
+import Head from "next/head";
 
 export default function DevicesPage() {
     const [scannedData, setScannedData] = useState<string | null>(null);
     const router = useRouter();
 
     const handleScan = () => {
-        // TODO: thay bằng logic scan thật
         setScannedData('DeviceID-12345');
     };
 
@@ -25,10 +26,18 @@ export default function DevicesPage() {
     const subTextColor = isDark ? "text-gray-400" : "text-gray-600";
     const inputBg = isDark ? "bg-[#18181b]" : "bg-white";
 
+    // Lấy style header né status bar
+    const headerStyle = getHeaderStyleWithStatusBar();
+
     return (
         <div className={`min-h-screen ${sectionBg} ${textColor} p-0`}>
-            {/* Header */}
-            <div className="flex items-center px-4 pt-4 pb-2">
+            {/* Đổi màu status bar trên mobile cho trùng background */}
+            <Head>
+                <meta name="theme-color" content={isDark ? "#000" : "#fff"} />
+            </Head>
+
+            {/* Header có padding-top tự động né status bar */}
+            <div style={headerStyle} className="flex items-center px-4 pt-4 pb-2">
                 <button
                     onClick={() => router.back()}
                     className="flex items-center space-x-1 text-blue-400 font-medium text-base"

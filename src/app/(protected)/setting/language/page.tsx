@@ -4,6 +4,9 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { ChevronLeft, Check, Lock, Search } from 'lucide-react';
 import { Switch } from "@/components/ui/switch-language"; // <-- Custom Switch with showLock
+import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
+import Head from "next/head";
+import { useTheme } from "next-themes";
 
 const AVAILABLE_LANGUAGES = [
   { label: 'English', sub: 'English' },
@@ -37,9 +40,19 @@ export default function LanguagePage() {
   const [selected, setSelected] = useState<string>('English');
   const [showTranslate, setShowTranslate] = useState(false);
 
+  // --- Theme + status bar ---
+  const { theme } = useTheme();
+  const isDark = theme === "dark" ||
+    (theme === "system" && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const headerStyle = getHeaderStyleWithStatusBar();
+
   return (
     <div className="min-h-screen bg-[#fafafb] dark:bg-[#101014]">
-      <div className="px-4 pt-4 pb-2">
+      <Head>
+        <meta name="theme-color" content={isDark ? "#101014" : "#fafafb"} />
+      </Head>
+      {/* Header luôn né status bar */}
+      <div style={headerStyle} className="px-4 pt-4 pb-2">
         {/* Back + Title */}
         <div className="flex items-center">
           <button
@@ -55,9 +68,9 @@ export default function LanguagePage() {
           <div className="relative w-full max-w-md">
             <input
               className="w-full h-10 rounded-xl bg-zinc-100 dark:bg-[#232323] pl-0 pr-0 text-base focus:outline-none border border-zinc-200 dark:border-[#232323] text-center text-transparent caret-zinc-500"
-              // placeholder="Search"  // <-- BỎ dòng này
+              // placeholder="Search"
               readOnly
-              style={{ color: 'transparent', textShadow: '0 0 0 #b0b0b0' }} // Đảm bảo không hiện text
+              style={{ color: 'transparent', textShadow: '0 0 0 #b0b0b0' }}
               aria-label='input'
             />
             <span className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">

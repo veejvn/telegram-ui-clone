@@ -1,66 +1,114 @@
 "use client";
 
-import { useState } from "react";
+import { JSX, useState } from "react";
 import { Switch } from "@headlessui/react";
-import {
-  ChevronRight,
-  Cylinder,
-  ChartNoAxesColumn,
-  AudioLines,
-  Wifi,
-  RotateCcw,
-  User,
-  Users,
-  Megaphone,
-} from "lucide-react";
+import { ChevronRight, RotateCcw } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
+import Head from "next/head";
+import { useTheme } from "next-themes";
 
+// ----- ICON COMPONENT -----
+const SettingIcon = ({ type }: { type: string }) => {
+  const iconSize = 22;
+  const iconMap: Record<string, JSX.Element> = {
+    reset: <RotateCcw className="text-zinc-400" size={iconSize} />,
+  };
+  return iconMap[type] || null;
+};
+
+// ----- ITEM COMPONENT -----
 const SettingItem = ({
-  icon,
   title,
   value,
   onClick,
-  showChevron = true, // thêm prop này, mặc định là true
+  showChevron = true,
   valueBelowTitle = false,
+  noBorder = false,
+  iconType,
+  imgSrc,
+  forceIconWrapper = false,
 }: {
-  icon: React.ReactNode;
-  title: React.ReactNode;
+  title: string;
   value?: string;
   onClick?: () => void;
   showChevron?: boolean;
   valueBelowTitle?: boolean;
+  noBorder?: boolean;
+  iconType?: string;
+  imgSrc?: string;
+  forceIconWrapper?: boolean;
 }) => (
-  <div
-    onClick={onClick}
-    className="flex items-center justify-between px-4 py-3 bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-700 rounded-lg mb-2 cursor-pointer"
-  >
-    <div className="flex items-center gap-3 flex-1">
-      {icon}
-      {valueBelowTitle ? (
-        <div className="flex flex-col">
-          <span className="text-black dark:text-white">{title}</span>
-          {value && (
-            <span className="text-zinc-400 dark:text-zinc-300 text-sm -mt-0.5">
-              {value}
+  <div onClick={onClick} className="cursor-pointer">
+    <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-[#18181b]">
+      <div className="flex items-center gap-3 flex-1">
+        {(imgSrc || iconType) &&
+          (forceIconWrapper ? (
+            <div className="w-[45px] h-[45px] flex items-center justify-center">
+              {imgSrc ? (
+                <Image
+                  src={imgSrc}
+                  alt={title}
+                  width={200}
+                  height={200}
+                  className="max-w-full max-h-full object-contain"
+                />
+              ) : (
+                <div className="w-[36px] h-[36px] flex items-center justify-center">
+                  <SettingIcon type={iconType ?? ""} />
+                </div>
+              )}
+            </div>
+          ) : imgSrc ? (
+            <Image
+              src={imgSrc}
+              alt={title}
+              width={36}
+              height={36}
+              className="max-w-full max-h-full object-contain"
+            />
+          ) : (
+            <div className="w-[36px] h-[36px] flex items-center justify-center">
+              <SettingIcon type={iconType ?? ""} />
+            </div>
+          ))}
+
+        {valueBelowTitle ? (
+          <div className="flex flex-col">
+            <span className="text-black dark:text-white text-base">
+              {title}
             </span>
-          )}
+            {value && (
+              <span className="text-zinc-400 dark:text-zinc-400 text-sm -mt-0.5">
+                {value}
+              </span>
+            )}
+          </div>
+        ) : (
+          <span className="text-black dark:text-white text-base">{title}</span>
+        )}
+      </div>
+
+      {!valueBelowTitle && (
+        <div className="flex items-center gap-1 text-zinc-400 dark:text-zinc-300 text-sm">
+          {value && <span>{value}</span>}
+          {showChevron && <ChevronRight size={18} />}
         </div>
-      ) : (
-        <span className="text-black dark:text-white">{title}</span>
+      )}
+
+      {valueBelowTitle && showChevron && (
+        <ChevronRight size={18} className="text-zinc-400 dark:text-zinc-300" />
       )}
     </div>
-    {!valueBelowTitle && (
-      <div className="flex items-center gap-1 text-zinc-400 dark:text-zinc-300 text-sm">
-        {value && <span>{value}</span>}
-        {showChevron && <ChevronRight size={18} />}
-      </div>
-    )}
-    {valueBelowTitle && showChevron && (
-      <ChevronRight size={18} className="text-zinc-400 dark:text-zinc-300" />
+
+    {!noBorder && (
+      <div className="ml-[64px] mr-4 h-px bg-zinc-200 dark:bg-zinc-700" />
     )}
   </div>
 );
 
+// ----- PAGE COMPONENT -----
 export default function DataAndStoragePage() {
   const router = useRouter();
   const [useLessData, setUseLessData] = useState(false);
@@ -68,62 +116,55 @@ export default function DataAndStoragePage() {
   const [pauseMusic, setPauseMusic] = useState(true);
   const [raiseToListen, setRaiseToListen] = useState(true);
 
+  // --- Theme + status bar ---
+  const { theme } = useTheme();
+  const isDark =
+    theme === "dark" ||
+    (theme === "system" && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const headerStyle = getHeaderStyleWithStatusBar();
+
   return (
     <div className="bg-[#f6f6f6] dark:bg-black min-h-screen text-black dark:text-white px-4 pt-6 pb-24">
-      <div className="flex items-center mb-4">
+      <Head>
+        <meta name="theme-color" content={isDark ? "#000" : "#f6f6f6"} />
+      </Head>
+      {/* Header né status bar */}
+      <div className="flex items-center mb-4" style={headerStyle}>
         <button
           type="button"
-          className="text-blue-400 mr-4 cursor-pointer"
+          className="text-blue-500 mr-4"
           onClick={() => router.push("/setting")}
         >
           &lt; Back
         </button>
-        <h1 className="text-xl font-bold flex-1 text-center">
+        <h1 className="text-2xl font-bold flex-1 text-center">
           Data and Storage
         </h1>
         <div className="w-12" />
       </div>
 
-      {/* Storage & Network */}
-      <div>
-        <div
+      <div className="bg-white dark:bg-[#18181b] rounded-2xl mb-5">
+        <SettingItem
+          imgSrc="/chat/images/icons-datastorage/storage.png"
+          title="Storage Usage"
+          value="18,9 MB"
           onClick={() => router.push("/setting/data-and-storage/storage-usage")}
-        >
-          <SettingItem
-            icon={
-              <div className="border border-green-600 bg-green-600 rounded p-1">
-                <Cylinder size={24} className="text-white" />
-              </div>
-            }
-            title="Storage Usage"
-            value="14 MB"
-          />
-        </div>
-
-        <div
+        />
+        <SettingItem
+          imgSrc="/chat/images/icons-datastorage/network.png"
+          title="Network Usage"
+          value="64,1 MB"
           onClick={() => router.push("/setting/data-and-storage/network-usage")}
-        >
-          <SettingItem
-            icon={
-              <div className="border  border-purple-600 bg-purple-600 rounded p-1">
-                <ChartNoAxesColumn size={24} className="text-white" />
-              </div>
-            }
-            title="Network Usage"
-            value="19,2 MB"
-          />
-        </div>
+          noBorder
+        />
       </div>
 
-      {/* Automatic Download */}
-      <div>
-        <h2 className="text-sm text-zinc-400 mb-2">AUTOMATIC MEDIA DOWNLOAD</h2>
+      <h2 className="text-sm text-zinc-400 px-4 pt-3 pb-2">
+        AUTOMATIC MEDIA DOWNLOAD
+      </h2>
+      <div className="bg-white dark:bg-[#18181b] rounded-2xl mb-5">
         <SettingItem
-          icon={
-            <div className="border border-green-600 bg-green-600 rounded p-1">
-              <AudioLines size={24} className="text-white" />
-            </div>
-          }
+          imgSrc="/chat/images/icons-datastorage/cellular.png"
           title="Using Cellular"
           value="Media (2,5 MB)"
           valueBelowTitle
@@ -132,172 +173,163 @@ export default function DataAndStoragePage() {
           }
         />
         <SettingItem
-          icon={
-            <div className="border border-blue-500 bg-blue-500 rounded p-1">
-              <Wifi size={24} className="text-white" />
-            </div>
-          }
+          imgSrc="/chat/images/icons-datastorage/wifi.png"
           title="Using Wi-Fi"
           value="Media (15 MB), Files (3,0 MB)"
           valueBelowTitle
           onClick={() => router.push("/setting/data-and-storage/using-wifi")}
         />
-        <SettingItem
-          icon={
-            <div className="p-1 opacity-40">
-              <RotateCcw size={24} />
-            </div>
-          }
-          title={
-            <span className="opacity-40">Reset Auto-Download Settings</span>
-          }
-          value=""
-          showChevron={false}
-        />
+        <div className="opacity-50 pointer-events-none select-none">
+          <SettingItem
+            title="Reset Auto-Download Settings"
+            valueBelowTitle
+            showChevron={false}
+            noBorder
+            iconType="reset"
+          />
+        </div>
       </div>
 
-      {/* Save to Photos */}
-      <div>
-        <h2 className="text-sm text-zinc-400 mb-2">SAVE TO PHOTOS</h2>
+      <h2 className="text-sm text-zinc-400 px-4 pt-3 pb-2">SAVE TO PHOTOS</h2>
+      <div className="bg-white dark:bg-[#18181b] rounded-2xl">
         <SettingItem
-          icon={
-            <div className="border border-blue-500 bg-blue-500 rounded p-1">
-              <User size={24} className="text-white" />
-            </div>
-          }
+          imgSrc="/chat/icons/private-chat.png"
           title="Private Chats"
           value="Off"
+          forceIconWrapper
           onClick={() => router.push("/setting/data-and-storage/private-chats")}
         />
         <SettingItem
-          icon={
-            <div className="border border-green-600 bg-green-600 rounded p-1">
-              <Users size={24} className="text-white" />
-            </div>
-          }
+          imgSrc="/chat/icons/group-chat.png"
           title="Group Chats"
           value="Off"
+          forceIconWrapper
           onClick={() => router.push("/setting/data-and-storage/group-chats")}
         />
         <SettingItem
-          icon={
-            <div className="border border-orange-400 bg-orange-400 rounded p-1">
-              <Megaphone size={24} className="text-white" />
-            </div>
-          }
+          imgSrc="/chat/icons/channel.png"
           title="Channels"
           value="Off"
+          noBorder
+          forceIconWrapper
           onClick={() => router.push("/setting/data-and-storage/channels")}
         />
-        <p className="text-xs text-zinc-400 mt-1">
-          Automatically save all new photos and videos from these chats to your
-          Photos app.
-        </p>
       </div>
+      <p className="text-xs text-zinc-400 px-4 py-2 mb-5">
+        Automatically save all new photos and videos from these chats to your
+        Photos app.
+      </p>
 
-      {/* Use Less Data */}
-      <div>
-        <div className="bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-700 rounded-lg px-4 sm:px-5 py-3">
-          <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-0">
-            <span>Use Less Data for Calls</span>
-            <Switch
-              checked={useLessData}
-              onChange={setUseLessData}
-              className={`${
-                useLessData ? "bg-green-500" : "bg-zinc-400"
-              } relative inline-flex h-6 sm:h-7 w-11 sm:w-12 items-center rounded-full transition-colors`}
-            >
-              <span
-                className={`${
-                  useLessData
-                    ? "translate-x-6 sm:translate-x-7"
-                    : "translate-x-1"
-                } inline-block h-4 sm:h-5 w-4 sm:w-5 transform bg-white rounded-full transition-transform`}
-              />
-            </Switch>
-          </div>
+      <div className="bg-white dark:bg-[#18181b] rounded-2xl">
+        <div className="flex items-center justify-between px-4 py-4">
+          <span className="text-black dark:text-white text-base">
+            Use Less Data for Calls
+          </span>
+          <Switch
+            checked={useLessData}
+            onChange={setUseLessData}
+            className={`${useLessData ? "bg-green-500" : "bg-zinc-400"
+              } relative inline-flex h-8 w-12 items-center rounded-full transition-colors`}
+          >
+            <span
+              className={`${useLessData ? "translate-x-5" : "translate-x-1"
+                } inline-block h-7 w-7 transform bg-white rounded-full shadow transition-transform`}
+            />
+          </Switch>
         </div>
-        <p className="text-xs text-zinc-400 mt-2">
-          Using less data may improve your experience on bad networks, but will
-          slightly decrease audio and video quality.
-        </p>
       </div>
+      <p className="text-xs text-zinc-400 px-4 py-2 mb-5">
+        Using less data may improve your experience on bad networks, but will
+        slightly decrease audio and video quality.
+      </p>
 
-      {/* Other */}
-      <div>
-        <h2 className="text-sm text-zinc-400 mt-4 mb-2">OTHER</h2>
-        <SettingItem
-          icon={""}
-          title="Open Links in"
-          value="Telegram"
-          onClick={() => router.push("/setting/data-and-storage/web-browser")}
-        />
-        <SettingItem
-          icon={""}
-          title="Share Sheet"
-          onClick={() => router.push("/setting/data-and-storage/share-sheet")}
-        />
-
-        <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-0 px-4 sm:px-5 py-3 bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-700 rounded-lg mb-2">
-          <span>Save Edited Photos</span>
-          <div
-            onClick={() => setSaveEditedPhotos(!saveEditedPhotos)}
-            className={`w-11 sm:w-12 h-6 sm:h-7 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-300 ${
-              saveEditedPhotos ? "bg-green-500" : "bg-zinc-400"
-            }`}
-          >
-            <div
-              className={`bg-white w-4 sm:w-5 h-4 sm:h-5 rounded-full shadow-md transform transition-transform duration-300 ${
-                saveEditedPhotos ? "translate-x-5 sm:translate-x-6" : ""
-              }`}
-            ></div>
+      <h2 className="text-sm text-zinc-400 px-4 pt-3 pb-2">OTHER</h2>
+      <div className="bg-white dark:bg-[#18181b] rounded-2xl">
+        <div className="flex flex-col">
+          <div className="flex items-center justify-between px-4 py-3">
+            <span className="text-black dark:text-white text-base">
+              Open Links in
+            </span>
+            <div className="flex items-center gap-1 text-zinc-400 dark:text-zinc-300 text-sm">
+              <span>Telegram</span>
+              <ChevronRight size={18} />
+            </div>
           </div>
+          <div className="ml-4 h-px bg-zinc-200 dark:bg-zinc-700" />
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-0 px-4 sm:px-5 py-3 bg-white border-zinc-200bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-700 rounded-lg mb-2">
-          <span>Pause Music While Recording</span>
-          <div
-            onClick={() => setPauseMusic(!pauseMusic)}
-            className={`w-11 sm:w-12 h-6 sm:h-7 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-300 ${
-              pauseMusic ? "bg-green-500" : "bg-zinc-400"
-            }`}
-          >
-            <div
-              className={`bg-white w-4 sm:w-5 h-4 sm:h-5 rounded-full shadow-md transform transition-transform duration-300 ${
-                pauseMusic ? "translate-x-5 sm:translate-x-6" : ""
-              }`}
-            ></div>
+        <div className="flex flex-col">
+          <div className="flex items-center justify-between px-4 py-3">
+            <span className="text-black dark:text-white text-base">
+              Share Sheet
+            </span>
+            <ChevronRight
+              size={18}
+              className="text-zinc-400 dark:text-zinc-300"
+            />
           </div>
+          <div className="ml-4 h-px bg-zinc-200 dark:bg-zinc-700" />
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-0 px-4 sm:px-5 py-3 bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-700 rounded-lg mb-2">
-          <span>Raise to Listen</span>
-          <div
-            onClick={() => setRaiseToListen(!raiseToListen)}
-            className={`w-11 sm:w-12 h-6 sm:h-7 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-300 ${
-              raiseToListen ? "bg-green-500" : "bg-zinc-400"
-            }`}
-          >
-            <div
-              className={`bg-white w-4 sm:w-5 h-4 sm:h-5 rounded-full shadow-md transform transition-transform duration-300 ${
-                raiseToListen ? "translate-x-5 sm:translate-x-6" : ""
-              }`}
-            ></div>
+        {[
+          {
+            label: "Save Edited Photos",
+            state: saveEditedPhotos,
+            toggle: setSaveEditedPhotos,
+          },
+          {
+            label: "Pause Music While Recording",
+            state: pauseMusic,
+            toggle: setPauseMusic,
+          },
+          {
+            label: "Raise to Listen",
+            state: raiseToListen,
+            toggle: setRaiseToListen,
+          },
+        ].map(({ label, state, toggle }, idx, arr) => (
+          <div key={label} className="flex flex-col">
+            <div className="flex items-center justify-between px-4 py-3">
+              <span className="text-black dark:text-white text-base">
+                {label}
+              </span>
+              <div
+                className="flex-shrink-0"
+                style={{
+                  width: 48,
+                  display: "flex",
+                  justifyContent: "flex-end",
+                }}
+              >
+                <div
+                  onClick={() => toggle(!state)}
+                  className={`w-12 h-8 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-300 ${state ? "bg-green-500" : "bg-zinc-400"
+                    }`}
+                >
+                  <div
+                    className={`bg-white w-7 h-7 rounded-full shadow-md transform transition-transform duration-300 ${state ? "translate-x-5" : ""
+                      }`}
+                  />
+                </div>
+              </div>
+            </div>
+            {idx !== arr.length - 1 && (
+              <div className="ml-4 h-px bg-zinc-200 dark:bg-zinc-700" />
+            )}
           </div>
-        </div>
-        <p className="text-xs text-zinc-400 mt-1">
-          Raise to Listen allows you to quickly listen and reply to incoming
-          audio messages by raising the phone to your ear.
-        </p>
+        ))}
       </div>
+      <p className="text-xs text-zinc-400 px-4 py-2 mb-5">
+        Raise to Listen allows you to quickly listen and reply to incoming audio
+        messages by raising the phone to your ear.
+      </p>
 
-      {/* Connection */}
-      <div>
-        <h2 className="text-sm text-zinc-400 mb-2">CONNECTION TYPE</h2>
+      <h2 className="text-sm text-zinc-400 px-4 pt-3 pb-2">CONNECTION TYPE</h2>
+      <div className="bg-white dark:bg-[#18181b] rounded-2xl mb-3">
         <SettingItem
-          icon={""}
           title="Proxy"
           value="None"
+          noBorder
           onClick={() => router.push("/setting/data-and-storage/proxy")}
         />
       </div>

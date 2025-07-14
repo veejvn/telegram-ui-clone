@@ -3,6 +3,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { useTheme } from "next-themes";
+import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
+import Head from "next/head";
 
 export default function FolderPage() {
   const [showFolderTags, setShowFolderTags] = useState(false);
@@ -10,10 +12,15 @@ export default function FolderPage() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
+  const headerStyle = getHeaderStyleWithStatusBar();
+
   return (
     <div className="min-h-screen px-0 pt-0 pb-10 bg-[#efeff4] dark:bg-black transition-colors">
-      {/* Header */}
-      <div className="flex justify-between items-center px-4 pt-4 mb-6">
+      <Head>
+        <meta name="theme-color" content={isDark ? "#000" : "#efeff4"} />
+      </Head>
+      {/* Header luôn né status bar */}
+      <div style={headerStyle} className="flex justify-between items-center px-4 pt-4 mb-6">
         <button
           type="button"
           className="text-blue-500 text-base font-medium"
