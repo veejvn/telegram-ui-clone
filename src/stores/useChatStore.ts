@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 export type MessageStatus = "sending" | "sent" | "read";
-export type MessageType = "text" | "image" | "video" | "file" | "emoji";
+export type MessageType = "text" | "image" | "video" | "file" | "emoji" | "audio";
 
 export type Message = {
   eventId: string;
@@ -14,6 +14,8 @@ export type Message = {
   videoUrl?: string | null;
   fileUrl?: string | null;
   fileName?: string | null;
+  audioUrl?: string | null;
+  audioDuration?: number | null;     // ← thêm (đơn vị giây)
   status: MessageStatus;
   type?: MessageType;
   isForward?: boolean;

@@ -3,6 +3,7 @@
 import EmojiMessage from "@/components/chat/message-type/EmojiMessage";
 import ImageMessage from "@/components/chat/message-type/ImageMassage";
 import TextMessage from "@/components/chat/message-type/TextMessage";
+import AudioMessage from "@/components/chat/message-type/AudioMessage";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Message } from "@/stores/useChatStore";
 import React, { useEffect, useRef, useState } from "react";
@@ -67,6 +68,8 @@ const ChatMessage = ({ msg }: { msg: Message }) => {
         );
       case "emoji":
         return <EmojiMessage msg={msg} isSender={isSender} />;
+      case "audio":
+        return <AudioMessage msg={msg} isSender={isSender} />;
       case "image":
         return <ImageMessage msg={msg} isSender={isSender} />;
       default:
@@ -81,9 +84,8 @@ const ChatMessage = ({ msg }: { msg: Message }) => {
       className={`flex ${isSender ? "justify-end" : "justify-start"} my-2`}
     >
       <div
-        className={`flex flex-col max-w-[90%] w-fit rounded-xl transition ${
-          animate ? "flash-background" : ""
-        }`}
+        className={`flex flex-col max-w-[90%] w-fit rounded-xl transition ${animate ? "flash-background" : ""
+          }`}
       >
         {renderContent()}
       </div>
