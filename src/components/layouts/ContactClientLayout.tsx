@@ -1,25 +1,23 @@
 "use client";
 
 import { getLS } from "@/tools/localStorage.tool";
-import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
 import { useRouter } from "next/navigation";
 
-const CallClientLayout = ({
+const ContactClientLayout = ({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) => {
-
-  const headerStyle = getHeaderStyleWithStatusBar();
-  const fromMainApp = getLS("fromMainApp")
   const route = useRouter()
+  const fromMainApp = getLS("fromMainApp")
   const hide = getLS("hide") || [];
   const options = Array.isArray(hide) && fromMainApp ? hide : [];
 
-  if(options.includes("call")){
+  if(options.includes("contact")){
     route.push("/chat")
   }
-  return <div style={headerStyle}>{children}</div>;
+
+  return <div>{children}</div>;
 };
 
-export default CallClientLayout;
+export default ContactClientLayout;
