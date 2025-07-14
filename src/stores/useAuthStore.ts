@@ -3,7 +3,7 @@ import { normalizeMatrixUserId, isValidMatrixUserId } from "@/utils/matrixHelper
 import { create } from 'zustand'
 
 interface AuthState {
-    isLogging: boolean
+    isLoggedIn: boolean
     accessToken: string | null
     userId: string | null,
     deviceId: string | null,
@@ -23,12 +23,12 @@ const HOMESERVER_URL = process.env.NEXT_PUBLIC_MATRIX_BASE_URL;
 
 export const useAuthStore = create<AuthState>(
     (set, get) => {
-    const isLoggingStored = getLS("isLogging") || false;
+    const storedIsLoggedIn = getLS("isLoggedIn") || false;
     return {
         accessToken: "",
         userId: "",
         deviceId: "",
-        isLogging: isLoggingStored,
+        isLoggedIn: storedIsLoggedIn,
         login: (accessToken, userId, deviceId) => {
             // Kiểm tra nếu userId đã có format hợp lệ thì dùng nguyên bản
             let finalUserId = userId;
@@ -41,17 +41,17 @@ export const useAuthStore = create<AuthState>(
             // Validate final user ID
             if (isValidMatrixUserId(finalUserId)) {
                 //console.log("🔐 Auth store login:", { accessToken: "***", userId: finalUserId, deviceId });
-                set({ isLogging: true, accessToken, userId: finalUserId, deviceId });
-                setLS("isLogging", true)
+                set({ isLoggedIn: true, accessToken, userId: finalUserId, deviceId });
+                setLS("isLoggedIn", true)
             } else {
                 console.error("Cannot login with invalid user ID:", finalUserId);
-                set({ isLogging: false, accessToken: null, userId: null, deviceId: null });
-                setLS("isLogging", false)
+                set({ isLoggedIn: false, accessToken: null, userId: null, deviceId: null });
+                setLS("isLoggedIn", false)
             }
         },
         logout: () => {
-            set({ isLogging: false, accessToken: null, userId: null, deviceId: null })
-            setLS("isLogging", false)
+            set({ isLoggedIn: false, accessToken: null, userId: null, deviceId: null })
+            //setLS("isLoggedIn", false)
         },
         getNormalizedUserId: () => {
             const state = get();
@@ -78,17 +78,17 @@ export const useAuthStore = create<AuthState>(
             // Validate final user ID
             if (isValidMatrixUserId(finalUserId)) {
                 //console.log("🔐 Auth store setAuth:", { accessToken: "***", userId: finalUserId, deviceId });
-                set({ isLogging: true, accessToken, userId: finalUserId, deviceId });
-                setLS("isLogging", true)
+                set({ isLoggedIn: true, accessToken, userId: finalUserId, deviceId });
+                setLS("isLoggedIn", true)
             } else {
                 //console.error("Cannot setAuth with invalid user ID:", finalUserId);
-                set({ isLogging: false, accessToken: null, userId: null, deviceId: null });
-                setLS("isLogging", false)
+                set({ isLoggedIn: false, accessToken: null, userId: null, deviceId: null });
+                setLS("isLoggedIn", false)
             }
         },
         validateAuth: () => {
             const state = get();
-            return !!(state.accessToken && state.userId && state.deviceId && state.isLogging);
+            return !!(state.accessToken && state.userId && state.deviceId && state.isLoggedIn);
         }
     }
 })

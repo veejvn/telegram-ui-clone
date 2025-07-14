@@ -153,7 +153,9 @@ export default function ChatsPage() {
   // const searchParams = useSearchParams();
   // const hideFromQuery = searchParams.get("hide");
   const hide = getLS("hide") || [];
-  const options = Array.isArray(hide) ? hide : [];
+  const hideArray = typeof hide === "string" ? hide.split(",") : hide;
+  const options = Array.isArray(hideArray) ? hideArray : [];
+  //console.log(options)
 
   return (
     <div>

@@ -12,15 +12,15 @@ export default function AuthClientLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const isLogging = useAuthStore((state) => state.isLogging);
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     setIsReady(true);
-    if (isLogging) {
+    if (isLoggedIn) {
       router.replace(ROUTES.CHAT);
     }
-  }, [isLogging, router]);
+  }, [isLoggedIn, router]);
 
   if (!isReady) {
     return (
@@ -30,7 +30,7 @@ export default function AuthClientLayout({
     );
   }
 
-  if (isLogging) {
+  if (isLoggedIn) {
     return null;
   }
 

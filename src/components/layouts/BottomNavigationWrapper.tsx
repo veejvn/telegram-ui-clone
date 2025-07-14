@@ -12,7 +12,8 @@ function BottomNavInner() {
   const isCallPage = pathname ? pathname.startsWith("/call/") : false;
   const fromMainApp = getLS("fromMainApp")
   let hide = fromMainApp ? getLS("hide") : [];
-  const options = Array.isArray(hide) ? hide : [];
+  const hideArray = typeof hide === "string" ? hide.split(",") : hide;
+  const options = Array.isArray(hideArray) ? hide : [];
   const onlyChat =
     options.includes("call") &&
     options.includes("contact") &&
@@ -20,7 +21,7 @@ function BottomNavInner() {
   const shouldShowBottomNav =
     !isChatDetailPage && !isSettingPage && !isCallPage && !onlyChat;
   if (!shouldShowBottomNav) return null;
-  return <BottomNavigattion hideOptions={hide} />;
+  return <BottomNavigattion hideOptions={hideArray} />;
 }
 
 export default function BottomNavigationWrapper() {

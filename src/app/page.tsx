@@ -8,7 +8,6 @@ import { callService } from "@/services/callService";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 
 export default function Home() {
-  const isLogging = useAuthStore((state) => state.isLogging);
   const login = useAuthStore((state) => state.login);
   const router = useRouter();
   const MATRIX_BASE_URL =
@@ -91,7 +90,23 @@ export default function Home() {
               router.replace(ROUTES.CHAT);
               return;
             } else {
-              if (isLogging) {
+              const res = await fetch("/chat/api/session", {
+                method: "GET",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                credentials: "include",
+              });
+
+              if (!res.ok) {
+                //console.error("Session API error:", errorData);
+                window.location.href = "/chat/login";
+                return;
+              }
+
+              const { accessToken } = await res.json();
+
+              if (accessToken) {
                 router.push(ROUTES.CHAT);
               } else {
                 router.push(ROUTES.LOGIN);
