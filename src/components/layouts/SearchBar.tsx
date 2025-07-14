@@ -6,6 +6,7 @@ import SearchContent from "@/components/layouts/SearchContent";
 import { searchMatrixUsers } from "@/services/matrixUserSearch";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import * as sdk from "@/lib/matrix-sdk";
+import { cn } from "@/lib/utils";
 
 const SearchBar = () => {
   const client = useMatrixClient();
@@ -68,28 +69,52 @@ const SearchBar = () => {
   }, [searchTerm, client]);
 
   return (
-    <div className="relative">
-      <div className="px-4 py-2">
-        <div className="relative border rounded-xl bg-white dark:bg-neutral-900">
-          <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400 dark:text-gray-500" />
+    <div className="relative py-2">
+      <div className="relative px-4">
+        <div className="relative h-10 w-full bg-[#e5e5ea] dark:bg-[#1c1c1e] rounded-[10px] transition-all duration-200">
+          {/* Input */}
           <Input
             type="text"
-            placeholder="Search user..."
-            className="pl-10 pr-10 border rounded-xl bg-white text-black placeholder:text-gray-400 dark:bg-neutral-900 dark:text-white dark:placeholder:text-gray-400 focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-600"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder=""
+            className="peer w-full h-full rounded-[10px] bg-transparent pl-10 pr-10 text-[17px] text-black dark:text-white border-none focus:outline-none focus:ring-0"
           />
+
+          {/* Icon + chữ Search */}
+          <div
+            className={cn(
+              "absolute inset-0 flex items-center transition-all duration-200 pointer-events-none",
+              searchTerm
+                ? "justify-start pl-3"
+                : "peer-focus:justify-start peer-focus:pl-3 justify-center"
+            )}
+          >
+            <Search className="h-5 w-5 text-gray-500 mr-2" />
+            <span
+              className={cn(
+                "text-[17px] text-gray-500 transition-opacity duration-150",
+                searchTerm ? "opacity-0" : "opacity-100",
+                "peer-focus:opacity-100"
+              )}
+            >
+              Search
+            </span>
+          </div>
+
+          {/* Nút xoá */}
           {searchTerm && (
             <button
               onClick={() => setSearchTerm("")}
-              className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
-              aria-label="search"
+              className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-300"
+              aria-label="Clear search"
             >
               <X size={18} />
             </button>
           )}
         </div>
       </div>
+
       {searchTerm.length > 0 && (
         <div className="absolute left-0 right-0 z-20">
           <SearchContent
