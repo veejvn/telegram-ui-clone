@@ -347,7 +347,7 @@ const useCallStore = create<CallStore>((set, get) => {
                 if (client) client.removeListener('event', _recallListener);
                 _recallListener = null;
             }
-            let countdown = 30;
+            let countdown = 60;
             set({ recallCountdown: countdown });
             _recallInterval = setInterval(() => {
                 countdown -= 1;

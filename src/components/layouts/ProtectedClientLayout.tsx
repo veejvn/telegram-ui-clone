@@ -11,6 +11,8 @@ import IncomingCallHandler from "@/components/call/IncomingCallHandler";
 import BottomNavigationWrapper from "@/components/layouts/BottomNavigationWrapper";
 import useRegisterPushKey from "@/hooks/useRegisterPushKey ";
 import { TokenExpirationToast } from "@/components/common/Toast";
+import { InviteChatBot } from "@/components/common/InviteChatBot";
+import { ChatBotStatus } from "@/components/common/ChatBotStatus";
 
 // Dynamic import client-only MatrixClientProvider
 const MatrixClientProvider = dynamic(
@@ -56,6 +58,7 @@ export default function ProtectedClientLayout({
           {children}
           <BottomNavigationWrapper />
         </main>
+        <InviteChatBot />
         <TokenExpirationToast />
       </MatrixClientProvider>
     </Suspense>
