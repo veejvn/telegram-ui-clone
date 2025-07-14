@@ -49,7 +49,9 @@ export function useChatBot() {
       if (!hasBot) {
         await addChatBot(client);
         setHasChatBot(true);
-        refreshRooms?.();
+        setTimeout(() => {
+          refreshRooms?.();
+        }, 2000)
       }
       hasCheckedRef.current = true; // Đánh dấu đã kiểm tra/tạo bot
     } catch (err) {

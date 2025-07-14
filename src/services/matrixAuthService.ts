@@ -4,9 +4,8 @@ import * as sdk from "@/lib/matrix-sdk";
 import { ERROR_MESSAGES } from "@/constants/error-messages"
 import { LoginFormData, RegisterFormData } from "@/types/auth";
 import { ILoginResponse } from "@/types/matrix";
-import { useUserStore } from "@/stores/useUserStore";
-import { setCookie, getCookie, deleteCookie } from "@/utils/cookie";
 import { normalizeMatrixUserId } from "@/utils/matrixHelpers";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 // Kiểm tra env variables bắt buộc
 if (!process.env.NEXT_PUBLIC_MATRIX_BASE_URL) {
@@ -21,7 +20,6 @@ const SERVER_URL: string = process.env.NEXT_PUBLIC_BASE_APP_URL;
 
 let clientInstance: sdk.MatrixClient | null = null;
 
-const clearUser = useUserStore.getState().clearUser
 
 export class MatrixAuthService {
     public client: sdk.MatrixClient
@@ -85,11 +83,11 @@ export class MatrixAuthService {
             if (registerResponse.access_token) {
                 const normalizedUserId = normalizeMatrixUserId(registerResponse.user_id, HOMESERVER_URL);
                 
-                setCookie("matrix_token", registerResponse.access_token);
-                setCookie("matrix_user_id", normalizedUserId);
-                if (registerResponse.device_id) {
-                    setCookie("matrix_device_id", registerResponse.device_id);
-                }
+                // setCookie("matrix_token", registerResponse.access_token);
+                // setCookie("matrix_user_id", normalizedUserId);
+                // if (registerResponse.device_id) {
+                //     setCookie("matrix_device_id", registerResponse.device_id);
+                // }
                 clientInstance = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: registerResponse.access_token,
@@ -119,14 +117,34 @@ export class MatrixAuthService {
                 password: password,
             })
             
-            if (loginResponse.access_token) {
+            if (loginResponse.access_token && loginResponse.user_id && loginResponse.device_id) {
                 const normalizedUserId = normalizeMatrixUserId(loginResponse.user_id, HOMESERVER_URL);
                 
-                setCookie("matrix_token", loginResponse.access_token);
-                setCookie("matrix_user_id", normalizedUserId);
-                if (loginResponse.device_id) {
-                    setCookie("matrix_device_id", loginResponse.device_id);
-                }
+                // setCookie("matrix_token", loginResponse.access_token);
+                // setCookie("matrix_user_id", normalizedUserId);
+                // if (loginResponse.device_id) {
+                //     setCookie("matrix_device_id", loginResponse.device_id);
+                // }
+                const res = await fetch("/chat/api/set-cookie", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                      token: loginResponse.access_token,
+                      userId: normalizedUserId,
+                      deviceId: loginResponse.device_id
+                    }),
+                    credentials: "include" // 👈 đảm bảo cookie được gửi kèm trong các request sau
+                });
+                //console.log(res)
+                if(!res.ok) 
+                    return{
+                        success: false,
+                        token: "",
+                        userId: "",
+                        deviceId: ""
+                    }
                 clientInstance = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: loginResponse.access_token,
@@ -163,11 +181,11 @@ export class MatrixAuthService {
             if (loginResponse.access_token) {
                 const normalizedUserId = normalizeMatrixUserId(loginResponse.user_id, HOMESERVER_URL);
                 
-                setCookie("matrix_token", loginResponse.access_token);
-                setCookie("matrix_user_id", normalizedUserId);
-                if (loginResponse.device_id) {
-                    setCookie("matrix_device_id", loginResponse.device_id);
-                }
+                // setCookie("matrix_token", loginResponse.access_token);
+                // setCookie("matrix_user_id", normalizedUserId);
+                // if (loginResponse.device_id) {
+                //     setCookie("matrix_device_id", loginResponse.device_id);
+                // }
                 clientInstance = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: loginResponse.access_token,
@@ -206,11 +224,11 @@ export class MatrixAuthService {
             if (loginResponse.access_token) {
                 const normalizedUserId = normalizeMatrixUserId(loginResponse.user_id, HOMESERVER_URL);
                 
-                setCookie("matrix_token", loginResponse.access_token);
-                setCookie("matrix_user_id", normalizedUserId);
-                if (loginResponse.device_id) {
-                    setCookie("matrix_device_id", loginResponse.device_id);
-                }
+                // setCookie("matrix_token", loginResponse.access_token);
+                // setCookie("matrix_user_id", normalizedUserId);
+                // if (loginResponse.device_id) {
+                //     setCookie("matrix_device_id", loginResponse.device_id);
+                // }
                 clientInstance = sdk.createClient({
                     baseUrl: HOMESERVER_URL,
                     accessToken: loginResponse.access_token,
@@ -237,30 +255,23 @@ export class MatrixAuthService {
     // Đăng xuất
     async logout(): Promise<void> {
         try {
-            const accessToken = getCookie("matrix_token");
-            const userId = getCookie("matrix_user_id");
-            if (accessToken && userId) {
-                if (!this.client.getAccessToken()) {
-                    this.client = sdk.createClient({
-                        baseUrl: HOMESERVER_URL,
-                        accessToken: accessToken,
-                        userId: userId
-                    });
-                }
-                await this.client.logout();
-            }
-        } catch (error) {
-            // KHÔNG throw error ở đây!
-        } finally {
-            // Luôn xóa cookie và clear state
-            deleteCookie("matrix_token");
-            deleteCookie("matrix_user_id");
-            deleteCookie("matrix_device_id");
-            clearUser();
             if (this.client) {
                 this.client.stopClient();
             }
             clientInstance = null;
+            // Sử dụng window.location.href thay vì router.push để force page reload
+            // Điều này đảm bảo page.tsx sẽ check lại từ đầu với cookies đã bị xóa
+            window.location.href = "/chat/login";
+            fetch('/chat/api/logout', {
+                method: 'POST',
+                credentials: 'include',
+            });
+            if (this.client && this.client.logout) {
+                this.client.logout();
+            }
+        } catch (error) {
+            // KHÔNG throw error ở đây!
+            window.location.href = "/chat/login";
         }
     }
 
