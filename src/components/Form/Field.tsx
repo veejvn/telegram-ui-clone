@@ -8,7 +8,7 @@ import type { FieldProps } from "@/types/form";
 
 const Field = ({ name, label, type = "text", placeholder, defaultValue} : FieldProps) => {
   const [isPasswordVisible, setPasswordVisible] = useState(false);
-  const { errors, handleChange } = useContext(FormContext);
+  const { errors, handleChange, loading } = useContext(FormContext);
 
   useEffect(() => {
     handleChange(name, defaultValue);
@@ -32,7 +32,8 @@ const Field = ({ name, label, type = "text", placeholder, defaultValue} : FieldP
           placeholder={placeholder}
           className={`w-full px-3 py-2 border ${errors[name] ? "border-red-500" : "border-gray-300"
             } rounded-md focus:outline-none focus:ring-2 ${errors[name] ? "focus:ring-red-500" : "focus:ring-indigo-500"
-            }`}
+            } ${loading ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}`}
+          disabled={loading}
           onChange={(e) => {
             if (type === "checkbox") {
               handleChange(name, e.target.checked);

@@ -34,26 +34,26 @@ export default function Toast({
         return () => clearTimeout(timer);
     }, [duration, onClose]);
 
-    useEffect(() => {
-        const checkToken = async () => {
-            const isValid = await checkTokenValidity(accessToken || "", userId || "");
-            if (!isValid) {
-                toast({
-                    title: "Phiên đăng nhập hết hạn",
-                    description: "Vui lòng đăng nhập lại để tiếp tục sử dụng.",
-                    variant: "destructive",
-                });
-            }
-        };
+    // useEffect(() => {
+    //     const checkToken = async () => {
+    //         const isValid = await checkTokenValidity(accessToken || "", userId || "");
+    //         if (!isValid) {
+    //             toast({
+    //                 title: "Phiên đăng nhập hết hạn",
+    //                 description: "Vui lòng đăng nhập lại để tiếp tục sử dụng.",
+    //                 variant: "destructive",
+    //             });
+    //         }
+    //     };
 
-        // Kiểm tra token mỗi 5 phút
-        const interval = setInterval(checkToken, 5 * 60 * 1000);
+    //     // Kiểm tra token mỗi 5 phút
+    //     const interval = setInterval(checkToken, 5 * 60 * 1000);
 
-        // Kiểm tra ngay lập tức
-        checkToken();
+    //     // Kiểm tra ngay lập tức
+    //     checkToken();
 
-        return () => clearInterval(interval);
-    }, [toast]);
+    //     return () => clearInterval(interval);
+    // }, [toast]);
 
     const typeClasses = {
         success: 'bg-green-50 text-green-800 border-green-200',

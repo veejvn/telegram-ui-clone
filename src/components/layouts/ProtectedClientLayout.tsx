@@ -6,11 +6,8 @@ import dynamic from "next/dynamic";
 import { useAuthStore } from "@/stores/useAuthStore";
 import IncomingCallHandler from "@/components/call/IncomingCallHandler";
 import BottomNavigationWrapper from "@/components/layouts/BottomNavigationWrapper";
-import { TokenExpirationToast } from "@/components/common/Toast";
 import { InviteChatBot } from "@/components/common/InviteChatBot";
-import { ChatBotStatus } from "@/components/common/ChatBotStatus";
 import GetCookie from "@/components/auth/GetCookie";
-import { ToastProvider } from "@/contexts/ToastProvider";
 
 // Dynamic import client-only MatrixClientProvider
 const MatrixClientProvider = dynamic(
@@ -49,7 +46,7 @@ export default function ProtectedClientLayout({
             <BottomNavigationWrapper />
           </main>
           <InviteChatBot />
-          <TokenExpirationToast />
+          {/* <TokenExpirationToast /> */}
         </MatrixClientProvider>
       )}
     </Suspense>

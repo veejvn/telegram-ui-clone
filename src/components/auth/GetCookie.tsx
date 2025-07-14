@@ -7,6 +7,7 @@ import { setLS } from "@/tools/localStorage.tool";
 
 export default function GetCookie() {
   const setAuth = useAuthStore.getState().setAuth;
+  const logout = useAuthStore.getState().logout;
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -39,6 +40,7 @@ export default function GetCookie() {
           //   hasUserId: !!userId,
           //   hasDeviceId: !!deviceId,
           // });
+          logout()
           window.location.href = "/chat/login";
           return;
         }

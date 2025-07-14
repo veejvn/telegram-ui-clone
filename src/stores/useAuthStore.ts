@@ -23,12 +23,12 @@ const HOMESERVER_URL = process.env.NEXT_PUBLIC_MATRIX_BASE_URL;
 
 export const useAuthStore = create<AuthState>(
     (set, get) => {
-    const storedIsLoggedIn = getLS("isLoggedIn") || false;
+    const storedIsLoggedIn = getLS("isLoggedIn");
     return {
         accessToken: "",
         userId: "",
         deviceId: "",
-        isLoggedIn: storedIsLoggedIn,
+        isLoggedIn: !!storedIsLoggedIn,
         login: (accessToken, userId, deviceId) => {
             // Kiểm tra nếu userId đã có format hợp lệ thì dùng nguyên bản
             let finalUserId = userId;
@@ -51,7 +51,7 @@ export const useAuthStore = create<AuthState>(
         },
         logout: () => {
             set({ isLoggedIn: false, accessToken: null, userId: null, deviceId: null })
-            //setLS("isLoggedIn", false)
+            setLS("isLoggedIn", false)
         },
         getNormalizedUserId: () => {
             const state = get();

@@ -73,7 +73,7 @@ const hide = "contact,setting,call";
 localStorage.setItem("hide", JSON.stringify(hide));
 ```
 
-- Khi người dùng truy cập vào chat app, chat-app sẽ nhận được thông tin cần ẩn các nút tương ứng.
+- Khi người dùng truy cập vào chat app, chat-app sẽ nhận được thông tin và ẩn các nút tương ứng.
 
 - Các options:
   - call: ẩn Call ở Navigation Bar
@@ -94,7 +94,7 @@ export default function BlogHome() {
 
   return (
     <main>
-      <h1 className="bg-blue-500">📝 Blog Zone (Zone phụ)</h1>
+      <h1 className="bg-blue-500">📝 Blog Zone</h1>
       <a href={`/chat/chat}`}>
         ➡️ Đi đến Chat Zone
       </a>
@@ -103,9 +103,6 @@ export default function BlogHome() {
 }
 ```
 
-Khi bấm nút trở về sẽ trở về trang trước đó của main app được lưu trong biến `backUrl`
+Khi bấm nút vào trở về sẽ trở về trang trước đó của main app được lưu trong biến `backUrl`
 
-**Lưu ý:**
-
-- Luôn build lại chat-app sau khi thay đổi cấu hình.
-- Nếu deploy lên production, thay đổi `destination` sang domain thực tế của chat-app.
+Nếu truy cập từ trang home của main app, không cần truyền `backUrl`
