@@ -13,6 +13,8 @@ const TypingIndicator = ({ roomId }: { roomId: string }) => {
   const myId = client?.getUserId();
   const [othersTyping, setOthersTyping] = useState<string[]>([]);
   const [names, setNames] = useState<string[]>([]);
+  const userIdChatBot =
+    process.env.NEXT_PUBLIC_USER_ID_BOT || "@bot:matrix.teknix.dev";
 
   // Lọc những user đang typing (trừ chính mình)
   useEffect(() => {
@@ -52,12 +54,16 @@ const TypingIndicator = ({ roomId }: { roomId: string }) => {
       ? "bg-white text-gray-500"
       : "bg-[#2b2b2d] text-gray-400";
 
+  const displayNames = names.map((name) =>
+    name === userIdChatBot ? "Assistant" : name
+  );
+
   return (
     <p
       className={`text-start text-sm italic px-3 py-1 rounded-tr-full ${textColor}`}
     >
       <span className="pe-1">
-        {names.join(", ")} {names.length > 1 ? "are" : "is"} typing
+        {displayNames.join(", ")} {displayNames.length > 1 ? "are" : "is"} typing
       </span>
       <span className="inline-block animate-bounce [animation-delay:-0.32s]">
         .

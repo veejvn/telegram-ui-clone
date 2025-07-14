@@ -164,6 +164,8 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     };
   }, []);
 
+
+
   return (
     <div className="bg-white dark:bg-[#1c1c1e]">
       {forwardMessages.length > 0 && <ForwardMsgPreview />}
