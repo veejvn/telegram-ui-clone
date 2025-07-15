@@ -48,7 +48,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   lastSeenByRoom: {},
 
   addMessage: (roomId, msg) => {
-    console.log(msg);
+    //console.log(msg);
     const current = get().messagesByRoom[roomId] || [];
     if (current.some((m) => m.eventId === msg.eventId)) return;
     set({
