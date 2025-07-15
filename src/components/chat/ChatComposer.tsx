@@ -1,9 +1,17 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { CircleEllipsis, Eclipse, Mic, Paperclip, Smile } from "lucide-react";
+import {
+  CircleEllipsis,
+  Eclipse,
+  Mic,
+  Paperclip,
+  Search,
+  Smile,
+} from "lucide-react";
 import {
   sendImageMessage,
+  sendLocation,
   sendMessage,
   sendTypingEvent,
 } from "@/services/chatService";
@@ -47,7 +55,9 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   >("gallery");
   const sheetRef = useRef<HTMLDivElement>(null);
 
-  const LocationMap = dynamic(() => import("@/components/common/LocationMap"), { ssr: false });
+  const LocationMap = dynamic(() => import("@/components/common/LocationMap"), {
+    ssr: false,
+  });
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -135,7 +145,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     const userId = client.getUserId();
 
     try {
-      setOpen(false)
+      setOpen(false);
       const { httpUrl } = await sendImageMessage(client, roomId, file);
       const localId = "local_" + Date.now();
       const now = new Date();
@@ -227,6 +237,60 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const renderIcon = (tab: string) => {
+    switch (tab) {
+      case "gallery":
+        return <CircleEllipsis className="mx-4" />;
+      case "location":
+        return <Search className="mx-4" />;
+      default:
+        return <div className="mx-4"></div>;
+    }
+  };
+
+  const handleSendLocation = async (location: {
+    latitude: number;
+    longitude: number;
+    accuracy: number;
+  }) => {
+    if (!client) return;
+    const userId = client.getUserId();
+    try {
+      setOpen(false);
+      const localId = "local_" + Date.now();
+      const now = new Date();
+      const { latitude, longitude, accuracy } = location;
+      const geoUri = `geo:${latitude},${longitude};u=${accuracy}`;
+      const displayText = `📍 My location (accurate to ${Math.round(
+        accuracy
+      )}m)`;
+
+      addMessage(roomId, {
+        eventId: localId,
+        sender: userId ?? undefined,
+        senderDisplayName: userId ?? undefined,
+        text: displayText,
+        location: {
+          latitude,
+          longitude,
+          description: displayText ?? undefined,
+        },
+        time: now.toLocaleString(),
+        timestamp: now.getTime(),
+        status: "sent",
+        type: "location",
+      });
+
+      const res = await sendLocation(client, roomId, { geoUri, displayText });
+
+      if (res.success) {
+        console.log("Send Location Message successfully");
+      }
+    } catch (error) {
+      console.error("Failed to send image:", error);
+    }
+  };
 
   return (
     <div className="bg-white dark:bg-[#1c1c1e]">
@@ -326,11 +390,11 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
                 Close
               </Button>
               {tab}
-              <CircleEllipsis className="mx-4" />
+              {renderIcon(tab)}
             </div>
 
             {/* Content */}
-            <div className="p-2">
+            <div className="p-2 h-[400px]">
               {tab === "gallery" && (
                 <div className="flex justify-center items-center h-40">
                   <button
@@ -339,16 +403,16 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
                   >
                     Chọn ảnh
                   </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFiles}
+                    className="hidden"
+                    aria-label="file"
+                  />
                 </div>
               )}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFiles}
-                className="hidden"
-                aria-label="file"
-              />
               {tab === "file" && (
                 <div className="text-sm text-gray-500">
                   Hiển thị danh sách file...
@@ -360,8 +424,8 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
                 </div>
               )}
               {tab === "location" && (
-                <div className="text-sm text-gray-500 h-[272px]">
-                  <LocationMap/>
+                <div className="text-sm text-gray-500">
+                  <LocationMap onSend={handleSendLocation} />
                 </div>
               )}
               {tab === "reply" && (
@@ -377,32 +441,68 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             {/* Tabs */}
             <div className="flex justify-around border-t border-gray-200 px-4 py-2 text-xs text-center text-gray-600">
               <TabButton
-                icon={<LucideImage className={`w-5 h-5 mb-1 ${tab === "gallery" ? "text-blue-500" : ""}`} />}
+                icon={
+                  <LucideImage
+                    className={`w-5 h-5 mb-1 ${
+                      tab === "gallery" ? "text-blue-500" : ""
+                    }`}
+                  />
+                }
                 label="Gallery"
                 onClick={() => setTab("gallery")}
               />
               <TabButton
-                icon={<Gift className={`w-5 h-5 mb-1 ${tab === "gift" ? "text-blue-500" : ""}`} />}
+                icon={
+                  <Gift
+                    className={`w-5 h-5 mb-1 ${
+                      tab === "gift" ? "text-blue-500" : ""
+                    }`}
+                  />
+                }
                 label="Gift"
                 onClick={() => setTab("gift")}
               />
               <TabButton
-                icon={<File className={`w-5 h-5 mb-1 ${tab === "file" ? "text-blue-500" : ""}`} />}
+                icon={
+                  <File
+                    className={`w-5 h-5 mb-1 ${
+                      tab === "file" ? "text-blue-500" : ""
+                    }`}
+                  />
+                }
                 label="File"
                 onClick={() => setTab("file")}
               />
               <TabButton
-                icon={<MapPin className={`w-5 h-5 mb-1 ${tab === "location" ? "text-blue-500" : ""}`} />}
+                icon={
+                  <MapPin
+                    className={`w-5 h-5 mb-1 ${
+                      tab === "location" ? "text-blue-500" : ""
+                    }`}
+                  />
+                }
                 label="Location"
                 onClick={() => setTab("location")}
               />
               <TabButton
-                icon={<Reply className={`w-5 h-5 mb-1 ${tab === "reply" ? "text-blue-500" : ""}`} />}
+                icon={
+                  <Reply
+                    className={`w-5 h-5 mb-1 ${
+                      tab === "reply" ? "text-blue-500" : ""
+                    }`}
+                  />
+                }
                 label="Reply"
                 onClick={() => setTab("reply")}
               />
               <TabButton
-                icon={<Check className={`w-5 h-5 mb-1 ${tab === "checklist" ? "text-blue-500" : ""}`} />}
+                icon={
+                  <Check
+                    className={`w-5 h-5 mb-1 ${
+                      tab === "checklist" ? "text-blue-500" : ""
+                    }`}
+                  />
+                }
                 label="Checklist"
                 onClick={() => setTab("checklist")}
               />
