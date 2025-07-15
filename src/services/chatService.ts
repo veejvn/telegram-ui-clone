@@ -394,9 +394,9 @@ export async function sendVoiceMessage(
   file: File,
   duration: number            // ← thêm tham số duration
 
-): Promise<{ success: boolean; err?: any }> {
+) {
   if (!client) {
-    return { success: false, err: "User not authenticated or session invalid." };
+    return { success: false, err: "User not authenticated or session invalid.", httpUrl: "" };
   }
   try {
     // đọc blob thành ArrayBuffer
@@ -422,7 +422,9 @@ export async function sendVoiceMessage(
 
     // gửi message
     await client.sendMessage(roomId, audioContent as any);
-    return { success: true };
+    return { success: true, 
+      httpUrl: client.mxcUrlToHttp(uploadRes.content_uri, 800, 600, "scale", true)
+     };
   } catch (err) {
     console.error("sendVoiceMessage error:", err);
     return { success: false, err };

@@ -98,9 +98,26 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
       // 1) Tạo blob từ chunks
       const blob = new Blob(audioChunks, { type: "audio/webm" });
       const file = new (globalThis as any).File([blob], `voice_${Date.now()}.webm`, { type: blob.type });
+      const localId = "local_" + Date.now();
+      const now = new Date();
+      const userId = client.getUserId();
+
 
       // 2) Dùng ngay recordTime đã đếm được làm duration
-      await sendVoiceMessage(client, roomId, file, recordTime);
+      const { httpUrl } = await sendVoiceMessage(client, roomId, file, recordTime);
+
+      addMessage(roomId, {
+        eventId: localId,
+        sender: userId ?? undefined,
+        senderDisplayName: userId ?? undefined,
+        text: file.name,
+        audioUrl: httpUrl,
+        audioDuration: recordTime,
+        time: now.toLocaleString(),
+        timestamp: now.getTime(),
+        status: "sent",
+        type: "audio",
+      });
 
       // 3) reset chunks (và nếu muốn reset time cũng có thể)
       setAudioChunks([]);
