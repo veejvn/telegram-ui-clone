@@ -14,7 +14,9 @@ export interface IEventPayload {
     platform: string; // Ví dụ: 'ios', 'android'
     user: string;     // User gửi event
     roomId: string;   // Room ID để join vào call
-    userId: string;   // User ID của người nhận
+    userId: string;
+    callId: string;   // CallID thực tế của cuộc gọi (thêm vào đây)
+    // User ID của người nhận
   };
   type: number; // 0 = voice call, 1 = video call
   handle: string;
