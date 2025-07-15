@@ -8,6 +8,7 @@ export const useWebAppMethodHandler = () => {
   const answerCall = useCallStore((s) => s.answerCall);
   const rejectCall = useCallStore((s) => s.rejectCall);
   const reset = useCallStore((s) => s.reset);
+  const answerCallById = useCallStore((s) => s.answerCallById);
   const router = useRouter();
 
   const acceptCall = async ({ payload }: { payload: IEventPayload }) => {
@@ -15,8 +16,9 @@ export const useWebAppMethodHandler = () => {
       "🚀 ~ accept call web action",
       JSON.stringify(payload, null, 2)
     );
-    // Tự động accept cuộc gọi khi nhận sự kiện từ mobile
-    await answerCall();
+    // Lấy callId từ payload (giả sử là payload.uuid)
+    const callId = payload.uuid;
+    await answerCallById(callId);
     reset(); // Ẩn popup
     // Điều hướng sang UI call tương ứng
     if (payload.type === 1) {
