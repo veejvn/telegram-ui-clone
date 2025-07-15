@@ -64,6 +64,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
       });
 
       setText("");
+      textareaRef.current?.focus();
       setShowEmojiPicker(false);
       setIsTyping(false);
       sendTypingEvent(client, roomId, false);
@@ -163,8 +164,6 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
       }
     };
   }, []);
-
-
 
   return (
     <div className="bg-white dark:bg-[#1c1c1e]">
