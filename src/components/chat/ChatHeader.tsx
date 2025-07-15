@@ -14,6 +14,7 @@ import { getUserInfoInPrivateRoom } from "@/services/chatService";
 import { getRoomInfo } from "@/utils/chat/RoomHelpers";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { usePresenceContext } from "@/contexts/PresenceProvider";
+import { getLS, removeLS } from "@/tools/localStorage.tool";
 import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
 import { useForwardStore } from "@/stores/useForwardStore";
 import { getDetailedStatus } from "@/utils/chat/presencesHelpers";
@@ -27,7 +28,7 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
   const clearMessages = useForwardStore((state) => state.clearMessages);
 
   const [user, setUser] = useState<sdk.User | undefined>(undefined);
-  
+
   const getUserPresence = usePresenceContext()?.getUserPresence;
   let lastSeen: Date | null = null;
   let isActuallyOnline = false;
@@ -42,7 +43,6 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
       Date.now() - (presence?.lastActiveTs || 0) < 30 * 1000
     );
   }
-
 
   useEffect(() => {
     if (!roomId || !client) return;
@@ -80,6 +80,26 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
 
   const headerStyle = getHeaderStyleWithStatusBar();
 
+  const backToMain = getLS("backToMain");
+  const MAIN_APP_ORIGIN =
+    typeof window !== "undefined" ? window.location.origin : "";
+  const backUrl = getLS("backUrl");
+  const handleBack = () => {
+    if (backUrl) {
+      removeLS("backUrl");
+      removeLS("fromMainApp");
+      removeLS("hide");
+      removeLS("backToMain");
+      window.location.href = MAIN_APP_ORIGIN + backUrl;
+    } else {
+      removeLS("backUrl");
+      removeLS("fromMainApp");
+      removeLS("hide");
+      removeLS("backToMain");
+      window.location.href = MAIN_APP_ORIGIN;
+    }
+  };
+
   return (
     <>
       <div
@@ -87,19 +107,31 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
         className="flex justify-between bg-white dark:bg-[#1c1c1e]
           py-2 items-center px-2 "
       >
-        <Link
-          href={"/chat"}
-          className="flex text-blue-600
-            cursor-pointer hover:opacity-70"
-          onClick={() => {
-            setTimeout(() => {
-              clearMessages();
-            }, 300);
-          }}
-        >
-          <ChevronLeft />
-          <p>Back</p>
-        </Link>
+        {backToMain ? (
+          <button
+            className="flex flex-row text-blue-500 font-medium cursor-pointer"
+            onClick={handleBack}
+            title="Back"
+            aria-label="Back"
+          >
+            <ChevronLeft />
+            <span>Back</span>
+          </button>
+        ) : (
+          <Link
+            href={"/chat"}
+            className="flex text-blue-600
+              cursor-pointer hover:opacity-70"
+            onClick={() => {
+              setTimeout(() => {
+                clearMessages();
+              }, 300);
+            }}
+          >
+            <ChevronLeft />
+            <p>Back</p>
+          </Link>
+        )}
         <div className="text-center">
           <h1 className="font-semibold text-base">{room.name}</h1>
           <div>

@@ -4,15 +4,15 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { MatrixAuthService } from "@/services/matrixAuthService";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -20,50 +20,40 @@ import { callService } from "@/services/callService";
 import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
 import Head from "next/head";
 import { useTheme } from "next-themes";
+import { useUserStore } from "@/stores/useUserStore";
 
 export default function EditProfilePage() {
-    const router = useRouter();
-    const logout = useAuthStore((state) => state.logout);
+  const router = useRouter();
+  const logout = useAuthStore((state) => state.logout);
+  const clearUser = useUserStore.getState().clearUser;
 
-    const handleLogout = async () => {
+  const handleLogout = async () => {
+    try {
+      const authService = new MatrixAuthService();
+      authService.logout();
+      logout();
+      clearUser(); // ✅ Cleanup callService
+      if (callService) {
         try {
-            const authService = new MatrixAuthService();
-            await authService.logout();
-            logout();
-
-            if (callService) {
-                try {
-                    callService.hangup();
-                } catch (error) {
-                    console.warn("CallService cleanup warning:", error);
-                }
-            }
-
-            document.cookie = "matrix_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-            document.cookie = "matrix_user_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-            document.cookie = "matrix_device_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-
-            Object.keys(localStorage).forEach(key => {
-                if (key.startsWith('matrix') || key.startsWith('mx_')) {
-                    localStorage.removeItem(key);
-                }
-            });
-
-            window.location.href = "/chat/login";
+          callService.hangup(); // End any active calls
+          // callService sẽ tự cleanup khi không có auth data
         } catch (error) {
-            console.error("Logout error:", error);
-            document.cookie = "matrix_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-            document.cookie = "matrix_user_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-            document.cookie = "matrix_device_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-            logout();
-            window.location.href = "/login";
+          console.warn("CallService cleanup warning:", error);
         }
-    };
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Ngay cả khi có lỗi, vẫn force clear và redirect
+      logout();
+      clearUser();
+      window.location.href = "/chat/login";
+    }
+  };
 
-    const [firstName, setFirstName] = useState("");
-    const [lastName, setLastName] = useState("");
-    const [bio, setBio] = useState("");
-    const phone = "";
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [bio, setBio] = useState("");
+  const phone = "";
 
     // Header style & status bar màu auto theo theme
     const headerStyle = getHeaderStyleWithStatusBar();
@@ -104,27 +94,27 @@ export default function EditProfilePage() {
                 </p>
             </div>
 
-            {/* Form */}
-            <div className="space-y-4 px-4 pb-10">
-                {/* Combined First + Last Name Field */}
-                <div className="bg-white dark:bg-neutral-900 rounded-xl overflow-hidden">
-                    <input
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        placeholder="First Name"
-                        className="w-full px-4 pt-3 pb-2 text-sm font-medium text-black dark:text-white bg-transparent focus:outline-none"
-                    />
-                    <div className="h-px bg-gray-200 dark:bg-neutral-700" />
-                    <input
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        placeholder="Last Name"
-                        className="w-full px-4 pt-2 pb-3 text-sm text-gray-500 dark:text-gray-400 bg-transparent focus:outline-none"
-                    />
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Enter your name and add an optional profile photo.
-                </p>
+      {/* Form */}
+      <div className="space-y-4 px-4 pb-10">
+        {/* Combined First + Last Name Field */}
+        <div className="bg-white dark:bg-neutral-900 rounded-xl overflow-hidden">
+          <input
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            placeholder="First Name"
+            className="w-full px-4 pt-3 pb-2 text-sm font-medium text-black dark:text-white bg-transparent focus:outline-none"
+          />
+          <div className="h-px bg-gray-200 dark:bg-neutral-700" />
+          <input
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            placeholder="Last Name"
+            className="w-full px-4 pt-2 pb-3 text-sm text-gray-500 dark:text-gray-400 bg-transparent focus:outline-none"
+          />
+        </div>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          Enter your name and add an optional profile photo.
+        </p>
 
                 {/* Bio */}
                 <input
@@ -175,32 +165,34 @@ export default function EditProfilePage() {
                     </p>
                 </div>
 
-                {/* Logout Button */}
-                <AlertDialog>
-                    <AlertDialogTrigger className="w-full bg-white dark:bg-neutral-900 rounded-lg px-4 py-3 text-red-500 text-sm font-medium text-center">
-                        Log Out
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                You will need to log in again to access your account.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel className="bg-zinc-200 dark:bg-zinc-800 dark:text-white">
-                                Cancel
-                            </AlertDialogCancel>
-                            <AlertDialogAction
-                                onClick={handleLogout}
-                                className="bg-zinc-200 text-red-500 dark:bg-zinc-800"
-                            >
-                                Log Out
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            </div>
-        </div>
-    );
+        {/* Logout Button */}
+        <AlertDialog>
+          <AlertDialogTrigger className="w-full bg-white dark:bg-neutral-900 rounded-lg px-4 py-3 text-red-500 text-sm font-medium text-center">
+            Log Out
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Are you sure you want to log out?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                You will need to log in again to access your account.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="bg-zinc-200 dark:bg-zinc-800 dark:text-white">
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleLogout}
+                className="bg-zinc-200 text-red-500 dark:bg-zinc-800"
+              >
+                Log Out
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </div>
+  );
 }

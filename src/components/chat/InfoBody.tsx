@@ -92,6 +92,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
     .filter(
       (msg) =>
         msg.type === "text" &&
+        msg.sender && // chỉ lấy tin nhắn có sender
         /(https?:\/\/[^\s]+|\b(?:[a-z0-9-]+\.)+[a-z]{2,}(\/[^\s]*)?)/i.test(
           msg.text
         )
@@ -190,7 +191,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
             <p className="text-xs text-[#155dfc]">mute</p>
           </div> */}
           {/* <MuteButton /> */}
-          <MuteButton onMuteUntil={handleMuteUntil} />
+          <MuteButton onMuteUntil={handleMuteUntil} roomId={roomId} />
 
           {/* Search and More buttons */}
 
@@ -294,34 +295,30 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                   <Card className="w-full max-w-md mx-auto bg-white dark:bg-black shadow-sm pt-3 pb-0 rounded-none">
                     <CardContent className="px-2">
                       <div className="space-y-4">
-                        {Array.from(
-                          new Map(
-                            [...linkMessages]
-                              .reverse()
-                              .map((msg) => {
-                                const match = msg.text.match(
-                                  /(https?:\/\/[^\s]+|\b(?:[a-z0-9-]+\.)+[a-z]{2,}(\/[^\s]*)?)/i
-                                );
-                                const rawUrl = match?.[0];
-                                const url = rawUrl?.startsWith("http")
-                                  ? rawUrl
-                                  : `https://${rawUrl}`;
-                                return url ? [url, url] : null;
-                              })
-                              .filter(Boolean) as [string, string][]
-                          ).values()
-                        ).map((url, index) => (
-                          <div key={index} className="mb-2 leading-relaxed">
-                            <a
-                              href={url}
-                              className="text-blue-500 underline"
-                              target="_blank"
-                              rel="noopener noreferrer"
+                        {linkMessages.map((msg, index) => {
+                          const match = msg.text.match(
+                            /(https?:\/\/[^\s]+|\b(?:[a-z0-9-]+\.)+[a-z]{2,}(\/[^\s]*)?)/i
+                          );
+                          const rawUrl = match?.[0];
+                          const url = rawUrl?.startsWith("http")
+                            ? rawUrl
+                            : `https://${rawUrl}`;
+                          return url ? (
+                            <div
+                              key={msg.eventId || index}
+                              className="mb-2 leading-relaxed"
                             >
-                              {url}
-                            </a>
-                          </div>
-                        ))}
+                              <a
+                                href={url}
+                                className="text-blue-500 underline"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                {url}
+                              </a>
+                            </div>
+                          ) : null;
+                        })}
                       </div>
                     </CardContent>
                   </Card>

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 
 const SETTINGS_KEYS = [
   "notifications",
@@ -54,15 +55,37 @@ const CLASSIC_TONES = [
 export default function CustomizeMuteSheet({
   open,
   onClose,
+  roomId,
 }: {
   open: boolean;
   onClose: () => void;
+  roomId: string;
 }) {
+  const client = useMatrixClient();
+  const [targetName, setTargetName] = useState<string>("");
+
   const [settings, setSettings] =
     useState<Record<string, "on" | "off">>(defaultValues);
   const [selectedTone, setSelectedTone] = useState("Default (Rebound)");
 
-  // Load from localStorage
+  // Lấy tên người dùng đang chat cùng
+  useEffect(() => {
+    if (!client || !roomId || !open) return;
+
+    const room = client.getRoom(roomId);
+    if (!room) return;
+
+    const members = room.getJoinedMembers();
+    const otherMember = members.find((m) => m.userId !== client.getUserId());
+
+    if (otherMember) {
+      setTargetName(otherMember.name || otherMember.userId);
+    } else {
+      setTargetName("Unknown User");
+    }
+  }, [client, roomId, open]);
+
+  // Load từ localStorage
   useEffect(() => {
     if (!open) return;
 
@@ -83,16 +106,12 @@ export default function CustomizeMuteSheet({
     }
   }, [open]);
 
-  // Save settings to localStorage
   const saveToStorage = (newSettings: typeof settings) => {
     localStorage.setItem("mute-settings", JSON.stringify(newSettings));
   };
 
   const handleSelect = (key: string, value: "on" | "off") => {
-    const updated = {
-      ...settings,
-      [key]: value,
-    };
+    const updated = { ...settings, [key]: value };
     setSettings(updated);
     saveToStorage(updated);
   };
@@ -115,8 +134,8 @@ export default function CustomizeMuteSheet({
           >
             Cancel
           </button>
-          <div className="text-base font-semibold text-black dark:text-white">
-            Huy
+          <div className="text-base font-semibold text-black dark:text-white truncate max-w-[50%] text-center">
+            {targetName}
           </div>
           <button
             onClick={onClose}

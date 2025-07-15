@@ -3,7 +3,7 @@
 import { getLS } from "@/tools/localStorage.tool";
 import { useRouter } from "next/navigation";
 
-const SettingClientLayout = ({
+const ContactClientLayout = ({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -13,11 +13,11 @@ const SettingClientLayout = ({
   const hide = getLS("hide") || [];
   const options = Array.isArray(hide) && fromMainApp ? hide : [];
 
-  if(options.includes("setting")){
+  if(options.includes("contact")){
     route.push("/chat")
   }
 
   return <div>{children}</div>;
 };
 
-export default SettingClientLayout;
+export default ContactClientLayout;

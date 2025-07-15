@@ -29,7 +29,9 @@ export const MuteUntilPicker: React.FC<MuteUntilPickerProps> = ({
     React.useRef<HTMLDivElement | null>(null),
   ];
 
-  const [selectedIndex, setSelectedIndex] = useState<[number, number, number]>([0, 0, 0]);
+  const [selectedIndex, setSelectedIndex] = useState<[number, number, number]>([
+    0, 0, 0,
+  ]);
   const [initialDate, setInitialDate] = useState<Date | null>(null);
 
   const days = React.useMemo(() => {
@@ -106,8 +108,7 @@ export const MuteUntilPicker: React.FC<MuteUntilPickerProps> = ({
     0
   );
 
-  const isSame =
-    initialDate && isSameMinute(initialDate, selectedDate);
+  const isSame = initialDate && isSameMinute(initialDate, selectedDate);
 
   const handleSelect = () => {
     onSelect(selectedDate); // Gửi thời gian về cha
@@ -134,13 +135,13 @@ export const MuteUntilPicker: React.FC<MuteUntilPickerProps> = ({
       <style>{scrollStyles}</style>
 
       <div className="fixed inset-0 bg-black/30 z-50 flex items-end justify-center">
-        <div className="bg-white w-full rounded-t-2xl pt-4 pb-6 shadow-lg">
+        <div className="bg-white dark:bg-[#1a1a1a] w-full rounded-t-2xl pt-4 pb-6 shadow-lg">
           {/* Header */}
           <div className="flex justify-between items-center px-4 mb-2">
             <button className="text-blue-500 text-base" onClick={onClose}>
               Cancel
             </button>
-            <div className="text-base font-semibold text-black">
+            <div className="text-base font-semibold text-black dark:text-white">
               Mute Until...
             </div>
             <div className="w-[60px]" />
@@ -149,7 +150,7 @@ export const MuteUntilPicker: React.FC<MuteUntilPickerProps> = ({
           {/* Scroll Picker */}
           <div className="relative h-[200px] overflow-hidden flex justify-center space-x-3">
             <div
-              className="absolute top-1/2 left-3 right-3 h-[44px] z-10 border-2 border-gray-300 rounded-md pointer-events-none"
+              className="absolute top-1/2 left-3 right-3 h-[44px] z-10 border-2 border-gray-300 dark:border-zinc-700 rounded-md pointer-events-none"
               style={{ transform: "translateY(-50%)" }}
             />
 
@@ -165,8 +166,8 @@ export const MuteUntilPicker: React.FC<MuteUntilPickerProps> = ({
                   key={`date-${i}`}
                   className={`h-[44px] snap-center flex items-center justify-center text-base ${
                     selectedIndex[0] === i
-                      ? "text-black font-semibold"
-                      : "text-gray-400"
+                      ? "text-black dark:text-white font-semibold"
+                      : "text-gray-400 dark:text-zinc-500"
                   }`}
                 >
                   {formatDateLabel(date)}
@@ -187,8 +188,8 @@ export const MuteUntilPicker: React.FC<MuteUntilPickerProps> = ({
                   key={`hour-${i}`}
                   className={`h-[44px] snap-center flex items-center justify-center text-base ${
                     selectedIndex[1] === i
-                      ? "text-black font-semibold"
-                      : "text-gray-400"
+                      ? "text-black dark:text-white font-semibold"
+                      : "text-gray-400 dark:text-zinc-500"
                   }`}
                 >
                   {hour.toString().padStart(2, "0")}
@@ -209,8 +210,8 @@ export const MuteUntilPicker: React.FC<MuteUntilPickerProps> = ({
                   key={`minute-${i}`}
                   className={`h-[44px] snap-center flex items-center justify-center text-base ${
                     selectedIndex[2] === i
-                      ? "text-black font-semibold"
-                      : "text-gray-400"
+                      ? "text-black dark:text-white font-semibold"
+                      : "text-gray-400 dark:text-zinc-500"
                   }`}
                 >
                   {minute.toString().padStart(2, "0")}
@@ -222,7 +223,7 @@ export const MuteUntilPicker: React.FC<MuteUntilPickerProps> = ({
 
           {/* Confirm Button */}
           <button
-            className="w-[320px] py-2 text-base font-medium rounded-xl mx-auto block bg-blue-500 text-white mt-4"
+            className="w-[320px] py-2 text-base font-medium rounded-xl mx-auto block bg-blue-500 text-white dark:bg-blue-600 dark:text-white mt-4"
             onClick={isSame ? onClose : handleSelect}
           >
             {isSame

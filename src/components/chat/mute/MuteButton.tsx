@@ -10,9 +10,10 @@ import { createPortal } from "react-dom";
 
 interface MuteButtonProps {
   onMuteUntil: (date: Date) => void;
+  roomId: string;
 }
 
-export default function MuteButton({ onMuteUntil }: MuteButtonProps) {
+export default function MuteButton({ onMuteUntil, roomId }: MuteButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showSubmenu, setShowSubmenu] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
@@ -25,17 +26,26 @@ export default function MuteButton({ onMuteUntil }: MuteButtonProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // ✅ Khôi phục từ localStorage
-  useEffect(() => {
-    const soundSetting = localStorage.getItem("chat-sound-enabled");
-    const mutedSetting = localStorage.getItem("chat-muted");
 
-    if (soundSetting !== null) {
-      setIsSoundEnabled(JSON.parse(soundSetting));
+  useEffect(() => {
+    const soundSetting = localStorage.getItem(`chat-sound-enabled-${roomId}`);
+    const mutedSetting = localStorage.getItem(`chat-muted-${roomId}`);
+    const unmuteAt = localStorage.getItem(`chat-unmute-at-${roomId}`);
+
+    setIsSoundEnabled(soundSetting !== null ? JSON.parse(soundSetting) : false);
+    setIsMuted(mutedSetting !== null ? JSON.parse(mutedSetting) : false);
+
+    if (unmuteAt) {
+      const unmuteTime = parseInt(unmuteAt, 10);
+      if (Date.now() >= unmuteTime) {
+        setIsMuted(false);
+        localStorage.setItem(`chat-muted-${roomId}`, JSON.stringify(false));
+        localStorage.removeItem(`chat-unmute-at-${roomId}`);
+      } else {
+        scheduleAutoUnmute(unmuteTime);
+      }
     }
-    if (mutedSetting !== null) {
-      setIsMuted(JSON.parse(mutedSetting));
-    }
-  }, []);
+  }, [roomId]);
 
   // ✅ Click ngoài để đóng menu
   useEffect(() => {
@@ -56,7 +66,11 @@ export default function MuteButton({ onMuteUntil }: MuteButtonProps) {
   const handleToggleSound = () => {
     const newState = !isSoundEnabled;
     setIsSoundEnabled(newState);
-    localStorage.setItem("chat-sound-enabled", JSON.stringify(newState)); // ✅ lưu
+    localStorage.setItem(
+      `chat-sound-enabled-${roomId}`,
+      JSON.stringify(newState)
+    );
+    // ✅ lưu
 
     setToastMessage(
       newState
@@ -66,7 +80,25 @@ export default function MuteButton({ onMuteUntil }: MuteButtonProps) {
     setShowToast(true);
     setTimeout(() => setShowToast(false), 2500);
   };
+  function scheduleAutoUnmute(unmuteAt: number) {
+    const now = Date.now();
+    const delay = unmuteAt - now;
+    if (delay > 0) {
+      setTimeout(() => {
+        setIsMuted(false);
+        localStorage.setItem(`chat-muted-${roomId}`, JSON.stringify(false));
+        localStorage.removeItem(`chat-unmute-at-${roomId}`);
+      }, delay);
+    }
+  }
 
+  const handleMuteFor = (ms: number) => {
+    setIsMuted(true);
+    localStorage.setItem(`chat-muted-${roomId}`, JSON.stringify(true));
+    const unmuteAt = Date.now() + ms;
+    localStorage.setItem(`chat-unmute-at-${roomId}`, unmuteAt.toString());
+    scheduleAutoUnmute(unmuteAt);
+  };
   return (
     <>
       <div ref={containerRef} className="relative">
@@ -75,7 +107,11 @@ export default function MuteButton({ onMuteUntil }: MuteButtonProps) {
           onClick={() => {
             if (isMuted) {
               setIsMuted(false);
-              localStorage.setItem("chat-muted", JSON.stringify(false)); // ✅ lưu
+              localStorage.setItem(
+                `chat-muted-${roomId}`,
+                JSON.stringify(false)
+              );
+              localStorage.removeItem(`chat-unmute-at-${roomId}`);
               setToastMessage("Notifications are unmuted.");
               setShowToast(true);
               setTimeout(() => setShowToast(false), 2500);
@@ -132,7 +168,10 @@ export default function MuteButton({ onMuteUntil }: MuteButtonProps) {
                 className="flex items-center justify-between px-4 py-2 text-red-500 hover:bg-gray-100 dark:hover:bg-[#3a3a3c] cursor-pointer"
                 onClick={() => {
                   setIsMuted(true);
-                  localStorage.setItem("chat-muted", JSON.stringify(true)); // ✅ lưu
+                  localStorage.setItem(
+                    `chat-muted-${roomId}`,
+                    JSON.stringify(true)
+                  );
                   setIsOpen(false);
                   setToastMessage("Notifications are muted.");
                   setShowToast(true);
@@ -154,15 +193,10 @@ export default function MuteButton({ onMuteUntil }: MuteButtonProps) {
               setIsOpen(false);
               setShowSubmenu(false);
             }}
-            onMute={() => {
-              setIsMuted(true);
-              localStorage.setItem("chat-muted", JSON.stringify(true)); // ✅ lưu
-              setIsOpen(false);
-            }}
+            onMute={(ms) => handleMuteFor(ms)}
           />
         )}
       </div>
-
       {/* ✅ Bottom Sheet: Custom Date Picker */}
       <MuteUntilPicker
         open={showPicker}
@@ -170,7 +204,12 @@ export default function MuteButton({ onMuteUntil }: MuteButtonProps) {
         onSelect={(date) => {
           onMuteUntil(date);
           setIsMuted(true);
-          localStorage.setItem("chat-muted", JSON.stringify(true)); // ✅ lưu
+          localStorage.setItem(`chat-muted-${roomId}`, JSON.stringify(true));
+          localStorage.setItem(
+            `chat-unmute-at-${roomId}`,
+            date.getTime().toString()
+          );
+          scheduleAutoUnmute(date.getTime());
           setShowPicker(false);
         }}
       />
@@ -179,6 +218,7 @@ export default function MuteButton({ onMuteUntil }: MuteButtonProps) {
       <CustomizeMuteSheet
         open={showCustomize}
         onClose={() => setShowCustomize(false)}
+        roomId={roomId}
       />
 
       {/* ✅ Toast notification */}

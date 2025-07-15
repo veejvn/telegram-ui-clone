@@ -2,31 +2,36 @@
 
 import React, { useState, useEffect } from "react";
 import { ArrowLeft, BellOff } from "lucide-react";
-import clsx from "clsx"; // nếu bạn đã cài clsx, nếu không dùng template string bình thường
+import clsx from "clsx";
 
 export default function MuteDurationMenu({
   onBack,
   onCustomMuteClick,
-  onMute
+  onMute,
 }: {
   onBack: () => void;
   onCustomMuteClick: () => void;
-  onMute: () => void;
+  onMute: (ms: number) => void; // ✅ chỉnh lại để truyền ms
 }) {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
 
-  const muteOptions = ["1 hour", "8 hours", "1 day", "7 days"];
+  const muteOptions = [
+    { label: "1 hour", ms: 60 * 60 * 1000 },
+    { label: "8 hours", ms: 8 * 60 * 60 * 1000 },
+    { label: "1 day", ms: 24 * 60 * 60 * 1000 },
+    { label: "7 days", ms: 7 * 24 * 60 * 60 * 1000 },
+  ];
 
-  const handleMuteClick = (label: string) => {
+  const handleMuteClick = (label: string, ms: number) => {
     setToastMessage(`Notifications are muted for ${label}.`);
     setShowToast(true);
-    onMute(); // gọi hàm để đánh dấu là đã mute
+    onMute(ms); // ✅ truyền ms lên
   };
 
   const handleCustomMute = () => {
     const until = new Date();
-    until.setHours(until.getHours() + 3); // ví dụ thêm 3 tiếng
+    until.setHours(until.getHours() + 3); // ví dụ: mute thêm 3 tiếng
 
     const formattedTime = until.toLocaleString("vi-VN", {
       day: "2-digit",
@@ -41,7 +46,7 @@ export default function MuteDurationMenu({
     onCustomMuteClick(); // mở modal chọn thời gian cụ thể
   };
 
-  // Tự động ẩn sau 3s
+  // Tự động ẩn toast sau 3s
   useEffect(() => {
     if (showToast) {
       const timer = setTimeout(() => setShowToast(false), 3000);
@@ -65,15 +70,14 @@ export default function MuteDurationMenu({
           <li className="h-[5px] my-1 bg-[#f3f3f3] dark:bg-[#3a3a3c]" />
 
           {/* Mute options */}
-          {muteOptions.map((label) => (
+          {muteOptions.map((opt) => (
             <li
-              key={label}
+              key={opt.label}
               className="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#3a3a3c] cursor-pointer"
-              onClick={() => handleMuteClick(label)}
+              onClick={() => handleMuteClick(opt.label, opt.ms)}
             >
-              <div className="w-1 h-1" />{" "}
-              {/* Placeholder để căn trái đều */}
-              <span>{`Mute for ${label}`}</span>
+              <div className="w-1 h-1" />
+              <span>{`Mute for ${opt.label}`}</span>
             </li>
           ))}
 
