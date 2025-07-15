@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import * as sdk from "matrix-js-sdk";
 import {
   Popover,
@@ -20,13 +20,13 @@ import { useChatStore } from "@/stores/useChatStore";
 import {
   CallIcon,
   VideoIcon,
-  MuteIcon,
   SearchIcon,
   MoreIcon,
 } from "@/components/chat/icons/InfoIcons";
 import { getDetailedStatus } from "@/utils/chat/presencesHelpers";
 import { usePresenceContext } from "@/contexts/PresenceProvider";
 import { useIgnoreStore } from "@/stores/useIgnoreStore";
+import MuteButton from "./mute/MuteButton";
 
 export default function InfoBody({ user }: { user: sdk.User }) {
   const client = useMatrixClient();
@@ -98,6 +98,21 @@ export default function InfoBody({ user }: { user: sdk.User }) {
     )
     .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
+  // 👇 Thêm vào đầu component
+  const [toastMessage, setToastMessage] = useState("");
+  const [showToast, setShowToast] = useState(false);
+
+  // 👇 Hàm xử lý khi chọn ngày thành công từ MuteUntilPicker
+  const handleMuteUntil = (date: Date) => {
+    const formatted = `${date.toLocaleDateString("en-GB")} ${date
+      .getHours()
+      .toString()
+      .padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
+    setToastMessage(`Notifications are muted until ${formatted}`);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 5000);
+  };
+
   // State cho block modal và trạng thái block
   const [showBlockModal, setShowBlockModal] = React.useState(false);
   const [isBlocked, setIsBlocked] = React.useState(false);
@@ -146,14 +161,14 @@ export default function InfoBody({ user }: { user: sdk.User }) {
 
   return (
     <>
-      <div className="text-center px-4">
+      <div className="text-center">
         <p className="text-xl font-semibold">{user.displayName}</p>
 
         <p className="text-sm text-muted-foreground">
           {getDetailedStatus(lastSeen)}
         </p>
 
-        <div className="flex justify-center gap-2 my-4 ">
+        <div className="flex justify-center gap-2 my-4 px-4">
           <div
             className="flex flex-col justify-end gap-0.5 items-center w-[75px] h-[50px] cursor-pointer bg-white dark:bg-[#232329] rounded-lg py-1 group"
             onClick={() => handleStartCall("voice")}
@@ -170,10 +185,14 @@ export default function InfoBody({ user }: { user: sdk.User }) {
             <p className="text-xs text-[#155dfc]">video</p>
           </div>
 
-          <div className="flex flex-col justify-end items-center w-[75px] h-[50px] group cursor-pointer bg-white dark:bg-[#232329] rounded-lg py-1">
+          {/* <div className="flex flex-col justify-end items-center w-[75px] h-[50px] group cursor-pointer bg-white dark:bg-[#232329] rounded-lg py-1">
             <MuteIcon />
             <p className="text-xs text-[#155dfc]">mute</p>
-          </div>
+          </div> */}
+          {/* <MuteButton /> */}
+          <MuteButton onMuteUntil={handleMuteUntil} />
+
+          {/* Search and More buttons */}
 
           <div className="flex flex-col justify-end items-center group cursor-pointer bg-white dark:bg-[#232329] rounded-lg w-[75px] h-[50px] py-1">
             <SearchIcon />
@@ -202,102 +221,115 @@ export default function InfoBody({ user }: { user: sdk.User }) {
           </Popover>
         </div>
 
-        <div className="bg-white dark:bg-[#232329] ps-5 text-start py-4 flex flex-col mt-7 rounded-lg gap-1">
-          <div>
-            <p className="text-sm">mobile</p>
-            <p className="text-[#155dfc] bg-white dark:bg-[#232329]">
-              +84 11 222 33 44
-            </p>
-          </div>
-          {isBlocked && (
-            <div className="flex flex-col gap-3">
-              <hr className="my-0.5 border-gray-200/50" />
-              <button
-                onClick={() => setShowConfirmUnblock(true)}
-                className="text-[#155dfc] text-base font-normal py-0 cursor-pointer text-left"
-              >
-                Unblock
-              </button>
-            </div>
-          )}
-        </div>
+        <div className="w-full px-4">
+          <div className="w-full max-w-sm mx-auto bg-white dark:bg-[#232329] px-4 py-4 text-start flex flex-col mt-7 rounded-xl gap-1 shadow">
+            <p className="text-sm text-zinc-500">mobile</p>
+            <p className="text-[#155dfc] break-all">+84 11 222 33 44</p>
 
-        <div className="w-full text-start py-4 flex flex-col rounded-lg gap-0">
-          <Tabs defaultValue="media">
-            {/* Tabs header */}
-            <div className="w-full">
-              <TabsList className="w-full h-12 px-0 bg-white dark:bg-[#232329] rounded-none border-none shadow-none flex relative">
-                <TabsTrigger
-                  value="media"
-                  className="group flex-1 h-12 rounded-none border-none shadow-none bg-transparent text-zinc-500 data-[state=active]:text-[#155dfc] data-[state=active]:font-semibold relative"
+            {isBlocked && (
+              <div className="flex flex-col gap-3 mt-3">
+                <hr className="my-0.5 border-gray-200/50" />
+                <button
+                  onClick={() => setShowConfirmUnblock(true)}
+                  className="text-[#155dfc] text-base font-normal py-0 cursor-pointer text-left"
                 >
-                  Media
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-[2px] bg-[#155dfc] opacity-0 group-data-[state=active]:opacity-100 transition-opacity" />
-                </TabsTrigger>
-                <TabsTrigger
-                  value="link"
-                  className="group flex-1 h-12 rounded-none border-none shadow-none bg-transparent text-zinc-500 data-[state=active]:text-[#155dfc] data-[state=active]:font-semibold relative"
-                >
-                  Links
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-[2px] bg-[#155dfc] opacity-0 group-data-[state=active]:opacity-100 transition-opacity" />
-                </TabsTrigger>
-              </TabsList>
-            </div>
-
-            {/* Tabs content */}
-            <TabsContent value="media">
-              <div className="grid grid-cols-3 gap-0.5 bg-white dark:bg-black p-1 rounded-lg">
-                {imageMessages.map((msg, idx) => (
-                  <div key={msg.eventId || idx}>
-                    <Image
-                      src={msg.imageUrl ?? ""}
-                      alt="media"
-                      width={500}
-                      height={500}
-                      className="rounded object-cover"
-                    />
-                  </div>
-                ))}
+                  Unblock
+                </button>
               </div>
-            </TabsContent>
-
-            <TabsContent value="link">
-              <Card className="w-full max-w-md mx-auto bg-white dark:bg-black shadow-sm pt-3 pb-0">
-                <CardContent className="px-2">
-                  <div className="space-y-4">
-                    {linkMessages
-                      .map((msg) => {
-                        const match = msg.text.match(
-                          /(https?:\/\/[^\s]+|\b(?:[a-z0-9-]+\.)+[a-z]{2,}(\/[^\s]*)?)/i
-                        );
-                        const rawUrl = match?.[0];
-                        const url = rawUrl?.startsWith("http")
-                          ? rawUrl
-                          : `https://${rawUrl}`;
-                        return url ? { ...msg, parsedUrl: url } : null;
-                      })
-                      .filter(
-                        (msg): msg is { parsedUrl: string } & typeof msg =>
-                          !!msg
-                      )
-                      .map((msg, index) => (
-                        <div key={index} className="mb-2">
-                          <a
-                            href={msg.parsedUrl}
-                            className="text-blue-500 underline"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            {msg.parsedUrl}
-                          </a>
-                        </div>
-                      ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+            )}
+          </div>
         </div>
+
+        {(imageMessages.length > 0 || linkMessages.length > 0) && (
+          <div className="w-full text-start py-4 flex flex-col rounded-lg gap-0">
+            <Tabs
+              defaultValue={imageMessages.length > 0 ? "media" : "link"}
+              className="gap-0"
+            >
+              {/* Tabs header */}
+              <div className="w-full">
+                <TabsList className="w-full h-12 px-0 bg-white dark:bg-[#232329] rounded-none border-none shadow-none flex relative">
+                  {imageMessages.length > 0 && (
+                    <TabsTrigger
+                      value="media"
+                      className="group flex-1 h-12 rounded-none border-none shadow-none bg-transparent text-zinc-500 data-[state=active]:text-[#155dfc] data-[state=active]:font-semibold relative"
+                    >
+                      Media
+                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-[2px] bg-[#155dfc] opacity-0 group-data-[state=active]:opacity-100 transition-opacity" />
+                    </TabsTrigger>
+                  )}
+                  {linkMessages.length > 0 && (
+                    <TabsTrigger
+                      value="link"
+                      className="group flex-1 h-12 rounded-none border-none shadow-none bg-transparent text-zinc-500 data-[state=active]:text-[#155dfc] data-[state=active]:font-semibold relative"
+                    >
+                      Links
+                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-[2px] bg-[#155dfc] opacity-0 group-data-[state=active]:opacity-100 transition-opacity" />
+                    </TabsTrigger>
+                  )}
+                </TabsList>
+              </div>
+
+              {/* Tabs content */}
+              {imageMessages.length > 0 && (
+                <TabsContent value="media">
+                  <div className="grid grid-cols-3 gap-0.5 bg-white dark:bg-black p-1 rounded-none">
+                    {imageMessages.map((msg, idx) => (
+                      <div key={msg.eventId || idx}>
+                        <Image
+                          src={msg.imageUrl ?? ""}
+                          alt="media"
+                          width={500}
+                          height={500}
+                          className="rounded object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </TabsContent>
+              )}
+
+              {linkMessages.length > 0 && (
+                <TabsContent value="link">
+                  <Card className="w-full max-w-md mx-auto bg-white dark:bg-black shadow-sm pt-3 pb-0 rounded-none">
+                    <CardContent className="px-2">
+                      <div className="space-y-4">
+                        {Array.from(
+                          new Map(
+                            [...linkMessages]
+                              .reverse()
+                              .map((msg) => {
+                                const match = msg.text.match(
+                                  /(https?:\/\/[^\s]+|\b(?:[a-z0-9-]+\.)+[a-z]{2,}(\/[^\s]*)?)/i
+                                );
+                                const rawUrl = match?.[0];
+                                const url = rawUrl?.startsWith("http")
+                                  ? rawUrl
+                                  : `https://${rawUrl}`;
+                                return url ? [url, url] : null;
+                              })
+                              .filter(Boolean) as [string, string][]
+                          ).values()
+                        ).map((url, index) => (
+                          <div key={index} className="mb-2 leading-relaxed">
+                            <a
+                              href={url}
+                              className="text-blue-500 underline"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {url}
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              )}
+            </Tabs>
+          </div>
+        )}
       </div>
 
       {/* Modal xác nhận block user */}
@@ -350,6 +382,26 @@ export default function InfoBody({ user }: { user: sdk.User }) {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {showToast && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 max-w-[90%] bg-neutral-700 text-white text-sm px-4 py-2 rounded-2xl flex items-center space-x-2 z-[9999] shadow-md">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={2}
+            stroke="currentColor"
+            className="w-5 h-5"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+            />
+          </svg>
+          <span className="whitespace-nowrap">{toastMessage}</span>
         </div>
       )}
     </>

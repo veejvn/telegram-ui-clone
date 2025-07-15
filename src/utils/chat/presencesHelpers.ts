@@ -44,7 +44,7 @@ export const getDetailedStatus = (lastSeen: Date | string | null) => {
     } else if (isYesterday) {
       return `Last seen yesterday at ${formatTime(lastSeenDate)}`;
     } else if (diffHours < 168) { // Trong vòng 1 tuần
-      const dayName = lastSeenDate.toLocaleDateString('vi-VN', { weekday: 'long' });
+      const dayName = lastSeenDate.toLocaleDateString('en-US', { weekday: 'long' });
       return `Last seen ${dayName} at ${formatTime(lastSeenDate)}`;
     } else {
       return `Last seen ${formatDate(lastSeenDate)} at ${formatTime(lastSeenDate)}`;
