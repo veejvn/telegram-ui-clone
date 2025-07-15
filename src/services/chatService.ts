@@ -350,6 +350,9 @@ export async function sendImageMessage(
     };
 
     await client.sendMessage(roomId, imageMessage as any);
+    return {
+      httpUrl: client.mxcUrlToHttp(uploadResponse.content_uri, 800, 600, "scale", true),
+    }
   } catch (err) {
     console.error("sendImageMessage error:", err);
     throw err;
