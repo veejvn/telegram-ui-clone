@@ -242,7 +242,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
         </div>
 
         {(imageMessages.length > 0 || linkMessages.length > 0) && (
-          <div className="w-full text-start py-4 flex flex-col rounded-lg gap-0">
+          <div className="w-full text-start pt-4 flex flex-col rounded-lg gap-0">
             <Tabs
               defaultValue={imageMessages.length > 0 ? "media" : "link"}
               className="gap-0"

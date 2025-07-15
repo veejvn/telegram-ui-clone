@@ -66,7 +66,7 @@ export default function InfoPage() {
 
 
   return (
-    <div className="bg-gray-200 dark:bg-black min-h-screen w-full">
+    <div className="bg-gray-200 dark:bg-black w-full">
       <header style={headerStyle} className="mb-23">
         <PrivateInfoHeader user={user} />
       </header>
