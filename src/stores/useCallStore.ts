@@ -34,6 +34,7 @@ interface CallStore {
     upgradeToVideo: () => Promise<void>
     startRecallWatcher: (userId: string, roomId: string, type: CallType) => void // 🆕
     recallCall: (roomId: string, type: CallType) => Promise<void> // 🆕
+    answerCallById: (callId: string) => Promise<void>
 }
 
 const outgoingAudio = typeof Audio !== 'undefined' ? new Audio('/chat/sounds/outgoing.mp3') : null
@@ -396,6 +397,10 @@ const useCallStore = create<CallStore>((set, get) => {
             set({ state: 'recalling', recallCountdown: undefined });
             await callService.placeCall(roomId, type);
             set({ state: 'ringing' });
+        },
+        answerCallById: async (callId: string) => {
+            set({ state: 'connecting' });
+            await (callService as any).answerCallById(callId);
         },
     }
 })
