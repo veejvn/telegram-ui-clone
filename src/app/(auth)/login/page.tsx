@@ -15,7 +15,7 @@ export default function LoginPage() {
   const handleSuccess = (token: string, userId: string, deviceId: string) => {
     login(token, userId, deviceId);
     //console.log("🚀 Login successful, redirecting to chat...");
-    
+
     // Small delay để ensure store update
     setTimeout(() => {
       router.push(ROUTES.CHAT);
