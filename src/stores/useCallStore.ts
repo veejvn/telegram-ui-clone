@@ -400,7 +400,7 @@ const useCallStore = create<CallStore>((set, get) => {
         },
         answerCallById: async (callId: string) => {
             set({ state: 'connecting' });
-            await callService.answerCallById(callId);
+            await (callService as any).answerCallById(callId);
         },
     }
 })
