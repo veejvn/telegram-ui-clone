@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 export type MessageStatus = "sending" | "sent" | "read";
-export type MessageType = "text" | "image" | "video" | "file" | "emoji" | "audio";
+export type MessageType = "text" | "image" | "video" | "file" | "emoji" | "location" | "audio";
 
 export type Message = {
   eventId: string;
@@ -19,6 +19,11 @@ export type Message = {
   status: MessageStatus;
   type?: MessageType;
   isForward?: boolean;
+  location?: {
+    latitude: number | null;
+    longitude: number | null;
+    description?: string;
+  };
 };
 
 type ChatStore = {
@@ -45,6 +50,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   lastSeenByRoom: {},
 
   addMessage: (roomId, msg) => {
+    //console.log(msg);
     const current = get().messagesByRoom[roomId] || [];
     if (current.some((m) => m.eventId === msg.eventId)) return;
     set({

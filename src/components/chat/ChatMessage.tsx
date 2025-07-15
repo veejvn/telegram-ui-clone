@@ -9,6 +9,7 @@ import { Message } from "@/stores/useChatStore";
 import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import ForwardTextMessage from "./message-type/ForwardTextMessage";
+import { LocationMessage } from "@/components/chat/message-type/LocationMessage";
 
 const ChatMessage = ({ msg }: { msg: Message }) => {
   const userId = useAuthStore.getState().userId;
@@ -72,6 +73,8 @@ const ChatMessage = ({ msg }: { msg: Message }) => {
         return <AudioMessage msg={msg} isSender={isSender} />;
       case "image":
         return <ImageMessage msg={msg} isSender={isSender} />;
+      case "location":
+        return <LocationMessage msg={msg} isSender={isSender} />;
       default:
         //console.warn("⚠️ Unknown type in message:", msg);
         return <TextMessage msg={msg} isSender={isSender} />;

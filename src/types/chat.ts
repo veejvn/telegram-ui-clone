@@ -8,3 +8,8 @@ export interface ChatEditButtonPros{
     onDone: () => void,
     className?: string
 }
+
+export interface LocationInfo{
+    geoUri: string,
+    displayText: string
+}

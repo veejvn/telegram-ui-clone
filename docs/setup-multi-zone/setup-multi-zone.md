@@ -60,7 +60,42 @@ npm start -p 3003
 
 - Nếu muốn truy cập thẳng vào phòng chat, hãy truy cập `http://main-domain.com/chat/chat/roomId` để đi thẳng vào chat room
 
-## 6. Hướng dẫn truyền option từ Main App sang Chat App để ẩn/hiện các tính năng
+- Nếu muốn trở về thẳng main app từ phòng chat, hãy lưu biến `backToMain` kiểu boolean vào local storage, chat app sẽ xử lý và trở về thẳng main app từ phòng chat.
+
+```typescript
+const backToMain = true;
+localStorage.setItem("backToMain", JSON.stringify(backToMain));
+```
+
+-- Nếu có lưu thêm `backUrl` như mục 6, chap app sẽ xử lý và sẽ trở về url đó từ phòng chat.
+
+-- Nếu không truyền `backToMain`, nút back sẽ trở về chat list như bình thường.
+
+## 6. Hướng dẫn trở về Main App từ Chat App bằng backUrl
+
+Để khi truy cập từ một zone phụ (ví dụ: Blog) sang Chat Zone, người dùng có thể quay lại đúng trang trước đó, bạn có thể lưu biến `backUrl` vào local storage:
+
+**Ví dụ ở trang Blog:**
+
+```tsx
+export default function BlogHome() {
+  const backUrl = "/blog";
+  localStorage.setItem("backUrl", JSON.stringify(backUrl));
+
+  return (
+    <main>
+      <h1 className="bg-blue-500">📝 Blog Zone</h1>
+      <a href={`/chat/chat}`}>➡️ Đi đến Chat Zone</a>
+    </main>
+  );
+}
+```
+
+Khi bấm nút vào trở về, trình duyệt sẽ trở về trang trước đó của main app được lưu trong biến `backUrl`
+
+Nếu truy cập từ trang home của main app, không cần truyền `backUrl`
+
+## 7. Hướng dẫn truyền option từ Main App sang Chat App để ẩn/hiện các tính năng
 
 Để truyền các option (ví dụ: ẩn/hiện các nút như call, contact, setting, searchbar) từ main-app sang chat-app, bạn chỉ cần lưu các option vào local storage khi chuyển sang chat-app. Chat-app sẽ đọc các option này và xử lý linh hoạt theo nhu cầu (ví dụ: ẩn/hiện các nút, thay đổi giao diện, ...).
 
@@ -79,30 +114,4 @@ localStorage.setItem("hide", JSON.stringify(hide));
   - call: ẩn Call ở Navigation Bar
   - setting: ẩn Setting ở Navigation Bar
   - contact: ẩn Contact ở Navigation Bar
-  - search: ẩn Search Bar 
-
-## 8. Hướng dẫn trở về Main App từ Chat App bằng backUrl
-
-Để khi truy cập từ một zone phụ (ví dụ: Blog) sang Chat Zone, người dùng có thể quay lại đúng trang trước đó, bạn có thể lưu biến `backUrl` vào local storage:
-
-**Ví dụ ở trang Blog:**
-
-```tsx
-export default function BlogHome() {
-  const backUrl = "/blog";
-  localStorage.setItem("backUrl", JSON.stringify(backUrl));
-
-  return (
-    <main>
-      <h1 className="bg-blue-500">📝 Blog Zone</h1>
-      <a href={`/chat/chat}`}>
-        ➡️ Đi đến Chat Zone
-      </a>
-    </main>
-  );
-}
-```
-
-Khi bấm nút vào trở về sẽ trở về trang trước đó của main app được lưu trong biến `backUrl`
-
-Nếu truy cập từ trang home của main app, không cần truyền `backUrl`
+  - search: ẩn Search Bar
