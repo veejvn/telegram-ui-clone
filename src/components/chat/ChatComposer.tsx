@@ -8,12 +8,14 @@ import {
   Paperclip,
   Search,
   Smile,
+  StopCircle
 } from "lucide-react";
 import {
   sendImageMessage,
   sendLocation,
   sendMessage,
   sendTypingEvent,
+  sendVoiceMessage,
 } from "@/services/chatService";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useTheme } from "next-themes";
@@ -40,6 +42,14 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   const [text, setText] = useState("");
   const [isMultiLine, setIsMultiLine] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
+  const [isRecording, setIsRecording] = useState(false);
+  const [recorder, setRecorder] = useState<MediaRecorder | null>(null);
+  const [audioChunks, setAudioChunks] = useState<BlobPart[]>([]);
+
+  const [recordTime, setRecordTime] = useState(0);
+  const recordIntervalRef = useRef<number | null>(null);
+
   const typingTimeoutRef = useRef<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -59,6 +69,63 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     ssr: false,
   });
 
+  // Start voice recording
+  const startRecording = async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mr = new MediaRecorder(stream);
+    const chunks: BlobPart[] = [];
+    mr.ondataavailable = e => chunks.push(e.data);
+    mr.start();
+    setRecorder(mr);
+    setAudioChunks(chunks);
+    setIsRecording(true);
+
+    // reset counter và bật timer
+    setRecordTime(0);
+    recordIntervalRef.current = window.setInterval(() => {
+      setRecordTime(t => t + 1);
+    }, 1000);
+  };
+
+  // Stop và gửi voice
+  const stopRecording = () => {
+    if (!recorder || !client) return;
+    if (recordIntervalRef.current) {
+      clearInterval(recordIntervalRef.current);
+      recordIntervalRef.current = null;
+    }
+    recorder.onstop = async () => {
+      // 1) Tạo blob từ chunks
+      const blob = new Blob(audioChunks, { type: "audio/webm" });
+      const file = new (globalThis as any).File([blob], `voice_${Date.now()}.webm`, { type: blob.type });
+      const localId = "local_" + Date.now();
+      const now = new Date();
+      const userId = client.getUserId();
+
+
+      // 2) Dùng ngay recordTime đã đếm được làm duration
+      const { httpUrl } = await sendVoiceMessage(client, roomId, file, recordTime);
+
+      addMessage(roomId, {
+        eventId: localId,
+        sender: userId ?? undefined,
+        senderDisplayName: userId ?? undefined,
+        text: file.name,
+        audioUrl: httpUrl,
+        audioDuration: recordTime,
+        time: now.toLocaleString(),
+        timestamp: now.getTime(),
+        status: "sent",
+        type: "audio",
+      });
+
+      // 3) reset chunks (và nếu muốn reset time cũng có thể)
+      setAudioChunks([]);
+      setRecordTime(0);
+    };
+    recorder.stop();
+    setIsRecording(false);
+  };
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       if (textareaRef.current) {
@@ -168,6 +235,13 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
       e.target.value = ""; // reset input
     }
   };
+  useEffect(() => {
+    return () => {
+      if (recordIntervalRef.current) {
+        clearInterval(recordIntervalRef.current);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -295,6 +369,20 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   return (
     <div className="bg-white dark:bg-[#1c1c1e]">
       {forwardMessages.length > 0 && <ForwardMsgPreview />}
+      {isRecording && (
+        <div className="px-4 py-2">
+          <div className="w-full h-2 bg-gray-300 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-red-500"
+              style={{ width: `${Math.min((recordTime / 60) * 100, 100)}%` }}
+            />
+          </div>
+          <div className="text-sm text-gray-600 mt-1">
+            {recordTime}s
+          </div>
+        </div>
+      )}
+
       <div className="relative flex justify-between items-center px-2.5 py-2 lg:py-3 pb-10">
         <Paperclip
           // onClick={() => inputRef.current?.click()}
@@ -303,9 +391,8 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
           size={30}
         />
         <div
-          className={`outline-2 p-1.5 mx-1.5 relative ${
-            isMultiLine ? "rounded-2xl" : "rounded-full"
-          } flex items-center justify-between w-full bg-[#f0f0f0] dark:bg-[#2b2b2d]`}
+          className={`outline-2 p-1.5 mx-1.5 relative ${isMultiLine ? "rounded-2xl" : "rounded-full"
+            } flex items-center justify-between w-full bg-[#f0f0f0] dark:bg-[#2b2b2d]`}
         >
           <textarea
             ref={textareaRef}
@@ -364,10 +451,19 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             />
           </svg>
         ) : (
-          <Mic
-            className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
-            size={35}
-          />
+          isRecording ? (
+            <StopCircle
+              size={35}
+              className="text-red-500 cursor-pointer hover:scale-110 transition-all duration-700"
+              onClick={stopRecording}
+            />
+          ) : (
+            <Mic
+              size={35}
+              className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all duration-700"
+              onClick={startRecording}
+            />
+          )
         )}
       </div>
       <AnimatePresence>

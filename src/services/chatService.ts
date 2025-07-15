@@ -144,6 +144,8 @@ export const getTimeline = async (
         let longitude: number | null = null;
         let description: string | null = null
 
+        let audioUrl: string | null = null;
+        let audioDuration: number | null = null;
         let type: MessageType = "text";
 
         if (content.msgtype === "m.image") {
@@ -173,6 +175,14 @@ export const getTimeline = async (
         }
          else if (isOnlyEmojis(text)) {
           type = "emoji";
+        } else if (content.msgtype === "m.audio") {
+          type = "audio";
+          if (content.url) {
+            // chuyển MXC → HTTP URL
+            audioUrl = client.mxcUrlToHttp(content.url);
+          }
+          // nếu server đẩy duration trong info
+          audioDuration = content.info?.duration ?? null;
         }
 
         return {
@@ -186,6 +196,8 @@ export const getTimeline = async (
           videoUrl,
           fileUrl,
           fileName,
+          audioUrl,
+          audioDuration,
           status,
           type,
           location: {
@@ -376,7 +388,48 @@ export async function sendImageMessage(
     throw err;
   }
 }
+export async function sendVoiceMessage(
+  client: sdk.MatrixClient,
+  roomId: string,
+  file: File,
+  duration: number            // ← thêm tham số duration
 
+) {
+  if (!client) {
+    return { success: false, err: "User not authenticated or session invalid.", httpUrl: "" };
+  }
+  try {
+    // đọc blob thành ArrayBuffer
+    const buffer = await readFileAsArrayBuffer(file);
+
+    // upload lên Matrix homeserver
+    const uploadRes = await client.uploadContent(buffer, {
+      name: file.name,
+      type: file.type,
+    });
+
+    // xây dựng content theo spec m.audio
+    const audioContent = {
+      body: file.name,
+      info: {
+        duration,
+        mimetype: file.type,
+        size: file.size,
+      },
+      msgtype: "m.audio",
+      url: uploadRes.content_uri,
+    };
+
+    // gửi message
+    await client.sendMessage(roomId, audioContent as any);
+    return { success: true, 
+      httpUrl: client.mxcUrlToHttp(uploadRes.content_uri, 800, 600, "scale", true)
+     };
+  } catch (err) {
+    console.error("sendVoiceMessage error:", err);
+    return { success: false, err };
+  }
+}
 function readFileAsArrayBuffer(file: File): Promise<ArrayBuffer> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
