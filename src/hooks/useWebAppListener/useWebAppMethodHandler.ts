@@ -16,8 +16,12 @@ export const useWebAppMethodHandler = () => {
       "🚀 ~ accept call web action",
       JSON.stringify(payload, null, 2)
     );
-    // Lấy callId từ payload (giả sử là payload.uuid)
-    const callId = payload.uuid;
+    // Lấy callId từ payload.extra.callId
+    const callId = payload.extra.callId;
+    if (!callId) {
+      console.warn('Không tìm thấy callId trong payload.extra.callId!');
+      return;
+    }
     await answerCallById(callId);
     reset(); // Ẩn popup
     // Điều hướng sang UI call tương ứng
