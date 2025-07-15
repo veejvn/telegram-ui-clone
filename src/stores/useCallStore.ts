@@ -174,8 +174,8 @@ const useCallStore = create<CallStore>((set, get) => {
             try {
                 const client = (callService as any).getClient?.();
                 if (client) {
-                    // Nếu muốn kiểm tra presence, có thể thêm đoạn này:
                     /*
+                    // Đã comment toàn bộ logic kiểm tra presence và gọi startRecallWatcher để loại bỏ chức năng join late/recall
                     const getRecipientIdFromRoom = (roomId: string): string => {
                         const myId = client.getUserId?.();
                         const room = client.getRoom?.(roomId);
@@ -348,6 +348,7 @@ const useCallStore = create<CallStore>((set, get) => {
         },
         // 🆕 Theo dõi recipient online và countdown recall
         startRecallWatcher: (userId, roomId, type) => {
+            /*
             // 🆕 Cleanup watcher/timer cũ nếu có
             if (_recallInterval) {
                 clearInterval(_recallInterval);
@@ -391,12 +392,15 @@ const useCallStore = create<CallStore>((set, get) => {
                 }
             };
             client.on('event', _recallListener);
+            */
         },
         // 🆕 recallCall: chuyển sang recalling rồi gọi lại
         recallCall: async (roomId, type) => {
+            /*
             set({ state: 'recalling', recallCountdown: undefined });
             await callService.placeCall(roomId, type);
             set({ state: 'ringing' });
+            */
         },
         answerCallById: async (callId: string) => {
             set({ state: 'connecting' });
