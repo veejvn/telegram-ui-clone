@@ -8,8 +8,9 @@ import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { m } from "framer-motion";
-import { MessagePros } from "@/types/chat";
+import { LocationInfo, MessagePros } from "@/types/chat";
 import { convertEventsToMessages } from "@/utils/chat/convertEventsToMessages";
+import { MatrixClient } from "@/types/matrix";
 
 export const getUserRooms = async (
   client: sdk.MatrixClient
@@ -139,6 +140,10 @@ export const getTimeline = async (
         let videoUrl: string | null = null;
         let fileUrl: string | null = null;
         let fileName: string | null = null;
+        let latitude: number | null = null;
+        let longitude: number | null = null;
+        let description: string | null = null
+
         let type: MessageType = "text";
 
         if (content.msgtype === "m.image") {
@@ -158,7 +163,15 @@ export const getTimeline = async (
             fileUrl = client.mxcUrlToHttp(content.url);
             fileName = content.body ?? "file";
           }
-        } else if (isOnlyEmojis(text)) {
+        } else if (content.msgtype === "m.location"){
+          type = "location"
+          const geo_uri: string = content["geo_uri"] || content["org.matrix.msc3488.location"]?.uri;
+          description = content["org.matrix.msc3488.location"]?.description ?? content["body"];
+          const [, latStr, lonStr] = geo_uri.match(/geo:([0-9.-]+),([0-9.-]+)/) || [];
+          latitude = parseFloat(latStr);
+          longitude = parseFloat(lonStr);
+        }
+         else if (isOnlyEmojis(text)) {
           type = "emoji";
         }
 
@@ -175,6 +188,11 @@ export const getTimeline = async (
           fileName,
           status,
           type,
+          location: {
+            latitude,
+            longitude,
+            description: description ?? undefined,
+          },
         };
       });
 
@@ -350,6 +368,9 @@ export async function sendImageMessage(
     };
 
     await client.sendMessage(roomId, imageMessage as any);
+    return {
+      httpUrl: client.mxcUrlToHttp(uploadResponse.content_uri, 800, 600, "scale", true),
+    }
   } catch (err) {
     console.error("sendImageMessage error:", err);
     throw err;
@@ -424,3 +445,30 @@ export const sendTypingEvent = async (
     return { success: false, err };
   }
 };
+
+export const sendLocation = async (client: MatrixClient, roomId: string, locationInfo: LocationInfo) => {
+  try{
+    const { geoUri, displayText } = locationInfo;
+  
+    const locationMessage = 
+      {
+        "msgtype": "m.location",
+        "body": displayText,
+        "geo_uri": geoUri,
+        "org.matrix.msc3488.location": {
+          "uri": geoUri,
+          "description": displayText,
+        },
+        "org.matrix.msc3488.text": displayText,
+        "org.matrix.msc1767.text": displayText,
+      }
+    await client.sendEvent(roomId, "m.room.message", locationMessage as any, "");
+    return {
+      success: true
+    }
+  }catch(error){
+    console.error("Send Image Message Error:", error);
+    throw error;
+  }
+
+}
