@@ -11,12 +11,12 @@ export default function PrivateInfoHeader({ user }: { user: sdk.User }) {
   const client = useMatrixClient();
   const [avatarUrl, setAvatarUrl] = React.useState<string | null>(null);
 
-  
   useEffect(() => {
     const fetchAvatar = async () => {
       if (!client || !user.avatarUrl) return;
       try {
-        const httpUrl = client.mxcUrlToHttp(user.avatarUrl, 96, 96, "crop") ?? "";
+        const httpUrl =
+          client.mxcUrlToHttp(user.avatarUrl, 96, 96, "crop") ?? "";
 
         setAvatarUrl(httpUrl);
       } catch (error) {
@@ -24,15 +24,13 @@ export default function PrivateInfoHeader({ user }: { user: sdk.User }) {
         console.error("Error loading avatar:", error);
       }
     };
-    
+
     fetchAvatar();
   }, [client]);
 
   return (
     <>
-      <div
-        className="flex justify-between relative dark:bg-[#1c1c1e] py-2 px-2"
-      >
+      <div className="flex justify-between relative dark:bg-[#1c1c1e] py-2 px-2">
         <button
           onClick={() => router.back()}
           className="flex text-left text-blue-600
