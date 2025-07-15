@@ -129,42 +129,31 @@ const ChatPage = () => {
   };
 
   return (
-    <div className="relative h-screen overflow-hidden">
-      {/* <div
-        className={`fixed inset-0 z-0 bg-cover bg-center bg-no-repeat 
-          ${theme === "dark" ? styles["chat-bg-dark"] : styles["chat-bg-light"]}
-          `}
-           aria-hidden="true"
-      /> */}
-
-      <div className="absolute inset-0 z-0 bg-chat" />
-
-      {/* Nội dung có thể scroll */}
-      <div className="relative z-10 flex flex-col h-screen">
-        {/* Header cố định */}
-        <div className="sticky top-0 z-20">
-          <ChatHeader room={room} />
-        </div>
-
-        {/* Chat content scrollable */}
-
-        <ScrollArea className="flex-1 min-h-0 space-y-1">
-          <ChatMessages roomId={roomId} messagesEndRef={messagesEndRef} />
-        </ScrollArea>
-
-        {isBlocked ? (
-          <div className="flex flex-col items-center justify-center py-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-[#23232b]">
-            <button
-              onClick={handleUnblockUser}
-              className="text-blue-600 font-medium hover:underline"
-            >
-              Unblock
-            </button>
-          </div>
-        ) : (
-          <ChatComposer roomId={roomId} />
-        )}
+    <div className="h-screen flex flex-col bg-chat">
+      {/* Header */}
+      <div className="shrink-0">
+        <ChatHeader room={room} />
       </div>
+
+      {/* Chat content scrollable */}
+      <ScrollArea className="flex-1 min-h-0 space-y-1">
+        <ChatMessages roomId={roomId} messagesEndRef={messagesEndRef} />
+      </ScrollArea>
+      {/* Footer */}
+      {isBlocked ? (
+        <div className="flex flex-col items-center justify-center py-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-[#23232b]">
+          <button
+            onClick={handleUnblockUser}
+            className="text-blue-600 font-medium hover:underline"
+          >
+            Unblock
+          </button>
+        </div>
+      ) : (
+        <div className="shrink-0">
+          <ChatComposer roomId={roomId} />
+        </div>
+      )}
     </div>
   );
 };
