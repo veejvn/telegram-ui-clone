@@ -158,33 +158,43 @@ const useCallStore = create<CallStore>((set, get) => {
         // 🆕 Thay thế placeCall để kiểm tra presence trước khi gọi
         placeCall: async (roomId, type) => {
             const { state } = get();
-            // 🆕 Không cho phép gọi mới khi đang waiting/recalling
-            if (['ringing', 'connecting', 'connected', 'waiting-for-recipient', 'recalling'].includes(state)) {
+            // Không cho phép gọi mới khi đang waiting/recalling
+            if ([
+                'ringing',
+                'connecting',
+                'connected',
+                'waiting-for-recipient',
+                'recalling',
+            ].includes(state)) {
                 console.warn(`[CallStore] Already have active or pending call for this room (${roomId}), state=${state}`);
                 return;
             }
-            // 🆕 Lấy client từ window (nếu đã inject), hoặc bạn nên truyền client vào store/action
-            const client = (window as any).matrixClient;
-            if (!client) {
-                console.warn('[CallStore] Matrix client not available');
-                return;
-            }
-            // Hàm này bạn cần implement đúng với app của bạn
-            const getRecipientIdFromRoom = (roomId: string): string => {
-                const myId = client.getUserId?.();
-                const room = client.getRoom?.(roomId);
-                if (!room) return '';
-                const members = room.getJoinedMembers?.();
-                if (!members) return '';
-                const other = members.find((m: any) => m.userId !== myId);
-                return other?.userId || '';
-            };
-            const userId = getRecipientIdFromRoom(roomId);
-            const user = client.getUser?.(userId);
-            if (user?.presence === 'offline') {
-                set({ state: 'waiting-for-recipient', recallCountdown: 30 });
-                get().startRecallWatcher(userId, roomId, type);
-                return;
+            // Nếu muốn kiểm tra presence, lấy client từ callService
+            try {
+                const client = (callService as any).getClient?.();
+                if (client) {
+                    // Nếu muốn kiểm tra presence, có thể thêm đoạn này:
+                    /*
+                    const getRecipientIdFromRoom = (roomId: string): string => {
+                        const myId = client.getUserId?.();
+                        const room = client.getRoom?.(roomId);
+                        if (!room) return '';
+                        const members = room.getJoinedMembers?.();
+                        if (!members) return '';
+                        const other = members.find((m: any) => m.userId !== myId);
+                        return other?.userId || '';
+                    };
+                    const userId = getRecipientIdFromRoom(roomId);
+                    const user = client.getUser?.(userId);
+                    if (user?.presence === 'offline') {
+                        set({ state: 'waiting-for-recipient', recallCountdown: 30 });
+                        get().startRecallWatcher(userId, roomId, type);
+                        return;
+                    }
+                    */
+                }
+            } catch (e) {
+                // Nếu không lấy được client, vẫn thử gọi callService.placeCall
             }
             await callService.placeCall(roomId, type);
             set({ state: 'ringing' });

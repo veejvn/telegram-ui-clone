@@ -36,9 +36,14 @@ class CallService extends EventEmitter {
 
     private initializeClient() {
         const { accessToken, userId, deviceId } = useAuthStore.getState();
-        
+        // console.log('[CallService] initializeClient - accessToken:', accessToken, 'userId:', userId, 'deviceId:', deviceId);
+
         if (!accessToken || !userId || !deviceId) {
-            console.warn('[CallService] Missing authentication data, client not initialized');
+            // console.warn('[CallService] Missing authentication data, client not initialized', {
+            //     accessToken,
+            //     userId,
+            //     deviceId
+            // });
             return;
         }
 
@@ -52,10 +57,9 @@ class CallService extends EventEmitter {
 
             this.client.startClient({ initialSyncLimit: 10 });
             (this.client as any).on('Call.incoming', this.onIncomingCall.bind(this));
-            
-            //console.log('[CallService] Client initialized successfully with userId:', userId);
+            // console.log('[CallService] Client initialized successfully with userId:', userId);
         } catch (error) {
-            //console.error('[CallService] Failed to initialize client:', error);
+            // console.error('[CallService] Failed to initialize client:', error);
             this.client = null;
         }
     }
