@@ -159,6 +159,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
       });
 
       setText("");
+      textareaRef.current?.focus();
       setShowEmojiPicker(false);
       setIsTyping(false);
       sendTypingEvent(client, roomId, false);
