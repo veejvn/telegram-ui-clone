@@ -19,21 +19,20 @@ const BottomNavigattion = ({ hideOptions }: { hideOptions?: string[] }) => {
   const activeClass = "text-blue-500";
   const inactiveClass = "text-gray-400";
   return (
-    <div className="fixed bottom-0 w-full border-t border-gray-400 flex justify-around items-center pt-2 pb-7 bg-white dark:bg-black text-gray-400">
+    <div className="fixed bottom-0 w-full border-t border-gray-400 flex justify-around items-center pt-2 pb-7 bg-white dark:bg-[#1a1a1a] text-gray-400">
+
       {!options.includes("contact") && (
         <Link href="/contact">
           <div className="flex flex-col items-center">
             <span
-              className={`relative ${
-                isActive("/contact") ? activeClass : inactiveClass
-              }`}
+              className={`relative ${isActive("/contact") ? activeClass : inactiveClass
+                }`}
             >
               <CircleUserRound />
             </span>
             <span
-              className={`text-xs ${
-                isActive("/contact") ? activeClass : inactiveClass
-              }`}
+              className={`text-xs ${isActive("/contact") ? activeClass : inactiveClass
+                }`}
             >
               Contacts
             </span>
@@ -47,9 +46,8 @@ const BottomNavigattion = ({ hideOptions }: { hideOptions?: string[] }) => {
               <Phone />
             </span>
             <span
-              className={`text-xs ${
-                isActive("/call") ? activeClass : inactiveClass
-              }`}
+              className={`text-xs ${isActive("/call") ? activeClass : inactiveClass
+                }`}
             >
               Calls
             </span>
@@ -62,9 +60,8 @@ const BottomNavigattion = ({ hideOptions }: { hideOptions?: string[] }) => {
             <MessageCircle />
           </span>
           <span
-            className={`text-xs ${
-              isActive("/chat") ? activeClass : inactiveClass
-            }`}
+            className={`text-xs ${isActive("/chat") ? activeClass : inactiveClass
+              }`}
           >
             Chats
           </span>
@@ -79,9 +76,8 @@ const BottomNavigattion = ({ hideOptions }: { hideOptions?: string[] }) => {
               <Settings />
             </span>
             <span
-              className={`text-xs ${
-                isActive("/setting") ? activeClass : inactiveClass
-              }`}
+              className={`text-xs ${isActive("/setting") ? activeClass : inactiveClass
+                }`}
             >
               Settings
             </span>

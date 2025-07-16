@@ -8,7 +8,7 @@ import {
   Paperclip,
   Search,
   Smile,
-  StopCircle
+  StopCircle,
 } from "lucide-react";
 import {
   sendImageMessage,
@@ -72,11 +72,12 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
 
   // Start voice recording
   const startRecording = async () => {
+    setIsRecording(true);
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     setMediaStream(stream);
     const mr = new MediaRecorder(stream);
     const chunks: BlobPart[] = [];
-    mr.ondataavailable = e => chunks.push(e.data);
+    mr.ondataavailable = (e) => chunks.push(e.data);
     mr.start();
     setRecorder(mr);
     setAudioChunks(chunks);
@@ -85,12 +86,14 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     // reset counter và bật timer
     setRecordTime(0);
     recordIntervalRef.current = window.setInterval(() => {
-      setRecordTime(t => t + 1);
+      setRecordTime((t) => t + 1);
     }, 1000);
   };
 
   // Stop và gửi voice
   const stopRecording = () => {
+    if (!isRecording) return;
+    setIsRecording(false);
     if (!recorder || !client) return;
     if (recordIntervalRef.current) {
       clearInterval(recordIntervalRef.current);
@@ -99,14 +102,22 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     recorder.onstop = async () => {
       // 1) Tạo blob từ chunks
       const blob = new Blob(audioChunks, { type: "audio/webm" });
-      const file = new (globalThis as any).File([blob], `voice_${Date.now()}.webm`, { type: blob.type });
+      const file = new (globalThis as any).File(
+        [blob],
+        `voice_${Date.now()}.webm`,
+        { type: blob.type }
+      );
       const localId = "local_" + Date.now();
       const now = new Date();
       const userId = client.getUserId();
 
-
       // 2) Dùng ngay recordTime đã đếm được làm duration
-      const { httpUrl } = await sendVoiceMessage(client, roomId, file, recordTime);
+      const { httpUrl } = await sendVoiceMessage(
+        client,
+        roomId,
+        file,
+        recordTime
+      );
 
       addMessage(roomId, {
         eventId: localId,
@@ -214,40 +225,40 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   };
 
   const handleFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !client) return;
+    const files = e.target.files;
+    if (!files || !client) return;
     const userId = client.getUserId();
+    const now = new Date();
 
-    try {
-      setOpen(false);
-      const { httpUrl } = await sendImageMessage(client, roomId, file);
-      const localId = "local_" + Date.now();
-      const now = new Date();
+    for (const file of Array.from(files)) {
+      try {
+        const { httpUrl } = await sendImageMessage(client, roomId, file);
+        const localId = "local_" + Date.now() + Math.random();
 
-      addMessage(roomId, {
-        eventId: localId,
-        sender: userId ?? undefined,
-        senderDisplayName: userId ?? undefined,
-        text: file.name,
-        imageUrl: httpUrl,
-        time: now.toLocaleString(),
-        timestamp: now.getTime(),
-        status: "sent",
-        type: "image",
-      });
-      console.log("Image sent successfully");
-    } catch (err) {
-      console.error("Failed to send image:", err);
-    } finally {
-      e.target.value = ""; // reset input
+        addMessage(roomId, {
+          eventId: localId,
+          sender: userId ?? undefined,
+          senderDisplayName: userId ?? undefined,
+          text: file.name,
+          imageUrl: httpUrl,
+          time: now.toLocaleString(),
+          timestamp: now.getTime(),
+          status: "sent",
+          type: "image",
+        });
+      } catch (err) {
+        console.error("Failed to send image:", err);
+      }
     }
+    setOpen(false);
+    e.target.value = ""; // reset input
   };
   useEffect(() => {
     return () => {
       if (recordIntervalRef.current) {
         clearInterval(recordIntervalRef.current);
       }
-    }
+    };
   }, []);
 
   useEffect(() => {
@@ -374,7 +385,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-[#1c1c1e]">
+    <div className="bg-[#e0ece6] dark:bg-[#1b1a1f]">
       {forwardMessages.length > 0 && <ForwardMsgPreview />}
       {isRecording && (
         <div className="px-4 py-2">
@@ -384,22 +395,21 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               style={{ width: `${Math.min((recordTime / 60) * 100, 100)}%` }}
             />
           </div>
-          <div className="text-sm text-gray-600 mt-1">
-            {recordTime}s
-          </div>
+          <div className="text-sm text-gray-600 mt-1">{recordTime}s</div>
         </div>
       )}
 
-      <div className="relative flex justify-between items-center px-2.5 py-2 lg:py-3 pb-10">
+      <div className="relative flex justify-between items-center px-2 py-2 lg:py-3 pb-10">
         <Paperclip
           // onClick={() => inputRef.current?.click()}
           onClick={() => setOpen(true)}
           className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
-          size={30}
+          size={25}
         />
         <div
-          className={`outline-2 p-1.5 mx-1.5 relative ${isMultiLine ? "rounded-2xl" : "rounded-full"
-            } flex items-center justify-between w-full bg-[#f0f0f0] dark:bg-[#2b2b2d]`}
+          className={`p-1 mx-1.5 relative ${
+            isMultiLine ? "rounded-2xl" : "rounded-full"
+          } flex items-center justify-between w-full bg-white dark:bg-black`}
         >
           <textarea
             ref={textareaRef}
@@ -408,19 +418,19 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             onKeyDown={handleKeyDown}
             placeholder="Message"
             rows={1}
-            className="flex-1 h-auto resize-none bg-transparent outline-none px-3 max-h-[6rem] overflow-y-auto text-lg text-black dark:text-white scrollbar-thin"
+            className="flex-1 h-auto resize-none bg-transparent outline-none px-3 max-h-[6rem] overflow-y-auto text-md text-black dark:text-white scrollbar-thin"
           />
           {text.trim() ? (
             <Smile
               onClick={() => setShowEmojiPicker((prev) => !prev)}
-              className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
-              size={30}
+              className="px-0.5 text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
+              size={24}
             />
           ) : (
             <Eclipse
               // onClick={() => setShowEmojiPicker((prev) => !prev)}
-              className="text-[#858585] cursor-default"
-              size={30}
+              className="px-0.5 text-[#858585] cursor-default"
+              size={24}
             />
           )}
 
@@ -438,16 +448,16 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
           )}
         </div>
 
-        <div className="absolute bottom-14 left-0 z-50 pb-8">
+        <div className="absolute bottom-14 left-0 z-50 pb-6">
           <TypingIndicator roomId={roomId} />
         </div>
 
         {text.trim() || forwardMessages.length > 0 ? (
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
+            viewBox="2 2 20 20"
             fill="currentColor"
-            className="size-10 cursor-pointer hover:scale-110 duration-300 transition-all ease-in-out"
+            className="size-8 cursor-pointer hover:scale-110 duration-300 transition-all ease-in-out border-0"
             onClick={handleSend}
           >
             <path
@@ -460,11 +470,13 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
         ) : (
           /* nút mic nhấn giữ để ghi, thả để gửi */
           <Mic
-            size={35}
+            size={30}
             className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all duration-700"
             onMouseDown={startRecording}
             onMouseUp={stopRecording}
             onMouseLeave={() => isRecording && stopRecording()}
+            onTouchStart={startRecording}
+            onTouchEnd={stopRecording}
           />
         )}
       </div>
@@ -505,6 +517,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
                     ref={fileInputRef}
                     type="file"
                     accept="image/*"
+                    multiple
                     onChange={handleFiles}
                     className="hidden"
                     aria-label="file"
