@@ -72,6 +72,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
 
   // Start voice recording
   const startRecording = async () => {
+    setIsRecording(true);
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     setMediaStream(stream);
     const mr = new MediaRecorder(stream);
@@ -91,6 +92,8 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
 
   // Stop và gửi voice
   const stopRecording = () => {
+    if (!isRecording) return;
+    setIsRecording(false);
     if (!recorder || !client) return;
     if (recordIntervalRef.current) {
       clearInterval(recordIntervalRef.current);
@@ -478,6 +481,8 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             onMouseDown={startRecording}
             onMouseUp={stopRecording}
             onMouseLeave={() => isRecording && stopRecording()}
+            onTouchStart={startRecording}
+            onTouchEnd={stopRecording}
           />
         )}
       </div>

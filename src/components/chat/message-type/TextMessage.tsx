@@ -26,10 +26,11 @@ import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
   const theme = useTheme();
   const [open, setOpen] = useState(false);
-  const [triggered, setTriggered] = useState(false);
   const client = useMatrixClient();
   const router = useRouter();
   const { addMessage } = useForwardStore.getState();
+  const holdTimeout = useRef<number | null>(null);
+  const allowOpenRef = useRef(false);
 
   const textClass = clsx(
     "rounded-2xl px-4 py-1.5",
@@ -57,7 +58,6 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
 
   const handleForward = async () => {
     if (!msg.text || !msg.sender || !msg.time || !client) return;
-
     router.push("/chat/forward");
 
     setTimeout(() => {
@@ -70,42 +70,50 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
     }, 1000);
   };
 
-  useEffect(() => {
-    let timeout: any;
-    if (triggered) {
-      timeout = setTimeout(() => setOpen(true), 1500); // delay 300ms
+  const handleHoldStart = () => {
+    // Nếu menu đã mở thì không làm gì
+    if (open) return;
+    holdTimeout.current = window.setTimeout(() => {
+      allowOpenRef.current = true;
+      setOpen(true);
+    }, 1000);
+  };
+
+  const handleHoldEnd = () => {
+    // Nếu chưa đủ 3s thì clear timeout, không mở menu
+    if (!open && holdTimeout.current) {
+      clearTimeout(holdTimeout.current);
+      holdTimeout.current = null;
+    }
+    // Nếu menu đã mở thì không đóng ở đây (để user chọn menu)
+  };
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      // Chỉ cho phép mở nếu là do giữ lâu
+      if (allowOpenRef.current) {
+        setOpen(true);
+        allowOpenRef.current = false;
+      }
+      // Nếu không phải giữ lâu thì bỏ qua (không mở)
     } else {
       setOpen(false);
+      allowOpenRef.current = false;
     }
-    return () => clearTimeout(timeout);
-  }, [triggered]);
-
-  // const handleHoldStart = () => {
-  //   // Nếu menu đã mở thì không làm gì
-  //   if (open) return;
-  //   holdTimeout.current = window.setTimeout(() => {
-  //     setOpen(true);
-  //   }, 3000);
-  // };
-
-  // const handleHoldEnd = () => {
-  //   // Nếu chưa đủ 3s thì clear timeout, không mở menu
-  //   if (!open && holdTimeout.current) {
-  //     clearTimeout(holdTimeout.current);
-  //     holdTimeout.current = null;
-  //   }
-  //   // Nếu menu đã mở thì không đóng ở đây (để user chọn menu)
-  // };
+  };
 
   return (
-    <DropdownMenu open={open} onOpenChange={setTriggered}>
+    <DropdownMenu
+      open={open}
+      onOpenChange={handleOpenChange}
+    >
       <DropdownMenuTrigger asChild>
         <div
           // onMouseDown={handleHoldStart}
           // onMouseUp={handleHoldEnd}
           // onMouseLeave={handleHoldEnd}
-          // onTouchStart={handleHoldStart}
-          // onTouchEnd={handleHoldEnd}
+          onTouchStart={handleHoldStart}
+          onTouchEnd={handleHoldEnd}
           className={clsx(
             "flex items-end", // Đảm bảo tail căn đáy với bubble
             isSender ? "justify-end" : "justify-start"
