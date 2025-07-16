@@ -63,7 +63,7 @@ export const ChatList = ({
         try {
           const data = JSON.parse(stored);
           if (data.isMuted) muted.push(room.roomId);
-        } catch {}
+        } catch { }
       }
     });
     setMutedRooms(muted);
@@ -137,7 +137,8 @@ export const ChatList = ({
                     onSwipeStart={() => console.log("Swipe start")}
                     onSwipeEnd={() => console.log("Swipe end")}
                   >
-                    <div className="w-full hover:bg-zinc-300 dark:hover:bg-zinc-700">
+                    <div className="w-full hover:bg-zinc-300 active:bg-zinc-300 dark:hover:bg-zinc-700 dark:active:bg-zinc-700">
+
                       {isEditMode ? (
                         <ChatListItem
                           room={room}
