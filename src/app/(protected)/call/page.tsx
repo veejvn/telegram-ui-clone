@@ -1,9 +1,10 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import useCallHistoryStore, { CallRecord } from '@/stores/useCallHistoryStore';
-import { getLS } from '@/tools/localStorage.tool';
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import useCallHistoryStore, { CallRecord } from "@/stores/useCallHistoryStore";
+import { getLS } from "@/tools/localStorage.tool";
+// import { callService } from "@/services/callService";
 
 export default function CallHistoryPage() {
   const [missedOnly, setMissedOnly] = useState(false);
@@ -15,23 +16,23 @@ export default function CallHistoryPage() {
   const clearAll = useCallHistoryStore((s) => s.clearAll);
 
   const filtered = missedOnly
-    ? history.filter((r) => r.status === 'missed')
+    ? history.filter((r) => r.status === "missed")
     : history;
 
   const formatDate = (ts: number) =>
-    new Date(ts).toLocaleString('vi-VN', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      day: '2-digit',
-      month: '2-digit',
+    new Date(ts).toLocaleString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      day: "2-digit",
+      month: "2-digit",
     });
 
   const formatDur = (sec: number) => {
     const m = Math.floor(sec / 60)
       .toString()
-      .padStart(2, '0');
-    const s = (sec % 60).toString().padStart(2, '0');
+      .padStart(2, "0");
+    const s = (sec % 60).toString().padStart(2, "0");
     return `${m}:${s}`;
   };
 
@@ -40,21 +41,25 @@ export default function CallHistoryPage() {
       {/* Header */}
       <div className="flex justify-between items-center px-4 pt-4 pb-2">
         <button
-          className={`text-sm ${editing ? 'text-red-400' : 'text-blue-400'}`}
+          className={`text-sm ${editing ? "text-red-400" : "text-blue-400"}`}
           onClick={() => setEditing((e) => !e)}
         >
-          {editing ? 'Done' : 'Edit'}
+          {editing ? "Done" : "Edit"}
         </button>
         <div className="text-sm flex gap-2 dark:bg-zinc-800 rounded-full px-2 py-1">
           <button
             onClick={() => setMissedOnly(false)}
-            className={`font-medium ${!missedOnly ? 'dark:text-white' : 'text-zinc-400'}`}
+            className={`font-medium ${
+              !missedOnly ? "dark:text-white" : "text-zinc-400"
+            }`}
           >
             All
           </button>
           <button
             onClick={() => setMissedOnly(true)}
-            className={`font-medium ${missedOnly ? 'dark:text-white' : 'text-zinc-400'}`}
+            className={`font-medium ${
+              missedOnly ? "dark:text-white" : "text-zinc-400"
+            }`}
           >
             Missed
           </button>
@@ -65,9 +70,13 @@ export default function CallHistoryPage() {
       {/* Start New Call */}
       <div
         className="px-4 py-2 border-t border-zinc-700 flex items-center gap-2 cursor-pointer hover:bg-zinc-900"
-        onClick={() => router.push('/call/new')}
+        onClick={() => router.push("/call/new")}
       >
-        <svg className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
+        <svg
+          className="w-5 h-5 text-blue-400"
+          fill="currentColor"
+          viewBox="0 0 24 24"
+        >
           <path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.11-.21 11.36 11.36 0 003.54.57 1 1 0 011 1v3.11a1 1 0 01-1 1A17 17 0 013 5a1 1 0 011-1h3.11a1 1 0 011 1 11.36 11.36 0 00.57 3.54 1 1 0 01-.21 1.11l-2.2 2.2z" />
         </svg>
         <span className="text-blue-400 font-medium">Start New Call</span>
@@ -76,11 +85,11 @@ export default function CallHistoryPage() {
       {/* Section Title */}
       {filtered.length > 0 ? (
         <div className="px-4 py-2 text-xs text-zinc-400 border-t border-zinc-700">
-          {missedOnly ? 'MISSED CALLS' : 'RECENT CALLS'}
+          {missedOnly ? "MISSED CALLS" : "RECENT CALLS"}
         </div>
       ) : (
         <div className="px-4 py-4 text-sm text-zinc-500 text-center border-t border-zinc-700">
-          {missedOnly ? 'No missed calls' : 'No recent calls'}
+          {missedOnly ? "No missed calls" : "No recent calls"}
         </div>
       )}
 
@@ -95,14 +104,17 @@ export default function CallHistoryPage() {
               {(call.calleeName || call.calleeId).charAt(0).toUpperCase()}
             </div>
             <div>
-              <div className="font-medium">{call.calleeName || call.calleeId}</div>
+              <div className="font-medium">
+                {call.calleeName || call.calleeId}
+              </div>
               <div
-                className={`text-sm ${call.status === 'missed'
-                  ? 'text-red-400'
-                  : call.status === 'rejected'
-                    ? 'text-yellow-400'
-                    : 'text-zinc-400'
-                  }`}
+                className={`text-sm ${
+                  call.status === "missed"
+                    ? "text-red-400"
+                    : call.status === "rejected"
+                    ? "text-yellow-400"
+                    : "text-zinc-400"
+                }`}
               >
                 {call.status.toUpperCase()}
               </div>
@@ -112,7 +124,7 @@ export default function CallHistoryPage() {
           <div className="text-right text-zinc-400 text-sm flex items-center gap-4">
             <div>
               {formatDate(call.timestamp)}
-              {' • '}
+              {" • "}
               {formatDur(call.duration)}
             </div>
             {editing ? (
@@ -132,11 +144,12 @@ export default function CallHistoryPage() {
 
       {/* Bottom Tabs */}
       <div className="fixed bottom-0 w-full bg-black border-t border-zinc-700 flex justify-around py-2">
-        {['Contacts', 'Calls', 'Chats', 'Settings'].map((item, idx) => (
+        {["Contacts", "Calls", "Chats", "Settings"].map((item, idx) => (
           <div
             key={item}
-            className={`flex flex-col items-center text-xs ${idx === 1 ? 'text-blue-400' : 'text-zinc-400'
-              }`}
+            className={`flex flex-col items-center text-xs ${
+              idx === 1 ? "text-blue-400" : "text-zinc-400"
+            }`}
           >
             <div className="w-5 h-5 mb-1 bg-zinc-700 rounded-full" />
             {item}

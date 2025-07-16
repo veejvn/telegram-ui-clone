@@ -14,7 +14,7 @@ import { getUserInfoInPrivateRoom } from "@/services/chatService";
 import { getRoomInfo } from "@/utils/chat/RoomHelpers";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { usePresenceContext } from "@/contexts/PresenceProvider";
-import { getLS } from "@/tools/localStorage.tool";
+import { getLS, removeLS } from "@/tools/localStorage.tool";
 import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
 import { useForwardStore } from "@/stores/useForwardStore";
 
@@ -86,6 +86,26 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
 
   const headerStyle = getHeaderStyleWithStatusBar();
 
+  const backToMain = getLS("backToMain");
+  const MAIN_APP_ORIGIN =
+    typeof window !== "undefined" ? window.location.origin : "";
+  const backUrl = getLS("backUrl");
+  const handleBack = () => {
+    if (backUrl) {
+      removeLS("backUrl");
+      removeLS("fromMainApp");
+      removeLS("hide");
+      removeLS("backToMain");
+      window.location.href = MAIN_APP_ORIGIN + backUrl;
+    } else {
+      removeLS("backUrl");
+      removeLS("fromMainApp");
+      removeLS("hide");
+      removeLS("backToMain");
+      window.location.href = MAIN_APP_ORIGIN;
+    }
+  };
+
   return (
     <>
       <div
@@ -93,19 +113,31 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
         className="flex justify-between bg-white dark:bg-[#1c1c1e]
           py-2 items-center px-2 "
       >
-        <Link
-          href={"/chat"}
-          className="flex text-blue-600
-            cursor-pointer hover:opacity-70"
-          onClick={() => {
-            setTimeout(() => {
-              clearMessages();
-            }, 300);
-          }}
-        >
-          <ChevronLeft />
-          <p>Back</p>
-        </Link>
+        {backToMain ? (
+          <button
+            className="flex flex-row text-blue-500 font-medium cursor-pointer"
+            onClick={handleBack}
+            title="Back"
+            aria-label="Back"
+          >
+            <ChevronLeft />
+            <span>Back</span>
+          </button>
+        ) : (
+          <Link
+            href={"/chat"}
+            className="flex text-blue-600
+              cursor-pointer hover:opacity-70"
+            onClick={() => {
+              setTimeout(() => {
+                clearMessages();
+              }, 300);
+            }}
+          >
+            <ChevronLeft />
+            <p>Back</p>
+          </Link>
+        )}
         <div className="text-center">
           <h1 className="font-semibold text-base">{room.name}</h1>
           <div>

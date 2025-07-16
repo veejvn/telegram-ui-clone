@@ -2,18 +2,12 @@
 import { useEffect } from "react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useRouter } from "next/navigation";
-import { getCookie, setCookie } from "@/utils/cookie";
 import { ROUTES } from "@/constants/routes";
-import {
-  normalizeMatrixUserId,
-  isValidMatrixUserId,
-} from "@/utils/matrixHelpers";
 import { clearMatrixAuthCookies } from "@/utils/clearAuthCookies";
 import { callService } from "@/services/callService";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 
 export default function Home() {
-  const isLogging = useAuthStore((state) => state.isLogging);
   const login = useAuthStore((state) => state.login);
   const router = useRouter();
   const MATRIX_BASE_URL =
@@ -24,10 +18,27 @@ export default function Home() {
       try {
         // Kiểm tra có login token hoặc access token trong URL không
         const urlParams = new URLSearchParams(window.location.search);
-        const loginToken = urlParams.get("loginToken");
+        let loginToken = urlParams.get("loginToken");
         const hash = window.location.hash;
         const hasAccessTokenInHash = hash.includes("access_token");
 
+        if (!loginToken) {
+          const ssoTokenRes = await fetch("/chat/api/get-sso-token", {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+          });
+          if (ssoTokenRes.ok) {
+            const data = await ssoTokenRes.json();
+            if (data.ssoToken) {
+              loginToken = data.ssoToken;
+            }
+          }
+        }
+
+        //console.log(loginToken);
         // ✅ ƯU TIÊN XỬ LÝ SSO LOGIN TOKEN TRƯỚC
         if (loginToken) {
           try {
@@ -44,6 +55,7 @@ export default function Home() {
             );
 
             const data = await response.json();
+            //console.log(data)
 
             if (
               response.ok &&
@@ -54,12 +66,18 @@ export default function Home() {
               // Clear any existing auth first
               clearMatrixAuthCookies();
 
-              //console.log(data.user_id)
-
-              // Set new credentials
-              setCookie("matrix_token", data.access_token, 7);
-              setCookie("matrix_user_id", data.user_id, 7);
-              setCookie("matrix_device_id", data.device_id, 7);
+              const res = await fetch("/chat/api/set-cookie", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  token: data.access_token,
+                  userId: data.user_id,
+                  deviceId: data.device_id,
+                }),
+                credentials: "include", // 👈 đảm bảo cookie được gửi kèm trong các request sau
+              });
 
               // ✅ Update useAuthStore với credentials mới
               login(data.access_token, data.user_id, data.device_id);
@@ -72,7 +90,27 @@ export default function Home() {
               router.replace(ROUTES.CHAT);
               return;
             } else {
-              router.push(ROUTES.LOGIN);
+              const res = await fetch("/chat/api/session", {
+                method: "GET",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                credentials: "include",
+              });
+
+              if (!res.ok) {
+                //console.error("Session API error:", errorData);
+                window.location.href = "/chat/login";
+                return;
+              }
+
+              const { accessToken } = await res.json();
+
+              if (accessToken) {
+                router.push(ROUTES.CHAT);
+              } else {
+                router.push(ROUTES.LOGIN);
+              }
               return;
             }
           } catch (error) {
@@ -92,9 +130,18 @@ export default function Home() {
             // Clear any existing auth first
             clearMatrixAuthCookies();
 
-            setCookie("matrix_token", accessToken, 7);
-            setCookie("matrix_user_id", userId, 7);
-            if (deviceId) setCookie("matrix_device_id", deviceId, 7);
+            const res = await fetch("/chat/api/set-cookie", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                token: accessToken,
+                userId: userId,
+                deviceId: deviceId,
+              }),
+              credentials: "include", // 👈 đảm bảo cookie được gửi kèm trong các request sau
+            });
 
             // ✅ Update useAuthStore với credentials mới
             login(accessToken, userId, deviceId || "");
@@ -110,12 +157,25 @@ export default function Home() {
         }
 
         // ✅ CHỈ CHECK EXISTING TOKEN NẾU KHÔNG CÓ SSO TOKEN
-        const existingToken = getCookie("matrix_token");
-        const existingUserId = getCookie("matrix_user_id");
+        const res = await fetch("/chat/api/session", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        });
+        if (!res.ok) {
+          window.location.href = "/chat/login";
+          return;
+        }
+        const { accessToken, userId, deviceId } = await res.json();
+
+        // const existingToken = getCookie("matrix_token");
+        // const existingUserId = getCookie("matrix_user_id");
 
         // ✅ THÊM CHECK ĐỂ TRÁNH RACE CONDITION SAU LOGOUT
         // Nếu không có cả token và user ID thì chắc chắn đã logout
-        if (!isLogging) {
+        if (!accessToken && !userId && !deviceId) {
           router.push(ROUTES.LOGIN);
           return;
         }
@@ -126,7 +186,7 @@ export default function Home() {
             `${MATRIX_BASE_URL}/_matrix/client/v3/account/whoami`,
             {
               headers: {
-                Authorization: `Bearer ${existingToken}`,
+                Authorization: `Bearer ${accessToken}`,
                 "Content-Type": "application/json",
               },
             }
