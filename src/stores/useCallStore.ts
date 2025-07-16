@@ -7,6 +7,8 @@ type State =
     | 'incoming'
     | 'connecting'
     | 'connected'
+    | 'waiting-for-recipient' // 🆕
+    | 'recalling'             // 🆕
     | 'ended'
     | 'error'
 
@@ -18,9 +20,10 @@ interface CallStore {
     callDuration: number
     callEndedReason?: string
     micOn: boolean
-    placeCall: (roomId: string, type: CallType) => void
+    recallCountdown?: number // 🆕
+    placeCall: (roomId: string, type: CallType) => void | Promise<void>
     answerCall: () => Promise<void>
-    rejectCall: () => void  // ✅ FIX: Thêm method rejectCall
+    rejectCall: () => void
     hangup: () => void
     reset: () => void
     toggleCamera: (on: boolean) => void
@@ -29,6 +32,9 @@ interface CallStore {
     muteWithSilentTrack: () => void
     recreateAudioTrack: () => Promise<void>
     upgradeToVideo: () => Promise<void>
+    startRecallWatcher: (userId: string, roomId: string, type: CallType) => void // 🆕
+    recallCall: (roomId: string, type: CallType) => Promise<void> // 🆕
+    answerCallById: (callId: string) => Promise<void>
 }
 
 const outgoingAudio = typeof Audio !== 'undefined' ? new Audio('/chat/sounds/outgoing.mp3') : null
@@ -52,6 +58,10 @@ const stopAllTracks = (stream?: MediaStream) => {
 }
 
 let _hasListener = false;
+
+// 🆕 Biến toàn cục để quản lý watcher/timer recall
+let _recallInterval: ReturnType<typeof setInterval> | null = null;
+let _recallListener: ((event: any) => void) | null = null;
 
 const useCallStore = create<CallStore>((set, get) => {
     if (!_hasListener) {
@@ -146,13 +156,49 @@ const useCallStore = create<CallStore>((set, get) => {
         state: 'idle',
         callDuration: 0,
         micOn: true,
-        placeCall: (roomId, type) => {
+        // 🆕 Thay thế placeCall để kiểm tra presence trước khi gọi
+        placeCall: async (roomId, type) => {
             const { state } = get();
-            if (state === 'ringing' || state === 'connecting' || state === 'connected') {
-                console.warn(`[CallStore] Already have active call for this room (${roomId}), state=${state}`);
+            // Không cho phép gọi mới khi đang waiting/recalling
+            if ([
+                'ringing',
+                'connecting',
+                'connected',
+                'waiting-for-recipient',
+                'recalling',
+            ].includes(state)) {
+                console.warn(`[CallStore] Already have active or pending call for this room (${roomId}), state=${state}`);
                 return;
             }
-            callService.placeCall(roomId, type)
+            // Nếu muốn kiểm tra presence, lấy client từ callService
+            try {
+                const client = (callService as any).getClient?.();
+                if (client) {
+                    // Nếu muốn kiểm tra presence, có thể thêm đoạn này:
+                    /*
+                    const getRecipientIdFromRoom = (roomId: string): string => {
+                        const myId = client.getUserId?.();
+                        const room = client.getRoom?.(roomId);
+                        if (!room) return '';
+                        const members = room.getJoinedMembers?.();
+                        if (!members) return '';
+                        const other = members.find((m: any) => m.userId !== myId);
+                        return other?.userId || '';
+                    };
+                    const userId = getRecipientIdFromRoom(roomId);
+                    const user = client.getUser?.(userId);
+                    if (user?.presence === 'offline') {
+                        set({ state: 'waiting-for-recipient', recallCountdown: 30 });
+                        get().startRecallWatcher(userId, roomId, type);
+                        return;
+                    }
+                    */
+                }
+            } catch (e) {
+                // Nếu không lấy được client, vẫn thử gọi callService.placeCall
+            }
+            await callService.placeCall(roomId, type);
+            set({ state: 'ringing' });
         },
         answerCall: async () => {
             set({ state: 'connecting' })
@@ -179,6 +225,15 @@ const useCallStore = create<CallStore>((set, get) => {
         },
 
         hangup: () => {
+            if (_recallInterval) {
+                clearInterval(_recallInterval);
+                _recallInterval = null;
+            }
+            if (_recallListener) {
+                const client = (window as any).matrixClient;
+                if (client) client.removeListener('event', _recallListener);
+                _recallListener = null;
+            }
             const { localStream, remoteStream } = get();
             stopAllTracks(localStream);
             stopAllTracks(remoteStream);
@@ -194,6 +249,15 @@ const useCallStore = create<CallStore>((set, get) => {
             callService.hangup()
         },
         reset: () => {
+            if (_recallInterval) {
+                clearInterval(_recallInterval);
+                _recallInterval = null;
+            }
+            if (_recallListener) {
+                const client = (window as any).matrixClient;
+                if (client) client.removeListener('event', _recallListener);
+                _recallListener = null;
+            }
             if (_timer) {
                 clearInterval(_timer)
                 _timer = null
@@ -281,6 +345,62 @@ const useCallStore = create<CallStore>((set, get) => {
             } catch (err) {
                 console.error("[CallStore] upgradeToVideo error:", err);
             }
+        },
+        // 🆕 Theo dõi recipient online và countdown recall
+        startRecallWatcher: (userId, roomId, type) => {
+            // 🆕 Cleanup watcher/timer cũ nếu có
+            if (_recallInterval) {
+                clearInterval(_recallInterval);
+                _recallInterval = null;
+            }
+            if (_recallListener) {
+                const client = (window as any).matrixClient;
+                if (client) client.removeListener('event', _recallListener);
+                _recallListener = null;
+            }
+            let countdown = 60;
+            set({ recallCountdown: countdown });
+            _recallInterval = setInterval(() => {
+                countdown -= 1;
+                set({ recallCountdown: countdown });
+                if (countdown <= 0) {
+                    if (_recallInterval) {
+                        clearInterval(_recallInterval);
+                        _recallInterval = null;
+                    }
+                    set({
+                        state: 'ended',
+                        callEndedReason: 'recipient-offline-timeout',
+                        recallCountdown: undefined,
+                    });
+                }
+            }, 1000);
+            const client = (window as any).matrixClient;
+            if (!client) return;
+            _recallListener = (event: any) => {
+                if (event.getType?.() !== 'm.presence') return;
+                if (event.getSender?.() !== userId) return;
+                if (event.getContent?.().presence === 'online') {
+                    if (_recallInterval) {
+                        clearInterval(_recallInterval);
+                        _recallInterval = null;
+                    }
+                    client.removeListener('event', _recallListener!);
+                    _recallListener = null;
+                    get().recallCall(roomId, type);
+                }
+            };
+            client.on('event', _recallListener);
+        },
+        // 🆕 recallCall: chuyển sang recalling rồi gọi lại
+        recallCall: async (roomId, type) => {
+            set({ state: 'recalling', recallCountdown: undefined });
+            await callService.placeCall(roomId, type);
+            set({ state: 'ringing' });
+        },
+        answerCallById: async (callId: string) => {
+            set({ state: 'connecting' });
+            await (callService as any).answerCallById(callId);
         },
     }
 })

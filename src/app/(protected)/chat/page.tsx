@@ -131,7 +131,7 @@ export default function ChatsPage() {
 
   const backUrl = getLS("backUrl");
 
-  const formMainApp = getLS("formMainApp");
+  const fromMainApp = getLS("fromMainApp");
 
   const MAIN_APP_ORIGIN =
     typeof window !== "undefined" ? window.location.origin : "";
@@ -139,31 +139,35 @@ export default function ChatsPage() {
   const handleBack = () => {
     if (backUrl) {
       removeLS("backUrl");
-      removeLS("formMainApp");
+      removeLS("fromMainApp");
       removeLS("hide");
+      removeLS("backToMain");
       window.location.href = MAIN_APP_ORIGIN + backUrl;
     } else {
       removeLS("backUrl");
-      removeLS("formMainApp");
+      removeLS("fromMainApp");
       removeLS("hide");
+      removeLS("backToMain");
       window.location.href = MAIN_APP_ORIGIN;
     }
   };
 
-  const searchParams = useSearchParams();
-  const hideFromQuery = searchParams.get("hide");
-  const hide = hideFromQuery ? hideFromQuery.split(",") : getLS("hide") || [];
-  const options = Array.isArray(hide) ? hide : [];
+  // const searchParams = useSearchParams();
+  // const hideFromQuery = searchParams.get("hide");
+  const hide = getLS("hide") || [];
+  const hideArray = typeof hide === "string" ? hide.split(",") : hide;
+  const options = Array.isArray(hideArray) ? hideArray : [];
+  //console.log(options)
 
   return (
     <div>
       <div
         style={headerStyle}
-        className="sticky bg-white dark:bg-black top-0 z-10"
+        className="sticky bg-white dark:bg-[#1a1a1a] top-0 z-10"
       >
-        <div className="flex items-center justify-between px-4 py-3 ">
+        <div className="flex items-center justify-between px-4 py-4 ">
           <div className="flex items-center">
-            {formMainApp && (
+            {fromMainApp && (
               <button
                 className="text-blue-500 font-medium w-10 cursor-pointer"
                 onClick={handleBack}
@@ -173,7 +177,7 @@ export default function ChatsPage() {
                 <ChevronLeft />
               </button>
             )}
-            {!formMainApp && (
+            {!fromMainApp && (
               <ChatEditButton
                 isEditMode={isEditMode}
                 onEdit={() => setIsEditMode(true)}
@@ -183,14 +187,14 @@ export default function ChatsPage() {
           </div>
           <h1>Chats</h1>
           <div className="flex gap-3">
-            {formMainApp && (
+            {fromMainApp && (
               <ChatEditButton
                 isEditMode={isEditMode}
                 onEdit={() => setIsEditMode(true)}
                 onDone={handleDone}
               />
             )}
-            {!formMainApp && (
+            {!fromMainApp && (
               <>
                 <div
                   className="text-blue-500 cursor-pointer
@@ -221,7 +225,7 @@ export default function ChatsPage() {
           <p className="text-muted-foreground text-sm">Loading chats...</p>
         </div>
       ) : rooms.length === 0 ? (
-        <div className="flex flex-1 flex-col justify-between min-h-[calc(100vh-112px)] pb-8">
+        <div className="flex flex-1 flex-col justify-between min-h-[calc(100vh-112px)] pb-9d">
           <div className="flex flex-1 flex-col items-center justify-center text-center">
             <img
               src="https://symbl-cdn.com/i/webp/97/613a80b3ab97dad9149e2b43f6112d.webp"
@@ -247,7 +251,7 @@ export default function ChatsPage() {
             isEditMode={isEditMode}
             selectedRooms={selectedRooms}
             onSelectRoom={handleSelectRoom}
-            onMute={() => {}}
+            onMute={() => { }}
             onDelete={async (roomId, type) => {
               if (!client) return;
 

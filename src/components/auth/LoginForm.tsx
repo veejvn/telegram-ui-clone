@@ -8,19 +8,21 @@ import { MatrixAuthService } from "@/services/matrixAuthService";
 import type { LoginFormData, LoginFormProps } from "@/types/auth";
 import { ErrorMessage, Field, Form, SubmitButton } from "@/components/Form";
 import { ERROR_MESSAGES, ErrorMessageValue } from "@/constants/error-messages";
+import ServerStatus from "@/components/auth/ServerStatus";
 
 export default function LoginForm({ onSuccess }: LoginFormProps) {
   const [error, setError] = useState("");
+  const HOMESERVER_URL = process.env.NEXT_PUBLIC_MATRIX_BASE_URL || "";
 
   const handleSubmit = async (data: LoginFormData) => {
     setError(""); // Clear previous errors
-    
+
     try {
       const authService = new MatrixAuthService();
       const result = await authService.login(data);
-      
+
       //console.log("Login response:", result);
-      
+
       if (result.success && result.token && result.userId && result.deviceId) {
         //console.log("🎉 Login successful, calling onSuccess...");
         onSuccess(result.token, result.userId, result.deviceId);
@@ -69,6 +71,16 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           Welcome Back!
         </motion.h2>
         <p className="text-sm text-gray-600">We're excited to see you again!</p>
+        {/* Server Info */}
+        <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-blue-700 dark:text-blue-300">
+              <span className="font-medium">Server:</span>{" "}
+              {HOMESERVER_URL.replace("https://", "")}
+            </p>
+            <ServerStatus />
+          </div>
+        </div>
       </div>
 
       <Form<LoginFormData> schema={loginSchema} onSubmit={handleSubmit}>
@@ -84,7 +96,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           type="password"
           placeholder="••••••••"
         />
-        
+
         {/* Better error display */}
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-4">
@@ -92,7 +104,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             <div className="text-sm mt-1">{error}</div>
           </div>
         )}
-        
+
         <div className="flex items-center justify-between text-sm my-5">
           <Link href="/register" className="text-blue-600 hover:text-blue-800">
             Create account
@@ -113,7 +125,11 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         <button
           className="w-full flex items-center justify-center py-2 px-4 rounded-full border border-blue-600 bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 transition font-medium"
           onClick={() => {
-            const redirectUrl = `${process.env.NEXT_PUBLIC_MATRIX_BASE_URL}/_matrix/client/r0/login/sso/redirect?redirectUrl=${encodeURIComponent(window.location.origin)}/chat`;
+            const redirectUrl = `${
+              process.env.NEXT_PUBLIC_MATRIX_BASE_URL
+            }/_matrix/client/r0/login/sso/redirect?redirectUrl=${encodeURIComponent(
+              window.location.origin
+            )}/chat`;
             window.location.href = redirectUrl;
           }}
         >

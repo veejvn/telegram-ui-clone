@@ -1,33 +1,148 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { Eclipse, Mic, Paperclip, Smile } from "lucide-react";
+import {
+  CircleEllipsis,
+  Eclipse,
+  Mic,
+  Paperclip,
+  Search,
+  Smile,
+  StopCircle,
+} from "lucide-react";
 import {
   sendImageMessage,
+  sendLocation,
   sendMessage,
   sendTypingEvent,
+  sendVoiceMessage,
 } from "@/services/chatService";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useTheme } from "next-themes";
-import EmojiPicker, { Theme as EmojiTheme } from "emoji-picker-react";
 import { useChatStore } from "@/stores/useChatStore";
 import TypingIndicator from "./TypingIndicator";
 import useTyping from "@/hooks/useTyping";
+import EmojiPicker, { Theme as EmojiTheme } from "emoji-picker-react";
+import ForwardMsgPreview from "./ForwardMsgPreview";
 import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
+import { useForwardStore } from "@/stores/useForwardStore";
+import {
+  Image as LucideImage,
+  File,
+  MapPin,
+  Gift,
+  Reply,
+  Check,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import dynamic from "next/dynamic";
 
 const ChatComposer = ({ roomId }: { roomId: string }) => {
   const [text, setText] = useState("");
   const [isMultiLine, setIsMultiLine] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
+  const [isRecording, setIsRecording] = useState(false);
+  const [recorder, setRecorder] = useState<MediaRecorder | null>(null);
+  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null)
+  const [audioChunks, setAudioChunks] = useState<BlobPart[]>([]);
+
+  const [recordTime, setRecordTime] = useState(0);
+  const recordIntervalRef = useRef<number | null>(null);
+
   const typingTimeoutRef = useRef<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const client = useMatrixClient();
   const theme = useTheme();
   const [isTyping, setIsTyping] = useState(false);
   useTyping(roomId);
   const { addMessage } = useChatStore.getState();
+  const { messages: forwardMessages, clearMessages } = useForwardStore();
+  const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<
+    "gallery" | "gift" | "file" | "location" | "reply" | "checklist"
+  >("gallery");
+  const sheetRef = useRef<HTMLDivElement>(null);
 
+  const LocationMap = dynamic(() => import("@/components/common/LocationMap"), {
+    ssr: false,
+  });
+
+  // Start voice recording
+  const startRecording = async () => {
+    setIsRecording(true);
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    setMediaStream(stream);
+    const mr = new MediaRecorder(stream);
+    const chunks: BlobPart[] = [];
+    mr.ondataavailable = (e) => chunks.push(e.data);
+    mr.start();
+    setRecorder(mr);
+    setAudioChunks(chunks);
+    setIsRecording(true);
+
+    // reset counter và bật timer
+    setRecordTime(0);
+    recordIntervalRef.current = window.setInterval(() => {
+      setRecordTime((t) => t + 1);
+    }, 1000);
+  };
+
+  // Stop và gửi voice
+  const stopRecording = () => {
+    if (!isRecording) return;
+    setIsRecording(false);
+    if (!recorder || !client) return;
+    if (recordIntervalRef.current) {
+      clearInterval(recordIntervalRef.current);
+      recordIntervalRef.current = null;
+    }
+    recorder.onstop = async () => {
+      // 1) Tạo blob từ chunks
+      const blob = new Blob(audioChunks, { type: "audio/webm" });
+      const file = new (globalThis as any).File(
+        [blob],
+        `voice_${Date.now()}.webm`,
+        { type: blob.type }
+      );
+      const localId = "local_" + Date.now();
+      const now = new Date();
+      const userId = client.getUserId();
+
+      // 2) Dùng ngay recordTime đã đếm được làm duration
+      const { httpUrl } = await sendVoiceMessage(
+        client,
+        roomId,
+        file,
+        recordTime
+      );
+
+      addMessage(roomId, {
+        eventId: localId,
+        sender: userId ?? undefined,
+        senderDisplayName: userId ?? undefined,
+        text: file.name,
+        audioUrl: httpUrl,
+        audioDuration: recordTime,
+        time: now.toLocaleString(),
+        timestamp: now.getTime(),
+        status: "sent",
+        type: "audio",
+      });
+
+      // 3) reset chunks (và nếu muốn reset time cũng có thể)
+      setAudioChunks([]);
+      setRecordTime(0);
+    };
+    recorder.stop();
+    setIsRecording(false);
+    if (mediaStream) {
+      mediaStream.getTracks().forEach(track => track.stop());
+      setMediaStream(null);
+    }
+  };
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       if (textareaRef.current) {
@@ -39,60 +154,112 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   };
 
   const handleSend = () => {
+    if (!client) return;
+
     const trimmed = text.trim();
-    if (!trimmed || !client) return;
-    const localId = "local_" + Date.now(); // Fake ID tạm thời
     const userId = client.getUserId();
     const now = new Date();
 
-    // 🧠 Hiển thị ngay trên UI (thêm vào store)
-    addMessage(roomId, {
-      eventId: localId,
-      sender: userId ?? undefined,
-      senderDisplayName: userId ?? undefined,
-      text: trimmed,
-      time: now.toLocaleString(),
-      timestamp: now.getTime(),
-      status: "sent",
-      type: isOnlyEmojis(trimmed) ? "emoji" : undefined,
-    });
+    //  1. Gửi message thường trước nếu có nội dung
+    if (trimmed) {
+      const localId = "local_" + Date.now();
 
-    // 🧹 Reset UI
-    setText("");
-    setShowEmojiPicker(false);
-    setIsTyping(false);
-    sendTypingEvent(client, roomId, false);
-    // 🔁 Gửi lên Matrix
-    setTimeout(() => {
-      sendMessage(roomId, trimmed, client)
-        .then((res) => {
-          if (!res.success) {
-            console.log("Send Failed!");
-          }
-        })
-        .catch((err) => {
-          console.log("Send Error:", err);
+      addMessage(roomId, {
+        eventId: localId,
+        sender: userId ?? undefined,
+        senderDisplayName: userId ?? undefined,
+        text: trimmed,
+        time: now.toLocaleString(),
+        timestamp: now.getTime(),
+        status: "sent",
+        type: isOnlyEmojis(trimmed) ? "emoji" : "text",
+      });
+
+      setText("");
+      textareaRef.current?.focus();
+      setShowEmojiPicker(false);
+      setIsTyping(false);
+      sendTypingEvent(client, roomId, false);
+
+      setTimeout(() => {
+        sendMessage(roomId, trimmed, client)
+          .then((res) => {
+            if (!res.success) console.log("Send Failed!");
+          })
+          .catch((err) => console.log("Send Error:", err));
+      }, 1000);
+    }
+
+    //  2. Gửi các forward messages nếu có
+    if (forwardMessages.length > 0) {
+      forwardMessages.forEach((fwd) => {
+        const localId = "fwd_" + Date.now() + Math.random();
+        const forwardBody = JSON.stringify({
+          forward: true,
+          originalSenderId: fwd.senderId,
+          originalSender: fwd.sender,
+          text: fwd.text,
         });
-    }, 1000);
+
+        addMessage(roomId, {
+          eventId: localId,
+          sender: userId ?? undefined,
+          senderDisplayName: fwd.sender,
+          text: forwardBody,
+          time: now.toLocaleString(),
+          timestamp: now.getTime(),
+          status: "sent",
+          type: "text",
+          isForward: true,
+        });
+
+        sendMessage(roomId, forwardBody, client);
+      });
+
+      clearMessages();
+    }
   };
 
   const handleEmojiClick = (emojiData: any) => {
     setText((prev) => prev + emojiData.emoji);
   };
 
-  const handleChangeFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !client) return;
+  const handleFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || !client) return;
+    const userId = client.getUserId();
+    const now = new Date();
 
-    try {
-      await sendImageMessage(client, roomId, file);
-      console.log("Image sent successfully");
-    } catch (err) {
-      console.error("Failed to send image:", err);
-    } finally {
-      e.target.value = ""; // reset input
+    for (const file of Array.from(files)) {
+      try {
+        const { httpUrl } = await sendImageMessage(client, roomId, file);
+        const localId = "local_" + Date.now() + Math.random();
+
+        addMessage(roomId, {
+          eventId: localId,
+          sender: userId ?? undefined,
+          senderDisplayName: userId ?? undefined,
+          text: file.name,
+          imageUrl: httpUrl,
+          time: now.toLocaleString(),
+          timestamp: now.getTime(),
+          status: "sent",
+          type: "image",
+        });
+      } catch (err) {
+        console.error("Failed to send image:", err);
+      }
     }
+    setOpen(false);
+    e.target.value = ""; // reset input
   };
+  useEffect(() => {
+    return () => {
+      if (recordIntervalRef.current) {
+        clearInterval(recordIntervalRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -133,27 +300,116 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     };
   }, []);
 
+  function TabButton({
+    icon,
+    label,
+    onClick,
+  }: {
+    icon: React.ReactNode;
+    label: string;
+    onClick: () => void;
+  }) {
+    return (
+      <button
+        onClick={onClick}
+        className="flex flex-col items-center hover:text-black"
+      >
+        {icon}
+        {label}
+      </button>
+    );
+  }
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (sheetRef.current && !sheetRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const renderIcon = (tab: string) => {
+    switch (tab) {
+      case "gallery":
+        return <CircleEllipsis className="mx-4" />;
+      case "location":
+        return <Search className="mx-4" />;
+      default:
+        return <div className="mx-4"></div>;
+    }
+  };
+
+  const handleSendLocation = async (location: {
+    latitude: number;
+    longitude: number;
+    accuracy: number;
+  }) => {
+    if (!client) return;
+    const userId = client.getUserId();
+    try {
+      setOpen(false);
+      const localId = "local_" + Date.now();
+      const now = new Date();
+      const { latitude, longitude, accuracy } = location;
+      const geoUri = `geo:${latitude},${longitude};u=${accuracy}`;
+      const displayText = `📍 My location (accurate to ${Math.round(
+        accuracy
+      )}m)`;
+
+      addMessage(roomId, {
+        eventId: localId,
+        sender: userId ?? undefined,
+        senderDisplayName: userId ?? undefined,
+        text: displayText,
+        location: {
+          latitude,
+          longitude,
+          description: displayText ?? undefined,
+        },
+        time: now.toLocaleString(),
+        timestamp: now.getTime(),
+        status: "sent",
+        type: "location",
+      });
+
+      const res = await sendLocation(client, roomId, { geoUri, displayText });
+
+      if (res.success) {
+        console.log("Send Location Message successfully");
+      }
+    } catch (error) {
+      console.error("Failed to send image:", error);
+    }
+  };
+
   return (
-    <div className="bg-white dark:bg-[#1c1c1e]">
-      {/* <div>forward preview here</div> */}
-      <div className="relative flex justify-between items-center px-2.5 py-2 lg:py-3 pb-10">
+    <div className="bg-[#e0ece6] dark:bg-[#1b1a1f]">
+      {forwardMessages.length > 0 && <ForwardMsgPreview />}
+      {isRecording && (
+        <div className="px-4 py-2">
+          <div className="w-full h-2 bg-gray-300 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-red-500"
+              style={{ width: `${Math.min((recordTime / 60) * 100, 100)}%` }}
+            />
+          </div>
+          <div className="text-sm text-gray-600 mt-1">{recordTime}s</div>
+        </div>
+      )}
+
+      <div className="relative flex justify-between items-center px-2 py-2 lg:py-3 pb-10">
         <Paperclip
-          onClick={() => inputRef.current?.click()}
+          // onClick={() => inputRef.current?.click()}
+          onClick={() => setOpen(true)}
           className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
-          size={30}
-        />
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          onChange={handleChangeFile}
-          className="hidden"
-          aria-label="file"
+          size={25}
         />
         <div
-          className={`outline-2 p-1.5 mx-1.5 relative ${
+          className={`p-1 mx-1.5 relative ${
             isMultiLine ? "rounded-2xl" : "rounded-full"
-          } flex items-center justify-between w-full bg-[#f0f0f0] dark:bg-[#2b2b2d]`}
+          } flex items-center justify-between w-full bg-white dark:bg-black`}
         >
           <textarea
             ref={textareaRef}
@@ -162,19 +418,19 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             onKeyDown={handleKeyDown}
             placeholder="Message"
             rows={1}
-            className="flex-1 h-auto resize-none bg-transparent outline-none px-3 max-h-[6rem] overflow-y-auto text-lg text-black dark:text-white scrollbar-thin"
+            className="flex-1 h-auto resize-none bg-transparent outline-none px-3 max-h-[6rem] overflow-y-auto text-md text-black dark:text-white scrollbar-thin"
           />
           {text.trim() ? (
             <Smile
               onClick={() => setShowEmojiPicker((prev) => !prev)}
-              className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
-              size={30}
+              className="px-0.5 text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
+              size={24}
             />
           ) : (
             <Eclipse
               // onClick={() => setShowEmojiPicker((prev) => !prev)}
-              className="text-[#858585] cursor-default"
-              size={30}
+              className="px-0.5 text-[#858585] cursor-default"
+              size={24}
             />
           )}
 
@@ -192,16 +448,16 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
           )}
         </div>
 
-        <div className="absolute bottom-14 left-0 z-50 pb-8">
+        <div className="absolute bottom-14 left-0 z-50 pb-6">
           <TypingIndicator roomId={roomId} />
         </div>
 
-        {text.trim() ? (
+        {text.trim() || forwardMessages.length > 0 ? (
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
+            viewBox="2 2 20 20"
             fill="currentColor"
-            className="size-10 cursor-pointer hover:scale-110 duration-300 transition-all ease-in-out"
+            className="size-8 cursor-pointer hover:scale-110 duration-300 transition-all ease-in-out border-0"
             onClick={handleSend}
           >
             <path
@@ -212,12 +468,153 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             />
           </svg>
         ) : (
+          /* nút mic nhấn giữ để ghi, thả để gửi */
           <Mic
-            className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
-            size={35}
+            size={30}
+            className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all duration-700"
+            onMouseDown={startRecording}
+            onMouseUp={stopRecording}
+            onMouseLeave={() => isRecording && stopRecording()}
+            onTouchStart={startRecording}
+            onTouchEnd={stopRecording}
           />
         )}
       </div>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-black rounded-t-2xl shadow-2xl pb-10"
+            ref={sheetRef}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between w-full p-2 px-4 font-medium text-gray-600 capitalize">
+              <Button
+                variant={"link"}
+                className="text-blue-500"
+                onClick={() => setOpen(false)}
+              >
+                Close
+              </Button>
+              {tab}
+              {renderIcon(tab)}
+            </div>
+
+            {/* Content */}
+            <div className="p-2 h-[400px]">
+              {tab === "gallery" && (
+                <div className="flex justify-center items-center h-40">
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-2 bg-blue-500 text-white rounded-md"
+                  >
+                    Chọn ảnh
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleFiles}
+                    className="hidden"
+                    aria-label="file"
+                  />
+                </div>
+              )}
+              {tab === "file" && (
+                <div className="text-sm text-gray-500">
+                  Hiển thị danh sách file...
+                </div>
+              )}
+              {tab === "gift" && (
+                <div className="text-sm text-gray-500">
+                  Danh sách quà tặng...
+                </div>
+              )}
+              {tab === "location" && (
+                <div className="text-sm text-gray-500">
+                  <LocationMap onSend={handleSendLocation} />
+                </div>
+              )}
+              {tab === "reply" && (
+                <div className="text-sm text-gray-500">
+                  Chọn tin nhắn để trả lời...
+                </div>
+              )}
+              {tab === "checklist" && (
+                <div className="text-sm text-gray-500">Thêm checklist...</div>
+              )}
+            </div>
+
+            {/* Tabs */}
+            <div className="flex justify-around border-t border-gray-200 px-4 py-2 text-xs text-center text-gray-600">
+              <TabButton
+                icon={
+                  <LucideImage
+                    className={`w-5 h-5 mb-1 ${tab === "gallery" ? "text-blue-500" : ""
+                      }`}
+                  />
+                }
+                label="Gallery"
+                onClick={() => setTab("gallery")}
+              />
+              <TabButton
+                icon={
+                  <Gift
+                    className={`w-5 h-5 mb-1 ${tab === "gift" ? "text-blue-500" : ""
+                      }`}
+                  />
+                }
+                label="Gift"
+                onClick={() => setTab("gift")}
+              />
+              <TabButton
+                icon={
+                  <File
+                    className={`w-5 h-5 mb-1 ${tab === "file" ? "text-blue-500" : ""
+                      }`}
+                  />
+                }
+                label="File"
+                onClick={() => setTab("file")}
+              />
+              <TabButton
+                icon={
+                  <MapPin
+                    className={`w-5 h-5 mb-1 ${tab === "location" ? "text-blue-500" : ""
+                      }`}
+                  />
+                }
+                label="Location"
+                onClick={() => setTab("location")}
+              />
+              <TabButton
+                icon={
+                  <Reply
+                    className={`w-5 h-5 mb-1 ${tab === "reply" ? "text-blue-500" : ""
+                      }`}
+                  />
+                }
+                label="Reply"
+                onClick={() => setTab("reply")}
+              />
+              <TabButton
+                icon={
+                  <Check
+                    className={`w-5 h-5 mb-1 ${tab === "checklist" ? "text-blue-500" : ""
+                      }`}
+                  />
+                }
+                label="Checklist"
+                onClick={() => setTab("checklist")}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

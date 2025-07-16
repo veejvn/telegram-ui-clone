@@ -1,15 +1,32 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import {  Upload, Download } from "lucide-react";
+import { Upload, Download } from "lucide-react";
+import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
+import Head from "next/head";
+import { useTheme } from "next-themes";
 
 export default function NetworkUsagePage() {
   const router = useRouter();
+  const { theme } = useTheme();
+
+  // Né status bar
+  const headerStyle = getHeaderStyleWithStatusBar();
+  // Màu status bar nền app
+  const isDark =
+    theme === "dark" ||
+    (theme === "system" &&
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches);
 
   return (
     <div className="text-black dark:text-white bg-[#f6f6f6] dark:bg-black min-h-screen p-4 px-4 sm:px-6 lg:px-8 space-y-6 pt-6 pb-24">
+      <Head>
+        <meta name="theme-color" content={isDark ? "#18181b" : "#f6f6f6"} />
+      </Head>
+
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6" style={headerStyle}>
         <button
           type="button"
           onClick={() => router.back()}
