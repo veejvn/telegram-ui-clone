@@ -385,7 +385,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   };
 
   return (
-    <div className="bg-gray-100 dark:bg-[#1c1c1e]">
+    <div className="bg-[#e0ece6] dark:bg-[#1b1a1f]">
       {forwardMessages.length > 0 && <ForwardMsgPreview />}
       {isRecording && (
         <div className="px-4 py-2">
@@ -448,7 +448,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
           )}
         </div>
 
-        <div className="absolute bottom-14 left-0 z-50 pb-8">
+        <div className="absolute bottom-14 left-0 z-50 pb-6">
           <TypingIndicator roomId={roomId} />
         </div>
 
@@ -467,12 +467,6 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               className="text-blue-600"
             />
           </svg>
-        ) : isRecording ? (
-          <StopCircle
-            size={30}
-            className="text-red-500 cursor-pointer hover:scale-110 transition-all duration-700"
-            onClick={stopRecording}
-          />
         ) : (
           /* nút mic nhấn giữ để ghi, thả để gửi */
           <Mic
