@@ -5,6 +5,7 @@ import { Play, Pause, CheckCheck, Check } from "lucide-react";
 import { Message } from "@/stores/useChatStore";
 import { formatMsgTime } from "@/utils/chat/formatMsgTime";
 import clsx from "clsx";
+import WaveSurfer from "wavesurfer.js";
 
 interface Props {
   msg: Message;
@@ -26,6 +27,10 @@ const AudioMessage: React.FC<Props> = ({ msg, isSender = false }) => {
 
   const startCountdown = () => {
     if (intervalRef.current) return;
+    if (wavesurferRef.current) {
+      wavesurferRef.current.playPause();
+      // setIsPlaying(!playing);
+    }
     intervalRef.current = window.setInterval(() => {
       setRemaining((r) => {
         if (r <= 1) {
@@ -62,12 +67,37 @@ const AudioMessage: React.FC<Props> = ({ msg, isSender = false }) => {
 
   const textClass = clsx(
     "flex items-center gap-1 text-xs",
-    isSender ? "text-white justify-end" : "text-white"
+    isSender ? "text-[#25D366] justify-end" : "text-[#25D366]"
   );
+
+  const waveformRef = useRef<HTMLDivElement | null>(null);
+  const wavesurferRef = useRef<WaveSurfer | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  useEffect(() => {
+    if (waveformRef.current && !wavesurferRef.current) {
+      wavesurferRef.current = WaveSurfer.create({
+        container: waveformRef.current,
+        waveColor: "#BDEACF",
+        progressColor: "#25D366", // WhatsApp green
+        height: 30,
+        barWidth: 2,
+        responsive: true,
+        interact: false,
+        cursorWidth: 0,
+      });
+
+      wavesurferRef.current.load(msg.audioUrl ?? "");
+
+      // wavesurferRef.current.on("finish", () => {
+      //   setIsPlaying(false);
+      // });
+    }
+  }, [msg.audioUrl]);
 
   return (
     <>
-      <div
+      {/* <div
         className={`relative flex items-center px-4 py-2 rounded-2xl max-w-xs ${
           isSender ? "bg-blue-100 self-end" : "bg-gray-200 self-start"
         }`}
@@ -107,6 +137,45 @@ const AudioMessage: React.FC<Props> = ({ msg, isSender = false }) => {
               <Check size={14} />
             ))}
         </p>
+      </div> */}
+
+      <div className="bg-[#dcf8c6] rounded-xl p-2 px-3 max-w-xs flex items-center gap-3 shadow-sm w-45">
+        <button
+          onClick={togglePlay}
+          className="rounded-full bg-[#25D366] p-2 text-white"
+        >
+          {playing ? <Pause size={20} /> : <Play size={20} />}
+        </button>
+
+        <div className="flex-1">
+          <div ref={waveformRef} className="w-full" />
+          <div className="flex items-center mx-3">
+            <span className="text-[10px] text-[#25D366]">
+              {mm}:{ss}
+            </span>
+          </div>
+          <audio
+            ref={audioRef}
+            src={msg.audioUrl}
+            onEnded={() => {
+              setPlaying(false);
+              stopCountdown();
+              setRemaining(msg.audioDuration ?? 0);
+            }}
+            className="hidden"
+          />
+          <div className={`flex justify-between ${textClass}`}>
+            <span className="flex items-center gap-1">
+              {formatMsgTime(msg.time)}
+              {isSender &&
+                (msg.status === "read" ? (
+                  <CheckCheck size={14} />
+                ) : (
+                  <Check size={14} />
+                ))}
+            </span>
+          </div>
+        </div>
       </div>
     </>
   );
