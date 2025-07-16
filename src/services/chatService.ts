@@ -423,7 +423,7 @@ export async function sendVoiceMessage(
     // gửi message
     await client.sendMessage(roomId, audioContent as any);
     return { success: true, 
-      httpUrl: client.mxcUrlToHttp(uploadRes.content_uri, 800, 600, "scale", true)
+      httpUrl: client.mxcUrlToHttp(uploadRes.content_uri)
      };
   } catch (err) {
     console.error("sendVoiceMessage error:", err);
