@@ -3,7 +3,6 @@
 import { EventEmitter } from "events";
 import * as sdk from "@/lib/matrix-sdk";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { MatrixCall } from "matrix-js-sdk/src/webrtc/call";
 
 export type CallType = "voice" | "video";
 
