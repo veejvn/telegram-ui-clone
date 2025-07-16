@@ -163,9 +163,9 @@ export default function ChatsPage() {
     <div>
       <div
         style={headerStyle}
-        className="sticky bg-white dark:bg-black top-0 z-10"
+        className="sticky bg-white dark:bg-[#1a1a1a] top-0 z-10"
       >
-        <div className="flex items-center justify-between px-4 py-3 ">
+        <div className="flex items-center justify-between px-4 py-4 ">
           <div className="flex items-center">
             {fromMainApp && (
               <button
@@ -225,7 +225,7 @@ export default function ChatsPage() {
           <p className="text-muted-foreground text-sm">Loading chats...</p>
         </div>
       ) : rooms.length === 0 ? (
-        <div className="flex flex-1 flex-col justify-between min-h-[calc(100vh-112px)] pb-8">
+        <div className="flex flex-1 flex-col justify-between min-h-[calc(100vh-112px)] pb-9d">
           <div className="flex flex-1 flex-col items-center justify-center text-center">
             <img
               src="https://symbl-cdn.com/i/webp/97/613a80b3ab97dad9149e2b43f6112d.webp"
@@ -251,7 +251,7 @@ export default function ChatsPage() {
             isEditMode={isEditMode}
             selectedRooms={selectedRooms}
             onSelectRoom={handleSelectRoom}
-            onMute={() => {}}
+            onMute={() => { }}
             onDelete={async (roomId, type) => {
               if (!client) return;
 

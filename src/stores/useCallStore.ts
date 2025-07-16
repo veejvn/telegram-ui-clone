@@ -32,9 +32,6 @@ interface CallStore {
   muteWithSilentTrack: () => void;
   recreateAudioTrack: () => Promise<void>;
   upgradeToVideo: () => Promise<void>;
-  startRecallWatcher: (userId: string, roomId: string, type: CallType) => void; // 🆕
-  recallCall: (roomId: string, type: CallType) => Promise<void>; // 🆕
-  answerCallById: (callId: string) => Promise<void>;
 }
 
 const outgoingAudio =
@@ -341,66 +338,6 @@ const useCallStore = create<CallStore>((set, get) => {
       } catch (err) {
         console.error("[CallStore] upgradeToVideo error:", err);
       }
-    },
-    // 🆕 Theo dõi recipient online và countdown recall
-    startRecallWatcher: (userId, roomId, type) => {
-      /*
-            // 🆕 Cleanup watcher/timer cũ nếu có
-            if (_recallInterval) {
-                clearInterval(_recallInterval);
-                _recallInterval = null;
-            }
-            if (_recallListener) {
-                const client = (window as any).matrixClient;
-                if (client) client.removeListener('event', _recallListener);
-                _recallListener = null;
-            }
-            let countdown = 60;
-            set({ recallCountdown: countdown });
-            _recallInterval = setInterval(() => {
-                countdown -= 1;
-                set({ recallCountdown: countdown });
-                if (countdown <= 0) {
-                    if (_recallInterval) {
-                        clearInterval(_recallInterval);
-                        _recallInterval = null;
-                    }
-                    set({
-                        state: 'ended',
-                        callEndedReason: 'recipient-offline-timeout',
-                        recallCountdown: undefined,
-                    });
-                }
-            }, 1000);
-            const client = (window as any).matrixClient;
-            if (!client) return;
-            _recallListener = (event: any) => {
-                if (event.getType?.() !== 'm.presence') return;
-                if (event.getSender?.() !== userId) return;
-                if (event.getContent?.().presence === 'online') {
-                    if (_recallInterval) {
-                        clearInterval(_recallInterval);
-                        _recallInterval = null;
-                    }
-                    client.removeListener('event', _recallListener!);
-                    _recallListener = null;
-                    get().recallCall(roomId, type);
-                }
-            };
-            client.on('event', _recallListener);
-            */
-    },
-    // 🆕 recallCall: chuyển sang recalling rồi gọi lại
-    recallCall: async (roomId, type) => {
-      /*
-            set({ state: 'recalling', recallCountdown: undefined });
-            await callService.placeCall(roomId, type);
-            set({ state: 'ringing' });
-            */
-    },
-    answerCallById: async (callId: string) => {
-      set({ state: "connecting" });
-      await callService.answerCallById(callId);
     },
   };
 });

@@ -32,7 +32,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head></head>
       <body className={`${inter.className} antialiased`}>
-        <NoZoom />
+        {/* <NoZoom /> */}
         <Providers>
           <CallOverlay /> {/*  Luôn lắng nghe sự kiện call */}
           <Toaster richColors position="top-center" />
