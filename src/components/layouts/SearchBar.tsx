@@ -69,9 +69,9 @@ const SearchBar = () => {
   }, [searchTerm, client]);
 
   return (
-    <div className="relative py-2">
+    <div className="relative py-3">
       <div className="relative px-4">
-        <div className="relative h-10 w-full bg-[#e5e5ea] dark:bg-[#1c1c1e] rounded-[10px] transition-all duration-200">
+        <div className="relative h-10 w-full bg-[#e5e5ea] dark:bg-[#080808] rounded-[10px] transition-all duration-200">
           {/* Input */}
           <Input
             type="text"

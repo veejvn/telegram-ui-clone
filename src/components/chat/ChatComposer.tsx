@@ -208,33 +208,33 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   };
 
   const handleFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !client) return;
+    const files = e.target.files;
+    if (!files || !client) return;
     const userId = client.getUserId();
+    const now = new Date();
 
-    try {
-      setOpen(false);
-      const { httpUrl } = await sendImageMessage(client, roomId, file);
-      const localId = "local_" + Date.now();
-      const now = new Date();
+    for (const file of Array.from(files)) {
+      try {
+        const { httpUrl } = await sendImageMessage(client, roomId, file);
+        const localId = "local_" + Date.now() + Math.random();
 
-      addMessage(roomId, {
-        eventId: localId,
-        sender: userId ?? undefined,
-        senderDisplayName: userId ?? undefined,
-        text: file.name,
-        imageUrl: httpUrl,
-        time: now.toLocaleString(),
-        timestamp: now.getTime(),
-        status: "sent",
-        type: "image",
-      });
-      console.log("Image sent successfully");
-    } catch (err) {
-      console.error("Failed to send image:", err);
-    } finally {
-      e.target.value = ""; // reset input
+        addMessage(roomId, {
+          eventId: localId,
+          sender: userId ?? undefined,
+          senderDisplayName: userId ?? undefined,
+          text: file.name,
+          imageUrl: httpUrl,
+          time: now.toLocaleString(),
+          timestamp: now.getTime(),
+          status: "sent",
+          type: "image",
+        });
+      } catch (err) {
+        console.error("Failed to send image:", err);
+      }
     }
+    setOpen(false);
+    e.target.value = ""; // reset input
   };
   useEffect(() => {
     return () => {
@@ -504,6 +504,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
                     ref={fileInputRef}
                     type="file"
                     accept="image/*"
+                    multiple
                     onChange={handleFiles}
                     className="hidden"
                     aria-label="file"
@@ -540,9 +541,8 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               <TabButton
                 icon={
                   <LucideImage
-                    className={`w-5 h-5 mb-1 ${
-                      tab === "gallery" ? "text-blue-500" : ""
-                    }`}
+                    className={`w-5 h-5 mb-1 ${tab === "gallery" ? "text-blue-500" : ""
+                      }`}
                   />
                 }
                 label="Gallery"
@@ -551,9 +551,8 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               <TabButton
                 icon={
                   <Gift
-                    className={`w-5 h-5 mb-1 ${
-                      tab === "gift" ? "text-blue-500" : ""
-                    }`}
+                    className={`w-5 h-5 mb-1 ${tab === "gift" ? "text-blue-500" : ""
+                      }`}
                   />
                 }
                 label="Gift"
@@ -562,9 +561,8 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               <TabButton
                 icon={
                   <File
-                    className={`w-5 h-5 mb-1 ${
-                      tab === "file" ? "text-blue-500" : ""
-                    }`}
+                    className={`w-5 h-5 mb-1 ${tab === "file" ? "text-blue-500" : ""
+                      }`}
                   />
                 }
                 label="File"
@@ -573,9 +571,8 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               <TabButton
                 icon={
                   <MapPin
-                    className={`w-5 h-5 mb-1 ${
-                      tab === "location" ? "text-blue-500" : ""
-                    }`}
+                    className={`w-5 h-5 mb-1 ${tab === "location" ? "text-blue-500" : ""
+                      }`}
                   />
                 }
                 label="Location"
@@ -584,9 +581,8 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               <TabButton
                 icon={
                   <Reply
-                    className={`w-5 h-5 mb-1 ${
-                      tab === "reply" ? "text-blue-500" : ""
-                    }`}
+                    className={`w-5 h-5 mb-1 ${tab === "reply" ? "text-blue-500" : ""
+                      }`}
                   />
                 }
                 label="Reply"
@@ -595,9 +591,8 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               <TabButton
                 icon={
                   <Check
-                    className={`w-5 h-5 mb-1 ${
-                      tab === "checklist" ? "text-blue-500" : ""
-                    }`}
+                    className={`w-5 h-5 mb-1 ${tab === "checklist" ? "text-blue-500" : ""
+                      }`}
                   />
                 }
                 label="Checklist"
