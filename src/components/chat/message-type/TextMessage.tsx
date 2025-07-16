@@ -41,9 +41,9 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
   );
 
   const timeClass = clsx(
-    "flex items-center gap-1 text-xs mt-1 select-none",
+    "flex items-center justify-end gap-1 text-xs mt-1 select-none",
     isSender
-      ? "text-green-500 justify-end dark:text-white"
+      ? "text-green-500 dark:text-white"
       : "text-gray-400 dark:text-gray-400"
   );
 
