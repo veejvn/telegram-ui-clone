@@ -104,7 +104,7 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
     <>
       <div
         style={headerStyle}
-        className="flex justify-between bg-white dark:bg-[#1c1c1e]
+        className="flex justify-between bg-gray-100 dark:bg-[#1c1c1e]
           py-2 items-center px-2 "
       >
         {backToMain ? (
