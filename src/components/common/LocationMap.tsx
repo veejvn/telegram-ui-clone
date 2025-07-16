@@ -14,7 +14,7 @@ export type LocationMapProps = {
 
 const containerStyle = {
   width: "100%",
-  height: "360px",
+  height: "345px",
 };
 
 export default function LocationMap({ onSend }: LocationMapProps) {
@@ -23,7 +23,7 @@ export default function LocationMap({ onSend }: LocationMapProps) {
   const [accuracy, setAccuracy] = useState<number>(0);
 
   const { isLoaded } = useLoadScript({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!, // Sử dụng biến môi trường
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GMAP_API_KEY!, // Sử dụng biến môi trường
   });
 
   useEffect(() => {
