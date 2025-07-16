@@ -60,11 +60,13 @@ export default function InfoPage() {
   }
 
 
-  const headerStyle = getHeaderStyleWithStatusBar();
+  // Override backgroundColor về đen nếu có
+  const headerStyleRaw = getHeaderStyleWithStatusBar();
+  const headerStyle = { ...headerStyleRaw, backgroundColor: '#000' };
 
 
   return (
-    <div className="bg-gray-200 dark:bg-black min-h-screen w-full">
+    <div className="bg-gray-200 dark:bg-black w-full">
       <header style={headerStyle} className="mb-23">
         <PrivateInfoHeader user={user} />
       </header>

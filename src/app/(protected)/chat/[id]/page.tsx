@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import styles from "./page.module.css";
 import { sendReadReceipt } from "@/services/chatService";
 import { useUserStore } from "@/stores/useUserStore";
+import { useIgnoreStore } from "@/stores/useIgnoreStore";
 import clsx from "clsx";
 
 const ChatPage = () => {
@@ -31,6 +32,35 @@ const ChatPage = () => {
       : "";
   const roomId = user ? param.id?.slice(0, 19) + ":" + homeserver : "";
   const router = useRouter();
+
+  // Block user
+  const [isBlocked, setIsBlocked] = useState(false);
+  const ignoredUsers = useIgnoreStore((state) => state.ignoredUsers);
+
+  // Kiểm tra xem người dùng có bị chặn không
+  useEffect(() => {
+    if (!client || !room || !room.getJoinedMembers) return;
+    const members = room.getJoinedMembers();
+    const otherUser = members.find((m) => m.userId !== client.getUserId());
+
+    if (otherUser) {
+      setIsBlocked(ignoredUsers.includes(otherUser.userId));
+    }
+  }, [client, room, ignoredUsers]);
+
+  const handleUnblockUser = async () => {
+    if (!client || !room) return;
+
+    const members = room.getJoinedMembers();
+    const otherUser = members.find((m) => m.userId !== client.getUserId());
+
+    const ignored = client.getIgnoredUsers?.() || [];
+    if (otherUser && ignored.includes(otherUser.userId)) {
+      const updated = ignored.filter((id) => id !== otherUser.userId);
+      await client.setIgnoredUsers(updated);
+      useIgnoreStore.getState().setIgnoredUsers(updated);
+    }
+  };
 
   useEffect(() => {
     if (!client) return;
@@ -109,11 +139,21 @@ const ChatPage = () => {
       <ScrollArea className="flex-1 min-h-0 space-y-1">
         <ChatMessages roomId={roomId} messagesEndRef={messagesEndRef} />
       </ScrollArea>
-
       {/* Footer */}
-      <div className="shrink-0">
-        <ChatComposer roomId={roomId} />
-      </div>
+      {isBlocked ? (
+        <div className="flex flex-col items-center justify-center py-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-[#23232b]">
+          <button
+            onClick={handleUnblockUser}
+            className="text-blue-600 font-medium hover:underline"
+          >
+            Unblock
+          </button>
+        </div>
+      ) : (
+        <div className="shrink-0">
+          <ChatComposer roomId={roomId} />
+        </div>
+      )}
     </div>
   );
 };
