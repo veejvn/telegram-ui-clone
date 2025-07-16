@@ -45,11 +45,12 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
 
   const [isRecording, setIsRecording] = useState(false);
   const [recorder, setRecorder] = useState<MediaRecorder | null>(null);
-  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null)
+  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const [audioChunks, setAudioChunks] = useState<BlobPart[]>([]);
 
   const [recordTime, setRecordTime] = useState(0);
   const recordIntervalRef = useRef<number | null>(null);
+  const recordStartRef = useRef<number | null>(null);
 
   const typingTimeoutRef = useRef<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -70,36 +71,75 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     ssr: false,
   });
 
+  const MIN_RECORD_TIME = 1;
+
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const pendingStopRef = useRef(false);
+
   // Start voice recording
   const startRecording = async () => {
+    if (isRecording) return;
     setIsRecording(true);
+    setRecordTime(0);
+    recordStartRef.current = Date.now();
+
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     setMediaStream(stream);
     const mr = new MediaRecorder(stream);
+    recorderRef.current = mr;
+    setRecorder(mr);
+
     const chunks: BlobPart[] = [];
     mr.ondataavailable = (e) => chunks.push(e.data);
     mr.start();
-    setRecorder(mr);
     setAudioChunks(chunks);
-    setIsRecording(true);
+
+    if (pendingStopRef.current) {
+      pendingStopRef.current = false;
+      if (mr.state === "recording") {
+        mr.stop();
+        recorderRef.current = null;
+        setIsRecording(false);
+        if (mediaStream) {
+          mediaStream.getTracks().forEach((track) => track.stop());
+          setMediaStream(null);
+        }
+      }
+      return;
+    }
 
     // reset counter và bật timer
-    setRecordTime(0);
     recordIntervalRef.current = window.setInterval(() => {
-      setRecordTime((t) => t + 1);
-    }, 1000);
+      if (recordStartRef.current) {
+        setRecordTime(Math.round((Date.now() - recordStartRef.current) / 1000));
+      }
+    }, 200);
   };
 
   // Stop và gửi voice
   const stopRecording = () => {
     if (!isRecording) return;
     setIsRecording(false);
-    if (!recorder || !client) return;
+
     if (recordIntervalRef.current) {
       clearInterval(recordIntervalRef.current);
       recordIntervalRef.current = null;
     }
-    recorder.onstop = async () => {
+
+    let duration = 0;
+    if (recordStartRef.current) {
+      duration = Math.round((Date.now() - recordStartRef.current) / 1000);
+      recordStartRef.current = null;
+    }
+    setRecordTime(duration);
+
+    const mr = recorderRef.current || recorder;
+    if (!mr || mr.state !== "recording") {
+      pendingStopRef.current = true;
+      return;
+    }
+
+    mr.onstop = async () => {
       // 1) Tạo blob từ chunks
       const blob = new Blob(audioChunks, { type: "audio/webm" });
       const file = new (globalThis as any).File(
@@ -107,42 +147,55 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
         `voice_${Date.now()}.webm`,
         { type: blob.type }
       );
-      const localId = "local_" + Date.now();
-      const now = new Date();
-      const userId = client.getUserId();
 
-      // 2) Dùng ngay recordTime đã đếm được làm duration
-      const { httpUrl } = await sendVoiceMessage(
-        client,
-        roomId,
-        file,
-        recordTime
-      );
+      //Nếu thời gian ghi âm quá ngắn, không gửi
+      if (recordTime < MIN_RECORD_TIME) {
+        setAudioChunks([]);
+        setRecordTime(0);
+        return;
+      }
 
-      addMessage(roomId, {
-        eventId: localId,
-        sender: userId ?? undefined,
-        senderDisplayName: userId ?? undefined,
-        text: file.name,
-        audioUrl: httpUrl,
-        audioDuration: recordTime,
-        time: now.toLocaleString(),
-        timestamp: now.getTime(),
-        status: "sent",
-        type: "audio",
-      });
+      if (client) {
+        const localId = "local_" + Date.now();
+        const now = new Date();
+        const userId = client.getUserId();
 
-      // 3) reset chunks (và nếu muốn reset time cũng có thể)
-      setAudioChunks([]);
-      setRecordTime(0);
+        // 2) Dùng ngay recordTime đã đếm được làm duration
+        const { httpUrl } = await sendVoiceMessage(
+          client,
+          roomId,
+          file,
+          recordTime
+        );
+
+        addMessage(roomId, {
+          eventId: localId,
+          sender: userId ?? undefined,
+          senderDisplayName: userId ?? undefined,
+          text: file.name,
+          audioUrl: httpUrl,
+          audioDuration: recordTime,
+          time: now.toLocaleString(),
+          timestamp: now.getTime(),
+          status: "sent",
+          type: "audio",
+        });
+
+        // 3) reset chunks (và nếu muốn reset time cũng có thể)
+        setAudioChunks([]);
+        setRecordTime(0);
+      }
     };
-    recorder.stop();
-    setIsRecording(false);
+
+    mr.stop();
+    recorderRef.current = null;
+    //setIsRecording(false);
     if (mediaStream) {
-      mediaStream.getTracks().forEach(track => track.stop());
+      mediaStream.getTracks().forEach((track) => track.stop());
       setMediaStream(null);
     }
   };
+  
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       if (textareaRef.current) {
@@ -475,8 +528,14 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             onMouseDown={startRecording}
             onMouseUp={stopRecording}
             onMouseLeave={() => isRecording && stopRecording()}
-            onTouchStart={startRecording}
-            onTouchEnd={stopRecording}
+            onTouchStart={(e) => {
+              e.preventDefault();
+              startRecording();
+            }}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              stopRecording();
+            }}
           />
         )}
       </div>
@@ -553,8 +612,9 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               <TabButton
                 icon={
                   <LucideImage
-                    className={`w-5 h-5 mb-1 ${tab === "gallery" ? "text-blue-500" : ""
-                      }`}
+                    className={`w-5 h-5 mb-1 ${
+                      tab === "gallery" ? "text-blue-500" : ""
+                    }`}
                   />
                 }
                 label="Gallery"
@@ -563,8 +623,9 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               <TabButton
                 icon={
                   <Gift
-                    className={`w-5 h-5 mb-1 ${tab === "gift" ? "text-blue-500" : ""
-                      }`}
+                    className={`w-5 h-5 mb-1 ${
+                      tab === "gift" ? "text-blue-500" : ""
+                    }`}
                   />
                 }
                 label="Gift"
@@ -573,8 +634,9 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               <TabButton
                 icon={
                   <File
-                    className={`w-5 h-5 mb-1 ${tab === "file" ? "text-blue-500" : ""
-                      }`}
+                    className={`w-5 h-5 mb-1 ${
+                      tab === "file" ? "text-blue-500" : ""
+                    }`}
                   />
                 }
                 label="File"
@@ -583,8 +645,9 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               <TabButton
                 icon={
                   <MapPin
-                    className={`w-5 h-5 mb-1 ${tab === "location" ? "text-blue-500" : ""
-                      }`}
+                    className={`w-5 h-5 mb-1 ${
+                      tab === "location" ? "text-blue-500" : ""
+                    }`}
                   />
                 }
                 label="Location"
@@ -593,8 +656,9 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               <TabButton
                 icon={
                   <Reply
-                    className={`w-5 h-5 mb-1 ${tab === "reply" ? "text-blue-500" : ""
-                      }`}
+                    className={`w-5 h-5 mb-1 ${
+                      tab === "reply" ? "text-blue-500" : ""
+                    }`}
                   />
                 }
                 label="Reply"
@@ -603,8 +667,9 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               <TabButton
                 icon={
                   <Check
-                    className={`w-5 h-5 mb-1 ${tab === "checklist" ? "text-blue-500" : ""
-                      }`}
+                    className={`w-5 h-5 mb-1 ${
+                      tab === "checklist" ? "text-blue-500" : ""
+                    }`}
                   />
                 }
                 label="Checklist"
