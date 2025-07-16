@@ -43,7 +43,7 @@ export function useChatBot() {
       setIsAddingBot(true);
 
       const hasBot = checkChatBot();
-      console.log(hasBot);
+      //console.log(hasBot);
       setHasChatBot(hasBot);
 
       if (!hasBot) {

@@ -45,6 +45,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
 
   const [isRecording, setIsRecording] = useState(false);
   const [recorder, setRecorder] = useState<MediaRecorder | null>(null);
+  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null)
   const [audioChunks, setAudioChunks] = useState<BlobPart[]>([]);
 
   const [recordTime, setRecordTime] = useState(0);
@@ -72,6 +73,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   // Start voice recording
   const startRecording = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    setMediaStream(stream);
     const mr = new MediaRecorder(stream);
     const chunks: BlobPart[] = [];
     mr.ondataavailable = e => chunks.push(e.data);
@@ -125,6 +127,10 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     };
     recorder.stop();
     setIsRecording(false);
+    if (mediaStream) {
+      mediaStream.getTracks().forEach(track => track.stop());
+      setMediaStream(null);
+    }
   };
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -452,19 +458,14 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             />
           </svg>
         ) : (
-          isRecording ? (
-            <StopCircle
-              size={35}
-              className="text-red-500 cursor-pointer hover:scale-110 transition-all duration-700"
-              onClick={stopRecording}
-            />
-          ) : (
-            <Mic
-              size={35}
-              className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all duration-700"
-              onClick={startRecording}
-            />
-          )
+          /* nút mic nhấn giữ để ghi, thả để gửi */
+          <Mic
+            size={35}
+            className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all duration-700"
+            onMouseDown={startRecording}
+            onMouseUp={stopRecording}
+            onMouseLeave={() => isRecording && stopRecording()}
+          />
         )}
       </div>
       <AnimatePresence>
@@ -540,9 +541,8 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               <TabButton
                 icon={
                   <LucideImage
-                    className={`w-5 h-5 mb-1 ${
-                      tab === "gallery" ? "text-blue-500" : ""
-                    }`}
+                    className={`w-5 h-5 mb-1 ${tab === "gallery" ? "text-blue-500" : ""
+                      }`}
                   />
                 }
                 label="Gallery"
@@ -551,9 +551,8 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               <TabButton
                 icon={
                   <Gift
-                    className={`w-5 h-5 mb-1 ${
-                      tab === "gift" ? "text-blue-500" : ""
-                    }`}
+                    className={`w-5 h-5 mb-1 ${tab === "gift" ? "text-blue-500" : ""
+                      }`}
                   />
                 }
                 label="Gift"
@@ -562,9 +561,8 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               <TabButton
                 icon={
                   <File
-                    className={`w-5 h-5 mb-1 ${
-                      tab === "file" ? "text-blue-500" : ""
-                    }`}
+                    className={`w-5 h-5 mb-1 ${tab === "file" ? "text-blue-500" : ""
+                      }`}
                   />
                 }
                 label="File"
@@ -573,9 +571,8 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               <TabButton
                 icon={
                   <MapPin
-                    className={`w-5 h-5 mb-1 ${
-                      tab === "location" ? "text-blue-500" : ""
-                    }`}
+                    className={`w-5 h-5 mb-1 ${tab === "location" ? "text-blue-500" : ""
+                      }`}
                   />
                 }
                 label="Location"
@@ -584,9 +581,8 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               <TabButton
                 icon={
                   <Reply
-                    className={`w-5 h-5 mb-1 ${
-                      tab === "reply" ? "text-blue-500" : ""
-                    }`}
+                    className={`w-5 h-5 mb-1 ${tab === "reply" ? "text-blue-500" : ""
+                      }`}
                   />
                 }
                 label="Reply"
@@ -595,9 +591,8 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               <TabButton
                 icon={
                   <Check
-                    className={`w-5 h-5 mb-1 ${
-                      tab === "checklist" ? "text-blue-500" : ""
-                    }`}
+                    className={`w-5 h-5 mb-1 ${tab === "checklist" ? "text-blue-500" : ""
+                      }`}
                   />
                 }
                 label="Checklist"
