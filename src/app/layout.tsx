@@ -31,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head></head>
-      <body className={`${inter.className} antialiased`}>
+      <body className={`${inter.className} antialiased select-none`}>
         {/* <NoZoom /> */}
         <Providers>
           <CallOverlay /> {/*  Luôn lắng nghe sự kiện call */}
