@@ -82,7 +82,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   const shouldCancelRecordingRef = useRef<boolean>(false);
 
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
-  const initialHeightRef = useRef<number>(0);
+  const initialHeightRef = useRef<number>(typeof window !== "undefined" ? window.innerHeight : 0);
 
   // Bắt đầu ghi âm
   const startRecording = async () => {
@@ -494,19 +494,25 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
 
   const handleSendFile = async () => {};
 
-  useEffect(() => {
-    // Lưu chiều cao ban đầu khi component mount
-    initialHeightRef.current = window.innerHeight;
-  }, []);
-
+  // useEffect(() => {
+  //   // Lưu chiều cao ban đầu khi component mount
+  //   initialHeightRef.current = window.innerHeight;
+  // }, []);
+  // console.log("Initial:", initialHeightRef.current);
+  
   const handleFocus = () => {
     const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-    const heightDiff = initialHeightRef.current - window.innerHeight;
-
-    if (isMobile && heightDiff > 100) {
-      // Nếu chiều cao thay đổi lớn, giả định là bàn phím đang mở
-      setIsKeyboardOpen(true);
-    }
+  
+    setTimeout(() => {
+      const currentHeight = window.innerHeight;
+      const diff = initialHeightRef.current - currentHeight;
+      console.log("Initial:", initialHeightRef.current);
+      console.log("After focus:", currentHeight);
+  
+      if (isMobile && diff > 100) {
+        setIsKeyboardOpen(true);
+      }
+    }, 100);
   };
 
   const handleBlur = () => {
