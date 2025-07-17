@@ -14,18 +14,19 @@ import CopyIconSvg from "../icons/CopyIconSvg";
 import ForwardIconSvg from "../icons/ForwardIconSvg";
 import BinIconSvg from "../icons/BinIconSvg";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { copyToClipboard } from "@/utils/copyToClipboard";
 import { toast } from "sonner";
 
 const EmojiMessage = ({ msg, isSender }: MessagePros) => {
   const theme = useTheme();
   const [open, setOpen] = useState(false);
-  const [triggered, setTriggered] = useState(false);
   const textClass = clsx(
     "flex items-center gap-1 text-xs",
     isSender ? "text-white justify-end" : "text-white"
   );
+  const holdTimeout = useRef<number | null>(null);
+  const allowOpenRef = useRef(false);
 
   const getEmojiSizeByLength = (emojiText: string) => {
     const length = [...emojiText].length;
@@ -48,20 +49,45 @@ const EmojiMessage = ({ msg, isSender }: MessagePros) => {
     }
   };
 
-  useEffect(() => {
-    let timeout: any;
-    if (triggered) {
-      timeout = setTimeout(() => setOpen(true), 350); // delay 300ms
+  const handleHoldStart = () => {
+    // Nếu menu đã mở thì không làm gì
+    if (open) return;
+    holdTimeout.current = window.setTimeout(() => {
+      allowOpenRef.current = true;
+      setOpen(true);
+    }, 1000);
+  };
+
+  const handleHoldEnd = () => {
+    // Nếu chưa đủ 3s thì clear timeout, không mở menu
+    if (!open && holdTimeout.current) {
+      clearTimeout(holdTimeout.current);
+      holdTimeout.current = null;
+    }
+    // Nếu menu đã mở thì không đóng ở đây (để user chọn menu)
+  };
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      // Chỉ cho phép mở nếu là do giữ lâu
+      if (allowOpenRef.current) {
+        setOpen(true);
+        allowOpenRef.current = false;
+      }
+      // Nếu không phải giữ lâu thì bỏ qua (không mở)
     } else {
       setOpen(false);
+      allowOpenRef.current = false;
     }
-    return () => clearTimeout(timeout);
-  }, [triggered]);
+  };
+
   return (
     <div className={"rounded-lg py-2"}>
-      <DropdownMenu open={open} onOpenChange={setTriggered}>
+      <DropdownMenu open={open} onOpenChange={handleOpenChange}>
         <DropdownMenuTrigger asChild>
           <div
+            onTouchStart={handleHoldStart}
+            onTouchEnd={handleHoldEnd}
             className={clsx(
               "rounded-lg",
               open && "backdrop-blur-sm bg-black/10 dark:bg-white/10"
