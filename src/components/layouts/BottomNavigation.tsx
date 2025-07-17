@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { CircleUserRound, Phone, MessageCircle, Settings } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { getLS } from "@/tools/localStorage.tool";
 
 const BottomNavigattion = ({ hideOptions }: { hideOptions?: string[] }) => {
+  //const fromMainApp = getLS("fromMainApp")
   const options = Array.isArray(hideOptions) ? hideOptions : [];
   const pathname = usePathname();
   const isActive = (href: string) => {
@@ -17,7 +19,7 @@ const BottomNavigattion = ({ hideOptions }: { hideOptions?: string[] }) => {
   const activeClass = "text-blue-500";
   const inactiveClass = "text-gray-400";
   return (
-    <div className="fixed bottom-0 w-full border-t border-gray-400 flex justify-around items-center pt-2 pb-7 bg-white dark:bg-black text-gray-400">
+    <div className="fixed bottom-0 w-full border-t border-gray-400 flex justify-around items-center pt-2 pb-7 bg-white dark:bg-[#1a1a1a] text-gray-400">
       {!options.includes("contact") && (
         <Link href="/contact">
           <div className="flex flex-col items-center">

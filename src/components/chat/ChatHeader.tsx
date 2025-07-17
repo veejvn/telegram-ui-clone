@@ -14,41 +14,36 @@ import { getUserInfoInPrivateRoom } from "@/services/chatService";
 import { getRoomInfo } from "@/utils/chat/RoomHelpers";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { usePresenceContext } from "@/contexts/PresenceProvider";
-import { getLS } from "@/tools/localStorage.tool";
+import { getLS, removeLS } from "@/tools/localStorage.tool";
 import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
 import { useForwardStore } from "@/stores/useForwardStore";
+import { getDetailedStatus } from "@/utils/chat/presencesHelpers";
+import { useRouter } from "next/navigation";
 
 const ChatHeader = ({ room }: { room: sdk.Room }) => {
   const client = useMatrixClient();
   const { getLastSeen } = usePresenceContext() || {};
   const currentUserId = useAuthStore.getState().userId;
+
   const { roomId, type, otherUserId } = getRoomInfo(room, currentUserId);
   const clearMessages = useForwardStore((state) => state.clearMessages);
 
   const [user, setUser] = useState<sdk.User | undefined>(undefined);
-
+  const router = useRouter();
+  const getUserPresence = usePresenceContext()?.getUserPresence;
   let lastSeen: Date | null = null;
+  let isActuallyOnline = false;
 
-  if (type === "direct" && otherUserId && getLastSeen) {
-    lastSeen = getLastSeen(otherUserId);
+  if (type === "direct" && otherUserId && getLastSeen && getUserPresence) {
+    const presence = getUserPresence(otherUserId);
+    lastSeen = presence?.lastActiveTs ? new Date(presence.lastActiveTs) : null;
+
+    isActuallyOnline = !!(
+      presence?.presence === "online" &&
+      presence?.currentlyActive &&
+      Date.now() - (presence?.lastActiveTs || 0) < 30 * 1000
+    );
   }
-
-  const getDetailedStatus = () => {
-    if (lastSeen) {
-      const now = new Date();
-      const diffMs = now.getTime() - lastSeen.getTime();
-      const diffMinutes = Math.floor(diffMs / (1000 * 60));
-      const diffHours = Math.floor(diffMinutes / 60);
-      const diffDays = Math.floor(diffHours / 24);
-
-      if (diffMinutes < 1) return "online";
-      if (diffMinutes < 60) return `Last seen ${diffMinutes} minutes ago`;
-      if (diffHours < 24) return `Last seen ${diffHours} hours ago`;
-      return "Last seen recently";
-      // if (diffDays < 7) return `Last seen ${diffDays} days ago`;
-    }
-    return "Last seen recently";
-  };
 
   useEffect(() => {
     if (!roomId || !client) return;
@@ -86,37 +81,72 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
 
   const headerStyle = getHeaderStyleWithStatusBar();
 
+  const backToMain = getLS("backToMain");
+  const MAIN_APP_ORIGIN =
+    typeof window !== "undefined" ? window.location.origin : "";
+  const backUrl = getLS("backUrl");
+  const handleBack = () => {
+    if (backUrl) {
+      removeLS("backUrl");
+      removeLS("fromMainApp");
+      removeLS("hide");
+      removeLS("backToMain");
+      window.location.href = MAIN_APP_ORIGIN + backUrl;
+    } else {
+      removeLS("backUrl");
+      removeLS("fromMainApp");
+      removeLS("hide");
+      removeLS("backToMain");
+      window.location.href = MAIN_APP_ORIGIN;
+    }
+  };
+
   return (
     <>
       <div
         style={headerStyle}
-        className="flex justify-between bg-white dark:bg-[#1c1c1e]
-          py-2 items-center px-2 "
+        className="flex items-center justify-between bg-gray-100 dark:bg-[#1b1a1f] py-1 px-2"
       >
-        <Link
-          href={"/chat"}
-          className="flex text-blue-600
-            cursor-pointer hover:opacity-70"
-          onClick={() => {
-            setTimeout(() => {
-              clearMessages();
-            }, 300);
-          }}
-        >
-          <ChevronLeft />
-          <p>Back</p>
-        </Link>
-        <div className="text-center">
-          <h1 className="font-semibold text-base">{room.name}</h1>
-          <div>
-            <p className="text-sm text-muted-foreground">
-              {getDetailedStatus()}
-            </p>
-          </div>
+        {/* Left: Back */}
+        <div className="w-[80px] flex justify-start mt-2">
+          {backToMain ? (
+            <button
+              className="flex flex-row text-blue-500 font-medium cursor-pointer"
+              onClick={handleBack}
+              title="Back"
+              aria-label="Back"
+            >
+              <ChevronLeft />
+              <span>Back</span>
+            </button>
+          ) : (
+            <Link
+              href={"/chat"}
+              className="flex text-blue-600 cursor-pointer hover:opacity-70"
+              onClick={() => {
+                setTimeout(() => {
+                  clearMessages();
+                }, 300);
+              }}
+            >
+              <ChevronLeft />
+              <p>Back</p>
+            </Link>
+          )}
         </div>
-        <div>
+
+        {/* Center: Room Info */}
+        <div className="flex-1 text-center truncate mt-1">
+          <h1 className="font-semibold text-base -mb-2">{room.name}</h1>
+          <p className="text-sm text-muted-foreground mt-1 truncate">
+            {isActuallyOnline ? "online" : getDetailedStatus(lastSeen)}
+          </p>
+        </div>
+
+        {/* Right: Avatar */}
+        <div className="w-[80px] flex justify-end mt-1">
           <Link href={`${room.roomId}/info`}>
-            <Avatar className="h-10 w-10">
+            <Avatar className="h-9 w-9">
               {avatarUrl ? (
                 <AvatarImage src={avatarUrl} alt="avatar" />
               ) : (

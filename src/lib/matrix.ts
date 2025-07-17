@@ -2,11 +2,9 @@
 
 import * as sdk from "matrix-js-sdk";
 import { logger } from "matrix-js-sdk/lib/logger";
-import { getCookie, deleteCookie } from "@/utils/cookie";
-
 // Tắt toàn bộ log của Matrix JS SDK
 // @ts-ignore
-logger.setLevel('silent');
+//logger.setLevel('silent');
 
 /**
  * Waits for the Matrix client to be ready (in "PREPARED" or "SYNCING" state).
@@ -25,14 +23,11 @@ export const waitForClientReady = (client: sdk.MatrixClient): Promise<void> => {
     }
   });
 };
-
 /**
  * Checks the validity of the Matrix access token.
  * @returns Promise that resolves to true if the token is valid, false otherwise.
  */
-export const checkTokenValidity = async (): Promise<boolean> => {
-  const accessToken = getCookie("matrix_token");
-  const userId = getCookie("matrix_user_id");
+export const checkTokenValidity = async (accessToken: string, userId: string): Promise<boolean> => {
 
   if (!accessToken || !userId) {
     return false;
@@ -56,17 +51,17 @@ export const checkTokenValidity = async (): Promise<boolean> => {
 /**
  * Handles token errors by logging out the user.
  */
-export const handleTokenError = () => {
-  console.log("Handling token error - logging out user");
-  deleteCookie("matrix_token");
-  deleteCookie("matrix_user_id");
-  deleteCookie("matrix_device_id");
+// export const handleTokenError = () => {
+//   console.log("Handling token error - logging out user");
+//   deleteCookie("matrix_token");
+//   deleteCookie("matrix_user_id");
+//   deleteCookie("matrix_device_id");
 
-  // Redirect to login
-  if (typeof window !== 'undefined') {
-    window.location.href = '/login';
-  }
-};
+//   // Redirect to login
+//   if (typeof window !== 'undefined') {
+//     window.location.href = '/login';
+//   }
+// };
 
 /**
  * Creates a Matrix client instance using credentials stored in localStorage.
@@ -76,38 +71,38 @@ export const handleTokenError = () => {
  *
  * @returns {sdk.MatrixClient | null} The created Matrix client instance, or `null` if credentials are missing.
  */
-export const createMatrixClient = (): sdk.MatrixClient | null => {
-  const accessToken = getCookie("matrix_token");
-  const userId = getCookie("matrix_user_id");
+// export const createMatrixClient = (): sdk.MatrixClient | null => {
+//   const accessToken = getCookie("matrix_token");
+//   const userId = getCookie("matrix_user_id");
 
-  if (!accessToken || !userId) {
-    return null;
-  }
+//   if (!accessToken || !userId) {
+//     return null;
+//   }
 
-  try {
-    const client = sdk.createClient({
-      baseUrl: process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org",
-      accessToken,
-      userId,
-    });
+//   try {
+//     const client = sdk.createClient({
+//       baseUrl: process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org",
+//       accessToken,
+//       userId,
+//     });
 
-    // Add error handling for token issues
-    client.on("sync" as any, (state: any, prevState: any, data: any) => {
-      if (
-        state === "ERROR" &&
-        data?.error?.httpStatus &&
-        [401, 403].includes(data.error.httpStatus)
-      ) {
-        handleTokenError();
-      }
-    });
+//     // Add error handling for token issues
+//     client.on("sync" as any, (state: any, prevState: any, data: any) => {
+//       if (
+//         state === "ERROR" &&
+//         data?.error?.httpStatus &&
+//         [401, 403].includes(data.error.httpStatus)
+//       ) {
+//         handleTokenError();
+//       }
+//     });
 
-    return client;
-  } catch (error) {
-    console.error("Error creating Matrix client:", error);
-    return null;
-  }
-};
+//     return client;
+//   } catch (error) {
+//     console.error("Error creating Matrix client:", error);
+//     return null;
+//   }
+// };
 
 /**
  * Initializes and authenticates a Matrix client using credentials stored in localStorage.

@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { clsx } from "clsx";
 import { Check, CheckCheck } from "lucide-react";
 import { MessagePros } from "@/types/chat";
@@ -48,6 +48,8 @@ const ForwardTextMessage = ({
   const client = useMatrixClient();
   const { text, originalSender, originalSenderId } = forwardMessage;
   const [avatarUrl, setAvatarUrl] = useState<string>("");
+  const holdTimeout = useRef<number | null>(null);
+  const allowOpenRef = useRef(false);
   //console.log(avatarUrl);
 
   useEffect(() => {
@@ -102,23 +104,48 @@ const ForwardTextMessage = ({
     }, 1000);
   };
 
-  useEffect(() => {
-    let timeout: any;
-    if (triggered) {
-      timeout = setTimeout(() => setOpen(true), 350); // delay 300ms
+  const handleHoldStart = () => {
+    // Nếu menu đã mở thì không làm gì
+    if (open) return;
+    holdTimeout.current = window.setTimeout(() => {
+      allowOpenRef.current = true;
+      setOpen(true);
+    }, 1000);
+  };
+
+  const handleHoldEnd = () => {
+    // Nếu chưa đủ 3s thì clear timeout, không mở menu
+    if (!open && holdTimeout.current) {
+      clearTimeout(holdTimeout.current);
+      holdTimeout.current = null;
+    }
+    // Nếu menu đã mở thì không đóng ở đây (để user chọn menu)
+  };
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      // Chỉ cho phép mở nếu là do giữ lâu
+      if (allowOpenRef.current) {
+        setOpen(true);
+        allowOpenRef.current = false;
+      }
+      // Nếu không phải giữ lâu thì bỏ qua (không mở)
     } else {
       setOpen(false);
+      allowOpenRef.current = false;
     }
-    return () => clearTimeout(timeout);
-  }, [triggered]);
+  };
 
   return (
-    <DropdownMenu open={open} onOpenChange={setTriggered}>
+    <DropdownMenu open={open} onOpenChange={handleOpenChange}>
       <DropdownMenuTrigger asChild>
         <div
+          onTouchStart={handleHoldStart}
+          onTouchEnd={handleHoldEnd}
           className={clsx(
             "flex items-end", // Đảm bảo tail căn đáy với bubble
-            isSender ? "justify-end" : "justify-start"
+            isSender ? "justify-end" : "justify-start",
+            "select-none"
           )}
         >
           {/* 🡐 Tail cho tin nhận */}
@@ -129,7 +156,7 @@ const ForwardTextMessage = ({
           )}
 
           {/* 💬 Nội dung tin nhắn */}
-          <div className="flex flex-col  ">
+          <div className="flex flex-col">
             <div className={textClass}>
               <p
                 className={

@@ -30,12 +30,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-      </head>
-      <body className={`${inter.className} antialiased`}>
-        <NoZoom/>
+      <head></head>
+      <body className={`${inter.className} antialiased select-none`}>
+        {/* <NoZoom /> */}
         <Providers>
-          <CallOverlay />  {/*  Luôn lắng nghe sự kiện call */}
+          <CallOverlay /> {/*  Luôn lắng nghe sự kiện call */}
           <Toaster richColors position="top-center" />
           {children}
         </Providers>

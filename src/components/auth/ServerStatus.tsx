@@ -24,7 +24,7 @@ export default function ServerStatus() {
                     setStatus('offline');
                 }
             } catch (error) {
-                console.error('Server status check failed:', error);
+                //console.error('Server status check failed:', error);
                 setStatus('offline');
             }
         };

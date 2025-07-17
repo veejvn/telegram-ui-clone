@@ -87,7 +87,7 @@ export function ForgotPasswordForm({ onEmailSubmit }: ForgotPasswordFormProps) {
                             type="button"
                             variant="ghost"
                             className="w-full h-11 text-gray-600 hover:text-gray-900 hover:bg-gray-50 font-medium transition-colors"
-                            onClick={() => (window.location.href = "/login")}
+                            onClick={() => (window.location.href = "/chat/login")}
                             disabled={isLoading}
                         >
                             Back to Login
