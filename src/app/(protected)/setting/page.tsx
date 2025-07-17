@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { getSelectedLanguageCode, getLanguageLabelByCode } from './language/page';
+import { getSelectedLanguageCode, getLanguageLabelByCode } from '@/app/(protected)//setting/language/page';
 import { QrCode, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useUserStore } from "@/stores/useUserStore";
