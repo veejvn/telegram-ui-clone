@@ -33,7 +33,7 @@ const ImageMessage = ({ msg, isSender }: MessagePros) => {
         <p
           className="backdrop-blur-sm backdrop-brightness-70 
           overflow-hidden items-center
-          px-2 py-0.5 mt-2 flex gap-1 rounded-full"
+          px-2 py-0.5 mt-2 flex gap-1 rounded-full select-none"
         >
           {formatMsgTime(msg.time)}
           {isSender &&

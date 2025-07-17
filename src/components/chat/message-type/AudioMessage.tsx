@@ -95,7 +95,7 @@ const AudioMessage: React.FC<Props> = ({ msg, isSender = false }) => {
 
   return (
     <>
-      <div className="bg-[#dcf8c6] dark:bg-[#4567fc] rounded-xl p-2 px-3 max-w-xs flex flex-col shadow-sm w-45">
+      <div className="bg-[#dcf8c6] dark:bg-[#4567fc] rounded-xl p-2 px-3 max-w-xs flex flex-col shadow-sm w-45 select-none">
         <div className="flex items-center gap-3">
           <button
             onClick={togglePlay}
