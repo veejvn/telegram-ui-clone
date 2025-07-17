@@ -1,44 +1,82 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { ChevronLeft, Check, Lock, Search } from 'lucide-react';
-import { Switch } from "@/components/ui/switch-language"; // <-- Custom Switch with showLock
+import { Switch } from "@/components/ui/switch-language";
 import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
 import Head from "next/head";
 import { useTheme } from "next-themes";
 
-const AVAILABLE_LANGUAGES = [
-  { label: 'English', sub: 'English' },
-  { label: 'Arabic', sub: 'العربية' },
-  { label: 'Belarusian', sub: 'Беларуская' },
-  { label: 'Catalan', sub: 'Català' },
-  { label: 'Croatian', sub: 'Hrvatski' },
-  { label: 'Czech', sub: 'Čeština' },
-  { label: 'Dutch', sub: 'Nederlands' },
-  { label: 'Finnish', sub: 'Suomi' },
-  { label: 'French', sub: 'Français' },
-  { label: 'German', sub: 'Deutsch' },
-  { label: 'Malay', sub: 'Bahasa Melayu' },
-  { label: 'Norwegian (Bokmål)', sub: 'Norsk (Bokmål)' },
-  { label: 'Persian', sub: 'فارسی' },
-  { label: 'Polish', sub: 'Polski' },
-  { label: 'Portuguese (Brazil)', sub: 'Português (Brasil)' },
-  { label: 'Romanian', sub: 'Română' },
-  { label: 'Russian', sub: 'Русский' },
-  { label: 'Serbian', sub: 'Српски' },
-  { label: 'Slovak', sub: 'Slovenčina' },
-  { label: 'Spanish', sub: 'Español' },
-  { label: 'Swedish', sub: 'Svenska' },
-  { label: 'Turkish', sub: 'Türkçe' },
-  { label: 'Ukrainian', sub: 'Українська' },
-  { label: 'Uzbek', sub: "O'zbek" },
+// 1. Danh sách ngôn ngữ với code chuẩn hóa
+export const AVAILABLE_LANGUAGES = [
+  { code: 'en', label: 'English', sub: 'English' },
+  { code: 'ar', label: 'Arabic', sub: 'العربية' },
+  { code: 'be', label: 'Belarusian', sub: 'Беларуская' },
+  { code: 'ca', label: 'Catalan', sub: 'Català' },
+  { code: 'hr', label: 'Croatian', sub: 'Hrvatski' },
+  { code: 'cs', label: 'Czech', sub: 'Čeština' },
+  { code: 'nl', label: 'Dutch', sub: 'Nederlands' },
+  { code: 'fi', label: 'Finnish', sub: 'Suomi' },
+  { code: 'fr', label: 'French', sub: 'Français' },
+  { code: 'de', label: 'German', sub: 'Deutsch' },
+  { code: 'ms', label: 'Malay', sub: 'Bahasa Melayu' },
+  { code: 'no', label: 'Norwegian (Bokmål)', sub: 'Norsk (Bokmål)' },
+  { code: 'fa', label: 'Persian', sub: 'فارسی' },
+  { code: 'pl', label: 'Polish', sub: 'Polski' },
+  { code: 'pt-br', label: 'Portuguese (Brazil)', sub: 'Português (Brasil)' },
+  { code: 'ro', label: 'Romanian', sub: 'Română' },
+  { code: 'ru', label: 'Russian', sub: 'Русский' },
+  { code: 'sr', label: 'Serbian', sub: 'Српски' },
+  { code: 'sk', label: 'Slovak', sub: 'Slovenčina' },
+  { code: 'es', label: 'Spanish', sub: 'Español' },
+  { code: 'sv', label: 'Swedish', sub: 'Svenska' },
+  { code: 'tr', label: 'Turkish', sub: 'Türkçe' },
+  { code: 'uk', label: 'Ukrainian', sub: 'Українська' },
+  { code: 'uz', label: 'Uzbek', sub: "O'zbek" },
 ];
+
+// 2. Key lưu vào localStorage
+const LANG_CODE_KEY = 'selected_language_code';
+const LANG_LABEL_KEY = 'selected_language_label';
+
+// 3. Hàm lấy code đã chọn từ localStorage (dùng ở ngoài setting)
+export function getSelectedLanguageCode(defaultCode = 'en') {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem(LANG_CODE_KEY) || defaultCode;
+  }
+  return defaultCode;
+}
+
+// 4. Hàm lấy label từ code (hiển thị ngoài setting)
+export function getLanguageLabelByCode(code: string): string {
+  const lang = AVAILABLE_LANGUAGES.find(l => l.code === code);
+  return lang ? lang.label : 'English';
+}
+
+// 5. Hàm khởi tạo state khi vào trang Language
+function getInitialLang() {
+  if (typeof window !== 'undefined') {
+    const savedCode = localStorage.getItem(LANG_CODE_KEY);
+    const found = AVAILABLE_LANGUAGES.find(l => l.code === savedCode);
+    return found ? found : AVAILABLE_LANGUAGES[0]; // English mặc định
+  }
+  return AVAILABLE_LANGUAGES[0];
+}
 
 export default function LanguagePage() {
   const router = useRouter();
-  const [selected, setSelected] = useState<string>('English');
+  // State ngôn ngữ: object thay vì chỉ label/code
+  const [selected, setSelected] = useState(() => getInitialLang());
   const [showTranslate, setShowTranslate] = useState(false);
+
+  // Lưu khi đổi ngôn ngữ
+  useEffect(() => {
+    if (selected) {
+      localStorage.setItem(LANG_CODE_KEY, selected.code);
+      localStorage.setItem(LANG_LABEL_KEY, selected.label);
+    }
+  }, [selected]);
 
   // --- Theme + status bar ---
   const { theme } = useTheme();
@@ -112,8 +150,8 @@ export default function LanguagePage() {
           <CardContent className="p-0">
             {AVAILABLE_LANGUAGES.map((lang, idx) => (
               <div
-                key={lang.label}
-                onClick={() => setSelected(lang.label)}
+                key={lang.code}
+                onClick={() => setSelected(lang)}
                 className={
                   "flex items-start justify-between px-4 py-2.5 cursor-pointer transition-colors " +
                   (idx !== AVAILABLE_LANGUAGES.length - 1
@@ -126,7 +164,7 @@ export default function LanguagePage() {
                   <br />
                   <span className="text-[15px] text-zinc-500 leading-none">{lang.sub}</span>
                 </div>
-                {selected === lang.label && <Check className="w-5 h-5 text-blue-500 mt-1" />}
+                {selected.code === lang.code && <Check className="w-5 h-5 text-blue-500 mt-1" />}
               </div>
             ))}
           </CardContent>
