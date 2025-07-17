@@ -126,13 +126,13 @@ export function VoiceCall({
             }}
         >
             {/* Header */}
-            <div className="w-full flex items-center justify-between px-4 pt-4">
+            <div className="w-full flex items-center justify-between px-4 pt-4 relative">
                 <button className="flex items-center gap-1 text-white/90 text-lg">
                     <ChevronLeft className="w-5 h-5" />
                     Back
                 </button>
-                <div className="bg-blue-500 text-white rounded-full px-3 py-0.5 text-xs font-bold">
-                    TELEGRAM
+                <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 bg-blue-500 text-white rounded-full px-3 py-0.5 text-xs font-bold">
+                    Ting Tong
                 </div>
                 <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
                     <User className="w-5 h-5 text-white/80" />
@@ -141,7 +141,7 @@ export function VoiceCall({
 
             {/* Emoji & Encryption */}
             <div className="mt-4 flex flex-col items-center">
-                <div className="text-3xl">🏦💵🚜🙀</div>
+                {/* <div className="text-3xl">🏦💵🚜🙀</div> */}
                 <div className="mt-2 bg-white/20 rounded-xl px-4 py-1 text-white text-sm flex items-center gap-1">
                     <Lock className="w-4 h-4" /> Encryption key of this call
                 </div>
