@@ -80,7 +80,7 @@ const AudioMessage: React.FC<Props> = ({ msg, isSender = false }) => {
     if (waveformRef.current && !wavesurferRef.current) {
       wavesurferRef.current = WaveSurfer.create({
         container: waveformRef.current,
-        waveColor: isDarkMode ? "#afa4a4" : "#addd9a",
+        waveColor: isDarkMode ? "#afa4a4" : "#96d78e",
         progressColor: isDarkMode ? "#FFFFFF" : "#25D366",
         height: 30,
         barWidth: 2,
@@ -95,7 +95,7 @@ const AudioMessage: React.FC<Props> = ({ msg, isSender = false }) => {
 
   return (
     <>
-      <div className="bg-[#dcf8c6] dark:bg-[#4567fc] rounded-xl p-2 px-3 max-w-xs flex flex-col shadow-sm w-45">
+      <div className="bg-[#dcf8c6] dark:bg-[#4567fc] text-[#4edb3b] rounded-xl p-2 px-3 max-w-xs flex flex-col shadow-sm w-45">
         <div className="flex items-center gap-3">
           <button
             onClick={togglePlay}
