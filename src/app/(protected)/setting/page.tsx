@@ -354,7 +354,7 @@ export default function SettingsPage() {
 
   const headerStyle = getHeaderStyleWithStatusBar();
 
-  // Chỉ sử dụng object có key & render!
+  //sử dụng object có key render
   const sections = [
     {
       key: "profile",
