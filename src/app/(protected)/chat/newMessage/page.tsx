@@ -37,7 +37,7 @@ export default function Page() {
           <h1 className="text-md font-semibold text-center flex-1">
             New Message
           </h1>
-          <div className="w-[60px]"></div>
+          <div className="w-[49px]"></div>
         </div>
         <SearchBar />
       </div>

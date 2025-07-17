@@ -165,7 +165,7 @@ export default function ChatsPage() {
         style={headerStyle}
         className="sticky bg-white dark:bg-[#1a1a1a] top-0 z-10"
       >
-        <div className="flex items-center justify-between px-4 py-4 ">
+        <div className="grid grid-cols-3 items-center px-4 py-4">
           <div className="flex items-center">
             {fromMainApp && (
               <button
@@ -185,8 +185,10 @@ export default function ChatsPage() {
               />
             )}
           </div>
-          <h1>Chats</h1>
-          <div className="flex gap-3">
+
+          <h1 className="text-center text-lg">Chats</h1>
+
+          <div className="flex gap-3 justify-end items-center">
             {fromMainApp && (
               <ChatEditButton
                 isEditMode={isEditMode}
@@ -251,7 +253,7 @@ export default function ChatsPage() {
             isEditMode={isEditMode}
             selectedRooms={selectedRooms}
             onSelectRoom={handleSelectRoom}
-            onMute={() => { }}
+            onMute={() => {}}
             onDelete={async (roomId, type) => {
               if (!client) return;
 
