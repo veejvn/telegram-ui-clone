@@ -43,18 +43,11 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   const [isMultiLine, setIsMultiLine] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
-  const [isRecording, setIsRecording] = useState(false);
-  const [recorder, setRecorder] = useState<MediaRecorder | null>(null);
-  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
-  const [audioChunks, setAudioChunks] = useState<BlobPart[]>([]);
-
-  const [recordTime, setRecordTime] = useState(0);
-  const recordIntervalRef = useRef<number | null>(null);
-  const recordStartRef = useRef<number | null>(null);
-
   const typingTimeoutRef = useRef<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
   const client = useMatrixClient();
   const theme = useTheme();
   const [isTyping, setIsTyping] = useState(false);
@@ -71,131 +64,186 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     ssr: false,
   });
 
-  const MIN_RECORD_TIME = 1;
+  const MIN_RECORD_TIME = 1; // giây
+  const MIN_PRESS_TIME_MS = 300;
 
+  const [isRecording, setIsRecording] = useState(false);
+  const [recorder, setRecorder] = useState<MediaRecorder | null>(null);
+  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
+  const [audioChunks, setAudioChunks] = useState<BlobPart[]>([]);
+  const [recordTime, setRecordTime] = useState(0);
+
+  const recordIntervalRef = useRef<number | null>(null);
+  const recordStartRef = useRef<number | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
-  const pendingStopRef = useRef(false);
+  const startRecordingPromiseRef = useRef<Promise<void> | null>(null);
+  const pressStartRef = useRef<number | null>(null);
+  const recordDurationRef = useRef<number>(0);
+  const shouldCancelRecordingRef = useRef<boolean>(false);
 
-  // Start voice recording
+  // Bắt đầu ghi âm
   const startRecording = async () => {
     if (isRecording) return;
+
+    pressStartRef.current = Date.now();
+    recordDurationRef.current = 0;
     setIsRecording(true);
     setRecordTime(0);
     recordStartRef.current = Date.now();
+    shouldCancelRecordingRef.current = false;
 
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    setMediaStream(stream);
-    const mr = new MediaRecorder(stream);
-    recorderRef.current = mr;
-    setRecorder(mr);
-
-    const chunks: BlobPart[] = [];
-    mr.ondataavailable = (e) => chunks.push(e.data);
-    mr.start();
-    setAudioChunks(chunks);
-
-    if (pendingStopRef.current) {
-      pendingStopRef.current = false;
-      if (mr.state === "recording") {
-        mr.stop();
-        recorderRef.current = null;
-        setIsRecording(false);
-        if (mediaStream) {
-          mediaStream.getTracks().forEach((track) => track.stop());
-          setMediaStream(null);
+    const promise = (async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+        });
+        if (shouldCancelRecordingRef.current) {
+          stream.getTracks().forEach((track) => track.stop());
+          setIsRecording(false);
+          return;
         }
+
+        setMediaStream(stream);
+        const mediaRecorder = new MediaRecorder(stream);
+        recorderRef.current = mediaRecorder;
+        setRecorder(mediaRecorder);
+
+        const chunks: BlobPart[] = [];
+        mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+        setAudioChunks(chunks);
+
+        mediaRecorder.onstop = async () => {
+          const duration = recordDurationRef.current || 0;
+          if (chunks.length === 0 || duration < MIN_RECORD_TIME) {
+            console.warn("Ghi âm quá ngắn, không gửi");
+            setAudioChunks([]);
+            setRecordTime(0);
+            return;
+          }
+
+          const blob = new Blob(chunks, { type: "audio/webm" });
+          const file = new (globalThis as any).File([blob], `voice_${Date.now()}.webm`, {
+            type: blob.type,
+          });
+
+          if (client) {
+            const localId = "local_" + Date.now();
+            const now = new Date();
+            const userId = client.getUserId();
+
+            const { httpUrl } = await sendVoiceMessage(
+              client,
+              roomId,
+              file,
+              duration
+            );
+
+            addMessage(roomId, {
+              eventId: localId,
+              sender: userId ?? undefined,
+              senderDisplayName: userId ?? undefined,
+              text: file.name,
+              audioUrl: httpUrl,
+              audioDuration: duration,
+              time: now.toLocaleString(),
+              timestamp: now.getTime(),
+              status: "sent",
+              type: "audio",
+            });
+
+            setAudioChunks([]);
+            setRecordTime(0);
+            recordDurationRef.current = 0;
+            recordStartRef.current = null;
+          }
+        };
+
+        mediaRecorder.start();
+
+        recordIntervalRef.current = window.setInterval(() => {
+          if (recordStartRef.current) {
+            const duration = Math.round(
+              (Date.now() - recordStartRef.current) / 1000
+            );
+            recordDurationRef.current = duration;
+            setRecordTime(duration);
+          }
+        }, 200);
+
+        if (shouldCancelRecordingRef.current) {
+          console.warn("Bị huỷ khi vừa bắt đầu, stop ngay.");
+          await stopRecording();
+        }
+      } catch (err) {
+        console.error("Không thể truy cập micro:", err);
+        setIsRecording(false);
       }
+    })();
+
+    startRecordingPromiseRef.current = promise;
+    await promise;
+  };
+
+  const stopRecording = async () => {
+    const pressDuration = pressStartRef.current
+      ? Date.now() - pressStartRef.current
+      : 0;
+    pressStartRef.current = null;
+
+    if (pressDuration < MIN_PRESS_TIME_MS) {
+      console.warn("Người dùng nhấn quá nhanh, huỷ ghi âm");
+      shouldCancelRecordingRef.current = true;
+
+      setIsRecording(false);
+      clearRecordingInterval();
+      recordDurationRef.current = 0;
+
+      if (startRecordingPromiseRef.current) {
+        await startRecordingPromiseRef.current;
+      }
+
+      await forceStop();
       return;
     }
 
-    // reset counter và bật timer
-    recordIntervalRef.current = window.setInterval(() => {
-      if (recordStartRef.current) {
-        setRecordTime(Math.round((Date.now() - recordStartRef.current) / 1000));
-      }
-    }, 200);
+    shouldCancelRecordingRef.current = false;
+
+    if (startRecordingPromiseRef.current) {
+      await startRecordingPromiseRef.current;
+    }
+
+    setIsRecording(false);
+    clearRecordingInterval();
+
+    const duration = recordStartRef.current
+      ? Math.round((Date.now() - recordStartRef.current) / 1000)
+      : 0;
+    recordDurationRef.current = duration;
+    recordStartRef.current = null;
+
+    await forceStop();
   };
 
-  // Stop và gửi voice
-  const stopRecording = () => {
-    if (!isRecording) return;
-    setIsRecording(false);
-
+  const clearRecordingInterval = () => {
     if (recordIntervalRef.current) {
       clearInterval(recordIntervalRef.current);
       recordIntervalRef.current = null;
     }
+  };
 
-    let duration = 0;
-    if (recordStartRef.current) {
-      duration = Math.round((Date.now() - recordStartRef.current) / 1000);
-      recordStartRef.current = null;
+  const forceStop = async () => {
+    const activeRecorder = recorderRef.current;
+    if (activeRecorder && activeRecorder.state === "recording") {
+      activeRecorder.stop();
     }
-    setRecordTime(duration);
-
-    const mr = recorderRef.current || recorder;
-    if (!mr || mr.state !== "recording") {
-      pendingStopRef.current = true;
-      return;
-    }
-
-    mr.onstop = async () => {
-      // 1) Tạo blob từ chunks
-      const blob = new Blob(audioChunks, { type: "audio/webm" });
-      const file = new (globalThis as any).File(
-        [blob],
-        `voice_${Date.now()}.webm`,
-        { type: blob.type }
-      );
-
-      //Nếu thời gian ghi âm quá ngắn, không gửi
-      if (recordTime < MIN_RECORD_TIME) {
-        setAudioChunks([]);
-        setRecordTime(0);
-        return;
-      }
-
-      if (client) {
-        const localId = "local_" + Date.now();
-        const now = new Date();
-        const userId = client.getUserId();
-
-        // 2) Dùng ngay recordTime đã đếm được làm duration
-        const { httpUrl } = await sendVoiceMessage(
-          client,
-          roomId,
-          file,
-          recordTime
-        );
-
-        addMessage(roomId, {
-          eventId: localId,
-          sender: userId ?? undefined,
-          senderDisplayName: userId ?? undefined,
-          text: file.name,
-          audioUrl: httpUrl,
-          audioDuration: recordTime,
-          time: now.toLocaleString(),
-          timestamp: now.getTime(),
-          status: "sent",
-          type: "audio",
-        });
-
-        // 3) reset chunks (và nếu muốn reset time cũng có thể)
-        setAudioChunks([]);
-        setRecordTime(0);
-      }
-    };
-
-    mr.stop();
     recorderRef.current = null;
-    //setIsRecording(false);
+
     if (mediaStream) {
       mediaStream.getTracks().forEach((track) => track.stop());
       setMediaStream(null);
     }
   };
-  
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       if (textareaRef.current) {
@@ -277,7 +325,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     setText((prev) => prev + emojiData.emoji);
   };
 
-  const handleFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImages = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !client) return;
     const userId = client.getUserId();
@@ -437,6 +485,8 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     }
   };
 
+  const handleSenFile = async () => {}
+
   return (
     <div className="bg-[#e0ece6] dark:bg-[#1b1a1f]">
       {forwardMessages.length > 0 && <ForwardMsgPreview />}
@@ -524,16 +574,25 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
           /* nút mic nhấn giữ để ghi, thả để gửi */
           <Mic
             size={30}
-            className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all duration-700"
-            onMouseDown={startRecording}
-            onMouseUp={stopRecording}
-            onMouseLeave={() => isRecording && stopRecording()}
-            onTouchStart={(e) => {
-              e.preventDefault();
+            className={`text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all duration-700 ${
+              isRecording ? "text-red-500 scale-125" : ""
+            }`}
+            onMouseDown={(e) => {
+              e.preventDefault(); // tránh double-trigger
               startRecording();
             }}
-            onTouchEnd={(e) => {
+            onMouseUp={(e) => {
               e.preventDefault();
+              stopRecording();
+            }}
+            onMouseLeave={(e) => {
+              e.preventDefault();
+              if (isRecording) stopRecording();
+            }}
+            onTouchStart={() => {
+              startRecording();
+            }}
+            onTouchEnd={() => {
               stopRecording();
             }}
           />
@@ -567,25 +626,37 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               {tab === "gallery" && (
                 <div className="flex justify-center items-center h-40">
                   <button
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => imageInputRef.current?.click()}
                     className="p-2 bg-blue-500 text-white rounded-md"
                   >
                     Chọn ảnh
                   </button>
                   <input
-                    ref={fileInputRef}
+                    ref={imageInputRef}
                     type="file"
                     accept="image/*"
-                    onChange={handleFiles}
+                    onChange={handleImages}
                     className="hidden"
                     aria-label="file"
                   />
                 </div>
               )}
               {tab === "file" && (
-                <div className="text-sm text-gray-500">
-                  Hiển thị danh sách file...
-                </div>
+                <div className="flex justify-center items-center h-40">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-2 bg-blue-500 text-white rounded-md"
+                >
+                  Chọn ảnh
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  onChange={handleSenFile}
+                  className="hidden"
+                  aria-label="file"
+                />
+              </div>
               )}
               {tab === "gift" && (
                 <div className="text-sm text-gray-500">
@@ -620,7 +691,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
                 label="Gallery"
                 onClick={() => setTab("gallery")}
               />
-              <TabButton
+              {/* <TabButton
                 icon={
                   <Gift
                     className={`w-5 h-5 mb-1 ${
@@ -630,7 +701,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
                 }
                 label="Gift"
                 onClick={() => setTab("gift")}
-              />
+              /> */}
               <TabButton
                 icon={
                   <File
@@ -653,7 +724,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
                 label="Location"
                 onClick={() => setTab("location")}
               />
-              <TabButton
+              {/* <TabButton
                 icon={
                   <Reply
                     className={`w-5 h-5 mb-1 ${
@@ -663,8 +734,8 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
                 }
                 label="Reply"
                 onClick={() => setTab("reply")}
-              />
-              <TabButton
+              /> */}
+              {/* <TabButton
                 icon={
                   <Check
                     className={`w-5 h-5 mb-1 ${
@@ -674,7 +745,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
                 }
                 label="Checklist"
                 onClick={() => setTab("checklist")}
-              />
+              /> */}
             </div>
           </motion.div>
         )}
