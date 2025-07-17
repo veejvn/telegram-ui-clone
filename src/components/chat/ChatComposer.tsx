@@ -122,9 +122,13 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
           }
 
           const blob = new Blob(chunks, { type: "audio/webm" });
-          const file = new (globalThis as any).File([blob], `voice_${Date.now()}.webm`, {
-            type: blob.type,
-          });
+          const file = new (globalThis as any).File(
+            [blob],
+            `voice_${Date.now()}.webm`,
+            {
+              type: blob.type,
+            }
+          );
 
           if (client) {
             const localId = "local_" + Date.now();
@@ -485,7 +489,68 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     }
   };
 
-  const handleSendFile = async () => {}
+  const handleSendFile = async () => {};
+
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+
+  // Detect keyboard open via visualViewport (works reliably on real devices)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const onResize = () => {
+      const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+      const visualHeight = window.visualViewport?.height ?? window.innerHeight;
+      const fullHeight = window.innerHeight;
+      const diff = fullHeight - visualHeight;
+
+      console.log("visualViewport height:", visualHeight);
+      console.log("window height:", fullHeight);
+      console.log("diff:", diff);
+
+      if (isMobile && diff > 100) {
+        setIsKeyboardOpen(true);
+      } else {
+        setIsKeyboardOpen(false);
+      }
+    };
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", onResize);
+    } else {
+      window.addEventListener("resize", onResize); // fallback
+    }
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener("resize", onResize);
+      } else {
+        window.removeEventListener("resize", onResize);
+      }
+    };
+  }, []);
+
+  const initialHeightRef = useRef<number>(
+    typeof window !== "undefined" ? window.innerHeight : 0
+  );
+
+  const handleFocus = () => {
+    const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+
+    setTimeout(() => {
+      const currentHeight = window.innerHeight;
+      const diff = initialHeightRef.current - currentHeight;
+      console.log("Initial:", initialHeightRef.current);
+      console.log("After focus:", currentHeight);
+
+      if (isMobile && diff > 100) {
+        setIsKeyboardOpen(true);
+      }
+    }, 100);
+  };
+
+  const handleBlur = () => {
+    setIsKeyboardOpen(false);
+  };
 
   return (
     <div className="bg-[#e0ece6] dark:bg-[#1b1a1f]">
@@ -502,7 +567,11 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
         </div>
       )}
 
-      <div className="relative flex justify-between items-center px-2 py-2 lg:py-3 pb-10">
+      <div
+        className={`relative flex justify-between items-center px-2 py-2 lg:py-3 transition-all duration-300 ${
+          isKeyboardOpen ? "pb-2" : "pb-10"
+        }`}
+      >
         <Paperclip
           // onClick={() => inputRef.current?.click()}
           onClick={() => setOpen(true)}
@@ -644,20 +713,20 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               )}
               {tab === "file" && (
                 <div className="flex justify-center items-center h-40">
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="p-2 bg-blue-500 text-white rounded-md"
-                >
-                  Chọn file
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  onChange={handleSendFile}
-                  className="hidden"
-                  aria-label="file"
-                />
-              </div>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-2 bg-blue-500 text-white rounded-md"
+                  >
+                    Chọn file
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    onChange={handleSendFile}
+                    className="hidden"
+                    aria-label="file"
+                  />
+                </div>
               )}
               {tab === "gift" && (
                 <div className="text-sm text-gray-500">

@@ -69,8 +69,8 @@ const AudioMessage: React.FC<Props> = ({ msg, isSender = false }) => {
   const ss = String(remaining % 60).padStart(2, "0");
 
   const textClass = clsx(
-    "flex items-center gap-1 text-xs",
-    isSender ? "text-[#25D366] justify-end dark:text-white" : "text-[#25D366] dark:text-white"
+    "flex items-center gap-1 text-[10px]",
+    isSender ? "text-[#289d26] justify-end dark:text-white" : "text-[#289d26] dark:text-white"
   );
 
   const waveformRef = useRef<HTMLDivElement | null>(null);
@@ -95,11 +95,11 @@ const AudioMessage: React.FC<Props> = ({ msg, isSender = false }) => {
 
   return (
     <>
-      <div className="bg-[#dcf8c6] dark:bg-[#4567fc] text-[#4edb3b] rounded-xl p-2 px-3 max-w-xs flex flex-col shadow-sm w-45">
+      <div className="bg-[#dcf8c6] dark:bg-[#4567fc] rounded-xl p-2 px-3 max-w-xs flex flex-col shadow-sm w-45 select-none">
         <div className="flex items-center gap-3">
           <button
             onClick={togglePlay}
-            className="rounded-full bg-[#25D366] dark:bg-white p-2 text-white"
+            className="rounded-full bg-[#43c13a] dark:bg-white p-2 text-white"
           >
             {playing ? (
               <Pause className="dark:text-[#4567fc]" size={20} />
@@ -111,7 +111,7 @@ const AudioMessage: React.FC<Props> = ({ msg, isSender = false }) => {
           <div className="flex-1">
             <div ref={waveformRef} className="w-full" />
             <div className="flex items-center">
-              <span className="text-[10px] text-[#25D366] dark:text-white">
+              <span className="text-[10px] text-[#289d26] dark:text-white">
                 {mm}:{ss}
               </span>
             </div>

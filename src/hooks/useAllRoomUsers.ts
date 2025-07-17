@@ -3,6 +3,8 @@ import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { RoomMember } from "matrix-js-sdk";
 import { useEffect, useState } from "react";
 
+const HOMESERVER_URL: string = process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
+
 export type RoomUser = {
   checked: any;
   userId: string;
@@ -35,7 +37,15 @@ export default function useAllRoomUsers() {
           userMap.set(user.userId, {
             userId: user.userId,
             displayName: user.displayName || user.userId,
-            avatarUrl: user.avatarUrl,
+            avatarUrl: member.getAvatarUrl(
+              HOMESERVER_URL,
+              60,
+              60,
+              "crop",
+              false,
+              true,
+              false
+            ) || "",
             checked: undefined,
           });
         }

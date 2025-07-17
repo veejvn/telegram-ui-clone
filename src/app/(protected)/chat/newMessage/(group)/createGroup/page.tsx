@@ -21,6 +21,7 @@ import {
   AvatarImage,
 } from "@/components/ui/ChatAvatar";
 import { useAddMembersStore } from "@/stores/useAddMembersStore";
+import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
 
 export default function CreateGroupPage() {
   const [groupName, setGroupName] = useState("");
@@ -58,8 +59,10 @@ export default function CreateGroupPage() {
     setIsCreating(false);
   };
 
+  const headerStyle = getHeaderStyleWithStatusBar();
+
   return (
-    <div className="min-h-screen bg-gray-200 dark:bg-black">
+    <div style={headerStyle} className="min-h-screen bg-gray-200 dark:bg-black">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 ">
         <Link href="/chat/newMessage/addMember">
