@@ -8,10 +8,9 @@ const NewMessageClientLayout = ({
 }: Readonly<{
   children: React.ReactNode;
 }>) => {
-
   const headerStyle = getHeaderStyleWithStatusBar();
 
-  return <div style={headerStyle}>{children}</div>;
+  return <>{children}</>;
 };
 
 export default NewMessageClientLayout;

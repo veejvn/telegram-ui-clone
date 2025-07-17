@@ -16,6 +16,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useRouter } from "next/navigation";
+import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
 
 export default function Page() {
   const router = useRouter();
@@ -23,9 +24,12 @@ export default function Page() {
   const handleSettingClick = () => {
     router.push("/setting");
   };
+
+  const headerStyle = getHeaderStyleWithStatusBar();
+
   return (
     <>
-      <div className=" dark:bg-[#1a1a1a]">
+      <div style={headerStyle} className="dark:bg-[#1a1a1a]">
         <div className="flex items-center justify-between px-3 py-3">
           <div className="flex text-blue-600 hover:opacity-70">
             <Link href={"/chat"}>Cancel</Link>

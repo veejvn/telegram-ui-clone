@@ -63,7 +63,8 @@ const TypingIndicator = ({ roomId }: { roomId: string }) => {
       className={`text-start text-sm italic px-3 py-1 rounded-tr-full ${textColor}`}
     >
       <span className="pe-1">
-        {displayNames.join(", ")} {displayNames.length > 1 ? "are" : "is"} typing
+        {displayNames.join(", ")} {displayNames.length > 1 ? "are" : "is"}{" "}
+        typing
       </span>
       <span className="inline-block animate-bounce [animation-delay:-0.32s]">
         .

@@ -1,10 +1,16 @@
+"use client"
+
 import React from "react";
 import { Camera, ChevronLeft } from "lucide-react";
 import Link from "next/link";
+import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
 
 export default function CreateChannelPage() {
+
+  const headerStyle = getHeaderStyleWithStatusBar();
+
   return (
-    <div className="min-h-screen dark:bg-black dark:text-white">
+    <div style={headerStyle} className="min-h-screen dark:bg-black dark:text-white">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">
         <Link href="/chat/newMessage">
