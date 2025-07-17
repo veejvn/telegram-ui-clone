@@ -18,6 +18,7 @@ import { getLS, removeLS } from "@/tools/localStorage.tool";
 import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
 import { useForwardStore } from "@/stores/useForwardStore";
 import { getDetailedStatus } from "@/utils/chat/presencesHelpers";
+import { useRouter } from "next/navigation";
 
 const ChatHeader = ({ room }: { room: sdk.Room }) => {
   const client = useMatrixClient();
@@ -28,7 +29,7 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
   const clearMessages = useForwardStore((state) => state.clearMessages);
 
   const [user, setUser] = useState<sdk.User | undefined>(undefined);
-
+  const router = useRouter();
   const getUserPresence = usePresenceContext()?.getUserPresence;
   let lastSeen: Date | null = null;
   let isActuallyOnline = false;
@@ -104,45 +105,48 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
     <>
       <div
         style={headerStyle}
-        className="flex justify-between bg-[#f1f1ef] dark:bg-[#1b1a1f]
-          py-2 items-center px-2 "
+        className="flex items-center justify-between bg-gray-100 dark:bg-[#1b1a1f] py-1 px-2"
       >
-        {backToMain ? (
-          <button
-            className="flex flex-row text-blue-500 font-medium cursor-pointer"
-            onClick={handleBack}
-            title="Back"
-            aria-label="Back"
-          >
-            <ChevronLeft />
-            <span>Back</span>
-          </button>
-        ) : (
-          <Link
-            href={"/chat"}
-            className="flex text-blue-600
-              cursor-pointer hover:opacity-70"
-            onClick={() => {
-              setTimeout(() => {
-                clearMessages();
-              }, 300);
-            }}
-          >
-            <ChevronLeft />
-            <p>Back</p>
-          </Link>
-        )}
-        <div className="text-center">
-          <h1 className="font-semibold text-base">{room.name}</h1>
-          <div>
-            <p className="text-sm text-muted-foreground">
-              {isActuallyOnline ? "online" : getDetailedStatus(lastSeen)}
-            </p>
-          </div>
+        {/* Left: Back */}
+        <div className="w-[80px] flex justify-start mt-2">
+          {backToMain ? (
+            <button
+              className="flex flex-row text-blue-500 font-medium cursor-pointer"
+              onClick={handleBack}
+              title="Back"
+              aria-label="Back"
+            >
+              <ChevronLeft />
+              <span>Back</span>
+            </button>
+          ) : (
+            <Link
+              href={"/chat"}
+              className="flex text-blue-600 cursor-pointer hover:opacity-70"
+              onClick={() => {
+                setTimeout(() => {
+                  clearMessages();
+                }, 300);
+              }}
+            >
+              <ChevronLeft />
+              <p>Back</p>
+            </Link>
+          )}
         </div>
-        <div>
+
+        {/* Center: Room Info */}
+        <div className="flex-1 text-center truncate mt-1">
+          <h1 className="font-semibold text-base -mb-2">{room.name}</h1>
+          <p className="text-sm text-muted-foreground mt-1 truncate">
+            {isActuallyOnline ? "online" : getDetailedStatus(lastSeen)}
+          </p>
+        </div>
+
+        {/* Right: Avatar */}
+        <div className="w-[80px] flex justify-end mt-1">
           <Link href={`${room.roomId}/info`}>
-            <Avatar className="h-10 w-10">
+            <Avatar className="h-9 w-9">
               {avatarUrl ? (
                 <AvatarImage src={avatarUrl} alt="avatar" />
               ) : (

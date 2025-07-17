@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import useAllRoomUsers from "@/hooks/useAllRoomUsers";
+import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
 import { ChevronLeft } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -27,9 +28,11 @@ export default function Page() {
     router.push("/setting");
   };
 
+  const headerStyle = getHeaderStyleWithStatusBar();
+
   return (
     <>
-      <div className="flex items-center justify-between px-2 py-3 dark:bg-[#1a1a1a]">
+      <div style={headerStyle} className="flex items-center justify-between px-2 py-3 dark:bg-[#1a1a1a]">
         <div className="flex text-blue-600 hover:opacity-70">
           <Link
             href={"/chat/newMessage"}
