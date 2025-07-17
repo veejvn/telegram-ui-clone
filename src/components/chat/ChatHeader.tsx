@@ -112,7 +112,7 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
           {backToMain ? (
             <button
               className="flex flex-row text-blue-500 font-medium cursor-pointer"
-              onClick={() => router.push("/chat")}
+              onClick={handleBack}
               title="Back"
               aria-label="Back"
             >
