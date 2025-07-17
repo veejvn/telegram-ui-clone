@@ -103,10 +103,7 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
   };
 
   return (
-    <DropdownMenu
-      open={open}
-      onOpenChange={handleOpenChange}
-    >
+    <DropdownMenu open={open} onOpenChange={handleOpenChange}>
       <DropdownMenuTrigger asChild>
         <div
           // onMouseDown={handleHoldStart}
