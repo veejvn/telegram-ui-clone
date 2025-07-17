@@ -81,6 +81,9 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   const recordDurationRef = useRef<number>(0);
   const shouldCancelRecordingRef = useRef<boolean>(false);
 
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const initialHeightRef = useRef<number>(0);
+
   // Bắt đầu ghi âm
   const startRecording = async () => {
     if (isRecording) return;
@@ -122,9 +125,13 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
           }
 
           const blob = new Blob(chunks, { type: "audio/webm" });
-          const file = new (globalThis as any).File([blob], `voice_${Date.now()}.webm`, {
-            type: blob.type,
-          });
+          const file = new (globalThis as any).File(
+            [blob],
+            `voice_${Date.now()}.webm`,
+            {
+              type: blob.type,
+            }
+          );
 
           if (client) {
             const localId = "local_" + Date.now();
@@ -485,7 +492,26 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     }
   };
 
-  const handleSendFile = async () => {}
+  const handleSendFile = async () => {};
+
+  useEffect(() => {
+    // Lưu chiều cao ban đầu khi component mount
+    initialHeightRef.current = window.innerHeight;
+  }, []);
+
+  const handleFocus = () => {
+    const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+    const heightDiff = initialHeightRef.current - window.innerHeight;
+
+    if (isMobile && heightDiff > 100) {
+      // Nếu chiều cao thay đổi lớn, giả định là bàn phím đang mở
+      setIsKeyboardOpen(true);
+    }
+  };
+
+  const handleBlur = () => {
+    setIsKeyboardOpen(false);
+  };
 
   return (
     <div className="bg-[#e0ece6] dark:bg-[#1b1a1f]">
@@ -502,7 +528,11 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
         </div>
       )}
 
-      <div className="relative flex justify-between items-center px-2 py-2 lg:py-3 pb-10">
+      <div
+        className={`relative flex justify-between items-center px-2 py-2 lg:py-3 ${
+          isKeyboardOpen ? "pb-0" : "pb-10"
+        }`}
+      >
         <Paperclip
           // onClick={() => inputRef.current?.click()}
           onClick={() => setOpen(true)}
@@ -519,6 +549,8 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             value={text}
             onChange={onInputChange}
             onKeyDown={handleKeyDown}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
             placeholder="Message"
             rows={1}
             className="flex-1 h-auto resize-none bg-transparent outline-none px-3 max-h-[6rem] overflow-y-auto text-md text-black dark:text-white scrollbar-thin"
@@ -644,20 +676,20 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               )}
               {tab === "file" && (
                 <div className="flex justify-center items-center h-40">
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="p-2 bg-blue-500 text-white rounded-md"
-                >
-                  Chọn file
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  onChange={handleSendFile}
-                  className="hidden"
-                  aria-label="file"
-                />
-              </div>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-2 bg-blue-500 text-white rounded-md"
+                  >
+                    Chọn file
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    onChange={handleSendFile}
+                    className="hidden"
+                    aria-label="file"
+                  />
+                </div>
               )}
               {tab === "gift" && (
                 <div className="text-sm text-gray-500">
