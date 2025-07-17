@@ -569,7 +569,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
 
       <div
         className={`relative flex justify-between items-center px-2 py-2 lg:py-3 transition-all duration-300 ${
-          isKeyboardOpen ? "pb-0" : "pb-10"
+          isKeyboardOpen ? "pb-2" : "pb-10"
         }`}
       >
         <Paperclip
