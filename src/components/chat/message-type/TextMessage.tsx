@@ -21,8 +21,8 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useForwardStore } from "@/stores/useForwardStore";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
+import { linkify } from "@/utils/chat/linkify";
 
-// 💬 Main TextMessage
 const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
   const theme = useTheme();
   const [open, setOpen] = useState(false);
@@ -131,7 +131,7 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
                   "whitespace-pre-wrap break-words leading-snug select-none"
                 }
               >
-                {msg.text}
+                {linkify(msg.text)}
               </p>
 
               <div className={timeClass}>
