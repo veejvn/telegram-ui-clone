@@ -81,9 +81,6 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   const recordDurationRef = useRef<number>(0);
   const shouldCancelRecordingRef = useRef<boolean>(false);
 
-  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
-  const initialHeightRef = useRef<number>(typeof window !== "undefined" ? window.innerHeight : 0);
-
   // Bắt đầu ghi âm
   const startRecording = async () => {
     if (isRecording) return;
@@ -494,21 +491,57 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
 
   const handleSendFile = async () => {};
 
-  // useEffect(() => {
-  //   // Lưu chiều cao ban đầu khi component mount
-  //   initialHeightRef.current = window.innerHeight;
-  // }, []);
-  // console.log("Initial:", initialHeightRef.current);
-  
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+
+  // Detect keyboard open via visualViewport (works reliably on real devices)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const onResize = () => {
+      const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+      const visualHeight = window.visualViewport?.height ?? window.innerHeight;
+      const fullHeight = window.innerHeight;
+      const diff = fullHeight - visualHeight;
+
+      console.log("visualViewport height:", visualHeight);
+      console.log("window height:", fullHeight);
+      console.log("diff:", diff);
+
+      if (isMobile && diff > 100) {
+        setIsKeyboardOpen(true);
+      } else {
+        setIsKeyboardOpen(false);
+      }
+    };
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", onResize);
+    } else {
+      window.addEventListener("resize", onResize); // fallback
+    }
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener("resize", onResize);
+      } else {
+        window.removeEventListener("resize", onResize);
+      }
+    };
+  }, []);
+
+  const initialHeightRef = useRef<number>(
+    typeof window !== "undefined" ? window.innerHeight : 0
+  );
+
   const handleFocus = () => {
     const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-  
+
     setTimeout(() => {
       const currentHeight = window.innerHeight;
       const diff = initialHeightRef.current - currentHeight;
       console.log("Initial:", initialHeightRef.current);
       console.log("After focus:", currentHeight);
-  
+
       if (isMobile && diff > 100) {
         setIsKeyboardOpen(true);
       }
@@ -535,7 +568,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
       )}
 
       <div
-        className={`relative flex justify-between items-center px-2 py-2 lg:py-3 ${
+        className={`relative flex justify-between items-center px-2 py-2 lg:py-3 transition-all duration-300 ${
           isKeyboardOpen ? "pb-0" : "pb-10"
         }`}
       >
@@ -555,8 +588,6 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             value={text}
             onChange={onInputChange}
             onKeyDown={handleKeyDown}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
             placeholder="Message"
             rows={1}
             className="flex-1 h-auto resize-none bg-transparent outline-none px-3 max-h-[6rem] overflow-y-auto text-md text-black dark:text-white scrollbar-thin"
