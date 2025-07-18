@@ -15,7 +15,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (accessToken && userId && deviceId) {
-      callService.reinitialize();
+      callService.reinitialize("");
     }
   }, [accessToken, userId, deviceId]);
 

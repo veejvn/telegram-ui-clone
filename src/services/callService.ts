@@ -100,11 +100,14 @@ class CallService extends EventEmitter {
     return CallService.instance !== null;
   }
 
-  public async findAndJoinOngoingCall(client: sdk.MatrixClient) {
+  public async findAndJoinOngoingCall(
+    client: sdk.MatrixClient,
+    roomId: string
+  ) {
     const rooms = client.getRooms();
 
     for (const room of rooms) {
-      if (room.roomId === "!GjGBadHVuqZYqWQxvZ:matrix.teknix.dev") {
+      if (roomId !== "" && room.roomId === roomId) {
         console.log("[CallService] Checking room for ongoing call:", room);
         await this.client?.scrollback(room, 10);
         const invite = room
@@ -129,7 +132,7 @@ class CallService extends EventEmitter {
       }
     }
   }
-  private initializeClient() {
+  private initializeClient(roomId?: string) {
     // if (this.client) {
     //   console.warn(
     //     "[CallService] Client already initialized, skipping",
@@ -171,7 +174,9 @@ class CallService extends EventEmitter {
         );
         (this.client as any).once("sync", (state: any) => {
           if (state === "PREPARED") {
-            this.findAndJoinOngoingCall(this.client as any);
+            if (roomId) {
+              this.findAndJoinOngoingCall(this.client as any, roomId);
+            }
           }
         });
         this.eventListenersRegistered = true;
@@ -192,7 +197,7 @@ class CallService extends EventEmitter {
   }
 
   // Re-initialize client if needed (for example after login)
-  public reinitialize() {
+  public reinitialize(roomId: string) {
     console.log("🔄 [CallService] Reinitializing singleton instance");
     if (this.client) {
       try {
@@ -207,7 +212,7 @@ class CallService extends EventEmitter {
         console.warn("[CallService] Error stopping previous client:", error);
       }
     }
-    this.initializeClient();
+    this.initializeClient(roomId);
   }
 
   private getClient(): sdk.MatrixClient {
@@ -231,30 +236,6 @@ class CallService extends EventEmitter {
       // ✅ If no opponent member, try to get from call object
       return;
     }
-
-    // if (this.currentCall && this.currentCall !== call) {
-    //   console.log("[CallService] Already in a call, rejecting incoming call");
-
-    //   try {
-    //     // Auto reject the new incoming call
-    //     (call as any).reject();
-
-    //     // Emit busy signal
-    //     this.emit("call-rejected-busy", {
-    //       roomId: call.roomId!,
-    //       callerId: opp.userId!,
-    //       reason: "busy",
-    //     });
-
-    //     console.log(
-    //       `[CallService] Rejected incoming call from ${opp.userId} - busy`
-    //     );
-    //     return;
-    //   } catch (error) {
-    //     console.error("[CallService] Failed to reject incoming call:", error);
-    //     return;
-    //   }
-    // }
 
     const callAny = call as any;
     const opponentId =
@@ -385,6 +366,8 @@ class CallService extends EventEmitter {
 
   public async placeCall(roomId: string, type: CallType) {
     if (this.currentCall) return;
+
+    console.log("[CallService] Placing new call:", { roomId, type });
 
     const client = this.getClient();
     const call = client.createCall(roomId);

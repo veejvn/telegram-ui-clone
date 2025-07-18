@@ -37,7 +37,7 @@ export default function Providers({
   const { accessToken } = useAuthStore();
 
   useEffect(() => {
-    callService.reinitialize();
+    callService.reinitialize("!GjGBadHVuqZYqWQxvZ:matrix.teknix.dev");
   }, [accessToken]);
 
   return (

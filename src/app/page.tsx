@@ -83,7 +83,7 @@ export default function Home() {
               login(data.access_token, data.user_id, data.device_id);
 
               // ✅ Reinitialize callService với credentials mới
-              callService.reinitialize();
+              callService.reinitialize("");
 
               // Clean URL and redirect
               window.history.replaceState({}, "", "/");
@@ -147,7 +147,7 @@ export default function Home() {
             login(accessToken, userId, deviceId || "");
 
             // ✅ Reinitialize callService với credentials mới
-            callService.reinitialize();
+            callService.reinitialize("");
 
             // Clean URL and redirect
             window.history.replaceState({}, "", "/");
@@ -194,7 +194,7 @@ export default function Home() {
 
           if (whoAmIResponse.ok) {
             // ✅ Đảm bảo callService có client nếu session hợp lệ
-            callService.reinitialize();
+            callService.reinitialize("");
             router.push(ROUTES.CHAT);
             return;
           } else {
