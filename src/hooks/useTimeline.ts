@@ -99,7 +99,6 @@ export const useTimeline = (roomId: string) => {
         imageUrl,
         videoUrl,
         fileUrl,
-        fileName,
         time,
         status: "sent",
         type,
