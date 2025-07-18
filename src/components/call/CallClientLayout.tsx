@@ -30,7 +30,7 @@ const CallClientLayout = ({
   useEffect(() => {
     if (accessToken && userId && deviceId) {
       setChecked(true);
-      callService.reinitialize();
+      callService.reinitialize("");
     }
   }, [accessToken, userId, deviceId]);
 
