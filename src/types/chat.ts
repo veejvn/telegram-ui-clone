@@ -13,3 +13,8 @@ export interface LocationInfo{
     geoUri: string,
     displayText: string
 }
+
+export interface FileInfo{
+    fileSize: number,
+    mimeType: string
+}

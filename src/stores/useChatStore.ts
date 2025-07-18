@@ -1,3 +1,5 @@
+import { FileInfo } from "@/types/chat";
+import { Metadata } from "@/utils/chat/send-message/getVideoMetadata";
 import { create } from "zustand";
 
 export type MessageStatus = "sending" | "sent" | "read";
@@ -5,15 +7,16 @@ export type MessageType = "text" | "image" | "video" | "file" | "emoji" | "locat
 
 export type Message = {
   eventId: string;
+  sender: string | undefined;
+  senderDisplayName?: string | undefined;
+  text: string;
   time: string;
   timestamp?: number;
-  senderDisplayName?: string | undefined;
-  sender: string | undefined;
-  text: string;
   imageUrl?: string | null;
   videoUrl?: string | null;
+  metadataVideo?: Metadata | null;
   fileUrl?: string | null;
-  fileName?: string | null;
+  fileInfo?: FileInfo | null;
   audioUrl?: string | null;
   audioDuration?: number | null;     // ← thêm (đơn vị giây)
   status: MessageStatus;
