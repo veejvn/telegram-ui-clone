@@ -3,7 +3,14 @@ import { Metadata } from "@/utils/chat/send-message/getVideoMetadata";
 import { create } from "zustand";
 
 export type MessageStatus = "sending" | "sent" | "read";
-export type MessageType = "text" | "image" | "video" | "file" | "emoji" | "location" | "audio";
+export type MessageType =
+  | "text"
+  | "image"
+  | "video"
+  | "file"
+  | "emoji"
+  | "location"
+  | "audio";
 
 export type Message = {
   eventId: string;
@@ -18,7 +25,7 @@ export type Message = {
   fileUrl?: string | null;
   fileInfo?: FileInfo | null;
   audioUrl?: string | null;
-  audioDuration?: number | null;     // ← thêm (đơn vị giây)
+  audioDuration?: number | null; // ← thêm (đơn vị giây)
   status: MessageStatus;
   type?: MessageType;
   isForward?: boolean;
@@ -43,6 +50,7 @@ type ChatStore = {
   setIsLoadingMore: (roomId: string, isLoading: boolean) => void;
   setHasMore: (roomId: string, hasMore: boolean) => void;
   setOldestEventId: (roomId: string, eventId: string | null) => void;
+  updateReadStatus: (roomId: string, readEventIds: string[]) => void;
 };
 
 export const useChatStore = create<ChatStore>((set, get) => ({
@@ -53,8 +61,29 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   lastSeenByRoom: {},
 
   addMessage: (roomId, msg) => {
-    //console.log(msg);
     const current = get().messagesByRoom[roomId] || [];
+    // Nếu là eventId thật, tìm local message cùng sender và text
+    if (!msg.eventId.startsWith("local_")) {
+      const idx = current.findIndex(
+        (m) =>
+          m.sender === msg.sender &&
+          m.text === msg.text &&
+          m.eventId.startsWith("local_")
+      );
+      if (idx !== -1) {
+        // Cập nhật local message thành message thật
+        const updated = [...current];
+        updated[idx] = { ...msg, status: "sent" as MessageStatus };
+        set({
+          messagesByRoom: {
+            ...get().messagesByRoom,
+            [roomId]: updated,
+          },
+        });
+        return;
+      }
+    }
+    // Lọc trùng eventId như cũ
     if (current.some((m) => m.eventId === msg.eventId)) return;
     set({
       messagesByRoom: {
@@ -110,6 +139,20 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       oldestEventIdByRoom: {
         ...get().oldestEventIdByRoom,
         [roomId]: eventId,
+      },
+    });
+  },
+  updateReadStatus: (roomId: string, readEventIds: string[]) => {
+    const current = get().messagesByRoom[roomId] || [];
+    const updated = current.map((msg) =>
+      readEventIds.includes(msg.eventId) && msg.status !== "read"
+        ? { ...msg, status: "read" as MessageStatus }
+        : msg
+    );
+    set({
+      messagesByRoom: {
+        ...get().messagesByRoom,
+        [roomId]: updated,
       },
     });
   },

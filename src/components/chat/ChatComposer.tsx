@@ -28,11 +28,7 @@ import EmojiPicker, { Theme as EmojiTheme } from "emoji-picker-react";
 import ForwardMsgPreview from "./ForwardMsgPreview";
 import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
 import { useForwardStore } from "@/stores/useForwardStore";
-import {
-  Gift,
-  Reply,
-  Check,
-} from "lucide-react";
+import { Gift, Reply, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
@@ -525,7 +521,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
         } else {
           const res = await sendFileMessage(client, roomId, file);
           httpUrlFile = res.httpUrl;
-          fileInfo = { fileSize: file.size, mimeType: file.type }
+          fileInfo = { fileSize: file.size, mimeType: file.type };
         }
         console.log("Type File: " + type);
         const localId = "local_" + Date.now() + Math.random();
