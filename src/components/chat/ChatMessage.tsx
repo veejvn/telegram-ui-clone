@@ -10,6 +10,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import ForwardTextMessage from "./message-type/ForwardTextMessage";
 import { LocationMessage } from "@/components/chat/message-type/LocationMessage";
+import FileMessage from "@/components/chat/message-type/FileMessage";
+import VideoMessage from "@/components/chat/message-type/VideoMessage";
 
 const ChatMessage = ({ msg }: { msg: Message }) => {
   const userId = useAuthStore.getState().userId;
@@ -75,6 +77,10 @@ const ChatMessage = ({ msg }: { msg: Message }) => {
         return <ImageMessage msg={msg} isSender={isSender} />;
       case "location":
         return <LocationMessage msg={msg} isSender={isSender} />;
+      case "file":
+        return <FileMessage msg={msg} isSender={isSender}/>
+      case "video":
+        return <VideoMessage msg={msg} isSender={isSender}/>
       default:
         //console.warn("⚠️ Unknown type in message:", msg);
         return <TextMessage msg={msg} isSender={isSender} />;
@@ -87,8 +93,9 @@ const ChatMessage = ({ msg }: { msg: Message }) => {
       className={`flex ${isSender ? "justify-end" : "justify-start"} my-2`}
     >
       <div
-        className={`flex flex-col max-w-[90%] w-fit rounded-xl transition ${animate ? "flash-background" : ""
-          }`}
+        className={`flex flex-col max-w-[90%] w-fit rounded-xl transition ${
+          animate ? "flash-background" : ""
+        }`}
       >
         {renderContent()}
       </div>
