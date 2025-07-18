@@ -3,6 +3,7 @@
 import { callService } from "@/services/callService";
 import { IEventPayload } from "./types/event.name";
 import useCallStore from "@/stores/useCallStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { AArrowDown } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -36,7 +37,14 @@ export const useWebAppMethodHandler = () => {
         }&contact=${encodeURIComponent(payload.nameCaller)}`
       );
     }
-    callService.reinitialize(roomId);
+
+    while (true) {
+      const accessToken = useAuthStore.getState().accessToken;
+      if (accessToken) {
+        callService.reinitialize(roomId);
+        break; // Thoát vòng lặp nếu đã có access token
+      }
+    }
     await answerCall();
     reset();
   };
