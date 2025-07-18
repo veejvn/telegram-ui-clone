@@ -11,15 +11,17 @@ import {
   StopCircle,
 } from "lucide-react";
 import {
+  sendFileMessage,
   sendImageMessage,
-  sendLocation,
+  sendLocationMessage,
   sendMessage,
   sendTypingEvent,
+  sendVideoMessage,
   sendVoiceMessage,
 } from "@/services/chatService";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useTheme } from "next-themes";
-import { useChatStore } from "@/stores/useChatStore";
+import { MessageType, useChatStore } from "@/stores/useChatStore";
 import TypingIndicator from "./TypingIndicator";
 import useTyping from "@/hooks/useTyping";
 import EmojiPicker, { Theme as EmojiTheme } from "emoji-picker-react";
@@ -27,9 +29,6 @@ import ForwardMsgPreview from "./ForwardMsgPreview";
 import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
 import { useForwardStore } from "@/stores/useForwardStore";
 import {
-  Image as LucideImage,
-  File,
-  MapPin,
   Gift,
   Reply,
   Check,
@@ -37,6 +36,10 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
+import { Metadata } from "@/utils/chat/send-message/getVideoMetadata";
+import { GrGallery } from "react-icons/gr";
+import { FaFile } from "react-icons/fa6";
+import { MdLocationOn } from "react-icons/md";
 
 const ChatComposer = ({ roomId }: { roomId: string }) => {
   const [text, setText] = useState("");
@@ -51,7 +54,6 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   const client = useMatrixClient();
   const theme = useTheme();
   const [isTyping, setIsTyping] = useState(false);
-  useTyping(roomId);
   const { addMessage } = useChatStore.getState();
   const { messages: forwardMessages, clearMessages } = useForwardStore();
   const [open, setOpen] = useState(false);
@@ -81,6 +83,9 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   const recordDurationRef = useRef<number>(0);
   const shouldCancelRecordingRef = useRef<boolean>(false);
 
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+
+  useTyping(roomId);
   // Bắt đầu ghi âm
   const startRecording = async () => {
     if (isRecording) return;
@@ -358,6 +363,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     }
     e.target.value = ""; // reset input
   };
+
   useEffect(() => {
     return () => {
       if (recordIntervalRef.current) {
@@ -442,7 +448,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
       case "location":
         return <Search className="mx-4" />;
       default:
-        return <div className="mx-4"></div>;
+        return <div className="w-18 h-9"></div>;
     }
   };
 
@@ -479,7 +485,10 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
         type: "location",
       });
 
-      const res = await sendLocation(client, roomId, { geoUri, displayText });
+      const res = await sendLocationMessage(client, roomId, {
+        geoUri,
+        displayText,
+      });
 
       if (res.success) {
         console.log("Send Location Message successfully");
@@ -489,9 +498,55 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     }
   };
 
-  const handleSendFile = async () => {};
+  const handleSendFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || !client) return;
+    setOpen(false);
+    const userId = client.getUserId();
+    for (const file of Array.from(files)) {
+      try {
+        let httpUrlImage: string | null = null;
+        let httpUrlVideo: string | null = null;
+        let metadata: Metadata | null = null;
+        let httpUrlFile: string | null = null;
+        const contentType = file.type;
+        let type: MessageType = "file"; // Mặc định
+        if (contentType.startsWith("image/")) {
+          type = "image";
+          const res = await sendImageMessage(client, roomId, file);
+          httpUrlImage = res.httpUrl;
+        } else if (contentType.startsWith("video/")) {
+          type = "video";
+          const res = await sendVideoMessage(client, roomId, file);
+          httpUrlVideo = res.httpUrl;
+          metadata = res.metadata;
+        } else {
+          const res = await sendFileMessage(client, roomId, file);
+          httpUrlFile = res.httpUrl;
+        }
+        console.log("Type File: " + type);
+        const localId = "local_" + Date.now() + Math.random();
+        const now = new Date();
 
-  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+        addMessage(roomId, {
+          eventId: localId,
+          sender: userId ?? undefined,
+          senderDisplayName: userId ?? undefined,
+          text: file.name,
+          imageUrl: httpUrlImage,
+          videoUrl: httpUrlVideo,
+          metadataVideo: metadata,
+          fileUrl: httpUrlFile,
+          time: now.toLocaleString(),
+          timestamp: now.getTime(),
+          status: "sent",
+          type: type,
+        });
+      } catch (error) {
+        console.error("Failed to send file:", error);
+      }
+    }
+  };
 
   // Detect keyboard open via visualViewport (works reliably on real devices)
   useEffect(() => {
@@ -502,10 +557,6 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
       const visualHeight = window.visualViewport?.height ?? window.innerHeight;
       const fullHeight = window.innerHeight;
       const diff = fullHeight - visualHeight;
-
-      console.log("visualViewport height:", visualHeight);
-      console.log("window height:", fullHeight);
-      console.log("diff:", diff);
 
       if (isMobile && diff > 100) {
         setIsKeyboardOpen(true);
@@ -528,29 +579,6 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
       }
     };
   }, []);
-
-  const initialHeightRef = useRef<number>(
-    typeof window !== "undefined" ? window.innerHeight : 0
-  );
-
-  const handleFocus = () => {
-    const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-
-    setTimeout(() => {
-      const currentHeight = window.innerHeight;
-      const diff = initialHeightRef.current - currentHeight;
-      console.log("Initial:", initialHeightRef.current);
-      console.log("After focus:", currentHeight);
-
-      if (isMobile && diff > 100) {
-        setIsKeyboardOpen(true);
-      }
-    }, 100);
-  };
-
-  const handleBlur = () => {
-    setIsKeyboardOpen(false);
-  };
 
   return (
     <div className="bg-[#e0ece6] dark:bg-[#1b1a1f]">
@@ -693,7 +721,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             {/* Content */}
             <div className="p-2 h-[400px]">
               {tab === "gallery" && (
-                <div className="flex justify-center items-center h-40">
+                <div className="flex justify-center items-center h-full">
                   <button
                     onClick={() => imageInputRef.current?.click()}
                     className="p-2 bg-blue-500 text-white rounded-md"
@@ -712,7 +740,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
                 </div>
               )}
               {tab === "file" && (
-                <div className="flex justify-center items-center h-40">
+                <div className="flex justify-center items-center h-full">
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     className="p-2 bg-blue-500 text-white rounded-md"
@@ -723,6 +751,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
                     ref={fileInputRef}
                     type="file"
                     onChange={handleSendFile}
+                    multiple
                     className="hidden"
                     aria-label="file"
                   />
@@ -752,7 +781,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             <div className="flex justify-around border-t border-gray-200 px-4 py-2 text-xs text-center text-gray-600">
               <TabButton
                 icon={
-                  <LucideImage
+                  <GrGallery
                     className={`w-5 h-5 mb-1 ${
                       tab === "gallery" ? "text-blue-500" : ""
                     }`}
@@ -774,7 +803,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               /> */}
               <TabButton
                 icon={
-                  <File
+                  <FaFile
                     className={`w-5 h-5 mb-1 ${
                       tab === "file" ? "text-blue-500" : ""
                     }`}
@@ -785,7 +814,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               />
               <TabButton
                 icon={
-                  <MapPin
+                  <MdLocationOn
                     className={`w-5 h-5 mb-1 ${
                       tab === "location" ? "text-blue-500" : ""
                     }`}

@@ -79,7 +79,7 @@ const ChatPage = () => {
     }
     // Lấy event cuối cùng trong room (nếu có)
     const events = room.getLiveTimeline().getEvents();
-    const lastEvent = events.length > 0 ? events[events.length - 1] : null;
+    const lastEvent = [...events].reverse().find(ev => ev.getType() === "m.room.message" && ev.getId());
     if (lastEvent) {
       sendReadReceipt(client, lastEvent);
     }

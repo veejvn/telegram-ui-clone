@@ -7,10 +7,10 @@ import { Message, MessageStatus, MessageType } from "@/stores/useChatStore";
 import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { m } from "framer-motion";
-import { LocationInfo, MessagePros } from "@/types/chat";
-import { convertEventsToMessages } from "@/utils/chat/convertEventsToMessages";
+import { FileInfo, LocationInfo } from "@/types/chat";
 import { MatrixClient } from "@/types/matrix";
+import { getVideoMetadata } from "@/utils/chat/send-message/getVideoMetadata";
+import { Metadata } from "@/utils/chat/send-message/getVideoMetadata";
 
 export const getUserRooms = async (
   client: sdk.MatrixClient
@@ -138,8 +138,9 @@ export const getTimeline = async (
 
         let imageUrl: string | null = null;
         let videoUrl: string | null = null;
+        let metadata: Metadata | null = null
         let fileUrl: string | null = null;
-        let fileName: string | null = null;
+        let fileInfo: FileInfo | null = null
         let latitude: number | null = null;
         let longitude: number | null = null;
         let description: string | null = null
@@ -158,13 +159,14 @@ export const getTimeline = async (
           type = "video";
           if (content.url) {
             videoUrl = client.mxcUrlToHttp(content.url);
+            metadata = { width: content.info?.w, height: content.info?.h, duration: content.info?.duration}
           }
         } else if (content.msgtype === "m.file") {
           type = "file";
           if (content.url) {
             fileUrl = client.mxcUrlToHttp(content.url);
-            fileName = content.body ?? "file";
           }
+          fileInfo = { fileSize: content.info?.size, mimeType: content.info?.mimetype }
         } else if (content.msgtype === "m.location"){
           type = "location"
           const geo_uri: string = content["geo_uri"] || content["org.matrix.msc3488.location"]?.uri;
@@ -194,8 +196,9 @@ export const getTimeline = async (
           timestamp,
           imageUrl,
           videoUrl,
+          metadataVideo: metadata,
           fileUrl,
-          fileName,
+          fileInfo,
           audioUrl,
           audioDuration,
           status,
@@ -388,6 +391,7 @@ export async function sendImageMessage(
     throw err;
   }
 }
+
 export async function sendVoiceMessage(
   client: sdk.MatrixClient,
   roomId: string,
@@ -430,6 +434,7 @@ export async function sendVoiceMessage(
     return { success: false, err };
   }
 }
+
 function readFileAsArrayBuffer(file: File): Promise<ArrayBuffer> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -499,7 +504,7 @@ export const sendTypingEvent = async (
   }
 };
 
-export const sendLocation = async (client: MatrixClient, roomId: string, locationInfo: LocationInfo) => {
+export const sendLocationMessage = async (client: MatrixClient, roomId: string, locationInfo: LocationInfo) => {
   try{
     const { geoUri, displayText } = locationInfo;
   
@@ -524,4 +529,71 @@ export const sendLocation = async (client: MatrixClient, roomId: string, locatio
     throw error;
   }
 
+}
+
+export const sendVideoMessage = async (client: MatrixClient, roomId: string, file: File) => {
+  try{
+    const metadata = await getVideoMetadata(file);
+    const uploadResponse = await client.uploadContent(file, {
+      type: file.type,
+      name: file.name,
+    });
+    const content = {
+      msgtype: "m.video",
+      body: file.name,
+      info: {
+        duration: metadata.duration, // milliseconds
+        mimetype: file.type,
+        size: file.size,
+        w: metadata.width,
+        h: metadata.height,
+      },
+      url: uploadResponse.content_uri,
+    };
+    await client.sendMessage(roomId, content as any);
+    return {
+      httpUrl : client.mxcUrlToHttp(uploadResponse.content_uri),
+      metadata
+    }
+  }catch(error){
+    throw error
+  }
+}
+
+export async function sendFileMessage(
+  client: MatrixClient,
+  roomId: string,
+  file: File
+) {
+  try{
+    const contentType = file.type;
+    const fileName = file.name;
+    const fileSize = file.size;
+    const buffer = await file.arrayBuffer();
+  
+    const uploadResponse = await client.uploadContent(buffer, {
+      name: fileName,
+      type: contentType,
+    });
+  
+    // 3. Tạo nội dung tin nhắn
+    const content = {
+      body: fileName,
+      info: {
+        size: fileSize,
+        mimetype: contentType,
+      },
+      msgtype: "m.file",
+      url: uploadResponse.content_uri,
+    };
+  
+    // 4. Gửi tin nhắn
+    await client.sendMessage(roomId, content as any);
+  
+    return {
+      httpUrl: client.mxcUrlToHttp(uploadResponse.content_uri)
+    }; // chứa event_id, room_id...
+  }catch(error){
+    throw error;
+  }
 }
