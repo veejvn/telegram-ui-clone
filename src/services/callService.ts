@@ -12,6 +12,11 @@ export interface IncomingCall {
   callType: CallType;
 }
 
+export interface CallSync {
+  calleeName: string;
+  callType: CallType;
+}
+
 const HOMESERVER_URL: string =
   process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.teknix.dev.org";
 
@@ -470,13 +475,47 @@ class CallService extends EventEmitter {
       const callType: CallType = isVideo ? "video" : "voice";
       const opponentId =
         (call as any)._opponentMember?.userId || call.getOpponentSessionId?.();
+      call.answer(true, isVideo);
 
-      this.emit("incoming-call", {
+      this.emit("auto-accept-and-navigate", {
         roomId: call.roomId!,
-        // callerId: opp.userId!,
         callerId: opponentId,
         callType,
+        call,
+        // Navigation info
+        navigationUrl: isVideo
+          ? `/call/video?calleeId=${roomId}&contact=${encodeURIComponent(
+              opponentId || "Unknown"
+            )}`
+          : `/call/voice?calleeId=${roomId}&contact=${encodeURIComponent(
+              opponentId || "Unknown"
+            )}`,
       });
+
+      // this.emit("answer-call-sync", {
+      //   calleeName: "Anonymous",
+      //   callType,
+      // });
+
+      // this.emit("incoming-call", {
+      //   roomId: call.roomId!,
+      //   // callerId: opp.userId!,
+      //   callerId: opponentId,
+      //   callType,
+      // });
+      // if (payload.type === 1) {
+      //   router.replace(
+      //     `/call/video?calleeId=${
+      //       payload.extra.roomId
+      //     }&contact=${encodeURIComponent(payload.nameCaller)}`
+      //   );
+      // } else {
+      //   router.replace(
+      //     `/call/voice?calleeId=${
+      //       payload.extra.roomId
+      //     }&contact=${encodeURIComponent(payload.nameCaller)}`
+      //   );
+      // }
       return true;
     } catch (error) {
       console.error("[CallService] Failed to answer call from sync:", error);

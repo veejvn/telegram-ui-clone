@@ -1,5 +1,10 @@
 import { create } from "zustand";
-import { callService, CallType, IncomingCall } from "@/services/callService";
+import {
+  callService,
+  CallSync,
+  CallType,
+  IncomingCall,
+} from "@/services/callService";
 
 type State =
   | "idle"
@@ -10,11 +15,12 @@ type State =
   | "waiting-for-recipient" // 🆕
   | "recalling" // 🆕
   | "ended"
-  | "error";
+  | "error"
+  | "call-sync";
 
 interface CallStore {
   state: State;
-  incoming?: IncomingCall & { callType: CallType };
+  incoming?: IncomingCall & { callType: CallType; calleeName?: string }; // 🆕
   localStream?: MediaStream;
   remoteStream?: MediaStream;
   callDuration: number;
@@ -83,12 +89,24 @@ const useCallStore = create<CallStore>((set, get) => {
     });
 
     callService.on("incoming-call", (data: IncomingCall) => {
-      ringtoneAudio?.play().catch(() => {});
+      // ringtoneAudio?.play().catch(() => {});
       set({
         state: "incoming",
         incoming: { ...data },
         callDuration: 0,
         callEndedReason: undefined,
+      });
+    });
+
+    callService.on("answer-call-sync", (data: CallSync) => {
+      set({
+        state: "call-sync",
+        incoming: {
+          callType: data.callType,
+          calleeName: data.calleeName,
+          roomId: "",
+          callerId: "",
+        },
       });
     });
 
