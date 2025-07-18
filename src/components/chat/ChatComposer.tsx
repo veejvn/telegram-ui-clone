@@ -40,6 +40,7 @@ import { Metadata } from "@/utils/chat/send-message/getVideoMetadata";
 import { GrGallery } from "react-icons/gr";
 import { FaFile } from "react-icons/fa6";
 import { MdLocationOn } from "react-icons/md";
+import { FileInfo } from "@/types/chat";
 
 const ChatComposer = ({ roomId }: { roomId: string }) => {
   const [text, setText] = useState("");
@@ -509,6 +510,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
         let httpUrlVideo: string | null = null;
         let metadata: Metadata | null = null;
         let httpUrlFile: string | null = null;
+        let fileInfo: FileInfo | null = null;
         const contentType = file.type;
         let type: MessageType = "file"; // Mặc định
         if (contentType.startsWith("image/")) {
@@ -523,6 +525,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
         } else {
           const res = await sendFileMessage(client, roomId, file);
           httpUrlFile = res.httpUrl;
+          fileInfo = { fileSize: file.size, mimeType: file.type }
         }
         console.log("Type File: " + type);
         const localId = "local_" + Date.now() + Math.random();
@@ -537,6 +540,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
           videoUrl: httpUrlVideo,
           metadataVideo: metadata,
           fileUrl: httpUrlFile,
+          fileInfo,
           time: now.toLocaleString(),
           timestamp: now.getTime(),
           status: "sent",
