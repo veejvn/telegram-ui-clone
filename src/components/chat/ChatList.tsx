@@ -13,7 +13,14 @@ import {
 } from "react-swipeable-list";
 import "react-swipeable-list/dist/styles.css";
 import React, { useState } from "react";
-import { Volume2, VolumeX, Trash2, Archive } from "lucide-react";
+import {
+  MessageCircle,
+  Pin,
+  Volume2,
+  VolumeX,
+  Trash2,
+  Archive,
+} from "lucide-react";
 import { ScrollArea } from "../ui/scroll-area";
 
 interface ChatListProps {
@@ -63,7 +70,7 @@ export const ChatList = ({
         try {
           const data = JSON.parse(stored);
           if (data.isMuted) muted.push(room.roomId);
-        } catch { }
+        } catch {}
       }
     });
     setMutedRooms(muted);
@@ -77,8 +84,43 @@ export const ChatList = ({
             {rooms
               .filter((room) => !!room && !!room.roomId)
               .map((room: sdk.Room, idx) => {
-                const actions = (
+                // Leading actions: Unread, Pin
+                const leadingActions = (
                   <LeadingActions>
+                    <SwipeAction
+                      onClick={() => {
+                        /* handle unread */
+                      }}
+                    >
+                      <div className="bg-[#2196f3] w-[80px] h-full flex items-center justify-center text-center">
+                        <div className="flex flex-col items-center justify-center h-full w-full">
+                          <MessageCircle className="w-6 h-6 text-white mb-1" />
+                          <span className="text-sm font-medium text-white">
+                            Unread
+                          </span>
+                        </div>
+                      </div>
+                    </SwipeAction>
+                    <SwipeAction
+                      onClick={() => {
+                        /* handle pin */
+                      }}
+                    >
+                      <div className="bg-[#00c853] w-[80px] h-full flex items-center justify-center text-center">
+                        <div className="flex flex-col items-center justify-center h-full w-full">
+                          <Pin className="w-6 h-6 text-white mb-1" />
+                          <span className="text-sm font-medium text-white">
+                            Pin
+                          </span>
+                        </div>
+                      </div>
+                    </SwipeAction>
+                  </LeadingActions>
+                );
+
+                // Trailing actions: Mute/Unmute, Delete, Archive
+                const trailingActions = (
+                  <>
                     <SwipeAction onClick={() => handleMute(room.roomId)}>
                       <div className="bg-[#ffcc00] w-[80px] h-full flex flex-col items-center justify-center text-center">
                         <div className="flex flex-col items-center justify-center h-full w-full">
@@ -100,7 +142,6 @@ export const ChatList = ({
                         </div>
                       </div>
                     </SwipeAction>
-
                     <SwipeAction
                       onClick={() => {
                         setDeleteRoomId(room.roomId);
@@ -108,37 +149,32 @@ export const ChatList = ({
                       }}
                     >
                       <div className="bg-[#ff4d4f] w-[80px] h-full flex flex-col items-center justify-center text-center">
-                        <div className="flex flex-col items-center justify-center h-full w-full">
-                          <Trash2 className="w-6 h-6 text-white mb-1" />
-                          <span className="text-sm font-medium text-white">
-                            Delete
-                          </span>
-                        </div>
+                        <Trash2 className="w-6 h-6 text-white mb-1" />
+                        <span className="text-sm font-medium text-white">
+                          Delete
+                        </span>
                       </div>
                     </SwipeAction>
-
                     <SwipeAction onClick={() => onArchive?.(room.roomId)}>
                       <div className="bg-[#7a8a99] w-[80px] h-full flex flex-col items-center justify-center text-center">
-                        <div className="flex flex-col items-center justify-center h-full w-full">
-                          <Archive className="w-6 h-6 text-white mb-1" />
-                          <span className="text-sm font-medium text-white">
-                            Archive
-                          </span>
-                        </div>
+                        <Archive className="w-6 h-6 text-white mb-1" />
+                        <span className="text-sm font-medium text-white">
+                          Archive
+                        </span>
                       </div>
                     </SwipeAction>
-                  </LeadingActions>
+                  </>
                 );
 
                 return (
                   <SwipeableListItem
                     key={room.roomId}
-                    trailingActions={actions}
+                    leadingActions={leadingActions}
+                    trailingActions={trailingActions}
                     onSwipeStart={() => console.log("Swipe start")}
                     onSwipeEnd={() => console.log("Swipe end")}
                   >
                     <div className="w-full hover:bg-zinc-300 active:bg-zinc-300 dark:hover:bg-zinc-700 dark:active:bg-zinc-700">
-
                       {isEditMode ? (
                         <ChatListItem
                           room={room}
