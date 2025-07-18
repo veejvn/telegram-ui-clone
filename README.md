@@ -1,4 +1,4 @@
-# Dự án Next.js Clone Telegram 
+# Dự án Next.js Clone Telegram
 
 Đây là một dự án [Next.js](https://nextjs.org) được khởi tạo với [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app), sử dụng TypeScript, TailwindCSS và [shadcn/ui](https://ui.shadcn.com/).
 
