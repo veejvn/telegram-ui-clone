@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { clsx } from "clsx";
 import { Check, CheckCheck } from "lucide-react";
 import { MessagePros } from "@/types/chat";
@@ -125,7 +125,7 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
 
           {/* 💬 Nội dung tin nhắn */}
           <div className="flex flex-col  ">
-            <div className={textClass}>
+            <div className={clsx(textClass, "max-w-[75vw] break-words")}>
               <p
                 className={
                   "whitespace-pre-wrap break-words leading-snug select-none"
