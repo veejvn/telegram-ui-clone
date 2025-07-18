@@ -4,7 +4,7 @@ import { MessagePros } from "@/types/chat";
 import { formatMsgTime } from "@/utils/chat/formatMsgTime";
 import clsx from "clsx";
 import { Check, CheckCheck } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FaVolumeMute } from "react-icons/fa";
 import { FaPause, FaPlay } from "react-icons/fa6";
 import { GoUnmute } from "react-icons/go";
@@ -18,6 +18,8 @@ const VideoMessage = ({ msg, isSender }: MessagePros) => {
   const aspectRatio = width && height ? width / height : 16 / 9;
   const [isPlaying, setIsPlaying] = useState(false);
   const [showPauseBtn, setShowPauseBtn] = useState(false);
+  const [remainingTime, setRemainingTime] = useState(duration || 0);
+  const intervalRef = useRef<number | null>(null);
 
   const containerStyle = {
     aspectRatio: `${aspectRatio}`,
@@ -48,6 +50,40 @@ const VideoMessage = ({ msg, isSender }: MessagePros) => {
     return `${min}:${s.toString().padStart(2, "0")}`;
   };
 
+  useEffect(() => {
+    if (!videoRef.current) return;
+
+    const video = videoRef.current;
+
+    const updateTime = () => {
+      setRemainingTime(
+        Math.max(0, (duration || 0) - Math.floor(video.currentTime * 1000))
+      );
+    };
+
+    if (isPlaying) {
+      updateTime(); // cập nhật ngay khi play
+      intervalRef.current = setInterval(updateTime, 1000);
+    } else {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    }
+
+    // Clear interval khi unmount
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [isPlaying, duration]);
+
+  useEffect(() => {
+    setRemainingTime(duration || 0);
+  }, [msg.videoUrl, duration]);
+
   const textClass = clsx(
     "absolute bottom-1 right-2 text-xs text-xs mt-1",
     isSender ? "text-white" : "text-zinc-400"
@@ -71,13 +107,18 @@ const VideoMessage = ({ msg, isSender }: MessagePros) => {
         controls={false}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
+        onEnded={() => {
+          setIsPlaying(false);
+          setRemainingTime(duration || 0);
+          setMuted(true);
+        }}
       />
 
       {/* Overlay thời lượng */}
       {loaded && (
         <div className="absolute top-1 left-2 text-white text-xs font-semibold bg-black/60 px-1 py-[1px] rounded">
           <div className="flex flex-row gap-1">
-            {formatDuration(duration || 0)}
+            {formatDuration(remainingTime)}
             {/* Icon mute/unmute */}
             {loaded && (
               <button
@@ -108,11 +149,11 @@ const VideoMessage = ({ msg, isSender }: MessagePros) => {
             {/* Hiện icon Play khi chưa phát, hiện icon Pause khi vừa bấm Play, còn lại thì không hiện gì */}
             {!isPlaying ? (
               <div className="flex justify-center items-center rounded-full p-3 bg-black/40">
-                <FaPlay />
+                <FaPlay className="text-white" />
               </div>
             ) : showPauseBtn ? (
               <div className="flex justify-center items-center rounded-full p-3 bg-black/40">
-                <FaPause />
+                <FaPause className="text-white" />
               </div>
             ) : null}
           </button>

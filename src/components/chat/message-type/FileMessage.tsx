@@ -33,7 +33,7 @@ const FileMessage = ({ msg, isSender }: MessagePros) => {
           aria-label={`Tải file ${fileName}`}
           title={`Tải file ${fileName}`}
         >
-          <FaFile className={`text-white ${isSender && "dark:text-[#4567fc]"}`} />
+          <FaFile className={`text-white  ${isSender && "dark:text-[#4567fc]"}`} size={20}/>
         </button>
 
         <div className="flex-1 text-[#79c071] dark:text-white overflow-hidden">
@@ -53,7 +53,7 @@ const FileMessage = ({ msg, isSender }: MessagePros) => {
 
       {/* Time & Status */}
       <div className={`${textClass}`}>
-        <span className="flex items-center gap-1 text-[11px]">
+        <span className="flex items-center gap-1 text-xs">
           {formatMsgTime(msg.time)}
           {isSender &&
             (msg.status === "read" ? (

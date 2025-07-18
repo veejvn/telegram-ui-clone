@@ -542,11 +542,11 @@ export const sendVideoMessage = async (client: MatrixClient, roomId: string, fil
       msgtype: "m.video",
       body: file.name,
       info: {
-        duration: metadata.duration, // milliseconds
+        duration: Math.round(metadata.duration), // milliseconds
         mimetype: file.type,
         size: file.size,
-        w: metadata.width,
-        h: metadata.height,
+        w: Math.round(metadata.width),
+        h: Math.round(metadata.height),
       },
       url: uploadResponse.content_uri,
     };
