@@ -3,7 +3,6 @@
 import { EventEmitter } from "events";
 import * as sdk from "@/lib/matrix-sdk";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { MatrixCall } from "matrix-js-sdk/src/webrtc/call";
 
 export type CallType = "voice" | "video";
 
@@ -36,6 +35,8 @@ class CallService extends EventEmitter {
   private currentCall?: sdk.MatrixCall;
   private currentRoomId?: string;
   private localStream?: MediaStream;
+
+  private eventListenersRegistered = false; // ✅ Thêm flag để track event listeners
 
   // ✅ Private constructor để prevent direct instantiation
   private constructor() {
@@ -119,40 +120,21 @@ class CallService extends EventEmitter {
         if (invite.length > 0) {
           const callId = invite[0].getContent().call_id;
           console.log("[CallService] Ongoing call found with ID:", callId);
-          this.answerCallFromSync(
+          this.setupCallFromSync(
             invite[0],
             callId,
             "!GjGBadHVuqZYqWQxvZ:matrix.teknix.dev"
           );
-          // this.answerCallById(callId);
         }
       }
-      // const events = room.timeline;
-      // const invite = events.find((e: sdk.MatrixEvent) => {
-      //   const age = Date.now() - e.getTs();
-      //   return (
-      //     e.getType() === "m.call.invite" &&
-      //     e.getRoomId() === "!GjGBadHVuqZYqWQxvZ:matrix.teknix.dev"
-      //   );
-      // });
-      // if (invite) {
-      //   console.log(
-      //     "[CallService] Checking room for ongoing call:",
-      //     room.roomId,
-      //     "Invite found:",
-      //     invite
-      //   );
-      // } else {
-      //   console.log(
-      //     "[CallService] No ongoing call found in room:",
-      //     room.roomId
-      //   );
-      // }
     }
   }
   private initializeClient() {
     // if (this.client) {
-    //   console.warn("[CallService] Client already initialized, skipping");
+    //   console.warn(
+    //     "[CallService] Client already initialized, skipping",
+    //     this.client
+    //   );
     //   return;
     // }
 
@@ -182,14 +164,27 @@ class CallService extends EventEmitter {
       });
 
       this.client.startClient({ initialSyncLimit: 10 });
-      console.log("[CallService] Client initialized successfully");
-      (this.client as any).on("Call.incoming", this.onIncomingCall.bind(this));
-      (this.client as any).once("sync", (state: any) => {
-        if (state === "PREPARED") {
-          // client đã sync xong → kiểm tra các room để tìm call đang diễn ra
-          this.findAndJoinOngoingCall(this.client as any);
-        }
-      });
+      if (!this.eventListenersRegistered) {
+        (this.client as any).on(
+          "Call.incoming",
+          this.onIncomingCall.bind(this)
+        );
+        (this.client as any).once("sync", (state: any) => {
+          if (state === "PREPARED") {
+            this.findAndJoinOngoingCall(this.client as any);
+          }
+        });
+        this.eventListenersRegistered = true;
+        console.log("[CallService] Event listeners registered");
+      }
+      // console.log("[CallService] Client initialized successfully");
+      // (this.client as any).on("Call.incoming", this.onIncomingCall.bind(this));
+      // (this.client as any).once("sync", (state: any) => {
+      //   if (state === "PREPARED") {
+      //     // client đã sync xong → kiểm tra các room để tìm call đang diễn ra
+      //     this.findAndJoinOngoingCall(this.client as any);
+      //   }
+      // });
     } catch (error) {
       console.error("[CallService] Failed to initialize client:", error);
       this.client = null;
@@ -201,8 +196,13 @@ class CallService extends EventEmitter {
     console.log("🔄 [CallService] Reinitializing singleton instance");
     if (this.client) {
       try {
+        (this.client as any).removeListener(
+          "Call.incoming",
+          this.onIncomingCall.bind(this)
+        );
         this.client.stopClient();
         (this.client as any).removeAllListeners();
+        this.eventListenersRegistered = false; // ✅ Reset flag
       } catch (error) {
         console.warn("[CallService] Error stopping previous client:", error);
       }
@@ -221,35 +221,40 @@ class CallService extends EventEmitter {
   }
 
   private onIncomingCall(call: sdk.MatrixCall) {
+    // ✅ Kiểm tra xem cuộc gọi này đã được xử lý chưa
+    if (this.currentCall && this.currentCall.callId === call.callId) {
+      console.log("[CallService] Call already handled, ignoring duplicate");
+      return;
+    }
     const opp = call.getOpponentMember();
     if (!opp) {
       // ✅ If no opponent member, try to get from call object
       return;
     }
 
-    if (this.currentCall && this.currentCall !== call) {
-      console.log("[CallService] Already in a call, rejecting incoming call");
+    // if (this.currentCall && this.currentCall !== call) {
+    //   console.log("[CallService] Already in a call, rejecting incoming call");
 
-      try {
-        // Auto reject the new incoming call
-        (call as any).reject();
+    //   try {
+    //     // Auto reject the new incoming call
+    //     (call as any).reject();
 
-        // Emit busy signal
-        this.emit("call-rejected-busy", {
-          roomId: call.roomId!,
-          callerId: opp.userId!,
-          reason: "busy",
-        });
+    //     // Emit busy signal
+    //     this.emit("call-rejected-busy", {
+    //       roomId: call.roomId!,
+    //       callerId: opp.userId!,
+    //       reason: "busy",
+    //     });
 
-        console.log(
-          `[CallService] Rejected incoming call from ${opp.userId} - busy`
-        );
-        return;
-      } catch (error) {
-        console.error("[CallService] Failed to reject incoming call:", error);
-        return;
-      }
-    }
+    //     console.log(
+    //       `[CallService] Rejected incoming call from ${opp.userId} - busy`
+    //     );
+    //     return;
+    //   } catch (error) {
+    //     console.error("[CallService] Failed to reject incoming call:", error);
+    //     return;
+    //   }
+    // }
 
     const callAny = call as any;
     const opponentId =
@@ -271,6 +276,18 @@ class CallService extends EventEmitter {
 
   private registerCallEvents(call: sdk.MatrixCall) {
     const c = call as any;
+
+    // ✅ Đảm bảo không đăng ký event listeners nhiều lần
+    c.removeAllListeners(); // Remove existing listeners first
+    console.log("[CallService] registerCallEvents - Call state before:", {
+      callId: call.callId,
+      state: call.state,
+      direction: call.direction,
+      type: call.type,
+      hasAnswer: typeof c.answer === "function",
+      isAnswered: c.isAnswered || false,
+      peerConnState: c.peerConn?.connectionState,
+    });
 
     c.on("local_stream", (stream: MediaStream) => {
       this.localStream = stream;
@@ -355,6 +372,11 @@ class CallService extends EventEmitter {
 
   // ✅ FIX: Thêm method cleanup riêng
   private cleanup() {
+    // ✅ Remove event listeners from current call
+    if (this.currentCall) {
+      const c = this.currentCall as any;
+      c.removeAllListeners();
+    }
     this.currentCall = undefined;
     this.currentRoomId = undefined;
     this.localStream = undefined;
@@ -362,7 +384,7 @@ class CallService extends EventEmitter {
   }
 
   public async placeCall(roomId: string, type: CallType) {
-    if (this.currentCall && this.currentRoomId === roomId) return;
+    if (this.currentCall) return;
 
     const client = this.getClient();
     const call = client.createCall(roomId);
@@ -395,13 +417,18 @@ class CallService extends EventEmitter {
     this.emit("outgoing-call", { roomId, callType: type });
   }
 
-  public async answerCallFromSync(
+  public async setupCallFromSync(
     invite: sdk.MatrixEvent,
     callId: string,
     roomId: string
   ) {
     try {
       // ✅ Remove unreachable code below (after return statement)
+
+      if (this.currentCall && this.currentCall.callId === callId) {
+        console.log("[CallService] Call already handled, ignoring duplicate");
+        return;
+      }
 
       console.log("[CallService] Starting answerCallFromSync:", {
         callId,
@@ -412,6 +439,8 @@ class CallService extends EventEmitter {
       const call = this.client!.createCall(roomId) as sdk.MatrixCall;
       call.callId = callId;
       call.initWithInvite(invite);
+
+      const callAny = call as any;
 
       // this.onIncomingCall(call);
 
@@ -424,12 +453,12 @@ class CallService extends EventEmitter {
       const isVideo =
         callContent.offer?.type === "video" || call.type === "video";
 
-      // console.log("[CallService] Call type detected:", {
-      //   isVideo,
-      //   callType: call.type,
-      // });
+      // // console.log("[CallService] Call type detected:", {
+      // //   isVideo,
+      // //   callType: call.type,
+      // // });
 
-      // // Get user media stream
+      // // // Get user media stream
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
         video: isVideo,
@@ -438,13 +467,12 @@ class CallService extends EventEmitter {
       this.localStream = stream;
       this.emit("local-stream", stream);
 
-      console.log("[CallService] Local stream obtained:", {
-        audioTracks: stream.getAudioTracks().length,
-        videoTracks: stream.getVideoTracks().length,
-      });
+      // console.log("[CallService] Local stream obtained:", {
+      //   audioTracks: stream.getAudioTracks().length,
+      //   videoTracks: stream.getVideoTracks().length,
+      // });
 
-      const callAny = call;
-      const pc = callAny.peerConn;
+      const pc = call.peerConn;
       if (pc) {
         stream.getTracks().forEach((track) => {
           pc.addTrack(track, stream);
@@ -452,14 +480,13 @@ class CallService extends EventEmitter {
         console.log("[CallService] Tracks added to peer connection");
       }
 
-      this.currentCall = call;
+      this.currentCall = callAny;
       this.currentRoomId = roomId;
-      this.registerCallEvents(call);
+      this.registerCallEvents(callAny);
 
       const callType: CallType = isVideo ? "video" : "voice";
       const opponentId =
-        (call as any)._opponentMember?.userId ||
-        callAny.getOpponentSessionId?.();
+        (call as any)._opponentMember?.userId || call.getOpponentSessionId?.();
 
       this.emit("incoming-call", {
         roomId: call.roomId!,
@@ -470,28 +497,15 @@ class CallService extends EventEmitter {
       return true;
     } catch (error) {
       console.error("[CallService] Failed to answer call from sync:", error);
-
-      // Fallback: try to answer without media
-      try {
-        const call = this.currentCall;
-        if (call) {
-          (call as any).answer();
-          console.log("[CallService] Fallback answer without media successful");
-          return true;
-        }
-      } catch (fallbackError) {
-        console.error(
-          "[CallService] Fallback answer also failed:",
-          fallbackError
-        );
-      }
-
       return false;
     }
   }
 
   public async answerCall() {
+    console.log("[CallService] Answering call... step 1");
     if (!this.currentCall) return;
+
+    console.log("[CallService] Current call step 2");
 
     const callAny = this.currentCall as any;
 

@@ -6,6 +6,9 @@ import { ToastProvider } from "@/contexts/ToastProvider";
 import { useWebAppListener } from "@/hooks/useWebAppListener";
 import { EventName } from "@/hooks/useWebAppListener/types/event.name";
 import { useWebAppMethodHandler } from "@/hooks/useWebAppListener/useWebAppMethodHandler";
+import { callService } from "@/services/callService";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { useEffect } from "react";
 
 export default function Providers({
   children,
@@ -31,6 +34,12 @@ export default function Providers({
         break;
     }
   });
+  const { accessToken } = useAuthStore();
+
+  useEffect(() => {
+    callService.reinitialize();
+  }, [accessToken]);
+
   return (
     <>
       <ThemeProvider
