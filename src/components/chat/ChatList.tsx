@@ -171,8 +171,8 @@ export const ChatList = ({
                     key={room.roomId}
                     leadingActions={leadingActions}
                     trailingActions={trailingActions}
-                    onSwipeStart={() => console.log("Swipe start")}
-                    onSwipeEnd={() => console.log("Swipe end")}
+                    //onSwipeStart={() => console.log("Swipe start")}
+                    //onSwipeEnd={() => console.log("Swipe end")}
                   >
                     <div className="w-full hover:bg-zinc-300 active:bg-zinc-300 dark:hover:bg-zinc-700 dark:active:bg-zinc-700">
                       {isEditMode ? (
