@@ -1,4 +1,4 @@
-import { FileInfo } from "@/types/chat";
+import { FileInfo, ImageInfo } from "@/types/chat";
 import { Metadata } from "@/utils/chat/send-message/getVideoMetadata";
 import { create } from "zustand";
 
@@ -20,8 +20,9 @@ export type Message = {
   time: string;
   timestamp?: number;
   imageUrl?: string | null;
+  imageInfo?: ImageInfo | null,
   videoUrl?: string | null;
-  metadataVideo?: Metadata | null;
+  videoInfo?: Metadata | null;
   fileUrl?: string | null;
   fileInfo?: FileInfo | null;
   audioUrl?: string | null;
@@ -50,7 +51,7 @@ type ChatStore = {
   setIsLoadingMore: (roomId: string, isLoading: boolean) => void;
   setHasMore: (roomId: string, hasMore: boolean) => void;
   setOldestEventId: (roomId: string, eventId: string | null) => void;
-  updateReadStatus: (roomId: string, readEventIds: string[]) => void;
+  updateMessage: (roomId: string, eventId: string, updates: Partial<Message>) => void;
 };
 
 export const useChatStore = create<ChatStore>((set, get) => ({
@@ -62,6 +63,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
   addMessage: (roomId, msg) => {
     const current = get().messagesByRoom[roomId] || [];
+
     // Nếu là eventId thật, tìm local message cùng sender và text
     if (!msg.eventId.startsWith("local_")) {
       const idx = current.findIndex(
@@ -80,11 +82,13 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             [roomId]: updated,
           },
         });
-        return;
+        return; // Quan trọng: return để không thêm message mới
       }
     }
+
     // Lọc trùng eventId như cũ
     if (current.some((m) => m.eventId === msg.eventId)) return;
+
     set({
       messagesByRoom: {
         ...get().messagesByRoom,
@@ -142,12 +146,12 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       },
     });
   },
-  updateReadStatus: (roomId: string, readEventIds: string[]) => {
+
+  updateMessage: (roomId: string, eventId: string, updates: Partial<Message>) => {
+    //console.log(updates);
     const current = get().messagesByRoom[roomId] || [];
-    const updated = current.map((msg) =>
-      readEventIds.includes(msg.eventId) && msg.status !== "read"
-        ? { ...msg, status: "read" as MessageStatus }
-        : msg
+    const updated = current.map(msg =>
+      msg.eventId === eventId ? { ...msg, ...updates } : msg
     );
     set({
       messagesByRoom: {

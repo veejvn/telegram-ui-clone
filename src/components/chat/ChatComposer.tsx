@@ -11,6 +11,7 @@ import {
   StopCircle,
 } from "lucide-react";
 import {
+  getImageDimensions,
   sendFileMessage,
   sendImageMessage,
   sendLocationMessage,
@@ -32,11 +33,11 @@ import { Gift, Reply, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
-import { Metadata } from "@/utils/chat/send-message/getVideoMetadata";
+import { getVideoMetadata, Metadata } from "@/utils/chat/send-message/getVideoMetadata";
 import { GrGallery } from "react-icons/gr";
 import { FaFile } from "react-icons/fa6";
 import { MdLocationOn } from "react-icons/md";
-import { FileInfo } from "@/types/chat";
+import { FileInfo, ImageInfo } from "@/types/chat";
 
 const ChatComposer = ({ roomId }: { roomId: string }) => {
   const [text, setText] = useState("");
@@ -51,7 +52,8 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   const client = useMatrixClient();
   const theme = useTheme();
   const [isTyping, setIsTyping] = useState(false);
-  const { addMessage } = useChatStore.getState();
+  const addMessage = useChatStore((state) => state.addMessage);
+  const updateMessage = useChatStore((state) => state.updateMessage);
   const { messages: forwardMessages, clearMessages } = useForwardStore();
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<
@@ -137,6 +139,19 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             const now = new Date();
             const userId = client.getUserId();
 
+            addMessage(roomId, {
+              eventId: localId,
+              sender: userId ?? undefined,
+              senderDisplayName: userId ?? undefined,
+              text: file.name,
+              audioUrl: null,
+              audioDuration: duration,
+              time: now.toLocaleString(),
+              timestamp: now.getTime(),
+              status: "sent",
+              type: "audio",
+            });
+
             const { httpUrl } = await sendVoiceMessage(
               client,
               roomId,
@@ -144,18 +159,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               duration
             );
 
-            addMessage(roomId, {
-              eventId: localId,
-              sender: userId ?? undefined,
-              senderDisplayName: userId ?? undefined,
-              text: file.name,
-              audioUrl: httpUrl,
-              audioDuration: duration,
-              time: now.toLocaleString(),
-              timestamp: now.getTime(),
-              status: "sent",
-              type: "audio",
-            });
+            updateMessage(roomId, localId, { audioUrl: httpUrl });
 
             setAudioChunks([]);
             setRecordTime(0);
@@ -331,7 +335,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     setText((prev) => prev + emojiData.emoji);
   };
 
-  const handleImages = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImagesAndVideos = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || !client) return;
     setOpen(false);
@@ -340,20 +344,52 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
 
     for (const file of Array.from(files)) {
       try {
-        const { httpUrl } = await sendImageMessage(client, roomId, file);
         const localId = "local_" + Date.now() + Math.random();
-
-        addMessage(roomId, {
-          eventId: localId,
-          sender: userId ?? undefined,
-          senderDisplayName: userId ?? undefined,
-          text: file.name,
-          imageUrl: httpUrl,
-          time: now.toLocaleString(),
-          timestamp: now.getTime(),
-          status: "sent",
-          type: "image",
-        });
+        if (file.type.startsWith("image/")) {
+          // Lấy kích thước ảnh
+          const dimentions = await getImageDimensions(file);
+          const imageInfo: ImageInfo = {
+            width: dimentions.width,
+            height: dimentions.height,
+          };
+  
+          addMessage(roomId, {
+            eventId: localId,
+            sender: userId ?? undefined,
+            senderDisplayName: userId ?? undefined,
+            text: file.name,
+            imageUrl: null,
+            imageInfo,
+            time: now.toLocaleString(),
+            timestamp: now.getTime(),
+            status: "sent",
+            type: "image",
+          });
+  
+          const { httpUrl } = await sendImageMessage(client, roomId, file);
+          updateMessage(roomId, localId, { imageUrl: httpUrl });
+        } else if (file.type.startsWith("video/")) {
+          // Gửi video
+          const metadata = await getVideoMetadata(file);
+          const videoInfo : Metadata  = { width: metadata.width, height: metadata.height, duration: metadata.duration}
+          addMessage(roomId, {
+            eventId: localId,
+            sender: userId ?? undefined,
+            senderDisplayName: userId ?? undefined,
+            text: file.name,
+            videoUrl: null,
+            videoInfo,
+            time: now.toLocaleString(),
+            timestamp: now.getTime(),
+            status: "sent",
+            type: "video",
+          });
+  
+          const { httpUrl } = await sendVideoMessage(client, roomId, file);
+          updateMessage(roomId, localId, {
+            videoUrl: httpUrl,
+          });
+        }
       } catch (err) {
         console.error("Failed to send image:", err);
       }
@@ -509,39 +545,68 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
         let fileInfo: FileInfo | null = null;
         const contentType = file.type;
         let type: MessageType = "file"; // Mặc định
-        if (contentType.startsWith("image/")) {
-          type = "image";
-          const res = await sendImageMessage(client, roomId, file);
-          httpUrlImage = res.httpUrl;
-        } else if (contentType.startsWith("video/")) {
-          type = "video";
-          const res = await sendVideoMessage(client, roomId, file);
-          httpUrlVideo = res.httpUrl;
-          metadata = res.metadata;
-        } else {
-          const res = await sendFileMessage(client, roomId, file);
-          httpUrlFile = res.httpUrl;
-          fileInfo = { fileSize: file.size, mimeType: file.type };
-        }
-        console.log("Type File: " + type);
         const localId = "local_" + Date.now() + Math.random();
         const now = new Date();
 
-        addMessage(roomId, {
-          eventId: localId,
-          sender: userId ?? undefined,
-          senderDisplayName: userId ?? undefined,
-          text: file.name,
-          imageUrl: httpUrlImage,
-          videoUrl: httpUrlVideo,
-          metadataVideo: metadata,
-          fileUrl: httpUrlFile,
-          fileInfo,
-          time: now.toLocaleString(),
-          timestamp: now.getTime(),
-          status: "sent",
-          type: type,
-        });
+        if (contentType.startsWith("image/")) {
+          type = "image";
+          addMessage(roomId, {
+            eventId: localId,
+            sender: userId ?? undefined,
+            senderDisplayName: userId ?? undefined,
+            text: file.name,
+            imageUrl: httpUrlImage,
+            time: now.toLocaleString(),
+            timestamp: now.getTime(),
+            status: "sent",
+            type: type,
+          });
+          const res = await sendImageMessage(client, roomId, file);
+          httpUrlImage = res.httpUrl;
+          updateMessage(roomId, localId, { imageUrl: httpUrlImage });
+        } else if (contentType.startsWith("video/")) {
+          type = "video";
+          addMessage(roomId, {
+            eventId: localId,
+            sender: userId ?? undefined,
+            senderDisplayName: userId ?? undefined,
+            text: file.name,
+            videoUrl: httpUrlVideo,
+            videoInfo: metadata,
+            time: now.toLocaleString(),
+            timestamp: now.getTime(),
+            status: "sent",
+            type: type,
+          });
+          const res = await sendVideoMessage(client, roomId, file);
+          httpUrlVideo = res.httpUrl;
+          metadata = res.metadata;
+          updateMessage(roomId, localId, {
+            videoUrl: httpUrlVideo,
+            videoInfo: metadata,
+          });
+        } else {
+          addMessage(roomId, {
+            eventId: localId,
+            sender: userId ?? undefined,
+            senderDisplayName: userId ?? undefined,
+            text: file.name,
+            fileUrl: httpUrlFile,
+            fileInfo: fileInfo,
+            time: now.toLocaleString(),
+            timestamp: now.getTime(),
+            status: "sent",
+            type: type,
+          });
+          const res = await sendFileMessage(client, roomId, file);
+          httpUrlFile = res.httpUrl;
+          fileInfo = { fileSize: file.size, mimeType: file.type };
+          updateMessage(roomId, localId, {
+            fileUrl: httpUrlFile,
+            fileInfo: fileInfo,
+          });
+        }
+        console.log("Type File: " + type);
       } catch (error) {
         console.error("Failed to send file:", error);
       }
@@ -726,14 +791,14 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
                     onClick={() => imageInputRef.current?.click()}
                     className="p-2 bg-blue-500 text-white rounded-md"
                   >
-                    Chọn ảnh
+                    Chọn ảnh hoặc video
                   </button>
                   <input
                     ref={imageInputRef}
                     type="file"
-                    accept="image/*"
+                    accept="image/*,video/*"
                     multiple
-                    onChange={handleImages}
+                    onChange={handleImagesAndVideos}
                     className="hidden"
                     aria-label="file"
                   />

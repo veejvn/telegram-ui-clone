@@ -6,13 +6,12 @@ import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { getTimeline, sendReadReceipt } from "@/services/chatService";
 import { MessageType, useChatStore } from "@/stores/useChatStore";
 import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
-import { FileInfo } from "@/types/chat";
+import { FileInfo, ImageInfo } from "@/types/chat";
 import { Metadata } from "@/utils/chat/send-message/getVideoMetadata";
 
 export const useTimeline = (roomId: string) => {
   const addMessage = useChatStore((state) => state.addMessage);
   const setMessage = useChatStore((state) => state.setMessages);
-  const updateReadStatus = useChatStore((state) => state.updateReadStatus);
   const client = useMatrixClient();
 
   useEffect(() => {
@@ -67,8 +66,9 @@ export const useTimeline = (roomId: string) => {
       const time = new Date(timestamp).toLocaleString();
 
       let imageUrl: string | null = null;
+      let imageInfo: ImageInfo | null = null;
       let videoUrl: string | null = null;
-      let metadata: Metadata | null = null;
+      let videoInfo: Metadata | null = null;
       let fileUrl: string | null = null;
       let fileInfo: FileInfo | null = null;
       let latitude: number | null = null;
@@ -84,11 +84,12 @@ export const useTimeline = (roomId: string) => {
         if (mxcUrl) {
           imageUrl = client.mxcUrlToHttp(mxcUrl, 800, 600, "scale", true);
         }
+        imageInfo = { width : content.info?.w , height : content.info?.h}
       } else if (content.msgtype === "m.video") {
         type = "video";
         if (content.url) {
           videoUrl = client.mxcUrlToHttp(content.url);
-          metadata = {
+          videoInfo = {
             width: content.info?.w,
             height: content.info?.h,
             duration: content.info?.duration,
@@ -134,8 +135,9 @@ export const useTimeline = (roomId: string) => {
         time,
         timestamp,
         imageUrl,
+        imageInfo,
         videoUrl,
-        metadataVideo: metadata,
+        videoInfo,
         fileUrl,
         fileInfo,
         audioUrl,
@@ -166,18 +168,10 @@ export const useTimeline = (roomId: string) => {
       const userId = client.getUserId();
       if (!userId) return;
 
-      const events = room.getLiveTimeline().getEvents();
-      const readEventIds: string[] = [];
-
-      for (const event of events) {
-        const receipts = room.getReceiptsForEvent(event) as any[] | undefined;
-        if (receipts && receipts.some((r) => r.type === "m.read")) {
-          readEventIds.push(event.getId() || "");
-        }
+      const res = await getTimeline(roomId, client);
+      if (res.success && res.timeline) {
+        setMessage(roomId, res.timeline);
       }
-
-      // Chỉ update status "read" cho các eventId này
-      updateReadStatus(roomId, readEventIds);
     };
 
     client.on("Room.receipt" as any, onReceipt);
