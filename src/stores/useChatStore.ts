@@ -1,9 +1,16 @@
-import { FileInfo } from "@/types/chat";
+import { FileInfo, ImageInfo } from "@/types/chat";
 import { Metadata } from "@/utils/chat/send-message/getVideoMetadata";
 import { create } from "zustand";
 
 export type MessageStatus = "sending" | "sent" | "read";
-export type MessageType = "text" | "image" | "video" | "file" | "emoji" | "location" | "audio";
+export type MessageType =
+  | "text"
+  | "image"
+  | "video"
+  | "file"
+  | "emoji"
+  | "location"
+  | "audio";
 
 export type Message = {
   eventId: string;
@@ -13,12 +20,13 @@ export type Message = {
   time: string;
   timestamp?: number;
   imageUrl?: string | null;
+  imageInfo?: ImageInfo | null,
   videoUrl?: string | null;
-  metadataVideo?: Metadata | null;
+  videoInfo?: Metadata | null;
   fileUrl?: string | null;
   fileInfo?: FileInfo | null;
   audioUrl?: string | null;
-  audioDuration?: number | null;     // ← thêm (đơn vị giây)
+  audioDuration?: number | null; // ← thêm (đơn vị giây)
   status: MessageStatus;
   type?: MessageType;
   isForward?: boolean;
@@ -43,6 +51,7 @@ type ChatStore = {
   setIsLoadingMore: (roomId: string, isLoading: boolean) => void;
   setHasMore: (roomId: string, hasMore: boolean) => void;
   setOldestEventId: (roomId: string, eventId: string | null) => void;
+  updateMessage: (roomId: string, eventId: string, updates: Partial<Message>) => void;
 };
 
 export const useChatStore = create<ChatStore>((set, get) => ({
@@ -53,9 +62,33 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   lastSeenByRoom: {},
 
   addMessage: (roomId, msg) => {
-    //console.log(msg);
     const current = get().messagesByRoom[roomId] || [];
+
+    // Nếu là eventId thật, tìm local message cùng sender và text
+    if (!msg.eventId.startsWith("local_")) {
+      const idx = current.findIndex(
+        (m) =>
+          m.sender === msg.sender &&
+          m.text === msg.text &&
+          m.eventId.startsWith("local_")
+      );
+      if (idx !== -1) {
+        // Cập nhật local message thành message thật
+        const updated = [...current];
+        updated[idx] = { ...msg, status: "sent" as MessageStatus };
+        set({
+          messagesByRoom: {
+            ...get().messagesByRoom,
+            [roomId]: updated,
+          },
+        });
+        return; // Quan trọng: return để không thêm message mới
+      }
+    }
+
+    // Lọc trùng eventId như cũ
     if (current.some((m) => m.eventId === msg.eventId)) return;
+
     set({
       messagesByRoom: {
         ...get().messagesByRoom,
@@ -110,6 +143,20 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       oldestEventIdByRoom: {
         ...get().oldestEventIdByRoom,
         [roomId]: eventId,
+      },
+    });
+  },
+
+  updateMessage: (roomId: string, eventId: string, updates: Partial<Message>) => {
+    //console.log(updates);
+    const current = get().messagesByRoom[roomId] || [];
+    const updated = current.map(msg =>
+      msg.eventId === eventId ? { ...msg, ...updates } : msg
+    );
+    set({
+      messagesByRoom: {
+        ...get().messagesByRoom,
+        [roomId]: updated,
       },
     });
   },

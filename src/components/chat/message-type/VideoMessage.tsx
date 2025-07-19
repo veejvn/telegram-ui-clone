@@ -10,21 +10,37 @@ import { FaPause, FaPlay } from "react-icons/fa6";
 import { GoUnmute } from "react-icons/go";
 
 const VideoMessage = ({ msg, isSender }: MessagePros) => {
-  if (!msg.videoUrl) return;
+  //if (!msg.videoUrl) return;
   const videoRef = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(true);
   const [loaded, setLoaded] = useState(false);
-  const { width, height, duration } = msg.metadataVideo || {};
-  const aspectRatio = width && height ? width / height : 16 / 9;
+  const { width, height, duration } = msg.videoInfo || {};
   const [isPlaying, setIsPlaying] = useState(false);
   const [showPauseBtn, setShowPauseBtn] = useState(false);
   const [remainingTime, setRemainingTime] = useState(duration || 0);
   const intervalRef = useRef<number | null>(null);
 
+  const maxW = 320;
+  const maxH = 320;
+  let boxW = maxW, boxH = maxH;
+  if (width && height) {
+    const ratio = width / height;
+    if (ratio > 1) {
+      // Video ngang
+      boxW = maxW;
+      boxH = Math.round(maxW / ratio);
+    } else {
+      // Video dọc hoặc vuông
+      boxH = maxH;
+      boxW = Math.round(maxH * ratio);
+    }
+  }
+
   const containerStyle = {
-    aspectRatio: `${aspectRatio}`,
-    width: width ? `${Math.min(width, 320)}px` : "320px", // Giới hạn max width
-    minWidth: "200px",
+    width: boxW + "px",
+    height: boxH + "px",
+    maxWidth: maxW + "px",
+    maxHeight: maxH + "px",
     background: "#000",
   };
 
@@ -88,31 +104,51 @@ const VideoMessage = ({ msg, isSender }: MessagePros) => {
     "absolute bottom-1 right-2 text-xs text-xs mt-1",
     isSender ? "text-white" : "text-zinc-400"
   );
+
   return (
     <div
       className={clsx(
-        "relative max-w-[60%] rounded-2xl overflow-hidden border-2 border-white dark:border-[#4567fc] shadow-md",
+        "relative rounded-2xl overflow-hidden border-2 border-white dark:border-[#4567fc] shadow-md",
         isSender ? "ml-auto" : "mr-auto"
       )}
       style={containerStyle}
     >
-      <video
-        ref={videoRef}
-        src={msg.videoUrl}
-        muted={muted}
-        onLoadedData={() => setLoaded(true)}
-        className="w-full h-full object-cover cursor-pointer"
-        onClick={() => videoRef.current?.play()}
-        playsInline
-        controls={false}
-        onPlay={() => setIsPlaying(true)}
-        onPause={() => setIsPlaying(false)}
-        onEnded={() => {
-          setIsPlaying(false);
-          setRemainingTime(duration || 0);
-          setMuted(true);
-        }}
-      />
+      {/* Nếu chưa có videoUrl, hiện loading/placeholder */}
+      {!msg.videoUrl ? (
+        <div className="flex flex-col items-center justify-center w-full h-full">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400 mb-2" />
+          <span className="text-xs text-gray-200">Đang tải video...</span>
+        </div>
+      ) : (
+        <>
+          {/* Overlay loading khi video chưa load xong */}
+          {!loaded && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center w-full h-full z-10 bg-black/60">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400 mb-2" />
+              <span className="text-xs text-gray-200">Đang tải video...</span>
+            </div>
+          )}
+          <video
+            ref={videoRef}
+            src={msg.videoUrl}
+            muted={muted}
+            onLoadedData={() => setLoaded(true)}
+            className={`w-full h-full object-cover cursor-pointer transition-opacity duration-300 ${
+              loaded ? "opacity-100" : "opacity-0"
+            }`}
+            onClick={() => videoRef.current?.play()}
+            playsInline
+            controls={false}
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
+            onEnded={() => {
+              setIsPlaying(false);
+              setRemainingTime(duration || 0);
+              setMuted(true);
+            }}
+          />
+        </>
+      )}
 
       {/* Overlay thời lượng */}
       {loaded && (
