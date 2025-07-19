@@ -73,9 +73,9 @@ const ForwardTextMessage = ({
   );
 
   const timeClass = clsx(
-    "flex items-center gap-1 text-xs mt-1",
+    "flex items-center justify-end gap-1 text-xs mt-1",
     isSender
-      ? "text-green-500 justify-end dark:text-white"
+      ? "text-[#79c071] dark:text-white"
       : "text-gray-400 dark:text-gray-400"
   );
 
@@ -184,7 +184,7 @@ const ForwardTextMessage = ({
                 </Avatar>
                 {originalSender}
               </p>
-              <p className={"whitespace-pre-wrap break-words leading-snug"}>
+              <p className={"whitespace-pre-wrap break-words leading-snug max-w-[70vw]"}>
                 {text}
               </p>
               <div className={timeClass}>
