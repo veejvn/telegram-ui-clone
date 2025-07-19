@@ -184,7 +184,7 @@ const ForwardTextMessage = ({
                 </Avatar>
                 {originalSender}
               </p>
-              <p className={"whitespace-pre-wrap break-words leading-snug"}>
+              <p className={"whitespace-pre-wrap break-words leading-snug max-w-[70vw]"}>
                 {text}
               </p>
               <div className={timeClass}>
