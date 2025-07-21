@@ -4,31 +4,33 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(req: NextRequest) {
   const { token, userId, deviceId } = await req.json();
 
-//   if (!token || !userId) {
-//     return NextResponse.json({ error: "Missing token or userId" }, { status: 400 });
-//   }
-  const isProduction = process.env.NODE_ENV === "production" || process.env.NEXT_PUBLIC_ENV === "production";
+  //   if (!token || !userId) {
+  //     return NextResponse.json({ error: "Missing token or userId" }, { status: 400 });
+  //   }
+  const isProduction =
+    process.env.NODE_ENV === "production" ||
+    process.env.NEXT_PUBLIC_ENV === "production";
   // console.log("NODE_ENV:", process.env.NODE_ENV);
   // console.log("NEXT_PUBLIC_ENV:", process.env.NEXT_PUBLIC_ENV);
   // console.log("isProduction:", isProduction);
 
   const response = NextResponse.json({ success: true });
-  if(token){
+  if (token) {
     response.cookies.set("matrix_token", token, {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 604800,
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365 * 10,
     });
   }
-  if(userId){
+  if (userId) {
     response.cookies.set("matrix_user_id", userId, {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 604800,
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365 * 10,
     });
   }
   if (deviceId) {
@@ -37,7 +39,7 @@ export async function POST(req: NextRequest) {
       secure: isProduction,
       sameSite: "lax",
       path: "/",
-      maxAge: 604800,
+      maxAge: 60 * 60 * 24 * 365 * 10,
     });
   }
 

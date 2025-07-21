@@ -19,6 +19,11 @@ const nextConfig: NextConfig = {
                 protocol: 'https',
                 hostname: 'matrix-client.matrix.teknix.dev',
             },
+            {
+            protocol: 'https',
+            hostname: 'www.google.com',
+            pathname: '/s2/favicons**',
+            },
         ],
         dangerouslyAllowSVG: true,
         contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",

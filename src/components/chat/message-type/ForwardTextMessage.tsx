@@ -26,6 +26,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/ChatAvatar";
+import { linkify } from "@/utils/chat/linkify";
 
 type ForwardTextMessageProps = MessagePros & {
   forwardMessage: {
@@ -185,7 +186,7 @@ const ForwardTextMessage = ({
                 {originalSender}
               </p>
               <p className={"whitespace-pre-wrap break-words leading-snug max-w-[70vw]"}>
-                {text}
+                {linkify(text)}
               </p>
               <div className={timeClass}>
                 {formatMsgTime(msg.time)}
