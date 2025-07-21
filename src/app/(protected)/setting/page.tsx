@@ -4,7 +4,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { getSelectedLanguageCode, getLanguageLabelByCode } from '@/app/(protected)//setting/language/page';
 import { QrCode, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useUserStore } from "@/stores/useUserStore";
@@ -14,6 +13,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { getBackgroundColorClass } from "@/utils/getBackgroundColor ";
 import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
 import { extractUsernameFromMatrixId } from "@/utils/matrixHelpers";
+import { getLanguageLabelByCode, getSelectedLanguageCode } from "@/utils/setting/language";
 
 interface SettingItem {
   title: string;
