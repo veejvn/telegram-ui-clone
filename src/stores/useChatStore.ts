@@ -13,9 +13,7 @@ export type MessageType =
   | "audio";
 
 export type Message = {
-  originalSender: string;
-  forwarded: any;
-  body: any;
+  
   eventId: string;
   sender: string | undefined;
   senderDisplayName?: string | undefined;

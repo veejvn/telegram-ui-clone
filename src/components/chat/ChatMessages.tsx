@@ -150,7 +150,7 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
   const filteredMessages = searchText.trim()
     ? messages.filter((msg) => {
         // Loại forward: flag hoặc text là JSON forward
-        if (msg.forwarded) return false;
+        if ("forwarded" in msg && (msg as any).forwarded) return false;
         if (typeof msg.text === "string") {
           try {
             const parsed = JSON.parse(msg.text);
@@ -228,12 +228,8 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
                   let isForward = false;
                   let originalSender = "";
 
-                  // Kiểm tra forward qua flag hoặc JSON
-                  if (msg?.forwarded) {
-                    isForward = true;
-                    // Nếu có trường originalSender thì lấy luôn
-                    originalSender = msg.originalSender ?? "";
-                  } else if (typeof msg?.text === "string") {
+                  // Chỉ kiểm tra forward qua JSON trong text
+                  if (typeof msg?.text === "string") {
                     try {
                       const parsed = JSON.parse(msg.text);
                       if (
@@ -245,7 +241,9 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
                         displayText = parsed.text;
                         originalSender = parsed.originalSender;
                       }
-                    } catch {}
+                    } catch {
+                      // Không phải forward
+                    }
                   }
 
                   return (
