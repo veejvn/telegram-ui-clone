@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { MatrixClient, MatrixEvent } from "matrix-js-sdk";
+import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 
 export const useUserPresence = (client: MatrixClient, userId: string) => {
   const [lastActiveAgo, setLastActiveAgo] = useState<number | null>(null);
@@ -8,6 +9,7 @@ export const useUserPresence = (client: MatrixClient, userId: string) => {
   useEffect(() => {
     const fetchPresence = async () => {
       try {
+        if(!userId) return;
         const presence = await client.getPresence(userId);
         setLastActiveAgo(presence.last_active_ago ?? null);
         setPresenceTs(Date.now() - (presence.last_active_ago ?? 0));
@@ -26,10 +28,10 @@ export const useUserPresence = (client: MatrixClient, userId: string) => {
       }
     };
 
-    client.on("event.presence", onPresence);
+    client.on("event.presence" as any, onPresence);
 
     return () => {
-      client.removeListener("event.presence", onPresence);
+      client.removeListener("event.presence" as any, onPresence);
     };
   }, [client, userId]);
 

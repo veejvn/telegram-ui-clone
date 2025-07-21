@@ -35,7 +35,10 @@ export default function InfoBody({ user }: { user: sdk.User }) {
   const client = useMatrixClient();
   const router = useRouter();
 
-  const { lastSeen } = useUserPresence(client, user?.userId ?? "");
+  let lastSeen = null;
+  if (client) {
+    lastSeen = useUserPresence(client, user?.userId ?? "").lastSeen;
+  }
   const isActuallyOnline =
     lastSeen !== null && Date.now() - lastSeen.getTime() < 30 * 1000;
 
@@ -328,6 +331,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                               width={500}
                               height={500}
                               className="w-full h-full object-cover rounded"
+                              priority
                             />
                           </div>
                         ))}

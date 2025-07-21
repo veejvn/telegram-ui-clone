@@ -32,7 +32,10 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
   const [user, setUser] = useState<sdk.User | undefined>(undefined);
   const router = useRouter();
 
-  const { lastSeen } = useUserPresence(client, otherUserId ?? "");
+  let lastSeen = null;
+  if (client) {
+    lastSeen = useUserPresence(client, user?.userId ?? "").lastSeen;
+  }
 
   const isActuallyOnline =
     type === "direct" &&
