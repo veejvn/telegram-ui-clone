@@ -1,44 +1,27 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { ChevronLeft, Check, Lock, Search } from 'lucide-react';
-import { Switch } from "@/components/ui/switch-language"; // <-- Custom Switch with showLock
+import { Switch } from "@/components/ui/switch-language";
 import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
 import Head from "next/head";
 import { useTheme } from "next-themes";
-
-const AVAILABLE_LANGUAGES = [
-  { label: 'English', sub: 'English' },
-  { label: 'Arabic', sub: 'العربية' },
-  { label: 'Belarusian', sub: 'Беларуская' },
-  { label: 'Catalan', sub: 'Català' },
-  { label: 'Croatian', sub: 'Hrvatski' },
-  { label: 'Czech', sub: 'Čeština' },
-  { label: 'Dutch', sub: 'Nederlands' },
-  { label: 'Finnish', sub: 'Suomi' },
-  { label: 'French', sub: 'Français' },
-  { label: 'German', sub: 'Deutsch' },
-  { label: 'Malay', sub: 'Bahasa Melayu' },
-  { label: 'Norwegian (Bokmål)', sub: 'Norsk (Bokmål)' },
-  { label: 'Persian', sub: 'فارسی' },
-  { label: 'Polish', sub: 'Polski' },
-  { label: 'Portuguese (Brazil)', sub: 'Português (Brasil)' },
-  { label: 'Romanian', sub: 'Română' },
-  { label: 'Russian', sub: 'Русский' },
-  { label: 'Serbian', sub: 'Српски' },
-  { label: 'Slovak', sub: 'Slovenčina' },
-  { label: 'Spanish', sub: 'Español' },
-  { label: 'Swedish', sub: 'Svenska' },
-  { label: 'Turkish', sub: 'Türkçe' },
-  { label: 'Ukrainian', sub: 'Українська' },
-  { label: 'Uzbek', sub: "O'zbek" },
-];
+import { AVAILABLE_LANGUAGES, getInitialLang, LANG_CODE_KEY, LANG_LABEL_KEY } from '@/utils/setting/language';
 
 export default function LanguagePage() {
   const router = useRouter();
-  const [selected, setSelected] = useState<string>('English');
+  // State ngôn ngữ: object thay vì chỉ label/code
+  const [selected, setSelected] = useState(() => getInitialLang());
   const [showTranslate, setShowTranslate] = useState(false);
+
+  // Lưu khi đổi ngôn ngữ
+  useEffect(() => {
+    if (selected) {
+      localStorage.setItem(LANG_CODE_KEY, selected.code);
+      localStorage.setItem(LANG_LABEL_KEY, selected.label);
+    }
+  }, [selected]);
 
   // --- Theme + status bar ---
   const { theme } = useTheme();
@@ -112,8 +95,8 @@ export default function LanguagePage() {
           <CardContent className="p-0">
             {AVAILABLE_LANGUAGES.map((lang, idx) => (
               <div
-                key={lang.label}
-                onClick={() => setSelected(lang.label)}
+                key={lang.code}
+                onClick={() => setSelected(lang)}
                 className={
                   "flex items-start justify-between px-4 py-2.5 cursor-pointer transition-colors " +
                   (idx !== AVAILABLE_LANGUAGES.length - 1
@@ -126,7 +109,7 @@ export default function LanguagePage() {
                   <br />
                   <span className="text-[15px] text-zinc-500 leading-none">{lang.sub}</span>
                 </div>
-                {selected === lang.label && <Check className="w-5 h-5 text-blue-500 mt-1" />}
+                {selected.code === lang.code && <Check className="w-5 h-5 text-blue-500 mt-1" />}
               </div>
             ))}
           </CardContent>
