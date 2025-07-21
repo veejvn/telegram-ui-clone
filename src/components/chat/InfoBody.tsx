@@ -225,7 +225,10 @@ export default function InfoBody({ user }: { user: sdk.User }) {
 
             {/* Search and More buttons */}
 
-            <div className="flex flex-col justify-end items-center group cursor-pointer bg-white dark:bg-[#232329] rounded-lg w-[75px] h-[50px] py-1">
+            <div
+              className="flex flex-col justify-end items-center group cursor-pointer bg-white dark:bg-[#232329] rounded-lg w-[75px] h-[50px] py-1"
+              onClick={() => router.push(`/chat/${roomId}?searching=true`)}
+            >
               <SearchIcon />
               <p className="text-xs text-[#155dfc]">search</p>
             </div>
