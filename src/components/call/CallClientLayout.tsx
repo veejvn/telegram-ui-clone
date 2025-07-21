@@ -1,7 +1,6 @@
 "use client";
 
 import { getLS } from "@/tools/localStorage.tool";
-import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -13,7 +12,6 @@ const CallClientLayout = ({
   children: React.ReactNode;
 }>) => {
 
-  const headerStyle = getHeaderStyleWithStatusBar();
   const fromMainApp = getLS("fromMainApp")
   const route = useRouter()
   const hide = getLS("hide") || [];
@@ -35,7 +33,7 @@ const CallClientLayout = ({
   }, [accessToken, userId, deviceId]);
 
   if (!checked) return <GetCookie />;
-  return <div style={headerStyle}>{children}</div>;
+  return <>{children}</>;
 };
 
 export default CallClientLayout;
