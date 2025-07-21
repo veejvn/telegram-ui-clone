@@ -7,7 +7,7 @@ import { Message, MessageStatus, MessageType } from "@/stores/useChatStore";
 import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { FileInfo, LocationInfo } from "@/types/chat";
+import { FileInfo, ImageInfo, LocationInfo } from "@/types/chat";
 import { MatrixClient } from "@/types/matrix";
 import { getVideoMetadata } from "@/utils/chat/send-message/getVideoMetadata";
 import { Metadata } from "@/utils/chat/send-message/getVideoMetadata";
@@ -115,7 +115,9 @@ export const getTimeline = async (
 
     let lastReadIndex = -1;
     if (lastReadEventId) {
-      lastReadIndex = messages.filter((e) => e.getType() === "m.room.message").findIndex((e) => e.getId() === lastReadEventId);
+      lastReadIndex = messages
+        .filter((e) => e.getType() === "m.room.message")
+        .findIndex((e) => e.getId() === lastReadEventId);
     }
 
     // ✅ Parse message
@@ -137,13 +139,14 @@ export const getTimeline = async (
         //console.log(text, sender, status, idx, lastReadIndex);
 
         let imageUrl: string | null = null;
+        let imageInfo: ImageInfo | null = null;
         let videoUrl: string | null = null;
-        let metadata: Metadata | null = null
+        let videoInfo: Metadata | null = null;
         let fileUrl: string | null = null;
-        let fileInfo: FileInfo | null = null
+        let fileInfo: FileInfo | null = null;
         let latitude: number | null = null;
         let longitude: number | null = null;
-        let description: string | null = null
+        let description: string | null = null;
 
         let audioUrl: string | null = null;
         let audioDuration: number | null = null;
@@ -155,27 +158,38 @@ export const getTimeline = async (
           if (mxcUrl) {
             imageUrl = client.mxcUrlToHttp(mxcUrl, 800, 600, "scale", true);
           }
+          imageInfo = { width : content.info?.w , height : content.info?.h}
         } else if (content.msgtype === "m.video") {
           type = "video";
           if (content.url) {
             videoUrl = client.mxcUrlToHttp(content.url);
-            metadata = { width: content.info?.w, height: content.info?.h, duration: content.info?.duration}
+            videoInfo = {
+              width: content.info?.w,
+              height: content.info?.h,
+              duration: content.info?.duration,
+            };
           }
         } else if (content.msgtype === "m.file") {
           type = "file";
           if (content.url) {
             fileUrl = client.mxcUrlToHttp(content.url);
           }
-          fileInfo = { fileSize: content.info?.size, mimeType: content.info?.mimetype }
-        } else if (content.msgtype === "m.location"){
-          type = "location"
-          const geo_uri: string = content["geo_uri"] || content["org.matrix.msc3488.location"]?.uri;
-          description = content["org.matrix.msc3488.location"]?.description ?? content["body"];
-          const [, latStr, lonStr] = geo_uri.match(/geo:([0-9.-]+),([0-9.-]+)/) || [];
+          fileInfo = {
+            fileSize: content.info?.size,
+            mimeType: content.info?.mimetype,
+          };
+        } else if (content.msgtype === "m.location") {
+          type = "location";
+          const geo_uri: string =
+            content["geo_uri"] || content["org.matrix.msc3488.location"]?.uri;
+          description =
+            content["org.matrix.msc3488.location"]?.description ??
+            content["body"];
+          const [, latStr, lonStr] =
+            geo_uri.match(/geo:([0-9.-]+),([0-9.-]+)/) || [];
           latitude = parseFloat(latStr);
           longitude = parseFloat(lonStr);
-        }
-         else if (isOnlyEmojis(text)) {
+        } else if (isOnlyEmojis(text)) {
           type = "emoji";
         } else if (content.msgtype === "m.audio") {
           type = "audio";
@@ -195,8 +209,9 @@ export const getTimeline = async (
           time,
           timestamp,
           imageUrl,
+          imageInfo,
           videoUrl,
-          metadataVideo: metadata,
+          videoInfo,
           fileUrl,
           fileInfo,
           audioUrl,
@@ -384,8 +399,15 @@ export async function sendImageMessage(
 
     await client.sendMessage(roomId, imageMessage as any);
     return {
-      httpUrl: client.mxcUrlToHttp(uploadResponse.content_uri, 800, 600, "scale", true),
-    }
+      httpUrl: client.mxcUrlToHttp(
+        uploadResponse.content_uri,
+        800,
+        600,
+        "scale",
+        true
+      ),
+      dimentions
+    };
   } catch (err) {
     console.error("sendImageMessage error:", err);
     throw err;
@@ -396,11 +418,14 @@ export async function sendVoiceMessage(
   client: sdk.MatrixClient,
   roomId: string,
   file: File,
-  duration: number            // ← thêm tham số duration
-
+  duration: number // ← thêm tham số duration
 ) {
   if (!client) {
-    return { success: false, err: "User not authenticated or session invalid.", httpUrl: "" };
+    return {
+      success: false,
+      err: "User not authenticated or session invalid.",
+      httpUrl: "",
+    };
   }
   try {
     // đọc blob thành ArrayBuffer
@@ -426,9 +451,10 @@ export async function sendVoiceMessage(
 
     // gửi message
     await client.sendMessage(roomId, audioContent as any);
-    return { success: true, 
-      httpUrl: client.mxcUrlToHttp(uploadRes.content_uri)
-     };
+    return {
+      success: true,
+      httpUrl: client.mxcUrlToHttp(uploadRes.content_uri),
+    };
   } catch (err) {
     console.error("sendVoiceMessage error:", err);
     return { success: false, err };
@@ -451,7 +477,7 @@ function readFileAsArrayBuffer(file: File): Promise<ArrayBuffer> {
   });
 }
 
-const getImageDimensions = (file: File): Promise<any> => {
+export const getImageDimensions = (file: File): Promise<{width: number, height: number}> => {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
@@ -488,7 +514,6 @@ export const sendTypingEvent = async (
   roomId: string,
   isTyping: boolean
 ): Promise<{ success: boolean; err?: any }> => {
-
   if (!client) {
     return {
       success: false,
@@ -504,35 +529,46 @@ export const sendTypingEvent = async (
   }
 };
 
-export const sendLocationMessage = async (client: MatrixClient, roomId: string, locationInfo: LocationInfo) => {
-  try{
+export const sendLocationMessage = async (
+  client: MatrixClient,
+  roomId: string,
+  locationInfo: LocationInfo
+) => {
+  try {
     const { geoUri, displayText } = locationInfo;
-  
-    const locationMessage = 
-      {
-        "msgtype": "m.location",
-        "body": displayText,
-        "geo_uri": geoUri,
-        "org.matrix.msc3488.location": {
-          "uri": geoUri,
-          "description": displayText,
-        },
-        "org.matrix.msc3488.text": displayText,
-        "org.matrix.msc1767.text": displayText,
-      }
-    await client.sendEvent(roomId, "m.room.message", locationMessage as any, "");
+
+    const locationMessage = {
+      msgtype: "m.location",
+      body: displayText,
+      geo_uri: geoUri,
+      "org.matrix.msc3488.location": {
+        uri: geoUri,
+        description: displayText,
+      },
+      "org.matrix.msc3488.text": displayText,
+      "org.matrix.msc1767.text": displayText,
+    };
+    await client.sendEvent(
+      roomId,
+      "m.room.message",
+      locationMessage as any,
+      ""
+    );
     return {
-      success: true
-    }
-  }catch(error){
+      success: true,
+    };
+  } catch (error) {
     console.error("Send Image Message Error:", error);
     throw error;
   }
+};
 
-}
-
-export const sendVideoMessage = async (client: MatrixClient, roomId: string, file: File) => {
-  try{
+export const sendVideoMessage = async (
+  client: MatrixClient,
+  roomId: string,
+  file: File
+) => {
+  try {
     const metadata = await getVideoMetadata(file);
     const uploadResponse = await client.uploadContent(file, {
       type: file.type,
@@ -552,30 +588,30 @@ export const sendVideoMessage = async (client: MatrixClient, roomId: string, fil
     };
     await client.sendMessage(roomId, content as any);
     return {
-      httpUrl : client.mxcUrlToHttp(uploadResponse.content_uri),
-      metadata
-    }
-  }catch(error){
-    throw error
+      httpUrl: client.mxcUrlToHttp(uploadResponse.content_uri),
+      metadata,
+    };
+  } catch (error) {
+    throw error;
   }
-}
+};
 
 export async function sendFileMessage(
   client: MatrixClient,
   roomId: string,
   file: File
 ) {
-  try{
+  try {
     const contentType = file.type;
     const fileName = file.name;
     const fileSize = file.size;
     const buffer = await file.arrayBuffer();
-  
+
     const uploadResponse = await client.uploadContent(buffer, {
       name: fileName,
       type: contentType,
     });
-  
+
     // 3. Tạo nội dung tin nhắn
     const content = {
       body: fileName,
@@ -586,14 +622,14 @@ export async function sendFileMessage(
       msgtype: "m.file",
       url: uploadResponse.content_uri,
     };
-  
+
     // 4. Gửi tin nhắn
     await client.sendMessage(roomId, content as any);
-  
+
     return {
-      httpUrl: client.mxcUrlToHttp(uploadResponse.content_uri)
+      httpUrl: client.mxcUrlToHttp(uploadResponse.content_uri),
     }; // chứa event_id, room_id...
-  }catch(error){
+  } catch (error) {
     throw error;
   }
 }
