@@ -15,7 +15,7 @@ export default function VideoCallPage() {
     }
 
     const handleTerminate = () => {
-        router.replace('/call');
+        router.replace(`/chat/${encodeURIComponent(calleeId)}`);
     };
 
     return (

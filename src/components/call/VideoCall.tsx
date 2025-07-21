@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Volume2, VolumeX, ChevronLeft } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Volume2, VolumeX, ChevronLeft, User, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useCallStore from '@/stores/useCallStore';
 import { callService } from '@/services/callService';
@@ -31,19 +31,21 @@ export function VideoCall({
     } = useCallStore();
 
     const state = callState ?? storeState;
-    const prevState = useRef(state);
-    useEffect(() => {
-        // chỉ fire onEndCall khi có transition từ active -> ended/error
-        const wasActive = ['incoming', 'ringing', 'connecting', 'connected'].includes(prevState.current);
-        const isFinal = state === 'ended' || state === 'error';
-        if (wasActive && isFinal) {
-            onEndCall();
-        }
-        prevState.current = state;
-    }, [state, onEndCall]);
+
+    // Giữ previous state để detect transition
+    const prevStateRef = useRef<string>(state);
+    // Flag để ensure chỉ schedule 1 lần
+    const notifiedRef = useRef<boolean>(false);
+    // Để clear timeout khi unmount
+    const timeoutRef = useRef<number | null>(null);
+
+    // UI state
+    const [showEndNotification, setShowEndNotification] = useState<boolean>(false);
+    const [finalCallDuration, setFinalCallDuration] = useState<number>(0);
+    const [internalDuration, setInternalDuration] = useState(0);
+
     const [cameraOn, setCameraOn] = useState(true);
     const [speakerOn, setSpeakerOn] = useState(true);
-    const [internalDuration, setInternalDuration] = useState(0);
 
     const localVideoRef = useRef<HTMLVideoElement>(null);
     const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -52,6 +54,39 @@ export function VideoCall({
 
     // Thêm trạng thái preview
     const [showPreview, setShowPreview] = useState(false);
+
+    // --- 1) Cleanup timeout chỉ trên unmount ---
+    useEffect(() => {
+        return () => {
+            if (timeoutRef.current !== null) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, []);
+
+    // --- 2) Khi state chuyển từ active -> ended/error, schedule notification 1 lần ---
+    useEffect(() => {
+        const wasActive = ['incoming', 'ringing', 'connecting', 'connected'].includes(
+            prevStateRef.current
+        );
+        const isFinal = state === 'ended' || state === 'error';
+
+        if (wasActive && isFinal && !notifiedRef.current) {
+            notifiedRef.current = true;
+            // Chọn lấy duration từ prop hoặc từ internal count
+            const duration = callDuration ?? internalDuration;
+            setFinalCallDuration(duration);
+
+            setShowEndNotification(true);
+
+            timeoutRef.current = window.setTimeout(() => {
+                setShowEndNotification(false);
+                onEndCall();
+            }, 10_000);
+        }
+
+        prevStateRef.current = state;
+    }, [state, callDuration, internalDuration, onEndCall]);
 
     useEffect(() => {
         if (localVideoRef.current && localStream) {
@@ -64,7 +99,6 @@ export function VideoCall({
     }, [localStream]);
 
     // Attach remote video
-    // Dưới useEffect gán remoteStream
     useEffect(() => {
         if (remoteVideoRef.current && remoteStream) {
             remoteVideoRef.current.srcObject = remoteStream;
@@ -115,6 +149,11 @@ export function VideoCall({
 
     const handleEnd = () => {
         hangup();
+        // onEndCall sẽ do timeout xử lý
+    };
+
+    const handleCloseEndNotification = () => {
+        setShowEndNotification(false);
         onEndCall();
     };
 
@@ -152,6 +191,123 @@ export function VideoCall({
             alert('Không thể chuyển camera: ' + (err instanceof Error ? err.message : String(err)));
         }
     };
+
+    const isRinging = ['ringing', 'connecting', 'incoming'].includes(state);
+
+    // Nếu đang hiển thị thông báo call ended, hiển thị UI tương tự voice call
+    if (showEndNotification) {
+        return (
+            <div
+                className="relative flex flex-col items-center justify-between min-h-screen w-full"
+                style={{
+                    background: 'linear-gradient(160deg, #a18cd1 0%, #fbc2eb 100%)',
+                }}
+
+            >
+                {/* Header */}
+                <div className="w-full flex items-center justify-between px-4 pt-4">
+                    <button
+                        className="flex items-center gap-1 text-white/90 text-lg"
+                        onClick={handleCloseEndNotification}
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                        Back
+                    </button>
+                    <div className="bg-blue-500 text-white rounded-full px-3 py-0.5 text-xs font-bold">
+                        TELEGRAM
+                    </div>
+                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                        <User className="w-5 h-5 text-white/80" />
+                    </div>
+                </div>
+
+                {/* Emoji & Encryption */}
+                <div className="mt-4 flex flex-col items-center">
+                    <div className="text-3xl">🧱🐷🐱🚂</div>
+                    <div className="mt-2 bg-white/20 rounded-xl px-4 py-1 text-white text-sm flex items-center gap-1">
+                        <Lock className="w-4 h-4" /> Encryption key of this call
+                    </div>
+                </div>
+
+                {/* Avatar */}
+                <div className="flex flex-col items-center mt-12">
+                    <div className="relative w-40 h-40">
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-purple-400 to-pink-300 border-4 border-white/30 flex items-center justify-center z-10">
+                            <span className="text-6xl text-white font-bold">
+                                {contactName?.[0]?.toUpperCase() || 'U'}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="mt-6 text-center">
+                        <div className="text-white text-2xl font-semibold">
+                            {contactName}
+                        </div>
+                        <div className="flex flex-col items-center gap-2 mt-1">
+                            <div className="text-white/90 text-lg font-normal tracking-wide">
+                                Call ended
+                            </div>
+                            <div className="flex items-center justify-center gap-2">
+                                <span className="text-white/80 text-sm">📶</span>
+                                <span className="text-white/80 text-lg font-mono">
+                                    {formatDuration(finalCallDuration)}
+                                </span>
+                            </div>
+                            <button
+                                className="mt-4 bg-white/20 hover:bg-white/30 backdrop-blur rounded-full px-6 py-2 text-white text-sm font-medium transition-colors"
+                                onClick={handleCloseEndNotification}
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Controls (disabled) */}
+                <div className="flex items-center justify-center gap-6 mb-12 mt-auto">
+                    <div className="flex flex-col items-center">
+                        <button
+                            className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-1 backdrop-blur opacity-60"
+                            disabled
+                        >
+                            <Volume2 className="w-8 h-8 text-white/60" />
+                        </button>
+                        <span className="text-xs text-white/80">speaker</span>
+                    </div>
+
+                    <div className="flex flex-col items-center">
+                        <button
+                            className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-1 backdrop-blur opacity-60"
+                            disabled
+                        >
+                            <Video className="w-8 h-8 text-white/60" />
+                        </button>
+                        <span className="text-xs text-white/80">video</span>
+                    </div>
+
+                    <div className="flex flex-col items-center">
+                        <button
+                            className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-1 backdrop-blur opacity-60"
+                            disabled
+                        >
+                            <Mic className="w-8 h-8 text-white/60" />
+                        </button>
+                        <span className="text-xs text-white/80">mute</span>
+                    </div>
+
+                    <div className="flex flex-col items-center">
+                        <button
+                            className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center mb-1 opacity-60"
+                            disabled
+                        >
+                            <PhoneOff className="w-8 h-8 text-white" />
+                        </button>
+                        <span className="text-xs text-white/80">end</span>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="relative w-full h-screen overflow-hidden bg-black">
@@ -200,10 +356,16 @@ export function VideoCall({
                 <div className="mt-2 text-2xl">🧱🐷🐱🚂</div>
                 <div className="mt-2 text-center">
                     <div className="text-white text-2xl font-semibold drop-shadow">{contactName}</div>
-                    <div className="flex items-center justify-center gap-2 mt-1">
-                        <span className="text-white/80 text-base">📶</span>
-                        <span className="text-white/80 text-lg font-mono">{formatDuration(callDuration ?? internalDuration)}</span>
-                    </div>
+                    {isRinging ? (
+                        <div className="text-white/90 text-lg mt-1 font-normal tracking-wide">
+                            Requesting ...
+                        </div>
+                    ) : (
+                        <div className="flex items-center justify-center gap-2 mt-1">
+                            <span className="text-white/80 text-base">📶</span>
+                            <span className="text-white/80 text-lg font-mono">{formatDuration(callDuration ?? internalDuration)}</span>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -212,8 +374,9 @@ export function VideoCall({
                 {/* Flip camera */}
                 <div className="flex flex-col items-center">
                     <button
-                        className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-1 backdrop-blur"
+                        className={`w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-1 backdrop-blur ${isRinging ? 'opacity-60' : ''}`}
                         onClick={handleFlipCamera}
+                        disabled={isRinging}
                     >
                         <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l2 2 2-2m-2 2V7m-6 0l-2-2-2 2m2-2v12" /></svg>
                     </button>
@@ -222,7 +385,7 @@ export function VideoCall({
                 {/* Video */}
                 <div className="flex flex-col items-center">
                     <button
-                        className={`w-16 h-16 rounded-full flex items-center justify-center mb-1 backdrop-blur ${cameraOn ? 'bg-white/20' : 'bg-red-500/80'}`}
+                        className={`w-16 h-16 rounded-full flex items-center justify-center mb-1 backdrop-blur ${cameraOn ? 'bg-white/20' : 'bg-red-500/80'} ${isRinging ? 'opacity-60' : ''}`}
                         onClick={() => {
                             if (!cameraOn) {
                                 upgradeToVideo();
@@ -231,6 +394,7 @@ export function VideoCall({
                             }
                             setCameraOn(!cameraOn);
                         }}
+                        disabled={isRinging}
                     >
                         {cameraOn ? <Video className="w-8 h-8 text-white" /> : <VideoOff className="w-8 h-8 text-white" />}
                     </button>
@@ -239,8 +403,9 @@ export function VideoCall({
                 {/* Mute */}
                 <div className="flex flex-col items-center">
                     <button
-                        className={`w-16 h-16 rounded-full flex items-center justify-center mb-1 backdrop-blur ${micOn ? 'bg-white/20' : 'bg-red-500/80'}`}
+                        className={`w-16 h-16 rounded-full flex items-center justify-center mb-1 backdrop-blur ${micOn ? 'bg-white/20' : 'bg-red-500/80'} ${isRinging ? 'opacity-60' : ''}`}
                         onClick={() => toggleMic(!micOn)}
+                        disabled={isRinging}
                     >
                         {micOn ? <Mic className="w-8 h-8 text-white" /> : <MicOff className="w-8 h-8 text-white" />}
                     </button>
