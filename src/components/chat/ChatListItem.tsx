@@ -144,7 +144,9 @@ export const ChatListItem = ({
           {isMuted && <VolumeX className="w-4 h-4 text-zinc-400" />}
         </div>
         {/* <p className="text-sm ">{sender}</p> */}
-        <p className="text-sm text-muted-foreground">{truncateText(content || "")}</p>
+        <p className="text-sm text-muted-foreground">
+          {truncateText(content || "")}
+        </p>
       </div>
 
       <div className="flex flex-col justify-between pb-1.5">
