@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { BellOff, VolumeOff, Volume2, Settings2 } from "lucide-react";
-import { MuteIcon } from "@/components/chat/icons/InfoIcons";
+import { MuteIcon, BellMutedIcon } from "@/components/chat/icons/InfoIcons";
 import MuteDurationMenu from "./MuteDurationMenu";
 import { MuteUntilPicker } from "./MuteUntilPicker";
 import CustomizeMuteSheet from "./CustomizeMuteSheet";
@@ -25,8 +25,6 @@ export default function MuteButton({ onMuteUntil, roomId }: MuteButtonProps) {
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // ✅ Khôi phục từ localStorage
-
   useEffect(() => {
     const soundSetting = localStorage.getItem(`chat-sound-enabled-${roomId}`);
     const mutedSetting = localStorage.getItem(`chat-muted-${roomId}`);
@@ -47,7 +45,6 @@ export default function MuteButton({ onMuteUntil, roomId }: MuteButtonProps) {
     }
   }, [roomId]);
 
-  // ✅ Click ngoài để đóng menu
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -70,7 +67,6 @@ export default function MuteButton({ onMuteUntil, roomId }: MuteButtonProps) {
       `chat-sound-enabled-${roomId}`,
       JSON.stringify(newState)
     );
-    // ✅ lưu
 
     setToastMessage(
       newState
@@ -103,7 +99,7 @@ export default function MuteButton({ onMuteUntil, roomId }: MuteButtonProps) {
     <>
       <div ref={containerRef} className="relative">
         <div
-          className="flex flex-col justify-end items-center w-[75px] h-[50px] group cursor-pointer bg-white dark:bg-[#232329] rounded-lg py-1"
+         className="flex flex-col justify-end items-center group cursor-pointer"
           onClick={() => {
             if (isMuted) {
               setIsMuted(false);
@@ -121,7 +117,7 @@ export default function MuteButton({ onMuteUntil, roomId }: MuteButtonProps) {
             }
           }}
         >
-          {isMuted ? <BellOff className="text-[#155dfc]" /> : <MuteIcon />}
+          {isMuted ? <BellMutedIcon /> : <MuteIcon />}
           <p className="text-xs text-[#155dfc]">
             {isMuted ? "unmute" : "mute"}
           </p>
@@ -197,7 +193,7 @@ export default function MuteButton({ onMuteUntil, roomId }: MuteButtonProps) {
           />
         )}
       </div>
-      {/* ✅ Bottom Sheet: Custom Date Picker */}
+      {/* Bottom Sheet: Custom Date Picker */}
       <MuteUntilPicker
         open={showPicker}
         onClose={() => setShowPicker(false)}
@@ -214,14 +210,14 @@ export default function MuteButton({ onMuteUntil, roomId }: MuteButtonProps) {
         }}
       />
 
-      {/* ✅ Bottom Sheet: Customize Settings */}
+      {/* Bottom Sheet: Customize Settings */}
       <CustomizeMuteSheet
         open={showCustomize}
         onClose={() => setShowCustomize(false)}
         roomId={roomId}
       />
 
-      {/* ✅ Toast notification */}
+      {/* Toast notification */}
       {showToast &&
         createPortal(
           <div className="fixed bottom-[20px] left-4 right-4 z-[9999] bg-[#444] text-white px-4 py-2 rounded-xl text-sm flex items-center gap-2 shadow-md whitespace-nowrap overflow-hidden text-ellipsis">

@@ -26,6 +26,7 @@ export default function GetCookie() {
         if (!res.ok) {
           const errorData = await res.json().catch(() => ({}));
           //console.error("Session API error:", errorData);
+          logout()
           window.location.href = "/chat/login";
           return;
         }

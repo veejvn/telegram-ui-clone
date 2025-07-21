@@ -7,6 +7,8 @@ import { formatMsgTime } from "@/utils/chat/formatMsgTime";
 import clsx from "clsx";
 import WaveSurfer from "wavesurfer.js";
 import { useTheme } from "next-themes";
+import { FaPause, FaPlay } from "react-icons/fa";
+import { cn } from "@/lib/utils";
 
 interface Props {
   msg: Message;
@@ -21,7 +23,10 @@ const AudioMessage: React.FC<Props> = ({ msg, isSender = false }) => {
   const [remaining, setRemaining] = useState<number>(msg.audioDuration ?? 0);
   const intervalRef = useRef<number | null>(null);
   const { theme } = useTheme();
-  const isDarkMode = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const isDarkMode =
+    theme === "dark" ||
+    (theme === "system" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches);
 
   // Sync remaining when msg.audioDuration changes
   useEffect(() => {
@@ -69,19 +74,25 @@ const AudioMessage: React.FC<Props> = ({ msg, isSender = false }) => {
   const ss = String(remaining % 60).padStart(2, "0");
 
   const textClass = clsx(
-    "flex items-center gap-1 text-xs",
-    isSender ? "text-[#25D366] justify-end dark:text-white" : "text-[#25D366] dark:text-white"
+    "flex items-center justify-end gap-1 text-xs",
+    isSender
+      ? "text-[#79c071]  dark:text-white"
+      : "text-zinc-400 dark:text-white"
   );
 
   const waveformRef = useRef<HTMLDivElement | null>(null);
   const wavesurferRef = useRef<WaveSurfer | null>(null);
 
+  const waveColor = isSender ? isDarkMode ? "#afa4a4" : "#96d78e" : "#e7edf3"
+
+  const progressColor = isSender ? isDarkMode ? "#FFFFFF" : "#79c071" : "#72b6e5"
+  
   useEffect(() => {
     if (waveformRef.current && !wavesurferRef.current) {
       wavesurferRef.current = WaveSurfer.create({
         container: waveformRef.current,
-        waveColor: isDarkMode ? "#afa4a4" : "#96d78e",
-        progressColor: isDarkMode ? "#FFFFFF" : "#25D366",
+        waveColor: waveColor,
+        progressColor: progressColor,
         height: 30,
         barWidth: 2,
         responsive: true,
@@ -94,52 +105,50 @@ const AudioMessage: React.FC<Props> = ({ msg, isSender = false }) => {
   }, [msg.audioUrl]);
 
   return (
-    <>
-      <div className="bg-[#dcf8c6] dark:bg-[#4567fc] text-[#4edb3b] rounded-xl p-2 px-3 max-w-xs flex flex-col shadow-sm w-45">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={togglePlay}
-            className="rounded-full bg-[#25D366] dark:bg-white p-2 text-white"
-          >
-            {playing ? (
-              <Pause className="dark:text-[#4567fc]" size={20} />
-            ) : (
-              <Play className="dark:text-[#4567fc]" size={20} />
-            )}
-          </button>
+    <div className={cn(`bg-[#dcf8c6] dark:bg-[#4567fc] rounded-xl p-2 px-3 max-w-xs flex flex-col shadow-sm w-45 select-none ${!isSender && "bg-white dark:bg-[#222e3a]"}`)}>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={togglePlay}
+          className={cn(`rounded-full bg-[#79c071] dark:bg-white flex justify-center items-center size-10 p-2 text-white ${!isSender && "bg-[#74b4ec] dark:bg-[#74b4ec]"}`)}
+        >
+          {playing ? (
+            <FaPause className={`${isSender ? "dark:text-[#4567fc]" : "dark:text-white"}`} size={16}/>
+          ) : (
+            <FaPlay className={`${isSender ? "dark:text-[#4567fc]" : "dark:text-white"}`} size={16} />
+          )}
+        </button>
 
-          <div className="flex-1">
-            <div ref={waveformRef} className="w-full" />
-            <div className="flex items-center">
-              <span className="text-[10px] text-[#25D366] dark:text-white">
-                {mm}:{ss}
-              </span>
-            </div>
-            <audio
-              ref={audioRef}
-              src={msg.audioUrl}
-              onEnded={() => {
-                setPlaying(false);
-                stopCountdown();
-                setRemaining(msg.audioDuration ?? 0);
-              }}
-              className="hidden"
-            />
+        <div className="flex-1">
+          <div ref={waveformRef} className="w-full" />
+          <div className="flex items-center">
+            <span className={cn(`text-xs text-[#79c071] dark:text-white ${!isSender && "text-[#74b4ec]"}`)}>
+              {mm}:{ss}
+            </span>
           </div>
-        </div>
-        <div className={`flex justify-between ${textClass}`}>
-          <span className="flex items-center gap-1">
-            {formatMsgTime(msg.time)}
-            {isSender &&
-              (msg.status === "read" ? (
-                <CheckCheck size={14} />
-              ) : (
-                <Check size={14} />
-              ))}
-          </span>
+          <audio
+            ref={audioRef}
+            src={msg.audioUrl}
+            onEnded={() => {
+              setPlaying(false);
+              stopCountdown();
+              setRemaining(msg.audioDuration ?? 0);
+            }}
+            className="hidden"
+          />
         </div>
       </div>
-    </>
+      <div className={`flex justify-between ${textClass}`}>
+        <span className="flex items-center gap-1">
+          {formatMsgTime(msg.time)}
+          {isSender &&
+            (msg.status === "read" ? (
+              <CheckCheck size={14} />
+            ) : (
+              <Check size={14} />
+            ))}
+        </span>
+      </div>
+    </div>
   );
 };
 

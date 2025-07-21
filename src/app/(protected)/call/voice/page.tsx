@@ -15,7 +15,7 @@ export default function VoiceCallPage() {
     }
 
     const handleTerminate = () => {
-        router.replace('/call');
+        router.replace(`/chat/${encodeURIComponent(calleeId)}`);
     };
 
     return (
