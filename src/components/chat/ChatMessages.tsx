@@ -8,7 +8,8 @@ import { getOlderMessages } from "@/services/chatService";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { convertEventsToMessages } from "@/utils/chat/convertEventsToMessages";
 import { groupMessagesByDate } from "@/utils/chat/groupMessagesByDate";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
+import { Search } from "lucide-react";
 
 type ChatMessagesProps = {
   roomId: string;
@@ -18,6 +19,7 @@ type ChatMessagesProps = {
 const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
   useTimeline(roomId);
   const client = useMatrixClient();
+  const router = useRouter();
 
   const messagesByRoom = useChatStore((state) => state.messagesByRoom);
   const { prependMessages, setOldestEventId } = useChatStore();
@@ -25,7 +27,10 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
   const grouped = groupMessagesByDate(messages);
 
   const searchParams = useSearchParams();
-  const highlightId = searchParams.get("highlight");
+  const highlightId = searchParams.get("highlight") ?? null;
+  const searching = searchParams.get("searching") === "true";
+  const [searchText, setSearchText] = useState("");
+  const [searchResults, setSearchResults] = useState<string[]>([]);
   const firstHighlightedRef = useRef<HTMLDivElement | null>(null);
 
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -33,8 +38,8 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
     [roomId: string]: boolean;
   }>({});
 
-  const containerRef = React.useRef<HTMLDivElement | null>(null);
-  const prevScrollHeightRef = React.useRef<number | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const prevScrollHeightRef = useRef<number | null>(null);
 
   useEffect(() => {
     setHasMoreByRoom((prev) => ({
@@ -43,7 +48,7 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
     }));
   }, [roomId]);
 
-  // 2. Tự động cuộn xuống khi có tin nhắn mới
+  // Auto scroll to bottom when new message
   useEffect(() => {
     if (!isLoadingMore && messagesEndRef?.current) {
       requestAnimationFrame(() => {
@@ -52,15 +57,44 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
     }
   }, [messages.length, isLoadingMore, messagesEndRef]);
 
-  // 3. Khôi phục vị trí scroll sau khi thêm tin nhắn cũ
+  // Restore scroll position after loading old messages
   useLayoutEffect(() => {
     const container = containerRef.current;
     if (isLoadingMore && prevScrollHeightRef.current !== null && container) {
       container.scrollTop +=
         container.scrollHeight - prevScrollHeightRef.current;
-      prevScrollHeightRef.current = null; // Reset ref
+      prevScrollHeightRef.current = null;
     }
-  }, [messages.length, isLoadingMore]); // Chạy khi tin nhắn được thêm vào
+  }, [messages.length, isLoadingMore]);
+
+  // Tìm các eventId chứa searchText (bỏ qua forward)
+  useEffect(() => {
+    if (!searchText) {
+      setSearchResults([]);
+      return;
+    }
+    const foundIds = messages
+      .filter((msg) => {
+        // Tìm cả tin nhắn thường và forward
+        let text = msg.text ?? "";
+        if (typeof text === "string") {
+          // Nếu là JSON forward thì lấy text gốc để search
+          try {
+            const parsed = JSON.parse(text);
+            if (parsed.forward && parsed.text) {
+              text = parsed.text;
+            }
+          } catch {}
+        }
+        return text.toLowerCase().includes(searchText.toLowerCase());
+      })
+      .map((msg) => msg.eventId);
+    setSearchResults(foundIds);
+  }, [searchText, messages]);
+  const handleResultClick = (eventId: string) => {
+    setSearchText(""); // Ẩn bảng kết quả
+    router.replace(`/chat/${roomId}?searching=true&highlight=${eventId}`);
+  };
 
   const handleScroll = async () => {
     const container = containerRef.current;
@@ -69,7 +103,7 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
 
     if (container.scrollTop < 100) {
       setIsLoadingMore(true);
-      prevScrollHeightRef.current = container.scrollHeight; // SỬA LỖI UX: Lưu vị trí scroll cũ
+      prevScrollHeightRef.current = container.scrollHeight;
 
       try {
         const newEvents = await getOlderMessages(roomId, client);
@@ -79,6 +113,13 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
           const mappedMsgs = convertEventsToMessages(newEvents).map((msg) => ({
             ...msg,
             status: msg.status as MessageStatus,
+            body: msg.text ?? "",
+            forwarded:
+              "forwarded" in msg ? (msg as any).forwarded ?? false : false, // Ensure 'forwarded' property exists
+            originalSender:
+              "originalSender" in msg
+                ? (msg as any).originalSender ?? undefined
+                : undefined, // Ensure 'originalSender' property exists
           }));
           prependMessages(roomId, mappedMsgs);
           const oldest = mappedMsgs[0]?.eventId;
@@ -87,37 +128,161 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
       } catch (error) {
         console.error("Failed to load older messages:", error);
       } finally {
-        setIsLoadingMore(false); // SỬA LỖI: Đảm bảo luôn được gọi
+        setIsLoadingMore(false);
       }
     }
   };
 
+  // ✅ Scroll vào highlight sau khi render dropdown search
   useEffect(() => {
     if (highlightId && firstHighlightedRef.current) {
-      firstHighlightedRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
+      setTimeout(() => {
+        firstHighlightedRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }, 300); // delay để tránh bị che bởi dropdown
     } else if (messagesEndRef?.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "auto" });
     }
   }, [messages, highlightId]);
 
+  const filteredMessages = searchText.trim()
+    ? messages.filter((msg) => {
+        // Loại forward: flag hoặc text là JSON forward
+        if ("forwarded" in msg && (msg as any).forwarded) return false;
+        if (typeof msg.text === "string") {
+          try {
+            const parsed = JSON.parse(msg.text);
+            if (parsed.forward && parsed.text && parsed.originalSender)
+              return false;
+          } catch {}
+        }
+        return msg.text?.toLowerCase().includes(searchText.toLowerCase());
+      })
+    : messages;
+  const groupedFiltered = groupMessagesByDate(filteredMessages);
+
   return (
-    <>
+    <div className="flex flex-col h-full">
+      {searching && (
+        <div className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md p-2">
+          {/* Khối search input */}
+          <div className="flex items-center justify-between mb-2 gap-2">
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 z-10">
+                <Search size={18} />
+              </span>
+              <input
+                type="text"
+                className="flex-1 pl-9 py-2 rounded-xl bg-black/90 text-white placeholder:text-gray-400 focus:outline-none border border-gray-700 w-full"
+                placeholder="Search this chat"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                autoFocus
+              />
+              {searchText && (
+                <button
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+                  onClick={() => {
+                    setSearchText("");
+                    setTimeout(() => {
+                      messagesEndRef?.current?.scrollIntoView({
+                        behavior: "smooth",
+                      });
+                    }, 100);
+                  }}
+                  aria-label="Clear search"
+                >
+                  &#10005;
+                </button>
+              )}
+            </div>
+            <button
+              className="text-blue-500 dark:text-blue-400 text-sm font-medium shrink-0"
+              onClick={() => {
+                setSearchText("");
+                router.replace(`/chat/${roomId}`);
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+          <div
+            className="absolute left-0 right-0 top-full mt-0
+        bg-white dark:bg-black/90 rounded-lg shadow
+        overflow-y-auto
+        max-h-[160px] md:max-h-[240px]
+        border border-gray-200 dark:border-gray-700
+        z-20"
+          >
+            {searchText &&
+              (searchResults.length === 0 ? (
+                <div className="p-2 text-gray-400 dark:text-gray-500">
+                  No results
+                </div>
+              ) : (
+                searchResults.map((id) => {
+                  const msg = messages.find((m) => m.eventId === id);
+                  let displayText = msg?.text ?? "";
+                  let isForward = false;
+                  let originalSender = "";
+
+                  // Chỉ kiểm tra forward qua JSON trong text
+                  if (typeof msg?.text === "string") {
+                    try {
+                      const parsed = JSON.parse(msg.text);
+                      if (
+                        parsed.forward &&
+                        parsed.text &&
+                        parsed.originalSender
+                      ) {
+                        isForward = true;
+                        displayText = parsed.text;
+                        originalSender = parsed.originalSender;
+                      }
+                    } catch {
+                      // Không phải forward
+                    }
+                  }
+
+                  return (
+                    <button
+                      key={id}
+                      className="block w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      onClick={() => handleResultClick(id)}
+                    >
+                      {isForward ? (
+                        <span className="italic text-gray-500">
+                          Forwarded from{" "}
+                          <span className="font-semibold">
+                            {originalSender}
+                          </span>
+                          :{" "}
+                          <span className="text-black dark:text-white">
+                            {displayText}
+                          </span>
+                        </span>
+                      ) : (
+                        displayText
+                      )}
+                    </button>
+                  );
+                })
+              ))}
+          </div>
+        </div>
+      )}
+
       <div
-        className="py-1 px-4"
+        className="py-1 px-4 flex-1 overflow-y-auto"
         ref={containerRef}
         onScroll={handleScroll}
-        // style={{ overflowY: "auto", height: "100%" }}
       >
-        {Object.entries(grouped).map(([dateLabel, msgs]) => (
+        {Object.entries(groupedFiltered).map(([dateLabel, msgs]) => (
           <div key={dateLabel}>
             <div className="text-center text-sm my-1.5">
-              <p
-                className=" bg-gray-900/15 rounded-full backdrop-blur-2xl 
-                text-white inline-block py-1 px-2"
-              >
+              <p className="bg-gray-900/15 rounded-full backdrop-blur-2xl text-white inline-block py-1 px-2">
                 {dateLabel}
               </p>
             </div>
@@ -135,12 +300,13 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
           </div>
         ))}
         <div ref={messagesEndRef} />
-
         {isLoadingMore && (
-          <div className="text-center text-gray-400">Loading more...</div>
+          <div className="text-center text-gray-400 dark:text-gray-500">
+            Loading more...
+          </div>
         )}
       </div>
-    </>
+    </div>
   );
 };
 
