@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import * as sdk from "matrix-js-sdk";
 import { create } from "zustand";
@@ -11,12 +11,12 @@ interface Room {
 
 export const useRoomStore = create<Room>((set, get) => ({
   rooms: [],
-  setRooms: (rooms: sdk.Room[]) => set({ rooms }),
+  setRooms: (rooms: sdk.Room[]) =>
+    set({
+      rooms: rooms.filter((room) => room.getMyMembership() === "join"),
+    }),
   addRoomToTop: (room) =>
     set({
-      rooms: [
-        room,
-        ...get().rooms.filter((r) => r.roomId !== room.roomId),
-      ],
+      rooms: [room, ...get().rooms.filter((r) => r.roomId !== room.roomId)],
     }),
 }));
