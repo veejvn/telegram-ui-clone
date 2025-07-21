@@ -20,33 +20,33 @@ export const useWebAppMethodHandler = () => {
       JSON.stringify(payload, null, 2)
     );
     // Lấy callId từ payload (giả sử là payload.uuid)
-    const roomId = payload.extra.roomId;
-    // await answerCallById(callId);
-    // reset(); // Ẩn popup
-    // // Điều hướng sang UI call tương ứng
-    if (payload.type === 1) {
-      router.replace(
-        `/call/video?calleeId=${
-          payload.extra.roomId
-        }&contact=${encodeURIComponent(payload.nameCaller)}`
-      );
-    } else {
-      router.replace(
-        `/call/voice?calleeId=${
-          payload.extra.roomId
-        }&contact=${encodeURIComponent(payload.nameCaller)}`
-      );
-    }
+    // const roomId = payload.extra.roomId;
+    // // await answerCallById(callId);
+    // // reset(); // Ẩn popup
+    // // // Điều hướng sang UI call tương ứng
+    // if (payload.type === 1) {
+    //   router.replace(
+    //     `/call/video?calleeId=${
+    //       payload.extra.roomId
+    //     }&contact=${encodeURIComponent(payload.nameCaller)}`
+    //   );
+    // } else {
+    //   router.replace(
+    //     `/call/voice?calleeId=${
+    //       payload.extra.roomId
+    //     }&contact=${encodeURIComponent(payload.nameCaller)}`
+    //   );
+    // }
 
-    while (true) {
-      const accessToken = useAuthStore.getState().accessToken;
-      if (accessToken) {
-        callService.reinitialize(roomId);
-        break; // Thoát vòng lặp nếu đã có access token
-      }
-    }
-    await answerCall();
-    reset();
+    // while (true) {
+    //   const accessToken = useAuthStore.getState().accessToken;
+    //   if (accessToken) {
+    //     callService.reinitialize(roomId);
+    //     break; // Thoát vòng lặp nếu đã có access token
+    //   }
+    // }
+    // await answerCall();
+    // reset();
   };
 
   const rejectCallAction = async ({ payload }: { payload: IEventPayload }) => {

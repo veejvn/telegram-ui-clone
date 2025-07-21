@@ -76,10 +76,10 @@ export default function IncomingCallHandler() {
   // ✅ Chỉ hiển thị khi thực sự có cuộc gọi đến
   if (state !== "incoming" || !incoming) return null;
 
-  if (state === "incoming") {
-    // Nếu đang ở trạng thái incoming, không cần hiển thị lại popup
-    return null;
-  }
+  // if (state === "incoming") {
+  //   // Nếu đang ở trạng thái incoming, không cần hiển thị lại popup
+  //   return null;
+  // }
 
   const incomingCallStyle = incomingCallStyleWithStatusBar();
 
