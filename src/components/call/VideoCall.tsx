@@ -343,17 +343,19 @@ export function VideoCall({
 
             {/* Header */}
             <div className="absolute top-0 left-0 w-full flex flex-col items-center pt-6 z-30">
-                <div className="flex items-center justify-between w-full px-4">
+                <div className="flex items-center justify-between w-full px-4 relative">
                     <button className="flex items-center gap-1 text-white/90 text-lg" onClick={handleEnd}>
                         <ChevronLeft className="w-5 h-5" />
                         Back
                     </button>
-                    <div className="bg-blue-500 text-white rounded-full px-3 py-0.5 text-xs font-bold">TELEGRAM</div>
+                    <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 bg-blue-500 text-white rounded-full px-3 py-0.5 text-xs font-bold">
+                        Ting Tong
+                    </div>
                     <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
                         <Video className="w-5 h-5 text-white/80" />
                     </div>
                 </div>
-                <div className="mt-2 text-2xl">🧱🐷🐱🚂</div>
+                {/* <div className="mt-2 text-2xl">🧱🐷🐱🚂</div> */}
                 <div className="mt-2 text-center">
                     <div className="text-white text-2xl font-semibold drop-shadow">{contactName}</div>
                     {isRinging ? (
