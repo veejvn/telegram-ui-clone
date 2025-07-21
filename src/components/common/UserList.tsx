@@ -6,8 +6,10 @@ import { useAddMembersStore } from "@/stores/useAddMembersStore";
 
 export default function UserList({ users }: { users: RoomUser[] }) {
   const { selectedUsers, toggleUser } = useAddMembersStore();
+  const userIdChatBot = process.env.NEXT_PUBLIC_USER_ID_BOT || "@bot:matrix.teknix.dev";
+  const filteredUsers = users.filter(user => user.userId !== userIdChatBot);
 
-  const groupedUsers = users.reduce<Record<string, RoomUser[]>>((acc, user) => {
+  const groupedUsers = filteredUsers.reduce<Record<string, RoomUser[]>>((acc, user) => {
     const firstLetter = user.displayName.charAt(0).toUpperCase();
     if (!acc[firstLetter]) acc[firstLetter] = [];
     acc[firstLetter].push(user);

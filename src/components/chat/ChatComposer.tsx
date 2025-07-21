@@ -11,54 +11,49 @@ import {
   StopCircle,
 } from "lucide-react";
 import {
+  getImageDimensions,
+  sendFileMessage,
   sendImageMessage,
-  sendLocation,
+  sendLocationMessage,
   sendMessage,
   sendTypingEvent,
+  sendVideoMessage,
   sendVoiceMessage,
 } from "@/services/chatService";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useTheme } from "next-themes";
-import { useChatStore } from "@/stores/useChatStore";
+import { MessageType, useChatStore } from "@/stores/useChatStore";
 import TypingIndicator from "./TypingIndicator";
 import useTyping from "@/hooks/useTyping";
 import EmojiPicker, { Theme as EmojiTheme } from "emoji-picker-react";
 import ForwardMsgPreview from "./ForwardMsgPreview";
 import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
 import { useForwardStore } from "@/stores/useForwardStore";
-import {
-  Image as LucideImage,
-  File,
-  MapPin,
-  Gift,
-  Reply,
-  Check,
-} from "lucide-react";
+import { Gift, Reply, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
+import { getVideoMetadata, Metadata } from "@/utils/chat/send-message/getVideoMetadata";
+import { GrGallery } from "react-icons/gr";
+import { FaFile } from "react-icons/fa6";
+import { MdLocationOn } from "react-icons/md";
+import { FileInfo, ImageInfo } from "@/types/chat";
 
 const ChatComposer = ({ roomId }: { roomId: string }) => {
   const [text, setText] = useState("");
   const [isMultiLine, setIsMultiLine] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
-  const [isRecording, setIsRecording] = useState(false);
-  const [recorder, setRecorder] = useState<MediaRecorder | null>(null);
-  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null)
-  const [audioChunks, setAudioChunks] = useState<BlobPart[]>([]);
-
-  const [recordTime, setRecordTime] = useState(0);
-  const recordIntervalRef = useRef<number | null>(null);
-
   const typingTimeoutRef = useRef<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
   const client = useMatrixClient();
   const theme = useTheme();
   const [isTyping, setIsTyping] = useState(false);
-  useTyping(roomId);
-  const { addMessage } = useChatStore.getState();
+  const addMessage = useChatStore((state) => state.addMessage);
+  const updateMessage = useChatStore((state) => state.updateMessage);
   const { messages: forwardMessages, clearMessages } = useForwardStore();
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<
@@ -70,79 +65,195 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     ssr: false,
   });
 
-  // Start voice recording
-  const startRecording = async () => {
-    setIsRecording(true);
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    setMediaStream(stream);
-    const mr = new MediaRecorder(stream);
-    const chunks: BlobPart[] = [];
-    mr.ondataavailable = (e) => chunks.push(e.data);
-    mr.start();
-    setRecorder(mr);
-    setAudioChunks(chunks);
-    setIsRecording(true);
+  const MIN_RECORD_TIME = 1; // giây
+  const MIN_PRESS_TIME_MS = 300;
 
-    // reset counter và bật timer
+  const [isRecording, setIsRecording] = useState(false);
+  const [recorder, setRecorder] = useState<MediaRecorder | null>(null);
+  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
+  const [audioChunks, setAudioChunks] = useState<BlobPart[]>([]);
+  const [recordTime, setRecordTime] = useState(0);
+
+  const recordIntervalRef = useRef<number | null>(null);
+  const recordStartRef = useRef<number | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const startRecordingPromiseRef = useRef<Promise<void> | null>(null);
+  const pressStartRef = useRef<number | null>(null);
+  const recordDurationRef = useRef<number>(0);
+  const shouldCancelRecordingRef = useRef<boolean>(false);
+
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+
+  useTyping(roomId);
+  // Bắt đầu ghi âm
+  const startRecording = async () => {
+    if (isRecording) return;
+
+    pressStartRef.current = Date.now();
+    recordDurationRef.current = 0;
+    setIsRecording(true);
     setRecordTime(0);
-    recordIntervalRef.current = window.setInterval(() => {
-      setRecordTime((t) => t + 1);
-    }, 1000);
+    recordStartRef.current = Date.now();
+    shouldCancelRecordingRef.current = false;
+
+    const promise = (async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+        });
+        if (shouldCancelRecordingRef.current) {
+          stream.getTracks().forEach((track) => track.stop());
+          setIsRecording(false);
+          return;
+        }
+
+        setMediaStream(stream);
+        const mediaRecorder = new MediaRecorder(stream);
+        recorderRef.current = mediaRecorder;
+        setRecorder(mediaRecorder);
+
+        const chunks: BlobPart[] = [];
+        mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+        setAudioChunks(chunks);
+
+        mediaRecorder.onstop = async () => {
+          const duration = recordDurationRef.current || 0;
+          if (chunks.length === 0 || duration < MIN_RECORD_TIME) {
+            console.warn("Ghi âm quá ngắn, không gửi");
+            setAudioChunks([]);
+            setRecordTime(0);
+            return;
+          }
+
+          const blob = new Blob(chunks, { type: "audio/webm" });
+          const file = new (globalThis as any).File(
+            [blob],
+            `voice_${Date.now()}.webm`,
+            {
+              type: blob.type,
+            }
+          );
+
+          if (client) {
+            const localId = "local_" + Date.now();
+            const now = new Date();
+            const userId = client.getUserId();
+
+            addMessage(roomId, {
+              eventId: localId,
+              sender: userId ?? undefined,
+              senderDisplayName: userId ?? undefined,
+              text: file.name,
+              audioUrl: null,
+              audioDuration: duration,
+              time: now.toLocaleString(),
+              timestamp: now.getTime(),
+              status: "sent",
+              type: "audio",
+            });
+
+            const { httpUrl } = await sendVoiceMessage(
+              client,
+              roomId,
+              file,
+              duration
+            );
+
+            updateMessage(roomId, localId, { audioUrl: httpUrl });
+
+            setAudioChunks([]);
+            setRecordTime(0);
+            recordDurationRef.current = 0;
+            recordStartRef.current = null;
+          }
+        };
+
+        mediaRecorder.start();
+
+        recordIntervalRef.current = window.setInterval(() => {
+          if (recordStartRef.current) {
+            const duration = Math.round(
+              (Date.now() - recordStartRef.current) / 1000
+            );
+            recordDurationRef.current = duration;
+            setRecordTime(duration);
+          }
+        }, 200);
+
+        if (shouldCancelRecordingRef.current) {
+          console.warn("Bị huỷ khi vừa bắt đầu, stop ngay.");
+          await stopRecording();
+        }
+      } catch (err) {
+        console.error("Không thể truy cập micro:", err);
+        setIsRecording(false);
+      }
+    })();
+
+    startRecordingPromiseRef.current = promise;
+    await promise;
   };
 
-  // Stop và gửi voice
-  const stopRecording = () => {
-    if (!isRecording) return;
+  const stopRecording = async () => {
+    const pressDuration = pressStartRef.current
+      ? Date.now() - pressStartRef.current
+      : 0;
+    pressStartRef.current = null;
+
+    if (pressDuration < MIN_PRESS_TIME_MS) {
+      console.warn("Người dùng nhấn quá nhanh, huỷ ghi âm");
+      shouldCancelRecordingRef.current = true;
+
+      setIsRecording(false);
+      clearRecordingInterval();
+      recordDurationRef.current = 0;
+
+      if (startRecordingPromiseRef.current) {
+        await startRecordingPromiseRef.current;
+      }
+
+      await forceStop();
+      return;
+    }
+
+    shouldCancelRecordingRef.current = false;
+
+    if (startRecordingPromiseRef.current) {
+      await startRecordingPromiseRef.current;
+    }
+
     setIsRecording(false);
-    if (!recorder || !client) return;
+    clearRecordingInterval();
+
+    const duration = recordStartRef.current
+      ? Math.round((Date.now() - recordStartRef.current) / 1000)
+      : 0;
+    recordDurationRef.current = duration;
+    recordStartRef.current = null;
+
+    await forceStop();
+  };
+
+  const clearRecordingInterval = () => {
     if (recordIntervalRef.current) {
       clearInterval(recordIntervalRef.current);
       recordIntervalRef.current = null;
     }
-    recorder.onstop = async () => {
-      // 1) Tạo blob từ chunks
-      const blob = new Blob(audioChunks, { type: "audio/webm" });
-      const file = new (globalThis as any).File(
-        [blob],
-        `voice_${Date.now()}.webm`,
-        { type: blob.type }
-      );
-      const localId = "local_" + Date.now();
-      const now = new Date();
-      const userId = client.getUserId();
+  };
 
-      // 2) Dùng ngay recordTime đã đếm được làm duration
-      const { httpUrl } = await sendVoiceMessage(
-        client,
-        roomId,
-        file,
-        recordTime
-      );
+  const forceStop = async () => {
+    const activeRecorder = recorderRef.current;
+    if (activeRecorder && activeRecorder.state === "recording") {
+      activeRecorder.stop();
+    }
+    recorderRef.current = null;
 
-      addMessage(roomId, {
-        eventId: localId,
-        sender: userId ?? undefined,
-        senderDisplayName: userId ?? undefined,
-        text: file.name,
-        audioUrl: httpUrl,
-        audioDuration: recordTime,
-        time: now.toLocaleString(),
-        timestamp: now.getTime(),
-        status: "sent",
-        type: "audio",
-      });
-
-      // 3) reset chunks (và nếu muốn reset time cũng có thể)
-      setAudioChunks([]);
-      setRecordTime(0);
-    };
-    recorder.stop();
-    setIsRecording(false);
     if (mediaStream) {
-      mediaStream.getTracks().forEach(track => track.stop());
+      mediaStream.getTracks().forEach((track) => track.stop());
       setMediaStream(null);
     }
   };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       if (textareaRef.current) {
@@ -224,35 +335,68 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     setText((prev) => prev + emojiData.emoji);
   };
 
-  const handleFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImagesAndVideos = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || !client) return;
+    setOpen(false);
     const userId = client.getUserId();
     const now = new Date();
 
     for (const file of Array.from(files)) {
       try {
-        const { httpUrl } = await sendImageMessage(client, roomId, file);
         const localId = "local_" + Date.now() + Math.random();
-
-        addMessage(roomId, {
-          eventId: localId,
-          sender: userId ?? undefined,
-          senderDisplayName: userId ?? undefined,
-          text: file.name,
-          imageUrl: httpUrl,
-          time: now.toLocaleString(),
-          timestamp: now.getTime(),
-          status: "sent",
-          type: "image",
-        });
+        if (file.type.startsWith("image/")) {
+          // Lấy kích thước ảnh
+          const dimentions = await getImageDimensions(file);
+          const imageInfo: ImageInfo = {
+            width: dimentions.width,
+            height: dimentions.height,
+          };
+  
+          addMessage(roomId, {
+            eventId: localId,
+            sender: userId ?? undefined,
+            senderDisplayName: userId ?? undefined,
+            text: file.name,
+            imageUrl: null,
+            imageInfo,
+            time: now.toLocaleString(),
+            timestamp: now.getTime(),
+            status: "sent",
+            type: "image",
+          });
+  
+          const { httpUrl } = await sendImageMessage(client, roomId, file);
+          updateMessage(roomId, localId, { imageUrl: httpUrl });
+        } else if (file.type.startsWith("video/")) {
+          // Gửi video
+          const metadata = await getVideoMetadata(file);
+          const videoInfo : Metadata  = { width: metadata.width, height: metadata.height, duration: metadata.duration}
+          addMessage(roomId, {
+            eventId: localId,
+            sender: userId ?? undefined,
+            senderDisplayName: userId ?? undefined,
+            text: file.name,
+            videoUrl: null,
+            videoInfo,
+            time: now.toLocaleString(),
+            timestamp: now.getTime(),
+            status: "sent",
+            type: "video",
+          });
+  
+          const { httpUrl } = await sendVideoMessage(client, roomId, file);
+          updateMessage(roomId, localId, {
+            videoUrl: httpUrl,
+          });
+        }
       } catch (err) {
         console.error("Failed to send image:", err);
       }
     }
-    setOpen(false);
     e.target.value = ""; // reset input
   };
+
   useEffect(() => {
     return () => {
       if (recordIntervalRef.current) {
@@ -337,7 +481,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
       case "location":
         return <Search className="mx-4" />;
       default:
-        return <div className="mx-4"></div>;
+        return <div className="w-18 h-9"></div>;
     }
   };
 
@@ -374,7 +518,10 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
         type: "location",
       });
 
-      const res = await sendLocation(client, roomId, { geoUri, displayText });
+      const res = await sendLocationMessage(client, roomId, {
+        geoUri,
+        displayText,
+      });
 
       if (res.success) {
         console.log("Send Location Message successfully");
@@ -383,6 +530,120 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
       console.error("Failed to send image:", error);
     }
   };
+
+  const handleSendFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || !client) return;
+    setOpen(false);
+    const userId = client.getUserId();
+    for (const file of Array.from(files)) {
+      try {
+        let httpUrlImage: string | null = null;
+        let httpUrlVideo: string | null = null;
+        let metadata: Metadata | null = null;
+        let httpUrlFile: string | null = null;
+        let fileInfo: FileInfo | null = null;
+        const contentType = file.type;
+        let type: MessageType = "file"; // Mặc định
+        const localId = "local_" + Date.now() + Math.random();
+        const now = new Date();
+
+        if (contentType.startsWith("image/")) {
+          type = "image";
+          addMessage(roomId, {
+            eventId: localId,
+            sender: userId ?? undefined,
+            senderDisplayName: userId ?? undefined,
+            text: file.name,
+            imageUrl: httpUrlImage,
+            time: now.toLocaleString(),
+            timestamp: now.getTime(),
+            status: "sent",
+            type: type,
+          });
+          const res = await sendImageMessage(client, roomId, file);
+          httpUrlImage = res.httpUrl;
+          updateMessage(roomId, localId, { imageUrl: httpUrlImage });
+        } else if (contentType.startsWith("video/")) {
+          type = "video";
+          addMessage(roomId, {
+            eventId: localId,
+            sender: userId ?? undefined,
+            senderDisplayName: userId ?? undefined,
+            text: file.name,
+            videoUrl: httpUrlVideo,
+            videoInfo: metadata,
+            time: now.toLocaleString(),
+            timestamp: now.getTime(),
+            status: "sent",
+            type: type,
+          });
+          const res = await sendVideoMessage(client, roomId, file);
+          httpUrlVideo = res.httpUrl;
+          metadata = res.metadata;
+          updateMessage(roomId, localId, {
+            videoUrl: httpUrlVideo,
+            videoInfo: metadata,
+          });
+        } else {
+          addMessage(roomId, {
+            eventId: localId,
+            sender: userId ?? undefined,
+            senderDisplayName: userId ?? undefined,
+            text: file.name,
+            fileUrl: httpUrlFile,
+            fileInfo: fileInfo,
+            time: now.toLocaleString(),
+            timestamp: now.getTime(),
+            status: "sent",
+            type: type,
+          });
+          const res = await sendFileMessage(client, roomId, file);
+          httpUrlFile = res.httpUrl;
+          fileInfo = { fileSize: file.size, mimeType: file.type };
+          updateMessage(roomId, localId, {
+            fileUrl: httpUrlFile,
+            fileInfo: fileInfo,
+          });
+        }
+        console.log("Type File: " + type);
+      } catch (error) {
+        console.error("Failed to send file:", error);
+      }
+    }
+  };
+
+  // Detect keyboard open via visualViewport (works reliably on real devices)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const onResize = () => {
+      const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+      const visualHeight = window.visualViewport?.height ?? window.innerHeight;
+      const fullHeight = window.innerHeight;
+      const diff = fullHeight - visualHeight;
+
+      if (isMobile && diff > 100) {
+        setIsKeyboardOpen(true);
+      } else {
+        setIsKeyboardOpen(false);
+      }
+    };
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", onResize);
+    } else {
+      window.addEventListener("resize", onResize); // fallback
+    }
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener("resize", onResize);
+      } else {
+        window.removeEventListener("resize", onResize);
+      }
+    };
+  }, []);
 
   return (
     <div className="bg-[#e0ece6] dark:bg-[#1b1a1f]">
@@ -399,7 +660,11 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
         </div>
       )}
 
-      <div className="relative flex justify-between items-center px-2 py-2 lg:py-3 pb-10">
+      <div
+        className={`relative flex justify-between items-center px-2 py-2 lg:py-3 transition-all duration-300 ${
+          isKeyboardOpen ? "pb-2" : "pb-10"
+        }`}
+      >
         <Paperclip
           // onClick={() => inputRef.current?.click()}
           onClick={() => setOpen(true)}
@@ -471,12 +736,27 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
           /* nút mic nhấn giữ để ghi, thả để gửi */
           <Mic
             size={30}
-            className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all duration-700"
-            onMouseDown={startRecording}
-            onMouseUp={stopRecording}
-            onMouseLeave={() => isRecording && stopRecording()}
-            onTouchStart={startRecording}
-            onTouchEnd={stopRecording}
+            className={`text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all duration-700 ${
+              isRecording ? "text-red-500 scale-125" : ""
+            }`}
+            onMouseDown={(e) => {
+              e.preventDefault(); // tránh double-trigger
+              startRecording();
+            }}
+            onMouseUp={(e) => {
+              e.preventDefault();
+              stopRecording();
+            }}
+            onMouseLeave={(e) => {
+              e.preventDefault();
+              if (isRecording) stopRecording();
+            }}
+            onTouchStart={() => {
+              startRecording();
+            }}
+            onTouchEnd={() => {
+              stopRecording();
+            }}
           />
         )}
       </div>
@@ -506,27 +786,40 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             {/* Content */}
             <div className="p-2 h-[400px]">
               {tab === "gallery" && (
-                <div className="flex justify-center items-center h-40">
+                <div className="flex justify-center items-center h-full">
                   <button
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => imageInputRef.current?.click()}
                     className="p-2 bg-blue-500 text-white rounded-md"
                   >
-                    Chọn ảnh
+                    Chọn ảnh hoặc video
                   </button>
                   <input
-                    ref={fileInputRef}
+                    ref={imageInputRef}
                     type="file"
-                    accept="image/*"
+                    accept="image/*,video/*"
                     multiple
-                    onChange={handleFiles}
+                    onChange={handleImagesAndVideos}
                     className="hidden"
                     aria-label="file"
                   />
                 </div>
               )}
               {tab === "file" && (
-                <div className="text-sm text-gray-500">
-                  Hiển thị danh sách file...
+                <div className="flex justify-center items-center h-full">
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-2 bg-blue-500 text-white rounded-md"
+                  >
+                    Chọn file
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    onChange={handleSendFile}
+                    multiple
+                    className="hidden"
+                    aria-label="file"
+                  />
                 </div>
               )}
               {tab === "gift" && (
@@ -553,29 +846,32 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             <div className="flex justify-around border-t border-gray-200 px-4 py-2 text-xs text-center text-gray-600">
               <TabButton
                 icon={
-                  <LucideImage
-                    className={`w-5 h-5 mb-1 ${tab === "gallery" ? "text-blue-500" : ""
-                      }`}
+                  <GrGallery
+                    className={`w-5 h-5 mb-1 ${
+                      tab === "gallery" ? "text-blue-500" : ""
+                    }`}
                   />
                 }
                 label="Gallery"
                 onClick={() => setTab("gallery")}
               />
-              <TabButton
+              {/* <TabButton
                 icon={
                   <Gift
-                    className={`w-5 h-5 mb-1 ${tab === "gift" ? "text-blue-500" : ""
-                      }`}
+                    className={`w-5 h-5 mb-1 ${
+                      tab === "gift" ? "text-blue-500" : ""
+                    }`}
                   />
                 }
                 label="Gift"
                 onClick={() => setTab("gift")}
-              />
+              /> */}
               <TabButton
                 icon={
-                  <File
-                    className={`w-5 h-5 mb-1 ${tab === "file" ? "text-blue-500" : ""
-                      }`}
+                  <FaFile
+                    className={`w-5 h-5 mb-1 ${
+                      tab === "file" ? "text-blue-500" : ""
+                    }`}
                   />
                 }
                 label="File"
@@ -583,34 +879,37 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               />
               <TabButton
                 icon={
-                  <MapPin
-                    className={`w-5 h-5 mb-1 ${tab === "location" ? "text-blue-500" : ""
-                      }`}
+                  <MdLocationOn
+                    className={`w-5 h-5 mb-1 ${
+                      tab === "location" ? "text-blue-500" : ""
+                    }`}
                   />
                 }
                 label="Location"
                 onClick={() => setTab("location")}
               />
-              <TabButton
+              {/* <TabButton
                 icon={
                   <Reply
-                    className={`w-5 h-5 mb-1 ${tab === "reply" ? "text-blue-500" : ""
-                      }`}
+                    className={`w-5 h-5 mb-1 ${
+                      tab === "reply" ? "text-blue-500" : ""
+                    }`}
                   />
                 }
                 label="Reply"
                 onClick={() => setTab("reply")}
-              />
-              <TabButton
+              /> */}
+              {/* <TabButton
                 icon={
                   <Check
-                    className={`w-5 h-5 mb-1 ${tab === "checklist" ? "text-blue-500" : ""
-                      }`}
+                    className={`w-5 h-5 mb-1 ${
+                      tab === "checklist" ? "text-blue-500" : ""
+                    }`}
                   />
                 }
                 label="Checklist"
                 onClick={() => setTab("checklist")}
-              />
+              /> */}
             </div>
           </motion.div>
         )}

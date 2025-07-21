@@ -12,11 +12,10 @@ export interface IEventPayload {
   id: string; // Unique identifier for the event
   extra: {
     platform: string; // Ví dụ: 'ios', 'android'
-    user: string;     // User gửi event
-    roomId: string;   // Room ID để join vào call
+    user: string; // User gửi event
+    roomId: string; // Room ID để join vào call
     userId: string;
-    callId: string;   // CallID thực tế của cuộc gọi (thêm vào đây)
-    // User ID của người nhận
+    callId: string; // CallID thực tế của cuộc gọi (thêm vào đây)
   };
   type: number; // 0 = voice call, 1 = video call
   handle: string;

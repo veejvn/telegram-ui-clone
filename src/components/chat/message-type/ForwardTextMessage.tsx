@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { clsx } from "clsx";
 import { Check, CheckCheck } from "lucide-react";
 import { MessagePros } from "@/types/chat";
@@ -26,6 +26,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/ChatAvatar";
+import { linkify } from "@/utils/chat/linkify";
 
 type ForwardTextMessageProps = MessagePros & {
   forwardMessage: {
@@ -48,6 +49,8 @@ const ForwardTextMessage = ({
   const client = useMatrixClient();
   const { text, originalSender, originalSenderId } = forwardMessage;
   const [avatarUrl, setAvatarUrl] = useState<string>("");
+  const holdTimeout = useRef<number | null>(null);
+  const allowOpenRef = useRef(false);
   //console.log(avatarUrl);
 
   useEffect(() => {
@@ -71,9 +74,9 @@ const ForwardTextMessage = ({
   );
 
   const timeClass = clsx(
-    "flex items-center gap-1 text-xs mt-1",
+    "flex items-center justify-end gap-1 text-xs mt-1",
     isSender
-      ? "text-green-500 justify-end dark:text-white"
+      ? "text-[#79c071] dark:text-white"
       : "text-gray-400 dark:text-gray-400"
   );
 
@@ -102,23 +105,48 @@ const ForwardTextMessage = ({
     }, 1000);
   };
 
-  useEffect(() => {
-    let timeout: any;
-    if (triggered) {
-      timeout = setTimeout(() => setOpen(true), 350); // delay 300ms
+  const handleHoldStart = () => {
+    // Nếu menu đã mở thì không làm gì
+    if (open) return;
+    holdTimeout.current = window.setTimeout(() => {
+      allowOpenRef.current = true;
+      setOpen(true);
+    }, 1000);
+  };
+
+  const handleHoldEnd = () => {
+    // Nếu chưa đủ 3s thì clear timeout, không mở menu
+    if (!open && holdTimeout.current) {
+      clearTimeout(holdTimeout.current);
+      holdTimeout.current = null;
+    }
+    // Nếu menu đã mở thì không đóng ở đây (để user chọn menu)
+  };
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      // Chỉ cho phép mở nếu là do giữ lâu
+      if (allowOpenRef.current) {
+        setOpen(true);
+        allowOpenRef.current = false;
+      }
+      // Nếu không phải giữ lâu thì bỏ qua (không mở)
     } else {
       setOpen(false);
+      allowOpenRef.current = false;
     }
-    return () => clearTimeout(timeout);
-  }, [triggered]);
+  };
 
   return (
-    <DropdownMenu open={open} onOpenChange={setTriggered}>
+    <DropdownMenu open={open} onOpenChange={handleOpenChange}>
       <DropdownMenuTrigger asChild>
         <div
+          onTouchStart={handleHoldStart}
+          onTouchEnd={handleHoldEnd}
           className={clsx(
             "flex items-end", // Đảm bảo tail căn đáy với bubble
-            isSender ? "justify-end" : "justify-start"
+            isSender ? "justify-end" : "justify-start",
+            "select-none"
           )}
         >
           {/* 🡐 Tail cho tin nhận */}
@@ -129,7 +157,7 @@ const ForwardTextMessage = ({
           )}
 
           {/* 💬 Nội dung tin nhắn */}
-          <div className="flex flex-col  ">
+          <div className="flex flex-col">
             <div className={textClass}>
               <p
                 className={
@@ -157,8 +185,8 @@ const ForwardTextMessage = ({
                 </Avatar>
                 {originalSender}
               </p>
-              <p className={"whitespace-pre-wrap break-words leading-snug"}>
-                {text}
+              <p className={"whitespace-pre-wrap break-words leading-snug max-w-[70vw]"}>
+                {linkify(text)}
               </p>
               <div className={timeClass}>
                 {formatMsgTime(msg.time)}
