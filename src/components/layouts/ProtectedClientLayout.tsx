@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { Suspense, useEffect, useState } from "react";
@@ -42,8 +41,7 @@ export default function ProtectedClientLayout({
         <MatrixClientProvider>
           <IncomingCallHandler />
           <main
-            className="bg-gray-200 
-          min-h-screen flex flex-col"
+            className="min-h-screen flex flex-col"
           >
             {children}
             <BottomNavigationWrapper />
