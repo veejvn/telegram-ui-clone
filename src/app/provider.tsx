@@ -6,12 +6,17 @@ import { ToastProvider } from "@/contexts/ToastProvider";
 import { useWebAppListener } from "@/hooks/useWebAppListener";
 import { EventName } from "@/hooks/useWebAppListener/types/event.name";
 import { useWebAppMethodHandler } from "@/hooks/useWebAppListener/useWebAppMethodHandler";
+import { callService } from "@/services/callService";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function Providers({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const router = useRouter();
   const callAction = useWebAppMethodHandler();
   useWebAppListener((eventName, payload) => {
     console.log("🚀 ~ eventName", eventName);
@@ -31,6 +36,21 @@ export default function Providers({
         break;
     }
   });
+  const { accessToken } = useAuthStore();
+
+  useEffect(() => {
+    // callService.reinitialize("!GjGBadHVuqZYqWQxvZ:matrix.teknix.dev");
+    callService.reinitialize("");
+  }, [accessToken]);
+
+  useEffect(() => {
+    const handleAutoAcceptAndNavigate = (data: any) => {
+      console.log("[UI] Auto accept and navigate:", data);
+      router.replace(data.navigationUrl);
+    };
+    callService.on("auto-accept-and-navigate", handleAutoAcceptAndNavigate);
+  }, []);
+
   return (
     <>
       <ThemeProvider
