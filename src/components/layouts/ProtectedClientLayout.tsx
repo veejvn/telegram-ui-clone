@@ -1,4 +1,3 @@
-// src/app/(protected)/ProtectedClientLayout.client.tsx
 "use client";
 
 import React, { Suspense, useEffect, useState } from "react";
@@ -41,7 +40,9 @@ export default function ProtectedClientLayout({
       ) : (
         <MatrixClientProvider>
           <IncomingCallHandler />
-          <main className="min-h-screen flex flex-col">
+          <main
+            className="min-h-screen flex flex-col"
+          >
             {children}
             <BottomNavigationWrapper />
           </main>
