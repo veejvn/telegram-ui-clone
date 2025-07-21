@@ -167,39 +167,54 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
     <div className="flex flex-col h-full">
       {searching && (
         <div className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md p-2">
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white z-10">
-              <Search size={18} />
-            </span>
-            <input
-              type="text"
-              className="w-full pl-9 pr-16 py-2 rounded-xl bg-white/90 dark:bg-black/90 text-black dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 
-              focus:outline-none border border-gray-200 dark:border-gray-700 backdrop-blur-lg"
-              placeholder="Search this chat"
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              autoFocus
-            />
-            {searchText && (
-              <button
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-500 dark:text-blue-400 text-sm"
-                onClick={() => {
-                  setSearchText("");
-                  router.replace(`/chat/${roomId}?searching=true`);
-                }}
-              >
-                Cancel
-              </button>
-            )}
+          {/* Khối search input */}
+          <div className="flex items-center justify-between mb-2 gap-2">
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 z-10">
+                <Search size={18} />
+              </span>
+              <input
+                type="text"
+                className="flex-1 pl-9 py-2 rounded-xl bg-black/90 text-white placeholder:text-gray-400 focus:outline-none border border-gray-700 w-full"
+                placeholder="Search this chat"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                autoFocus
+              />
+              {searchText && (
+                <button
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+                  onClick={() => {
+                    setSearchText("");
+                    setTimeout(() => {
+                      messagesEndRef?.current?.scrollIntoView({
+                        behavior: "smooth",
+                      });
+                    }, 100);
+                  }}
+                  aria-label="Clear search"
+                >
+                  &#10005;
+                </button>
+              )}
+            </div>
+            <button
+              className="text-blue-500 dark:text-blue-400 text-sm font-medium shrink-0"
+              onClick={() => {
+                setSearchText("");
+                router.replace(`/chat/${roomId}`);
+              }}
+            >
+              Cancel
+            </button>
           </div>
-
           <div
             className="absolute left-0 right-0 top-full mt-0
-              bg-white dark:bg-black/90 rounded-lg shadow
-              overflow-y-auto
-              max-h-[160px] md:max-h-[240px]
-              border border-gray-200 dark:border-gray-700
-              z-20"
+        bg-white dark:bg-black/90 rounded-lg shadow
+        overflow-y-auto
+        max-h-[160px] md:max-h-[240px]
+        border border-gray-200 dark:border-gray-700
+        z-20"
           >
             {searchText &&
               (searchResults.length === 0 ? (
