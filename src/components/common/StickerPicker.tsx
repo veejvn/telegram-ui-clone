@@ -5,10 +5,8 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
-const EmojiPicker = dynamic(() => import("emoji-picker-react"), { ssr: false });
-import { Theme as EmojiTheme } from "emoji-picker-react";
+import EmojiPicker, { Theme as EmojiTheme } from "emoji-picker-react";
 import { getLS, setLS } from "@/tools/localStorage.tool";
 
 //const EmojiPicker = dynamic(() => import("emoji-picker-react"), { ssr: false }); // Lazy load nếu có
@@ -189,21 +187,19 @@ export default function StickerPicker({
 
               <TabsContent value="emoji">
                 <div className="max-h-72">
-                  {activeTab === "emoji" && (
-                    <EmojiPicker
-                      width={350}
-                      height={350}
-                      onEmojiClick={onEmojiSelect}
-                      lazyLoadEmojis={true}
-                      searchDisabled={true}
-                      previewConfig={{ showPreview: false }}
-                      theme={
-                        theme.theme === "dark"
-                          ? EmojiTheme.DARK
-                          : EmojiTheme.LIGHT
-                      }
-                    />
-                  )}
+                  <EmojiPicker
+                    width={350}
+                    height={350}
+                    onEmojiClick={onEmojiSelect}
+                    lazyLoadEmojis={true}
+                    searchDisabled={true}
+                    previewConfig={{ showPreview: false }}
+                    theme={
+                      theme.theme === "dark"
+                        ? EmojiTheme.DARK
+                        : EmojiTheme.LIGHT
+                    }
+                  />
                 </div>
               </TabsContent>
             </Tabs>
