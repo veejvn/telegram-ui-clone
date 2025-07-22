@@ -643,23 +643,6 @@ export const sendFileMessage = async (
   }
 };
 
-// export const sendSticker = async (
-//   client: MatrixClient,
-//   roomId: string,
-//   stickerUrl: string,
-//   isStickerAnimation: string
-// ) => {
-//   try {
-//     const txtId = "mgs_" + Date.now();
-//     await client.sendTextMessage(roomId, `STICKER::${stickerUrl}`, txtId);
-//     return {
-//       success: true
-//     }
-//   } catch (error) {
-//     throw error
-//   }
-// };
-
 export const sendSticker = async (
   client: MatrixClient,
   roomId: string,

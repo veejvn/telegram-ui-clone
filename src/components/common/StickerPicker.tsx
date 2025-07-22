@@ -122,6 +122,7 @@ export default function StickerPicker({
                           loop
                           muted
                           playsInline
+                          preload="auto"
                           width={40}
                           height={40}
                           className="object-cover w-full h-full"
@@ -133,6 +134,8 @@ export default function StickerPicker({
                           width={40}
                           height={40}
                           className="object-cover w-full h-full"
+                          priority
+                          loading="eager"
                         />
                       )}
                     </button>
@@ -162,6 +165,7 @@ export default function StickerPicker({
                                   loop
                                   muted
                                   playsInline
+                                  preload="auto"
                                   className="w-full h-full object-cover"
                                 />
                               ) : (
@@ -171,7 +175,8 @@ export default function StickerPicker({
                                   width={64}
                                   height={64}
                                   className="w-full h-full object-cover"
-                                  unoptimized
+                                  priority
+                                  loading="eager"
                                 />
                               )}
                             </div>

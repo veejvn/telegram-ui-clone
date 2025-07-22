@@ -46,10 +46,8 @@ export const getLastMessagePreview = (
       } catch {
         text = content.body;
       }
-      if(text.startsWith("STICKER::")){
-        text = "send a sticker"
-      }else if(isOnlyEmojis(text)){
-        text = "send a icon"
+      if (isOnlyEmojis(text)) {
+        text = "send a icon";
       }
     } else {
       switch (msgType) {
