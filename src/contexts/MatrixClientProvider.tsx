@@ -39,6 +39,7 @@ export function MatrixClientProvider({
   const accessToken = useAuthStore((state) => state.accessToken);
   const rawUserId = useAuthStore((state) => state.userId);
   const deviceId = useAuthStore((state) => state.deviceId);
+  const prevSyncState = useRef<string | null>(null);
 
   const handleRetry = () => {
     setError(null);
@@ -171,6 +172,13 @@ Vui lòng đăng nhập lại.`);
         currentClient.on(
           "sync" as any,
           (state: any, prevState: any, data: any) => {
+            if (
+              prevSyncState.current === "ERROR" &&
+              (state === "PREPARED" || state === "SYNCING")
+            ) {
+              window.location.reload();
+            }
+            prevSyncState.current = state;
             if (state === "ERROR") {
               console.error("[MatrixClientProvider] Sync error:", data?.error);
 
@@ -178,18 +186,7 @@ Vui lòng đăng nhập lại.`);
                 data?.error?.httpStatus &&
                 [401, 403].includes(data?.error?.httpStatus)
               ) {
-                const errorMsg = `Lỗi xác thực (${data.error.httpStatus}): ${
-                  data.error.message || "Không có quyền truy cập"
-                }. 
-              
-Chi tiết: ${JSON.stringify(data.error, null, 2)}`;
-
-                console.error(
-                  "[MatrixClientProvider] Authentication error details:",
-                  data.error
-                );
-                setError(errorMsg);
-
+                setError("Lỗi xác thực, vui lòng đăng nhập lại.");
                 // Stop client
                 if (currentClient) {
                   currentClient.stopClient();
@@ -199,16 +196,10 @@ Chi tiết: ${JSON.stringify(data.error, null, 2)}`;
                 }
               } else {
                 // Other sync errors
-                const errorMsg = `Lỗi đồng bộ: ${
-                  data?.error?.message || "Không xác định"
-                }
-              
-Chi tiết: ${JSON.stringify(data?.error, null, 2)}`;
-                console.error("[MatrixClientProvider] Sync error:", errorMsg);
-                setError(errorMsg);
+                setError("Mất kết nối đồng bộ, đang thử lại...");
               }
-            } else if (state === "PREPARED") {
-            } else if (state === "SYNCING") {
+            } else if (state === "PREPARED" || state === "SYNCING") {
+              setError(null);
             }
           }
         );
