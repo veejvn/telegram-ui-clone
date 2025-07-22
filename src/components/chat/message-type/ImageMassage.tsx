@@ -28,8 +28,7 @@ const ImageMessage = ({ msg, isSender }: MessagePros) => {
     }
   }
   const textClass = clsx(
-    "absolute bottom-1 text-xs right-2",
-    isSender ? "text-white" : "text-zinc-400"
+    "absolute bottom-1 text-xs right-2 text-white"
   );
 
   //console.log(msg)

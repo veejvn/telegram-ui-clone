@@ -132,6 +132,8 @@ export const getTimeline = async (
         const eventId = event.getId() || "";
         const text = content.body ?? "";
 
+        //console.log(text);
+
         let status: MessageStatus = "sent";
         if (sender === userId && lastReadIndex !== -1 && idx <= lastReadIndex) {
           status = "read";
@@ -150,6 +152,7 @@ export const getTimeline = async (
 
         let audioUrl: string | null = null;
         let audioDuration: number | null = null;
+        let isStickerAnimation : boolean = false;
         let type: MessageType = "text";
 
         if (content.msgtype === "m.image") {
@@ -158,7 +161,7 @@ export const getTimeline = async (
           if (mxcUrl) {
             imageUrl = client.mxcUrlToHttp(mxcUrl, 800, 600, "scale", true);
           }
-          imageInfo = { width : content.info?.w , height : content.info?.h}
+          imageInfo = { width: content.info?.w, height: content.info?.h };
         } else if (content.msgtype === "m.video") {
           type = "video";
           if (content.url) {
@@ -199,6 +202,9 @@ export const getTimeline = async (
           }
           // nếu server đẩy duration trong info
           audioDuration = content.info?.duration ?? null;
+        } else if(content.msgtype === "m.sticker"){
+          type = "sticker";
+          isStickerAnimation = content.info?.isStickerAnimation ?? false;
         }
 
         return {
@@ -218,6 +224,7 @@ export const getTimeline = async (
           audioDuration,
           status,
           type,
+          isStickerAnimation,
           location: {
             latitude,
             longitude,
@@ -406,7 +413,7 @@ export async function sendImageMessage(
         "scale",
         true
       ),
-      dimentions
+      dimentions,
     };
   } catch (err) {
     console.error("sendImageMessage error:", err);
@@ -477,7 +484,9 @@ function readFileAsArrayBuffer(file: File): Promise<ArrayBuffer> {
   });
 }
 
-export const getImageDimensions = (file: File): Promise<{width: number, height: number}> => {
+export const getImageDimensions = (
+  file: File
+): Promise<{ width: number; height: number }> => {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
@@ -596,11 +605,11 @@ export const sendVideoMessage = async (
   }
 };
 
-export async function sendFileMessage(
+export const sendFileMessage = async (
   client: MatrixClient,
   roomId: string,
   file: File
-) {
+) => {
   try {
     const contentType = file.type;
     const fileName = file.name;
@@ -632,4 +641,29 @@ export async function sendFileMessage(
   } catch (error) {
     throw error;
   }
-}
+};
+
+export const sendSticker = async (
+  client: MatrixClient,
+  roomId: string,
+  stickerUrl: string,
+  isStickerAnimation: boolean
+) => {
+  try {
+    const content = {
+      msgtype: "m.sticker",
+      body: stickerUrl,
+      url: stickerUrl,
+      info: {
+        mimetype: isStickerAnimation ? "video/webp" : "image/webp",
+        isStickerAnimation, // tuỳ chọn mở rộng để client biết
+      },
+    };
+
+    await client.sendMessage(roomId, content as any);
+    return { success: true };
+  } catch (error) {
+    throw error;
+  }
+};
+
