@@ -78,7 +78,7 @@ export default function ForwardComposer() {
 
           for (let j = 0; j < forwardMessages.length; j++) {
             const fwd = forwardMessages[j];
-            const fwdId = `fwd_${timestamp}_${i}_${j}`;
+            const fwdId = `local_${timestamp}_${i}_${j}`;
             const forwardBody = JSON.stringify({
               forward: true,
               originalSenderId: fwd.senderId,

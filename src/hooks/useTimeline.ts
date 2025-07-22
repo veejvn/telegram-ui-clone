@@ -54,7 +54,7 @@ export const useTimeline = (roomId: string) => {
           const parsed = JSON.parse(text);
           if (parsed.forward && parsed.text && parsed.originalSender) {
             isForward = true;
-            text = parsed.text;
+            //text = parsed.text;
             senderDisplayName = parsed.originalSender;
           }
         } catch (err) {
@@ -76,7 +76,7 @@ export const useTimeline = (roomId: string) => {
       let description: string | null = null;
       let audioUrl: string | null = null;
       let audioDuration: number | null = null;
-      let isStickerAnimation : boolean = false;
+      let isStickerAnimation: boolean = false;
       let type: MessageType = "text";
 
       if (content.msgtype === "m.image") {
@@ -85,7 +85,7 @@ export const useTimeline = (roomId: string) => {
         if (mxcUrl) {
           imageUrl = client.mxcUrlToHttp(mxcUrl, 800, 600, "scale", true);
         }
-        imageInfo = { width : content.info?.w , height : content.info?.h}
+        imageInfo = { width: content.info?.w, height: content.info?.h };
       } else if (content.msgtype === "m.video") {
         type = "video";
         if (content.url) {
@@ -126,7 +126,7 @@ export const useTimeline = (roomId: string) => {
         }
         // nếu server đẩy duration trong info
         audioDuration = content.info?.duration ?? null;
-      } else if(content.msgtype === "m.sticker"){
+      } else if (content.msgtype === "m.sticker") {
         type = "sticker";
         isStickerAnimation = content.info?.isStickerAnimation ?? false;
       }

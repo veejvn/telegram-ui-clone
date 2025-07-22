@@ -310,14 +310,15 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     //  2. Gửi các forward messages nếu có
     if (forwardMessages.length > 0) {
       forwardMessages.forEach((fwd) => {
-        const localId = "fwd_" + Date.now() + Math.random();
+        const localId = "local_" + Date.now() + Math.random();
         const forwardBody = JSON.stringify({
           forward: true,
           originalSenderId: fwd.senderId,
           originalSender: fwd.sender,
           text: fwd.text,
         });
-
+        
+        //console.log(forwardMessages);
         addMessage(roomId, {
           eventId: localId,
           sender: userId ?? undefined,
