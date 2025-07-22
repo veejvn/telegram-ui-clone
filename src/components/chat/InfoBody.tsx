@@ -193,8 +193,8 @@ export default function InfoBody({ user }: { user: sdk.User }) {
 
   return (
     <>
-      <div className="flex flex-col overflow-hidden bg-[#e5e7eb] dark:bg-[black]">
-        <div className="text-center">
+      <div className="flex flex-col overflow-hidden bg-[#e5e7eb] dark:bg-[black] h-full">
+        <div className="text-center flex flex-col h-full min-h-0">
           <p className="text-xl font-semibold">{user.displayName}</p>
 
           <p className="text-sm text-muted-foreground">
@@ -225,7 +225,10 @@ export default function InfoBody({ user }: { user: sdk.User }) {
 
             {/* Search and More buttons */}
 
-            <div className="flex flex-col justify-end items-center group cursor-pointer bg-white dark:bg-[#232329] rounded-lg w-[75px] h-[50px] py-1">
+            <div
+              className="flex flex-col justify-end items-center group cursor-pointer bg-white dark:bg-[#232329] rounded-lg w-[75px] h-[50px] py-1"
+              onClick={() => router.push(`/chat/${roomId}?searching=true`)}
+            >
               <SearchIcon />
               <p className="text-xs text-[#155dfc]">search</p>
             </div>
@@ -255,8 +258,6 @@ export default function InfoBody({ user }: { user: sdk.User }) {
           <div className="w-full max-w-sm mx-auto bg-white dark:bg-[#232329] px-4 py-2 text-start flex flex-col mt-4 mb-2 rounded-xl gap-0.5 shadow">
             <p className="text-sm text-zinc-500">mobile</p>
             <p className="text-[#155dfc] break-all">+84 91 502 70 46</p>
-
-            <hr className="my-2 border-gray-200/50" />
 
             <div className="flex items-center justify-between">
               <div>
@@ -294,7 +295,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
           </div>
 
           {(imageMessages.length > 0 || linkMessages.length > 0) && (
-            <div className="bg-white dark:bg-black mt-2 rounded-none">
+            <div className="bg-white dark:bg-black mt-2 rounded-none flex-1 min-h-0 flex flex-col">
               <Tabs
                 defaultValue={
                   imageMessages.length > 0
@@ -303,7 +304,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                     ? "link"
                     : "voice"
                 }
-                className="w-full"
+                className="w-full h-full"
               >
                 <TabsList className="grid w-full grid-cols-4">
                   {imageMessages.length > 0 && (
@@ -317,8 +318,8 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                 </TabsList>
 
                 {imageMessages.length > 0 && (
-                  <TabsContent value="media">
-                    <div className="max-h-[420px] overflow-y-auto overscroll-contain">
+                  <TabsContent value="media" className="h-full">
+                    <div className="h-full overflow-y-auto overscroll-contain">
                       <div className="grid grid-cols-3 gap-0.5 p-1">
                         {imageMessages.map((msg, idx) => (
                           <div

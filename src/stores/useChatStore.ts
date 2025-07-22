@@ -13,6 +13,7 @@ export type MessageType =
   | "audio" | "sticker";
 
 export type Message = {
+  
   eventId: string;
   sender: string | undefined;
   senderDisplayName?: string | undefined;

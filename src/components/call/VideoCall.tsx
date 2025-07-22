@@ -5,6 +5,7 @@ import { Mic, MicOff, Video, VideoOff, PhoneOff, Volume2, VolumeX, ChevronLeft, 
 import { cn } from '@/lib/utils';
 import useCallStore from '@/stores/useCallStore';
 import { callService } from '@/services/callService';
+import { getHeaderStyleWithStatusBar } from '@/utils/getHeaderStyleWithStatusBar';
 
 interface VideoCallProps {
     contactName: string;
@@ -31,6 +32,7 @@ export function VideoCall({
     } = useCallStore();
 
     const state = callState ?? storeState;
+    const headerStyle = getHeaderStyleWithStatusBar();
 
     // Giữ previous state để detect transition
     const prevStateRef = useRef<string>(state);
@@ -205,21 +207,25 @@ export function VideoCall({
 
             >
                 {/* Header */}
-                <div className="w-full flex items-center justify-between px-4 pt-4">
-                    <button
+                <header
+                    style={headerStyle}
+                    className="sticky top-0 z-10 w-full bg-transparent"
+                >
+                    <div className="flex items-center justify-between px-4 pt-4">                    <button
                         className="flex items-center gap-1 text-white/90 text-lg"
                         onClick={handleCloseEndNotification}
                     >
                         <ChevronLeft className="w-5 h-5" />
                         Back
                     </button>
-                    <div className="bg-blue-500 text-white rounded-full px-3 py-0.5 text-xs font-bold">
-                        TELEGRAM
+                        <div className="bg-blue-500 text-white rounded-full px-3 py-0.5 text-xs font-bold">
+                            TELEGRAM
+                        </div>
+                        <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                            <User className="w-5 h-5 text-white/80" />
+                        </div>
                     </div>
-                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                        <User className="w-5 h-5 text-white/80" />
-                    </div>
-                </div>
+                </header>
 
                 {/* Emoji & Encryption */}
                 <div className="mt-4 flex flex-col items-center">
@@ -342,32 +348,39 @@ export function VideoCall({
             )}
 
             {/* Header */}
-            <div className="absolute top-0 left-0 w-full flex flex-col items-center pt-6 z-30">
-                <div className="flex items-center justify-between w-full px-4">
-                    <button className="flex items-center gap-1 text-white/90 text-lg" onClick={handleEnd}>
-                        <ChevronLeft className="w-5 h-5" />
-                        Back
-                    </button>
-                    <div className="bg-blue-500 text-white rounded-full px-3 py-0.5 text-xs font-bold">TELEGRAM</div>
-                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                        <Video className="w-5 h-5 text-white/80" />
+            <header
+                style={headerStyle}
+                className="sticky top-0 z-30 w-full bg-transparent"
+            >
+                <div className="flex flex-col items-center pt-6">
+                    <div className="flex items-center justify-between w-full px-4 relative">
+                        <button className="flex items-center gap-1 text-white/90 text-lg" onClick={handleEnd}>
+                            <ChevronLeft className="w-5 h-5" />
+                            Back
+                        </button>
+                        <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 bg-blue-500 text-white rounded-full px-3 py-0.5 text-xs font-bold">
+                            Ting Tong
+                        </div>
+                        <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                            <Video className="w-5 h-5 text-white/80" />
+                        </div>
+                    </div>
+                    {/* <div className="mt-2 text-2xl">🧱🐷🐱🚂</div> */}
+                    <div className="mt-2 text-center">
+                        <div className="text-white text-2xl font-semibold drop-shadow">{contactName}</div>
+                        {isRinging ? (
+                            <div className="text-white/90 text-lg mt-1 font-normal tracking-wide">
+                                Requesting ...
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-center gap-2 mt-1">
+                                <span className="text-white/80 text-base">📶</span>
+                                <span className="text-white/80 text-lg font-mono">{formatDuration(callDuration ?? internalDuration)}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
-                <div className="mt-2 text-2xl">🧱🐷🐱🚂</div>
-                <div className="mt-2 text-center">
-                    <div className="text-white text-2xl font-semibold drop-shadow">{contactName}</div>
-                    {isRinging ? (
-                        <div className="text-white/90 text-lg mt-1 font-normal tracking-wide">
-                            Requesting ...
-                        </div>
-                    ) : (
-                        <div className="flex items-center justify-center gap-2 mt-1">
-                            <span className="text-white/80 text-base">📶</span>
-                            <span className="text-white/80 text-lg font-mono">{formatDuration(callDuration ?? internalDuration)}</span>
-                        </div>
-                    )}
-                </div>
-            </div>
+            </header>
 
             {/* Controls */}
             <div className="absolute bottom-8 left-0 w-full flex items-center justify-center gap-6 z-30">
