@@ -11,10 +11,7 @@ interface Room {
 
 export const useRoomStore = create<Room>((set, get) => ({
   rooms: [],
-  setRooms: (rooms: sdk.Room[]) =>
-    set({
-      rooms: rooms.filter((room) => room.getMyMembership() === "join"),
-    }),
+  setRooms: (rooms: sdk.Room[]) => set({ rooms }),
   addRoomToTop: (room) =>
     set({
       rooms: [room, ...get().rooms.filter((r) => r.roomId !== room.roomId)],
