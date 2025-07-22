@@ -16,6 +16,7 @@ import {
   sendImageMessage,
   sendLocationMessage,
   sendMessage,
+  sendSticker,
   sendTypingEvent,
   sendVideoMessage,
   sendVoiceMessage,
@@ -337,8 +338,59 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   };
 
   const handleEmojiClick = (emojiData: any) => {
-    console.log(emojiData);
+    //console.log(emojiData);
     setText((prev) => prev + emojiData.emoji);
+  };
+
+  const handleIconSelect = (emojiData: any) => {
+    setShowStickers(false);
+    console.log(emojiData);
+    if (!client) return;
+    const userId = client.getUserId();
+    const now = new Date();
+    const localId = "local_" + Date.now();
+    addMessage(roomId, {
+      eventId: localId,
+      sender: userId ?? undefined,
+      senderDisplayName: userId ?? undefined,
+      text: emojiData.emoji,
+      time: now.toLocaleString(),
+      timestamp: now.getTime(),
+      status: "sent",
+      type: "emoji",
+    });
+    setTimeout(() => {
+      sendMessage(roomId, emojiData.emoji, client)
+        .then((res) => {
+          if (!res.success) console.log("Send Failed!");
+        })
+        .catch((err) => console.log("Send Error:", err));
+    }, 1000);
+  };
+
+  const handleStickerSelect = async (emoji: string, isStickerAnimation: boolean) => {
+    setShowStickers(false);
+    if (!client) return;
+    //console.log(emoji);
+    try {
+      const localId = "local_" + Date.now();
+      const userId = client.getUserId();
+      const now = new Date();
+      addMessage(roomId, {
+        eventId: localId,
+        sender: userId ?? undefined,
+        senderDisplayName: userId ?? undefined,
+        text: emoji,
+        isStickerAnimation: isStickerAnimation,
+        time: now.toLocaleString(),
+        timestamp: now.getTime(),
+        status: "sent",
+        type: "sticker",
+      });
+      await sendSticker(client, roomId, emoji, isStickerAnimation);
+    } catch (error) {
+      console.error("Failed to send image:", error);
+    }
   };
 
   const handleImagesAndVideos = async (
@@ -625,11 +677,6 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     }
   };
 
-  const handleStickerSelect = (emoji: any) => {
-    console.log(emoji);
-    setShowEmojiPicker(false);
-  };
-
   // Detect keyboard open via visualViewport (works reliably on real devices)
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -734,7 +781,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             isOpen={showStickers}
             onClose={() => setShowStickers(false)}
             onStickerSelect={handleStickerSelect}
-            onEmojiSelect={handleEmojiClick}
+            onEmojiSelect={handleIconSelect}
           />
         </div>
 

@@ -76,6 +76,7 @@ export const useTimeline = (roomId: string) => {
       let description: string | null = null;
       let audioUrl: string | null = null;
       let audioDuration: number | null = null;
+      let isStickerAnimation : boolean = false;
       let type: MessageType = "text";
 
       if (content.msgtype === "m.image") {
@@ -125,6 +126,9 @@ export const useTimeline = (roomId: string) => {
         }
         // nếu server đẩy duration trong info
         audioDuration = content.info?.duration ?? null;
+      } else if(content.msgtype === "m.sticker"){
+        type = "sticker";
+        isStickerAnimation = content.info?.isStickerAnimation ?? false;
       }
 
       addMessage(roomId, {
@@ -144,6 +148,7 @@ export const useTimeline = (roomId: string) => {
         audioDuration,
         status: "sent",
         type,
+        isStickerAnimation,
         location: {
           latitude,
           longitude,

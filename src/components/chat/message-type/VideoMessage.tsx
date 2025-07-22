@@ -101,8 +101,7 @@ const VideoMessage = ({ msg, isSender }: MessagePros) => {
   }, [msg.videoUrl, duration]);
 
   const textClass = clsx(
-    "absolute bottom-1 right-2 text-xs text-xs mt-1",
-    isSender ? "text-white" : "text-zinc-400"
+    "absolute bottom-1 right-2 text-xs text-xs mt-1 text-white"
   );
 
   return (
