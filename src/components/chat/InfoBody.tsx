@@ -91,10 +91,15 @@ export default function InfoBody({ user }: { user: sdk.User }) {
   useTimeline(roomId);
 
   const roomMessages = messagesByRoom[roomId] || [];
-  const imageMessages = [...roomMessages]
-    .filter((msg) => msg.type === "image" && msg.imageUrl)
-    .sort((a, b) => (b.timestamp || Date.now()) - (a.timestamp || Date.now()));
 
+  const mediaMessages = [...roomMessages]
+    .filter(
+      (msg) =>
+        (msg.type === "image" && msg.imageUrl) ||
+        (msg.type === "video" && msg.videoUrl)
+    )
+    .sort((a, b) => (b.timestamp || Date.now()) - (a.timestamp || Date.now()));
+  // ...existing code...
   const linkMessages = [...roomMessages]
     .map((msg) => {
       if (msg.type !== "text" || !msg.sender) return null;
@@ -294,11 +299,11 @@ export default function InfoBody({ user }: { user: sdk.User }) {
             )}
           </div>
 
-          {(imageMessages.length > 0 || linkMessages.length > 0) && (
+          {(mediaMessages.length > 0 || linkMessages.length > 0) && (
             <div className="bg-white dark:bg-black mt-2 rounded-none flex-1 min-h-0 flex flex-col">
               <Tabs
                 defaultValue={
-                  imageMessages.length > 0
+                  mediaMessages.length > 0
                     ? "media"
                     : linkMessages.length > 0
                     ? "link"
@@ -307,7 +312,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                 className="w-full h-full"
               >
                 <TabsList className="grid w-full grid-cols-4">
-                  {imageMessages.length > 0 && (
+                  {mediaMessages.length > 0 && (
                     <TabsTrigger value="media">Media</TabsTrigger>
                   )}
                   <TabsTrigger value="voice">Voice</TabsTrigger>
@@ -317,23 +322,32 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                   <TabsTrigger value="groups">Groups</TabsTrigger>
                 </TabsList>
 
-                {imageMessages.length > 0 && (
+                {mediaMessages.length > 0 && (
                   <TabsContent value="media" className="h-full">
                     <div className="h-full overflow-y-auto overscroll-contain">
                       <div className="grid grid-cols-3 gap-0.5 p-1">
-                        {imageMessages.map((msg, idx) => (
+                        {mediaMessages.map((msg, idx) => (
                           <div
                             key={msg.eventId || idx}
                             className="aspect-square"
                           >
-                            <Image
-                              src={msg.imageUrl ?? ""}
-                              alt="media"
-                              width={500}
-                              height={500}
-                              className="w-full h-full object-cover rounded"
-                              priority
-                            />
+                            {msg.type === "image" && msg.imageUrl ? (
+                              <Image
+                                src={msg.imageUrl}
+                                alt="media"
+                                width={500}
+                                height={500}
+                                className="w-full h-full object-cover rounded"
+                                priority
+                              />
+                            ) : msg.type === "video" && msg.videoUrl ? (
+                              <video
+                                src={msg.videoUrl}
+                                controls
+                                className="w-full h-full object-cover rounded"
+                                style={{ background: "#000" }}
+                              />
+                            ) : null}
                           </div>
                         ))}
                       </div>
