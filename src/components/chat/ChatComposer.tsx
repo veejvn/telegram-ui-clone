@@ -310,14 +310,15 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     //  2. Gửi các forward messages nếu có
     if (forwardMessages.length > 0) {
       forwardMessages.forEach((fwd) => {
-        const localId = "fwd_" + Date.now() + Math.random();
+        const localId = "local_" + Date.now() + Math.random();
         const forwardBody = JSON.stringify({
           forward: true,
           originalSenderId: fwd.senderId,
           originalSender: fwd.sender,
           text: fwd.text,
         });
-
+        
+        //console.log(forwardMessages);
         addMessage(roomId, {
           eventId: localId,
           sender: userId ?? undefined,
@@ -368,7 +369,10 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     }, 1000);
   };
 
-  const handleStickerSelect = async (emoji: string, isStickerAnimation: boolean) => {
+  const handleStickerSelect = async (
+    emoji: string,
+    isStickerAnimation: boolean
+  ) => {
     setShowStickers(false);
     if (!client) return;
     //console.log(emoji);
@@ -463,11 +467,15 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
 
   useEffect(() => {
     return () => {
-      if (recordIntervalRef.current) {
-        clearInterval(recordIntervalRef.current);
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      if (client && roomId) {
+        sendTypingEvent(client, roomId, false);
       }
     };
-  }, []);
+  }, [client, roomId]);
 
   useEffect(() => {
     const textarea = textareaRef.current;
