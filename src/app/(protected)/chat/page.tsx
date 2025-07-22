@@ -58,8 +58,32 @@ export default function ChatsPage() {
     );
   };
 
-  const handleReadAll = () => {
-    alert("Read All: " + selectedRooms.join(", "));
+  const handleReadAll = async () => {
+    if (!client || selectedRooms.length < 2) return;
+
+    try {
+      await Promise.all(
+        selectedRooms.map(async (roomId) => {
+          const room = client.getRoom(roomId);
+          if (!room) return;
+
+          const timeline = room.getLiveTimeline();
+          const events = timeline.getEvents();
+          const lastEvent = [...events]
+            .reverse()
+            .find((e) => e.getType() !== "m.room.encrypted");
+
+          if (lastEvent) {
+            await client.sendReadReceipt(lastEvent);
+          }
+        })
+      );
+
+      setIsEditMode(false);
+      setSelectedRooms([]);
+    } catch (error) {
+      console.error("Failed to mark as read", error);
+    }
   };
 
   const handleArchive = () => {

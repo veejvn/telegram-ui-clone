@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import * as sdk from "matrix-js-sdk";
 import { create } from "zustand";
@@ -14,9 +14,6 @@ export const useRoomStore = create<Room>((set, get) => ({
   setRooms: (rooms: sdk.Room[]) => set({ rooms }),
   addRoomToTop: (room) =>
     set({
-      rooms: [
-        room,
-        ...get().rooms.filter((r) => r.roomId !== room.roomId),
-      ],
+      rooms: [room, ...get().rooms.filter((r) => r.roomId !== room.roomId)],
     }),
 }));
