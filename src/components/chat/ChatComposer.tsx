@@ -368,7 +368,10 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     }, 1000);
   };
 
-  const handleStickerSelect = async (emoji: string, isStickerAnimation: boolean) => {
+  const handleStickerSelect = async (
+    emoji: string,
+    isStickerAnimation: boolean
+  ) => {
     setShowStickers(false);
     if (!client) return;
     //console.log(emoji);
@@ -463,11 +466,15 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
 
   useEffect(() => {
     return () => {
-      if (recordIntervalRef.current) {
-        clearInterval(recordIntervalRef.current);
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      if (client && roomId) {
+        sendTypingEvent(client, roomId, false);
       }
     };
-  }, []);
+  }, [client, roomId]);
 
   useEffect(() => {
     const textarea = textareaRef.current;
