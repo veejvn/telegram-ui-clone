@@ -12,6 +12,7 @@ import ForwardTextMessage from "./message-type/ForwardTextMessage";
 import { LocationMessage } from "@/components/chat/message-type/LocationMessage";
 import FileMessage from "@/components/chat/message-type/FileMessage";
 import VideoMessage from "@/components/chat/message-type/VideoMessage";
+import StickerMessage from "@/components/chat/message-type/StickerMessage";
 
 const ChatMessage = ({ msg }: { msg: Message }) => {
   const userId = useAuthStore.getState().userId;
@@ -81,6 +82,8 @@ const ChatMessage = ({ msg }: { msg: Message }) => {
         return <FileMessage msg={msg} isSender={isSender}/>
       case "video":
         return <VideoMessage msg={msg} isSender={isSender}/>
+      case "sticker":
+        return <StickerMessage msg={msg} isSender={isSender}/>
       default:
         //console.warn("⚠️ Unknown type in message:", msg);
         return <TextMessage msg={msg} isSender={isSender} />;
