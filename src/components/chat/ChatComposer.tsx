@@ -16,6 +16,7 @@ import {
   sendImageMessage,
   sendLocationMessage,
   sendMessage,
+  sendSticker,
   sendTypingEvent,
   sendVideoMessage,
   sendVoiceMessage,
@@ -33,16 +34,21 @@ import { Gift, Reply, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
-import { getVideoMetadata, Metadata } from "@/utils/chat/send-message/getVideoMetadata";
+import {
+  getVideoMetadata,
+  Metadata,
+} from "@/utils/chat/send-message/getVideoMetadata";
 import { GrGallery } from "react-icons/gr";
 import { FaFile } from "react-icons/fa6";
 import { MdLocationOn } from "react-icons/md";
 import { FileInfo, ImageInfo } from "@/types/chat";
+import StickerPicker from "@/components/common/StickerPicker";
 
 const ChatComposer = ({ roomId }: { roomId: string }) => {
   const [text, setText] = useState("");
   const [isMultiLine, setIsMultiLine] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showStickers, setShowStickers] = useState(false);
 
   const typingTimeoutRef = useRef<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -332,10 +338,64 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   };
 
   const handleEmojiClick = (emojiData: any) => {
+    //console.log(emojiData);
     setText((prev) => prev + emojiData.emoji);
   };
 
-  const handleImagesAndVideos = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleIconSelect = (emojiData: any) => {
+    setShowStickers(false);
+    console.log(emojiData);
+    if (!client) return;
+    const userId = client.getUserId();
+    const now = new Date();
+    const localId = "local_" + Date.now();
+    addMessage(roomId, {
+      eventId: localId,
+      sender: userId ?? undefined,
+      senderDisplayName: userId ?? undefined,
+      text: emojiData.emoji,
+      time: now.toLocaleString(),
+      timestamp: now.getTime(),
+      status: "sent",
+      type: "emoji",
+    });
+    setTimeout(() => {
+      sendMessage(roomId, emojiData.emoji, client)
+        .then((res) => {
+          if (!res.success) console.log("Send Failed!");
+        })
+        .catch((err) => console.log("Send Error:", err));
+    }, 1000);
+  };
+
+  const handleStickerSelect = async (emoji: string, isStickerAnimation: boolean) => {
+    setShowStickers(false);
+    if (!client) return;
+    //console.log(emoji);
+    try {
+      const localId = "local_" + Date.now();
+      const userId = client.getUserId();
+      const now = new Date();
+      addMessage(roomId, {
+        eventId: localId,
+        sender: userId ?? undefined,
+        senderDisplayName: userId ?? undefined,
+        text: emoji,
+        isStickerAnimation: isStickerAnimation,
+        time: now.toLocaleString(),
+        timestamp: now.getTime(),
+        status: "sent",
+        type: "sticker",
+      });
+      await sendSticker(client, roomId, emoji, isStickerAnimation);
+    } catch (error) {
+      console.error("Failed to send image:", error);
+    }
+  };
+
+  const handleImagesAndVideos = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const files = e.target.files;
     if (!files || !client) return;
     setOpen(false);
@@ -352,7 +412,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             width: dimentions.width,
             height: dimentions.height,
           };
-  
+
           addMessage(roomId, {
             eventId: localId,
             sender: userId ?? undefined,
@@ -365,13 +425,17 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             status: "sent",
             type: "image",
           });
-  
+
           const { httpUrl } = await sendImageMessage(client, roomId, file);
           updateMessage(roomId, localId, { imageUrl: httpUrl });
         } else if (file.type.startsWith("video/")) {
           // Gửi video
           const metadata = await getVideoMetadata(file);
-          const videoInfo : Metadata  = { width: metadata.width, height: metadata.height, duration: metadata.duration}
+          const videoInfo: Metadata = {
+            width: metadata.width,
+            height: metadata.height,
+            duration: metadata.duration,
+          };
           addMessage(roomId, {
             eventId: localId,
             sender: userId ?? undefined,
@@ -384,7 +448,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             status: "sent",
             type: "video",
           });
-  
+
           const { httpUrl } = await sendVideoMessage(client, roomId, file);
           updateMessage(roomId, localId, {
             videoUrl: httpUrl,
@@ -693,7 +757,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             />
           ) : (
             <Eclipse
-              // onClick={() => setShowEmojiPicker((prev) => !prev)}
+              onClick={() => setShowStickers((prev) => !prev)}
               className="px-0.5 text-[#858585] cursor-default"
               size={24}
             />
@@ -705,12 +769,20 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
                 width={300}
                 height={350}
                 onEmojiClick={handleEmojiClick}
+                searchDisabled={true}
+                previewConfig={{ showPreview: false }}
                 theme={
                   theme.theme === "dark" ? EmojiTheme.DARK : EmojiTheme.LIGHT
                 }
               />
             </div>
           )}
+          <StickerPicker
+            isOpen={showStickers}
+            onClose={() => setShowStickers(false)}
+            onStickerSelect={handleStickerSelect}
+            onEmojiSelect={handleIconSelect}
+          />
         </div>
 
         <div className="absolute bottom-14 left-0 z-50 pb-6">

@@ -10,7 +10,7 @@ export type MessageType =
   | "file"
   | "emoji"
   | "location"
-  | "audio";
+  | "audio" | "sticker";
 
 export type Message = {
   
@@ -31,6 +31,7 @@ export type Message = {
   status: MessageStatus;
   type?: MessageType;
   isForward?: boolean;
+  isStickerAnimation?: boolean;
   location?: {
     latitude: number | null;
     longitude: number | null;

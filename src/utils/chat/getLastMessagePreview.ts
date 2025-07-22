@@ -2,6 +2,7 @@
 import * as sdk from "matrix-js-sdk";
 import { formatTime } from "./formatTimeString";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
 
 export const getLastMessagePreview = (
   room: sdk.Room
@@ -45,6 +46,11 @@ export const getLastMessagePreview = (
       } catch {
         text = content.body;
       }
+      if(text.startsWith("STICKER::")){
+        text = "send a sticker"
+      }else if(isOnlyEmojis(text)){
+        text = "send a icon"
+      }
     } else {
       switch (msgType) {
         case "m.image":
@@ -58,6 +64,12 @@ export const getLastMessagePreview = (
           break;
         case "m.video":
           text = "sent a video";
+          break;
+        case "m.location":
+          text = "sent a location";
+          break;
+        case "m.audio":
+          text = "sent a audio";
           break;
         default:
           text = "sent a message";

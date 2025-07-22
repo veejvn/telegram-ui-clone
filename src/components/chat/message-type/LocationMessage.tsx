@@ -50,7 +50,7 @@ export function LocationMessage({ msg, isSender }: MessagePros) {
           </a>
           {msg.time && (
             <div
-              className={`absolute bottom-1 bg-z text-zinc-500 text-xs px-2 py-1 rounded-full ${
+              className={`absolute bottom-1 text-xs px-2 py-1 rounded-full ${
                 isSender ? "left-2" : "right-2"
               }`}
             >
@@ -59,7 +59,7 @@ export function LocationMessage({ msg, isSender }: MessagePros) {
           )}
           {isSender && (
             <div className="absolute bottom-1 right-2">
-              <div className={textClass}>
+              <div className={textClass}> 
                 <p
                   className="backdrop-blur-sm backdrop-brightness-70 overflow-hidden items-center px-2 py-0.5 mt-2 flex gap-1 rounded-full"
                 >
