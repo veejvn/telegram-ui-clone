@@ -10,10 +10,10 @@ export type MessageType =
   | "file"
   | "emoji"
   | "location"
-  | "audio" | "sticker";
+  | "audio"
+  | "sticker";
 
 export type Message = {
-  
   eventId: string;
   sender: string | undefined;
   senderDisplayName?: string | undefined;

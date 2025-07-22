@@ -14,23 +14,22 @@ export default function ForwardMsgPreview() {
     <>
       {msg && (
         <div className="flex justify-between pt-1.5 px-2 items-center border-t dark:border-t-gray-50/10">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 mr-4 text-blue-600 lg:w-10 lg:h-10">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-7 h-7 mr-4 text-blue-600 lg:w-10 lg:h-10 flex-shrink-0">
               <Settings2
-                className=" w-2.5 h-2.5 lg:w-4.5 lg:h-4.5 
-          absolute bottom-[112px] left-[9px] lg:bottom-[101px] lg:left-[10px]"
+                className=" w-2.5 h-2.5 lg:w-4.5 lg:h-4.5 absolute bottom-[112px] left-[9px] lg:bottom-[101px] lg:left-[10px]"
               />
               <BlueForward />
             </div>
-            <div className="w-0.5 h-9 lg:h-12 lg:w-1 bg-blue-600 rounded-lg"></div>
-            <div className="text-sm lg:text-lg  ">
+            <div className="w-0.5 h-9 lg:h-12 lg:w-1 bg-blue-600 rounded-lg flex-shrink-0"></div>
+            <div className="text-sm lg:text-lg min-w-0">
               <p className="text-blue-600 -mb-1">Forward Message</p>
-              <p className="text-gray-400 -mt-0.5">
+              <p className="text-gray-400 -mt-0.5 truncate">
                 {msg.sender}: {msg.text}
               </p>
             </div>
           </div>
-          <X size={25} className="text-blue-600 pr-2" onClick={clearMessages} />
+          <X size={25} className="text-blue-600 pr-2 flex-shrink-0" onClick={clearMessages} />
         </div>
       )}
     </>

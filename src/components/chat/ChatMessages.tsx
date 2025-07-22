@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useEffect, useLayoutEffect, useState, useRef } from "react";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useState,
+  useRef,
+  useMemo,
+} from "react";
 import ChatMessage from "./ChatMessage";
 import { useTimeline } from "@/hooks/useTimeline";
 import { MessageStatus, useChatStore } from "@/stores/useChatStore";
@@ -30,7 +36,6 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
   const highlightId = searchParams.get("highlight") ?? null;
   const searching = searchParams.get("searching") === "true";
   const [searchText, setSearchText] = useState("");
-  const [searchResults, setSearchResults] = useState<string[]>([]);
   const firstHighlightedRef = useRef<HTMLDivElement | null>(null);
 
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -68,12 +73,11 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
   }, [messages.length, isLoadingMore]);
 
   // Tìm các eventId chứa searchText (bỏ qua forward)
-  useEffect(() => {
+  const searchResults = useMemo(() => {
     if (!searchText) {
-      setSearchResults([]);
-      return;
+      return [];
     }
-    const foundIds = messages
+    return messages
       .filter((msg) => {
         // Tìm cả tin nhắn thường và forward
         let text = msg.text ?? "";
@@ -89,8 +93,8 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
         return text.toLowerCase().includes(searchText.toLowerCase());
       })
       .map((msg) => msg.eventId);
-    setSearchResults(foundIds);
   }, [searchText, messages]);
+
   const handleResultClick = (eventId: string) => {
     setSearchText(""); // Ẩn bảng kết quả
     router.replace(`/chat/${roomId}?searching=true&highlight=${eventId}`);
