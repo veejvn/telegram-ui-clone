@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import * as sdk from "matrix-js-sdk";
+import * as sdk from "@/lib/matrix-sdk";
 import { Check, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -76,36 +76,39 @@ const ContactPage = () => {
     <>
       {/* HEADER */}
       <div style={headerStyle}>
-        <div className="flex items-center justify-between px-4 py-2">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button className="text-blue-500 border-none bg-transparent hover:bg-zinc-200 font-semibold px-0">
-                Sort
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-44 p-0 ml-3 rounded-2xl">
-              <div className="flex flex-col">
-                <Button
-                  className={`flex items-center justify-between px-4 py-2 bg-white text-black hover:bg-zinc-200 text-left rounded-none rounded-t-2xl ${sortBy === "lastSeen" ? "font-bold" : ""
-                    }`}
-                  onClick={() => setSortBy("lastSeen")}
+        <div className="grid grid-cols-3 items-center px-4 py-2">
+          <div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  className="text-blue-500 bg-transparent border-none shadow-none outline-none p-0 m-0 font-semibold"
+                  type="button"
                 >
-                  By Last Seen
-                  {sortBy === "lastSeen" && <Check />}
-                </Button>
-                <Button
-                  className={`flex items-center justify-between px-4 py-2 bg-white text-black hover:bg-zinc-200 text-left rounded-none rounded-b-2xl ${sortBy === "name" ? "font-bold" : ""
-                    }`}
-                  onClick={() => setSortBy("name")}
-                >
-                  By Name
-                  {sortBy === "name" && <Check />}
-                </Button>
-              </div>
-            </PopoverContent>
-          </Popover>
-          <h1 className="text-lg font-semibold">Contacts</h1>
-          <div className="flex gap-3">
+                  Sort
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-44 p-0 ml-3 rounded-2xl">
+                <div className="flex flex-col">
+                  <Button
+                    className={`flex items-center justify-between px-4 py-2 bg-white text-black hover:bg-zinc-200 text-left rounded-none rounded-t-2xl ${sortBy === "lastSeen" ? "font-bold" : ""}`}
+                    onClick={() => setSortBy("lastSeen")}
+                  >
+                    By Last Seen
+                    {sortBy === "lastSeen" && <Check />}
+                  </Button>
+                  <Button
+                    className={`flex items-center justify-between px-4 py-2 bg-white text-black hover:bg-zinc-200 text-left rounded-none rounded-b-2xl ${sortBy === "name" ? "font-bold" : ""}`}
+                    onClick={() => setSortBy("name")}
+                  >
+                    By Name
+                    {sortBy === "name" && <Check />}
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+          <h1 className="text-lg font-semibold text-center">Contacts</h1>
+          <div className="flex gap-3 justify-end">
             <Button
               variant="ghost"
               className="text-blue-500 font-bold text-xl px-0"

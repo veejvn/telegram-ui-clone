@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -39,6 +39,17 @@ const NewContactModal = ({
   const [lastName, setLastName] = useState("");
   const [phones, setPhones] = useState<string[]>([""]);
 
+  // Reset form mỗi khi modal đóng
+  useEffect(() => {
+    if (!modalOpen) {
+      setFirstName("");
+      setLastName("");
+      setPhones([""]);
+    }
+  }, [modalOpen]);
+
+  const [showConfirmCancel, setShowConfirmCancel] = useState(false);
+
   const handleAddPhone = () => setPhones([...phones, ""]);
 
   const handleRemovePhone = (idx: number) =>
@@ -47,12 +58,15 @@ const NewContactModal = ({
   const handlePhoneChange = (idx: number, value: string) =>
     setPhones(phones.map((p, i) => (i === idx ? value : p)));
 
+  const resetForm = () => {
+    setFirstName("");
+    setLastName("");
+    setPhones([""]);
+  };
+
   const handleCreate = () => {
     if (firstName.trim() && phones.some((p) => p.trim())) {
       onAddContact?.({ firstName, lastName, phones });
-      setFirstName("");
-      setLastName("");
-      setPhones([""]);
       setModalOpen(false);
       if (onClose) onClose();
     }
@@ -62,6 +76,19 @@ const NewContactModal = ({
     setModalOpen(false);
     if (onClose) onClose();
   };
+
+  const handleConfirmCancel = () => {
+    resetForm();
+    setShowConfirmCancel(false);
+    setModalOpen(false);
+    if (onClose) onClose();
+  };
+
+  const handleCloseConfirm = () => {
+    setShowConfirmCancel(false);
+  };
+
+  const hasInput = firstName.trim() || lastName.trim() || phones.some((p) => p.trim());
 
   return (
     <>
@@ -105,13 +132,13 @@ const NewContactModal = ({
               placeholder="First Name"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              className="col-span-1 mb-2"
+              className="col-span-1 mb-2 placeholder:font-normal placeholder:text-gray-300"
             />
             <Input
               placeholder="Last Name"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              className="col-span-1 mb-2"
+              className="col-span-1 mb-2 placeholder:font-normal placeholder:text-gray-300"
             />
           </div>
 
@@ -132,7 +159,7 @@ const NewContactModal = ({
                   di động
                 </span>
                 <Input
-                  className="flex-1"
+                  className="flex-1 placeholder:font-normal placeholder:text-gray-300"
                   placeholder="+"
                   value={phone}
                   onChange={(e) => handlePhoneChange(idx, e.target.value)}
