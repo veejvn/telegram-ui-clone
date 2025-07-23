@@ -324,7 +324,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
 
                 {mediaMessages.length > 0 && (
                   <TabsContent value="media" className="h-full">
-                    <div className="h-full overflow-y-auto overscroll-contain pb-8">
+                    <div className="h-full overflow-y-auto overscroll-contain pb-18">
                       <div className="grid grid-cols-3 gap-0.5 p-1">
                         {mediaMessages.map((msg, idx) => (
                           <div
@@ -344,8 +344,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                               <video
                                 src={msg.videoUrl}
                                 controls
-                                className="w-full h-full object-cover rounded"
-                                style={{ background: "#000" }}
+                                className="w-full h-full object-cover rounded bg-white"
                               />
                             ) : null}
                           </div>
