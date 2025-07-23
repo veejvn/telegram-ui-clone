@@ -64,7 +64,7 @@ export default function InfoPage() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-200 dark:bg-black w-full">
-      <header style={headerStyle} className="mb-23">
+      <header style={headerStyle} className="">
         <PrivateInfoHeader user={user} />
       </header>
       <div className="flex-1 min-h-0">

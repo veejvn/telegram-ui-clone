@@ -1,6 +1,6 @@
-/* eslint-disable @next/next/no-img-element */
+"use client";
+
 import React, { useEffect } from "react";
-import { Avatar, AvatarFallback } from "../ui/ChatAvatar";
 import { ChevronLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as sdk from "matrix-js-sdk";
@@ -10,14 +10,13 @@ export default function PrivateInfoHeader({ user }: { user: sdk.User }) {
   const router = useRouter();
   const client = useMatrixClient();
   const [avatarUrl, setAvatarUrl] = React.useState<string | null>(null);
-
+  const isDefaultAvatar = !avatarUrl;
   useEffect(() => {
     const fetchAvatar = async () => {
       if (!client || !user.avatarUrl) return;
       try {
         const httpUrl =
-          client.mxcUrlToHttp(user.avatarUrl, 96, 96, "crop") ?? "";
-
+          client.mxcUrlToHttp(user.avatarUrl, 120, 120, "scale", true) ?? "";
         setAvatarUrl(httpUrl);
       } catch (error) {
         setAvatarUrl("");
@@ -29,41 +28,29 @@ export default function PrivateInfoHeader({ user }: { user: sdk.User }) {
   }, [client]);
 
   return (
-    <>
-      <div className="flex justify-between relative bg-[#e5e7eb] dark:bg-black py-2 px-2">
+    <div className="absolute top-0 left-0 w-full z-20 bg-transparent">
+      <div className="flex justify-between items-center px-2 py-2">
         <button
-          onClick={() => router.back()} 
-          className="flex text-left text-blue-600
-          cursor-pointer hover:opacity-70"
+          onClick={() => router.back()}
+          className={
+            isDefaultAvatar
+              ? "flex items-center text-blue-600 text-lg font-medium bg-transparent px-2 py-1 shadow-none"
+              : "flex items-center text-white text-lg font-medium bg-black/30 rounded-full px-3 py-1 hover:bg-black/50 transition"
+          }
         >
           <ChevronLeft />
-          <p>Back</p>
+          <span className="ml-1">Back</span>
         </button>
-        <div className="absolute left-1/2 transform -translate-x-1/2 text-center mt-3">
-          <Avatar className="h-25 w-25">
-            {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt="avatar"
-                className="h-25 w-25 rounded-full object-cover"
-                width={100}
-                height={100}
-                loading="lazy"
-              />
-            ) : (
-              <AvatarFallback className="bg-purple-400 text-white text-5xl font-bold">
-                {user.displayName?.slice(0, 1)}
-              </AvatarFallback>
-            )}
-          </Avatar>
-        </div>
-        <p
-          className="text-right flex text-blue-600
-          cursor-pointer hover:opacity-70"
+        <button
+          className={
+            isDefaultAvatar
+              ? "text-blue-600 text-lg font-medium bg-transparent px-2 py-1 shadow-none"
+              : "text-white text-lg font-medium bg-black/30 rounded-full px-3 py-1 hover:bg-black/50 transition"
+          }
         >
           Edit
-        </p>
+        </button>
       </div>
-    </>
+    </div>
   );
 }

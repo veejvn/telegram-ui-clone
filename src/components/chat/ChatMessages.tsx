@@ -170,7 +170,7 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
   return (
     <div className="flex flex-col h-full">
       {searching && (
-        <div className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md p-2">
+        <div className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md ">
           {/* Khối search input */}
           <div className="flex items-center justify-between mb-2 gap-2">
             <div className="relative flex-1">
@@ -179,7 +179,7 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
               </span>
               <input
                 type="text"
-                className="flex-1 pl-9 py-2 rounded-xl bg-black/90 text-white placeholder:text-gray-400 focus:outline-none border border-gray-700 w-full"
+                className="flex-0 pl-9 py-2 rounded-xl bg-white dark:bg-[#18181b] text-black dark:text-white placeholder:text-gray-400 focus:outline-none border border-gray-300 dark:border-gray-700 w-full"
                 placeholder="Search this chat"
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}

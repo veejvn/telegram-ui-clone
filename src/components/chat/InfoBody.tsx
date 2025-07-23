@@ -75,7 +75,26 @@ export default function InfoBody({ user }: { user: sdk.User }) {
       )}&contact=${encodeURIComponent(user.userId)}`
     );
   };
+  const [avatarUrl, setAvatarUrl] = React.useState<string | null>(null);
 
+  React.useEffect(() => {
+    const fetchAvatar = async () => {
+      if (!user?.avatarUrl || !client) return;
+      try {
+        const httpUrl = client.mxcUrlToHttp(
+          user.avatarUrl,
+          1200,
+          1200,
+          "scale",
+          true
+        );
+        setAvatarUrl(httpUrl);
+      } catch {
+        setAvatarUrl(null);
+      }
+    };
+    fetchAvatar();
+  }, [client, user]);
   // LẤY TOÀN BỘ TIN NHẮN TỪ STORE
   const messagesByRoom = useChatStore((state) => state.messagesByRoom);
 
@@ -198,196 +217,260 @@ export default function InfoBody({ user }: { user: sdk.User }) {
 
   return (
     <>
-      <div className="flex flex-col overflow-hidden bg-[#e5e7eb] dark:bg-[black] h-full">
-        <div className="text-center flex flex-col h-full min-h-0">
-          <p className="text-xl font-semibold">{user.displayName}</p>
+      <div className="relative flex flex-col overflow-hidden bg-[#e5e7eb] dark:bg-[black] h-full">
+        {avatarUrl ? (
+          <div className="relative flex flex-col items-center">
+            <img
+              src={avatarUrl}
+              alt="avatar"
+              className="w-full h-full object-cover"
+            />
 
-          <p className="text-sm text-muted-foreground">
-            {isActuallyOnline ? "online" : getDetailedStatus(lastSeen)}
-          </p>
+            {/* Đè nội dung lên ảnh */}
+            <div className="absolute inset-0 flex flex-col justify-end px-4 pb-4 bg-gradient-to-t from-black/60 to-transparent">
+              <p className="text-xl font-semibold text-white">
+                {user.displayName}
+              </p>
+              <p className="text-sm text-white mb-2">
+                {isActuallyOnline ? "online" : getDetailedStatus(lastSeen)}
+              </p>
 
-          <div className="flex justify-center gap-2 my-4 px-4">
-            <div
-              className="flex flex-col justify-end gap-0.5 items-center w-[75px] h-[50px] cursor-pointer bg-white dark:bg-[#232329] rounded-lg py-1 group"
-              onClick={() => handleStartCall("voice")}
-            >
-              <CallIcon />
-              <p className="text-xs text-[#155dfc]">call</p>
-            </div>
-
-            <div
-              className="flex flex-col justify-end items-center w-[75px] h-[50px] cursor-pointer bg-white dark:bg-[#232329] rounded-lg py-1 group"
-              onClick={() => handleStartCall("video")}
-            >
-              <VideoIcon />
-              <p className="text-xs text-[#155dfc]">video</p>
-            </div>
-
-            {/* Mute Button */}
-            <div className="flex flex-col justify-end items-center w-[75px] h-[50px] bg-white dark:bg-[#232329] rounded-lg py-1">
-              <MuteButton onMuteUntil={handleMuteUntil} roomId={roomId} />
-            </div>
-
-            {/* Search and More buttons */}
-
-            <div
-              className="flex flex-col justify-end items-center group cursor-pointer bg-white dark:bg-[#232329] rounded-lg w-[75px] h-[50px] py-1"
-              onClick={() => router.push(`/chat/${roomId}?searching=true`)}
-            >
-              <SearchIcon />
-              <p className="text-xs text-[#155dfc]">search</p>
-            </div>
-
-            <Popover>
-              <PopoverTrigger asChild>
-                <div className="flex flex-col justify-end items-center group cursor-pointer bg-white dark:bg-[#232329] rounded-lg w-[75px] h-[50px] py-1">
-                  <MoreIcon />
-                  <p className="text-xs text-[#155dfc]">more</p>
-                </div>
-              </PopoverTrigger>
-              <PopoverContent className="mr-4 p-0 w-[240px]">
-                <div className="">
-                  <Button
-                    className="flex justify-between items-center w-full my-1 text-red-500 bg-white dark:bg-black"
-                    onClick={() => setShowBlockModal(true)}
-                    disabled={isBlocked}
-                  >
-                    Block User
-                    <Hand />
-                  </Button>
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          <div className="w-full max-w-sm mx-auto bg-white dark:bg-[#232329] px-4 py-2 text-start flex flex-col mt-4 mb-2 rounded-xl gap-0.5 shadow">
-            <p className="text-sm text-zinc-500">mobile</p>
-            <p className="text-[#155dfc] break-all">+84 91 502 70 46</p>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-zinc-500">username</p>
-                <p className="text-[#155dfc] break-all">
-                  @{user.userId?.split(":")[0].replace(/^@/, "")}
-                </p>
-              </div>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-5 h-5 text-[#155dfc] cursor-pointer"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <rect x="3" y="3" width="4" height="4" rx="1" />
-                <rect x="17" y="3" width="4" height="4" rx="1" />
-                <rect x="3" y="17" width="4" height="4" rx="1" />
-                <rect x="17" y="17" width="4" height="4" rx="1" />
-                <rect x="10" y="10" width="4" height="4" rx="1" />
-              </svg>
-            </div>
-
-            {isBlocked && (
-              <div className="flex flex-col gap-2 mt-2">
-                <hr className="my-1 border-gray-200/50" />
-                <button
-                  onClick={() => setShowConfirmUnblock(true)}
-                  className="text-[#155dfc] text-base font-normal py-0 cursor-pointer text-left"
+              <div className="flex justify-start gap-2 w-full">
+                <div
+                  className="flex flex-col justify-end gap-0.5 items-center w-[75px] h-[50px] cursor-pointer bg-black/40 rounded-lg py-1 group"
+                  onClick={() => handleStartCall("voice")}
                 >
-                  Unblock
-                </button>
+                  <CallIcon />
+                  <p className="text-xs text-white">call</p>
+                </div>
+                <div
+                  className="flex flex-col justify-end items-center w-[75px] h-[50px] cursor-pointer bg-black/40 rounded-lg py-1 group"
+                  onClick={() => handleStartCall("video")}
+                >
+                  <VideoIcon />
+                  <p className="text-xs text-white">video</p>
+                </div>
+                <div className="flex flex-col justify-end items-center w-[75px] h-[50px] bg-black/40 rounded-lg py-1">
+                  <MuteButton onMuteUntil={handleMuteUntil} roomId={roomId} />
+                </div>
+                <div
+                  className="flex flex-col justify-end items-center group cursor-pointer bg-black/40 rounded-lg w-[75px] h-[50px] py-1"
+                  onClick={() => router.push(`/chat/${roomId}?searching=true`)}
+                >
+                  <SearchIcon />
+                  <p className="text-xs text-white">search</p>
+                </div>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <div className="flex flex-col justify-end items-center group cursor-pointer bg-black/40 rounded-lg w-[75px] h-[50px] py-1">
+                      <MoreIcon />
+                      <p className="text-xs text-white">more</p>
+                    </div>
+                  </PopoverTrigger>
+                  <PopoverContent className="mr-4 p-0 w-[240px]">
+                    <div className="">
+                      <Button
+                        className="flex justify-between items-center w-full my-1 text-red-500 bg-white dark:bg-black"
+                        onClick={() => setShowBlockModal(true)}
+                        disabled={isBlocked}
+                      >
+                        Block User
+                        <Hand />
+                      </Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
-            )}
+            </div>
+          </div>
+        ) : (
+          // Nếu không có avatar thì hiển thị như cũ
+          <div className="flex flex-col items-center mt-4 mb-2">
+            <div className="h-28 w-28 rounded-full bg-purple-400 text-white text-5xl font-bold flex items-center justify-center mb-2 mx-auto">
+              {user.displayName?.slice(0, 1)}
+            </div>
+            <p className="text-xl font-semibold">{user.displayName}</p>
+            <p className="text-sm text-muted-foreground">
+              {isActuallyOnline ? "online" : getDetailedStatus(lastSeen)}
+            </p>
+
+            <div className="flex justify-center gap-2 my-4 px-4 w-full">
+              <div
+                className="flex flex-col justify-end gap-0.5 items-center w-[75px] h-[50px] cursor-pointer bg-white dark:bg-[#232329] rounded-lg py-1 group"
+                onClick={() => handleStartCall("voice")}
+              >
+                <CallIcon />
+                <p className="text-xs text-[#155dfc]">call</p>
+              </div>
+
+              <div
+                className="flex flex-col justify-end items-center w-[75px] h-[50px] cursor-pointer bg-white dark:bg-[#232329] rounded-lg py-1 group"
+                onClick={() => handleStartCall("video")}
+              >
+                <VideoIcon />
+                <p className="text-xs text-[#155dfc]">video</p>
+              </div>
+
+              <div className="flex flex-col justify-end items-center w-[75px] h-[50px] bg-white dark:bg-[#232329] rounded-lg py-1">
+                <MuteButton onMuteUntil={handleMuteUntil} roomId={roomId} />
+              </div>
+
+              <div
+                className="flex flex-col justify-end items-center group cursor-pointer bg-white dark:bg-[#232329] rounded-lg w-[75px] h-[50px] py-1"
+                onClick={() => router.push(`/chat/${roomId}?searching=true`)}
+              >
+                <SearchIcon />
+                <p className="text-xs text-[#155dfc]">search</p>
+              </div>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <div className="flex flex-col justify-end items-center group cursor-pointer bg-white dark:bg-[#232329] rounded-lg w-[75px] h-[50px] py-1">
+                    <MoreIcon />
+                    <p className="text-xs text-[#155dfc]">more</p>
+                  </div>
+                </PopoverTrigger>
+                <PopoverContent className="mr-4 p-0 w-[240px]">
+                  <div className="">
+                    <Button
+                      className="flex justify-between items-center w-full my-1 text-red-500 bg-white dark:bg-black"
+                      onClick={() => setShowBlockModal(true)}
+                      disabled={isBlocked}
+                    >
+                      Block User
+                      <Hand />
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+        )}
+
+        <div className="w-full max-w-sm mx-auto bg-white dark:bg-[#232329] px-4 py-2 text-start flex flex-col mt-4 mb-2 rounded-xl gap-0.5 shadow">
+          <p className="text-sm text-zinc-500">mobile</p>
+          <p className="text-[#155dfc] break-all">+84 91 502 70 46</p>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-zinc-500">username</p>
+              <p className="text-[#155dfc] break-all">
+                @{user.userId?.split(":")[0].replace(/^@/, "")}
+              </p>
+            </div>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-5 h-5 text-[#155dfc] cursor-pointer"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <rect x="3" y="3" width="4" height="4" rx="1" />
+              <rect x="17" y="3" width="4" height="4" rx="1" />
+              <rect x="3" y="17" width="4" height="4" rx="1" />
+              <rect x="17" y="17" width="4" height="4" rx="1" />
+              <rect x="10" y="10" width="4" height="4" rx="1" />
+            </svg>
           </div>
 
-          {(mediaMessages.length > 0 || linkMessages.length > 0) && (
-            <div className="bg-white dark:bg-black mt-2 rounded-none flex-1 min-h-0 flex flex-col">
-              <Tabs
-                defaultValue={
-                  mediaMessages.length > 0
-                    ? "media"
-                    : linkMessages.length > 0
-                    ? "link"
-                    : "voice"
-                }
-                className="w-full h-full"
+          {isBlocked && (
+            <div className="flex flex-col gap-2 mt-2">
+              <hr className="my-1 border-gray-200/50" />
+              <button
+                onClick={() => setShowConfirmUnblock(true)}
+                className="text-[#155dfc] text-base font-normal py-0 cursor-pointer text-left"
               >
-                <TabsList className="grid w-full grid-cols-4">
-                  {mediaMessages.length > 0 && (
-                    <TabsTrigger value="media">Media</TabsTrigger>
-                  )}
-                  <TabsTrigger value="voice">Voice</TabsTrigger>
-                  {linkMessages.length > 0 && (
-                    <TabsTrigger value="link">Links</TabsTrigger>
-                  )}
-                  <TabsTrigger value="groups">Groups</TabsTrigger>
-                </TabsList>
-
-                {mediaMessages.length > 0 && (
-                  <TabsContent value="media" className="h-full">
-                    <div className="h-full overflow-y-auto overscroll-contain pb-18">
-                      <div className="grid grid-cols-3 gap-0.5 p-1">
-                        {mediaMessages.map((msg, idx) => (
-                          <div
-                            key={msg.eventId || idx}
-                            className="aspect-square"
-                          >
-                            {msg.type === "image" && msg.imageUrl ? (
-                              <Image
-                                src={msg.imageUrl}
-                                alt="media"
-                                width={500}
-                                height={500}
-                                className="w-full h-full object-cover rounded"
-                                priority
-                              />
-                            ) : msg.type === "video" && msg.videoUrl ? (
-                              <video
-                                src={msg.videoUrl}
-                                controls
-                                className="w-full h-full object-cover rounded bg-white"
-                              />
-                            ) : null}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </TabsContent>
-                )}
-
-                {linkMessages.length > 0 && (
-                  <TabsContent value="link">
-                    <div className="max-h-[420px] overflow-y-auto overscroll-contain">
-                      <Card className="w-full shadow-sm pt-3 pb-0 rounded-none">
-                        <CardContent className="px-2">
-                          <div className="space-y-4">
-                            {linkMessages.map((msg, index) => {
-                              if (!msg) return null;
-                              const match = msg.text.match(
-                                /(https?:\/\/[^\s]+|\b(?:[a-z0-9-]+\.)+[a-z]{2,}(\/[^\s]*)?)/i
-                              );
-                              const rawUrl = match?.[0];
-                              const url = rawUrl?.startsWith("http")
-                                ? rawUrl
-                                : `https://${rawUrl}`;
-
-                              return url ? (
-                                <div key={msg.eventId || index}>
-                                  <LinkCard url={url} title={msg.text} />
-                                </div>
-                              ) : null;
-                            })}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </TabsContent>
-                )}
-
-                {/* TabsContent cho voice & groups */}
-              </Tabs>
+                Unblock
+              </button>
             </div>
           )}
         </div>
+
+        {(mediaMessages.length > 0 || linkMessages.length > 0) && (
+          <div className="bg-white dark:bg-black mt-2 rounded-none flex-1 min-h-0 flex flex-col">
+            <Tabs
+              defaultValue={
+                mediaMessages.length > 0
+                  ? "media"
+                  : linkMessages.length > 0
+                  ? "link"
+                  : "voice"
+              }
+              className="w-full h-full"
+            >
+              <TabsList className="grid w-full grid-cols-4">
+                {mediaMessages.length > 0 && (
+                  <TabsTrigger value="media">Media</TabsTrigger>
+                )}
+                <TabsTrigger value="voice">Voice</TabsTrigger>
+                {linkMessages.length > 0 && (
+                  <TabsTrigger value="link">Links</TabsTrigger>
+                )}
+                <TabsTrigger value="groups">Groups</TabsTrigger>
+              </TabsList>
+
+              {mediaMessages.length > 0 && (
+                <TabsContent value="media" className="h-full">
+                  <div className="h-full overflow-y-auto overscroll-contain pb-18">
+                    <div className="grid grid-cols-3 gap-0.5 p-1">
+                      {mediaMessages.map((msg, idx) => (
+                        <div key={msg.eventId || idx} className="aspect-square">
+                          {msg.type === "image" && msg.imageUrl ? (
+                            <Image
+                              src={msg.imageUrl}
+                              alt="media"
+                              width={500}
+                              height={500}
+                              className="w-full h-full object-cover rounded"
+                              priority
+                            />
+                          ) : msg.type === "video" && msg.videoUrl ? (
+                            <video
+                              src={msg.videoUrl}
+                              controls
+                              className="w-full h-full object-cover rounded bg-white"
+                            />
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </TabsContent>
+              )}
+
+              {linkMessages.length > 0 && (
+                <TabsContent value="link">
+                  <div className="max-h-[420px] overflow-y-auto overscroll-contain">
+                    <Card className="w-full shadow-sm pt-3 pb-0 rounded-none">
+                      <CardContent className="px-2">
+                        <div className="space-y-4">
+                          {linkMessages.map((msg, index) => {
+                            if (!msg) return null;
+                            const match = msg.text.match(
+                              /(https?:\/\/[^\s]+|\b(?:[a-z0-9-]+\.)+[a-z]{2,}(\/[^\s]*)?)/i
+                            );
+                            const rawUrl = match?.[0];
+                            const url = rawUrl?.startsWith("http")
+                              ? rawUrl
+                              : `https://${rawUrl}`;
+
+                            return url ? (
+                              <div key={msg.eventId || index}>
+                                <LinkCard url={url} title={msg.text} />
+                              </div>
+                            ) : null;
+                          })}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </TabsContent>
+              )}
+
+              {/* TabsContent cho voice & groups */}
+            </Tabs>
+          </div>
+        )}
       </div>
 
       {/* Modal xác nhận block user */}
