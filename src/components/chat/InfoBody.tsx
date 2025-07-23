@@ -324,7 +324,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
 
                 {mediaMessages.length > 0 && (
                   <TabsContent value="media" className="h-full">
-                    <div className="h-full overflow-y-auto overscroll-contain">
+                    <div className="h-full overflow-y-auto overscroll-contain pb-8">
                       <div className="grid grid-cols-3 gap-0.5 p-1">
                         {mediaMessages.map((msg, idx) => (
                           <div
