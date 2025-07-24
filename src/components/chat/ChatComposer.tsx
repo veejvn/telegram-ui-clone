@@ -119,9 +119,9 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
           "audio/webm;codecs=opus",
           "audio/mp4",
           "audio/aac",
-          "audio/mpeg"
+          "audio/mpeg",
         ];
-        const mimeType = supported.find(t =>
+        const mimeType = supported.find((t) =>
           MediaRecorder.isTypeSupported?.(t)
         );
         if (!mimeType) {
@@ -150,15 +150,14 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
 
           // Tạo blob với đúng mimeType và extension
           const blob = new Blob(chunks, { type: mimeType });
-          const ext = mimeType.includes("mp4") ? ".mp4"
-            : mimeType.includes("mpeg") ? ".mp3"
-              : ".webm";
-          const file = new File(
-            [blob],
-            `voice_${Date.now()}${ext}`,
-            { type: blob.type }
-          );
-
+          const ext = mimeType.includes("mp4")
+            ? ".mp4"
+            : mimeType.includes("mpeg")
+            ? ".mp3"
+            : ".webm";
+          const file = new File([blob], `voice_${Date.now()}${ext}`, {
+            type: blob.type,
+          });
 
           if (client) {
             const localId = "local_" + Date.now();
@@ -705,34 +704,107 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     }
   };
 
-  // Detect keyboard open via visualViewport (works reliably on real devices)
+  // Detect keyboard open with improved Safari iOS support
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const onResize = () => {
-      const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-      const visualHeight = window.visualViewport?.height ?? window.innerHeight;
-      const fullHeight = window.innerHeight;
-      const diff = fullHeight - visualHeight;
+    // Improved mobile detection
+    const isMobile = () => {
+      return (
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent
+        ) ||
+        (navigator.maxTouchPoints &&
+          navigator.maxTouchPoints > 2 &&
+          /MacIntel/.test(navigator.platform)) || // iPad with iPadOS 13+
+        window.matchMedia("(pointer: coarse)").matches
+      );
+    };
 
-      if (isMobile && diff > 100) {
+    // Store initial viewport height for better comparison
+    const initialViewportHeight = window.innerHeight;
+    const isIOSSafari =
+      /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+
+    const onResize = () => {
+      if (!isMobile()) return;
+
+      const currentHeight = window.innerHeight;
+      const visualHeight = window.visualViewport?.height ?? currentHeight;
+
+      // Different thresholds for different browsers
+      const threshold = isIOSSafari ? 150 : 100;
+      const heightDiff = initialViewportHeight - visualHeight;
+
+      // For iOS Safari, also check window.innerHeight changes
+      const windowHeightDiff = initialViewportHeight - currentHeight;
+      const effectiveDiff = Math.max(heightDiff, windowHeightDiff);
+
+      console.log("Keyboard detection:", {
+        initialHeight: initialViewportHeight,
+        currentHeight,
+        visualHeight,
+        effectiveDiff,
+        threshold,
+        isIOSSafari,
+      });
+
+      if (effectiveDiff > threshold) {
         setIsKeyboardOpen(true);
       } else {
         setIsKeyboardOpen(false);
       }
     };
 
+    // Alternative approach for Safari iOS using focus/blur events
+    const onInputFocus = () => {
+      if (isIOSSafari) {
+        setTimeout(() => setIsKeyboardOpen(true), 300);
+      }
+    };
+
+    const onInputBlur = () => {
+      if (isIOSSafari) {
+        setTimeout(() => setIsKeyboardOpen(false), 300);
+      }
+    };
+
+    // Multiple event listeners for better Safari iOS support
+    const events = ["resize", "orientationchange"];
+
+    // Add visualViewport listeners if available
     if (window.visualViewport) {
       window.visualViewport.addEventListener("resize", onResize);
-    } else {
-      window.addEventListener("resize", onResize); // fallback
+      window.visualViewport.addEventListener("scroll", onResize);
     }
+
+    // Add window event listeners as fallback and for iOS Safari
+    events.forEach((event) => {
+      window.addEventListener(event, onResize);
+    });
+
+    // Add focus/blur listeners for input elements (Safari iOS fallback)
+    if (textareaRef.current) {
+      textareaRef.current.addEventListener("focus", onInputFocus);
+      textareaRef.current.addEventListener("blur", onInputBlur);
+    }
+
+    // Initial check
+    onResize();
 
     return () => {
       if (window.visualViewport) {
         window.visualViewport.removeEventListener("resize", onResize);
-      } else {
-        window.removeEventListener("resize", onResize);
+        window.visualViewport.removeEventListener("scroll", onResize);
+      }
+
+      events.forEach((event) => {
+        window.removeEventListener(event, onResize);
+      });
+
+      if (textareaRef.current) {
+        textareaRef.current.removeEventListener("focus", onInputFocus);
+        textareaRef.current.removeEventListener("blur", onInputBlur);
       }
     };
   }, []);
@@ -753,8 +825,9 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
       )}
 
       <div
-        className={`relative flex justify-between items-center px-2 py-2 lg:py-3 transition-all duration-300 ${isKeyboardOpen ? "pb-2" : "pb-10"
-          }`}
+        className={`relative flex justify-between items-center px-2 py-2 lg:py-3 transition-all duration-300 ${
+          isKeyboardOpen ? "pb-2" : "pb-10"
+        }`}
       >
         <Paperclip
           // onClick={() => inputRef.current?.click()}
@@ -763,8 +836,9 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
           size={25}
         />
         <div
-          className={`p-1 mx-1.5 relative ${isMultiLine ? "rounded-2xl" : "rounded-full"
-            } flex items-center justify-between w-full bg-white dark:bg-black`}
+          className={`p-1 mx-1.5 relative ${
+            isMultiLine ? "rounded-2xl" : "rounded-full"
+          } flex items-center justify-between w-full bg-white dark:bg-black`}
         >
           <textarea
             ref={textareaRef}
@@ -834,8 +908,9 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
           /* nút mic nhấn giữ để ghi, thả để gửi */
           <Mic
             size={30}
-            className={`text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all duration-700 ${isRecording ? "text-red-500 scale-125" : ""
-              }`}
+            className={`text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all duration-700 ${
+              isRecording ? "text-red-500 scale-125" : ""
+            }`}
             onMouseDown={(e) => {
               e.preventDefault(); // tránh double-trigger
               startRecording();
@@ -944,8 +1019,9 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               <TabButton
                 icon={
                   <GrGallery
-                    className={`w-5 h-5 mb-1 ${tab === "gallery" ? "text-blue-500" : ""
-                      }`}
+                    className={`w-5 h-5 mb-1 ${
+                      tab === "gallery" ? "text-blue-500" : ""
+                    }`}
                   />
                 }
                 label="Gallery"
@@ -965,8 +1041,9 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               <TabButton
                 icon={
                   <FaFile
-                    className={`w-5 h-5 mb-1 ${tab === "file" ? "text-blue-500" : ""
-                      }`}
+                    className={`w-5 h-5 mb-1 ${
+                      tab === "file" ? "text-blue-500" : ""
+                    }`}
                   />
                 }
                 label="File"
@@ -975,8 +1052,9 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               <TabButton
                 icon={
                   <MdLocationOn
-                    className={`w-5 h-5 mb-1 ${tab === "location" ? "text-blue-500" : ""
-                      }`}
+                    className={`w-5 h-5 mb-1 ${
+                      tab === "location" ? "text-blue-500" : ""
+                    }`}
                   />
                 }
                 label="Location"
