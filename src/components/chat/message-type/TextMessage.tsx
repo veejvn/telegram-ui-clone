@@ -26,7 +26,7 @@ import { useChatStore } from "@/stores/useChatStore";
 import { deleteMessage } from "@/services/chatService";
 
 const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
-  //console.log("Room Id in TextMessage: " + roomId);
+  //console.log("Message: " + msg.text + ", isDeleted: " + msg.isDeleted);
   const theme = useTheme();
   const [open, setOpen] = useState(false);
   const client = useMatrixClient();
@@ -135,7 +135,7 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
           onTouchStart={isDeleted ? undefined : handleHoldStart}
           onTouchEnd={isDeleted ? undefined : handleHoldEnd}
           className={clsx(
-            "flex items-end", // Đảm bảo tail căn đáy với bubble
+            "flex items-end text-message", // Đảm bảo tail căn đáy với bubble
             isSender ? "justify-end" : "justify-start",
             isDeleted && "cursor-default"
           )}

@@ -131,6 +131,7 @@ export const getTimeline = async (
         const time = new Date(timestamp).toLocaleString();
         const eventId = event.getId() || "";
         const isRedacted = event.isRedacted();
+        const isDeleted = isRedacted;
 
         let text = isRedacted ? "Tin nhắn đã thu hồi" : content.body ?? "";
 
@@ -227,6 +228,7 @@ export const getTimeline = async (
           status,
           type,
           isStickerAnimation,
+          isDeleted,
           location: {
             latitude,
             longitude,
