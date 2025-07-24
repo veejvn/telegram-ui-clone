@@ -358,7 +358,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                   <TabsContent value="link">
                     <div className="max-h-[420px] overflow-y-auto overscroll-contain">
                       <Card className="w-full shadow-sm pt-3 pb-0 rounded-none">
-                        <CardContent className="px-2">
+                        <CardContent className="px-2 pb-10">
                           <div className="space-y-4">
                             {linkMessages.map((msg, index) => {
                               if (!msg) return null;
