@@ -8,27 +8,37 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  /* Safari iOS viewport units fix */
+  /* Initial height - will be overridden by JS for iOS */
   height: 100vh;
-  height: 100dvh; /* Dynamic viewport height for newer browsers */
+  max-height: 100vh;
 
-  /* Prevent scrolling when keyboard is open */
-  -webkit-overflow-scrolling: touch;
+  /* Prevent any overflow or scrolling */
   overscroll-behavior: none;
 }
 
 /* iOS Safari specific styles */
-@supports (-webkit-appearance: none) {
-  .chatContainer {
-    /* Use visual viewport height for iOS Safari */
-    height: 100vh;
-    min-height: -webkit-fill-available;
-  }
+.chatContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* Initial height - will be overridden by JS for iOS */
+  height: 100vh;
+  max-height: 100vh;
 
-  /* Prevent zoom on input focus in iOS Safari */
-  .chatContainer input,
-  .chatContainer textarea {
-    font-size: 16px !important;
+  /* Prevent any overflow or scrolling */
+  overscroll-behavior: none;
+}
+
+/* For non-iOS browsers */
+@supports not (-webkit-touch-callout: none) {
+  .chatContainer {
+    height: 100vh;
+    height: 100dvh;
   }
 }
 

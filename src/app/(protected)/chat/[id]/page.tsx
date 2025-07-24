@@ -24,6 +24,7 @@ const ChatPage = () => {
   const [room, setRoom] = useState<sdk.Room | null>();
   const param = useParams();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const user = useUserStore.getState().user;
   const client = useMatrixClient();
   const homeserver =
@@ -36,38 +37,86 @@ const ChatPage = () => {
   // Block user
   const [isBlocked, setIsBlocked] = useState(false);
   const ignoredUsers = useIgnoreStore((state) => state.ignoredUsers);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
-  // Prevent scroll on iOS when keyboard is open
+  // Handle iOS Safari keyboard with visual viewport
   useEffect(() => {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     if (!isIOS) return;
 
-    const preventScroll = (e: TouchEvent) => {
+    const handleViewportChange = () => {
+      if (window.visualViewport) {
+        const windowHeight = window.innerHeight;
+        const viewportHeight = window.visualViewport.height;
+        const keyboardHeightCalc = windowHeight - viewportHeight;
+
+        setKeyboardHeight(keyboardHeightCalc > 50 ? keyboardHeightCalc : 0);
+
+        console.log("Viewport change:", {
+          windowHeight,
+          viewportHeight,
+          keyboardHeight: keyboardHeightCalc,
+          difference: windowHeight - viewportHeight,
+        });
+
+        // Force container height to match visual viewport
+        if (chatContainerRef.current) {
+          chatContainerRef.current.style.height = `${viewportHeight}px`;
+          chatContainerRef.current.style.maxHeight = `${viewportHeight}px`;
+        }
+      }
+    };
+
+    // Prevent document scroll completely on iOS
+    const preventDocumentScroll = (e: TouchEvent) => {
       const target = e.target as Element;
-
-      // Allow scrolling inside ScrollArea components
       const scrollableArea =
-        target.closest("[data-radix-scroll-area-content]") ||
         target.closest("[data-radix-scroll-area-viewport]") ||
-        target.closest("[data-slot='scroll-area']") ||
         target.closest("[data-slot='scroll-area-viewport']");
-
-      // console.log("Touch event:", {
-      //   target: target.tagName,
-      //   scrollableArea: !!scrollableArea,
-      //   prevented: !scrollableArea,
-      // });
 
       if (!scrollableArea) {
         e.preventDefault();
       }
     };
 
-    // Only prevent document-level scroll, not all scroll
-    document.addEventListener("touchmove", preventScroll, { passive: false });
+    // Set initial state
+    handleViewportChange();
+
+    // Add event listeners
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", handleViewportChange);
+      window.visualViewport.addEventListener("scroll", handleViewportChange);
+    }
+    window.addEventListener("resize", handleViewportChange);
+    document.addEventListener("touchmove", preventDocumentScroll, {
+      passive: false,
+    });
+
+    // Prevent body scroll completely
+    document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.width = "100%";
+    document.body.style.height = "100%";
 
     return () => {
-      document.removeEventListener("touchmove", preventScroll);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener(
+          "resize",
+          handleViewportChange
+        );
+        window.visualViewport.removeEventListener(
+          "scroll",
+          handleViewportChange
+        );
+      }
+      window.removeEventListener("resize", handleViewportChange);
+      document.removeEventListener("touchmove", preventDocumentScroll);
+
+      // Restore body styles
+      document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.width = "";
+      document.body.style.height = "";
     };
   }, []);
 
@@ -165,7 +214,10 @@ const ChatPage = () => {
   };
 
   return (
-    <div className={clsx("bg-chat", styles.chatContainer)}>
+    <div
+      ref={chatContainerRef}
+      className={clsx("bg-chat", styles.chatContainer)}
+    >
       {/* Header */}
       <div className={clsx("shrink-0 z-10", styles.chatHeader)}>
         <ChatHeader room={room} />
