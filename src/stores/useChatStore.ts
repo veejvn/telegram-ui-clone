@@ -32,6 +32,7 @@ export type Message = {
   type?: MessageType;
   isForward?: boolean;
   isStickerAnimation?: boolean;
+  isDeleted?: boolean;
   location?: {
     latitude: number | null;
     longitude: number | null;
@@ -158,7 +159,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     eventId: string,
     updates: Partial<Message>
   ) => {
-    //console.log(updates);
+    //console.log("Cập nhật tin nhắn trong useChatStore", roomId, eventId, updates);
     const current = get().messagesByRoom[roomId] || [];
     const updated = current.map((msg) =>
       msg.eventId === eventId ? { ...msg, ...updates } : msg
