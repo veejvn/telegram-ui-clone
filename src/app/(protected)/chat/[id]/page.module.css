@@ -8,27 +8,21 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  /* Safari iOS viewport units fix */
+  /* Default height - will be dynamically adjusted by JS on iOS */
   height: 100vh;
-  height: 100dvh; /* Dynamic viewport height for newer browsers */
+  max-height: 100vh;
 
-  /* Prevent scrolling when keyboard is open */
-  -webkit-overflow-scrolling: touch;
+  /* Prevent scrolling and bouncing */
   overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
 }
 
-/* iOS Safari specific styles */
-@supports (-webkit-appearance: none) {
+/* iOS specific viewport handling */
+@supports (-webkit-touch-callout: none) {
   .chatContainer {
-    /* Use visual viewport height for iOS Safari */
-    height: 100vh;
-    min-height: -webkit-fill-available;
-  }
-
-  /* Prevent zoom on input focus in iOS Safari */
-  .chatContainer input,
-  .chatContainer textarea {
-    font-size: 16px !important;
+    /* Force height consistency on iOS */
+    min-height: 100vh;
+    max-height: 100vh;
   }
 }
 

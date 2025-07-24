@@ -24,6 +24,7 @@ const ChatPage = () => {
   const [room, setRoom] = useState<sdk.Room | null>();
   const param = useParams();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const user = useUserStore.getState().user;
   const client = useMatrixClient();
   const homeserver =
@@ -36,11 +37,63 @@ const ChatPage = () => {
   // Block user
   const [isBlocked, setIsBlocked] = useState(false);
   const ignoredUsers = useIgnoreStore((state) => state.ignoredUsers);
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
 
-  // Prevent scroll on iOS when keyboard is open
+  // Improved iOS Safari keyboard handling
   useEffect(() => {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     if (!isIOS) return;
+
+    let keyboardTimeout: number | undefined;
+    let initialViewportHeight = window.innerHeight;
+
+    const handleViewportChange = () => {
+      const currentHeight = window.visualViewport?.height ?? window.innerHeight;
+      const heightDiff = initialViewportHeight - currentHeight;
+
+      // Clear previous timeout
+      if (keyboardTimeout) clearTimeout(keyboardTimeout);
+
+      // Debounce keyboard state changes
+      keyboardTimeout = window.setTimeout(() => {
+        const isKeyboardVisible = heightDiff > 150;
+        setIsKeyboardOpen(isKeyboardVisible);
+
+        // Apply body styles when keyboard is open
+        if (isKeyboardVisible) {
+          document.body.style.overflow = "hidden";
+          document.body.style.position = "fixed";
+          document.body.style.width = "100%";
+          document.body.style.height = "100%";
+
+          // ✅ CRITICAL: Resize container to match visual viewport
+          if (chatContainerRef.current) {
+            chatContainerRef.current.style.height = `${currentHeight}px`;
+            chatContainerRef.current.style.maxHeight = `${currentHeight}px`;
+          }
+        } else {
+          document.body.style.overflow = "";
+          document.body.style.position = "";
+          document.body.style.width = "";
+          document.body.style.height = "";
+
+          // Restore container to full height
+          if (chatContainerRef.current) {
+            chatContainerRef.current.style.height = "100vh";
+            chatContainerRef.current.style.maxHeight = "100vh";
+          }
+        }
+
+        console.log("Keyboard state:", {
+          isKeyboardVisible,
+          heightDiff,
+          currentHeight,
+          initialHeight: initialViewportHeight,
+          bodyFixed: isKeyboardVisible,
+          containerHeight: isKeyboardVisible ? `${currentHeight}px` : "100vh",
+        });
+      }, 100); // Small delay to ensure animation completes
+    };
 
     const preventScroll = (e: TouchEvent) => {
       const target = e.target as Element;
@@ -50,23 +103,63 @@ const ChatPage = () => {
         target.closest("[data-radix-scroll-area-content]") ||
         target.closest("[data-radix-scroll-area-viewport]") ||
         target.closest("[data-slot='scroll-area']") ||
-        target.closest("[data-slot='scroll-area-viewport']");
+        target.closest("[data-slot='scroll-area-viewport]");
 
-      // console.log("Touch event:", {
-      //   target: target.tagName,
-      //   scrollableArea: !!scrollableArea,
-      //   prevented: !scrollableArea,
-      // });
+      // Extra safety: check for textarea/input focus
+      const isInputFocused =
+        target.tagName === "TEXTAREA" || target.tagName === "INPUT";
 
-      if (!scrollableArea) {
+      console.log("Touch prevention:", {
+        target: target.tagName,
+        scrollableArea: !!scrollableArea,
+        isInputFocused,
+        isKeyboardOpen,
+        prevented: !scrollableArea && !isInputFocused,
+      });
+
+      // Don't prevent if scrolling in allowed areas or input is focused
+      if (!scrollableArea && !isInputFocused) {
         e.preventDefault();
       }
     };
 
-    // Only prevent document-level scroll, not all scroll
-    document.addEventListener("touchmove", preventScroll, { passive: false });
+    // Listen for viewport changes
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", handleViewportChange);
+    }
+    window.addEventListener("resize", handleViewportChange);
+
+    // Add touchmove prevention with slight delay to avoid race conditions
+    const addTouchPrevention = window.setTimeout(() => {
+      document.addEventListener("touchmove", preventScroll, { passive: false });
+    }, 200);
+
+    // Initial viewport check in case keyboard is already open
+    handleViewportChange();
 
     return () => {
+      if (keyboardTimeout) clearTimeout(keyboardTimeout);
+      clearTimeout(addTouchPrevention);
+
+      // Restore body styles
+      document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.width = "";
+      document.body.style.height = "";
+
+      // Restore container height
+      if (chatContainerRef.current) {
+        chatContainerRef.current.style.height = "";
+        chatContainerRef.current.style.maxHeight = "";
+      }
+
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener(
+          "resize",
+          handleViewportChange
+        );
+      }
+      window.removeEventListener("resize", handleViewportChange);
       document.removeEventListener("touchmove", preventScroll);
     };
   }, []);
@@ -165,7 +258,10 @@ const ChatPage = () => {
   };
 
   return (
-    <div className={clsx("bg-chat", styles.chatContainer)}>
+    <div
+      ref={chatContainerRef}
+      className={clsx("bg-chat", styles.chatContainer)}
+    >
       {/* Header */}
       <div className={clsx("shrink-0 z-10", styles.chatHeader)}>
         <ChatHeader room={room} />
