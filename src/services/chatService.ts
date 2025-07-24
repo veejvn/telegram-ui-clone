@@ -675,7 +675,7 @@ export const deleteMessage = async (
   eventId: string
 ) => {
   try {
-    console.log(eventId);
+    //console.log(eventId);
     const room = client.getRoom(roomId);
     const event = room?.findEventById(eventId);
     const waitForSendConfirm = (event: MatrixEvent): Promise<void> =>
@@ -686,9 +686,10 @@ export const deleteMessage = async (
         };
         check();
       });
-    console.log(event?.getContent().body);
+    //console.log(event?.getContent().body);
     if (event) await waitForSendConfirm(event);
-    await client.redactEvent(roomId, eventId, undefined);
+    const txtId = "mgs_" + Date.now();
+    await client.redactEvent(roomId, eventId, txtId);
     return { success: true };
   } catch (error) {
     console.error("Error deleting message:", error);

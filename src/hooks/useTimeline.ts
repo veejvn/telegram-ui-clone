@@ -30,10 +30,27 @@ export const useTimeline = (roomId: string) => {
     const onTimeline = (event: MatrixEvent, room: any, toStart: boolean) => {
       if (toStart || room.roomId !== roomId) return;
       const typeEvent = event.getType();
-      console.log("Nhận sự kiện: " + typeEvent);
+      //console.log("Nhận sự kiện: " + typeEvent);
       const userId = client.getUserId();
-      const eventId = event.getId() || "";
-      console.log("Event Id nhận từ onTimeline: " + eventId);
+      const eventId = event.getId() ?? "";
+      const txnId = event.getUnsigned()?.transaction_id ?? "";
+      //console.log("Event Id nhận từ onTimeline: " + eventId);
+      //console.log("Transaction Id: " + txnId);
+
+      let finalEventId = eventId;
+      if (eventId.includes(":") && !eventId.startsWith("$")) {
+        // Format: ~!roomId:server:txnId -> extract txnId
+        const parts = eventId.split(":");
+        const extractedTxnId = parts[parts.length - 1]; // Lấy phần cuối
+        // ✅ Sử dụng extracted txnId làm finalEventId
+        finalEventId = extractedTxnId;
+        //console.log("Extracted txnId from eventId:", extractedTxnId);
+      } else if (txnId) {
+        // ✅ Nếu có txnId thực sự, ưu tiên dùng nó
+        finalEventId = txnId;
+      }
+
+      //console.log("Final Event Id to use: " + finalEventId);
 
       if (typeEvent === "m.room.redaction") {
         // Lấy eventId của tin nhắn bị thu hồi
@@ -44,6 +61,7 @@ export const useTimeline = (roomId: string) => {
         if (redactedEventId) {
           updateMessage(roomId, redactedEventId, {
             text: "Tin nhắn đã thu hồi",
+            isDeleted: true
           });
           //console.log("Đã thu hồi tin nhắn:", redactedEventId);
         } else {
@@ -160,7 +178,7 @@ export const useTimeline = (roomId: string) => {
         console.log("Cập nhật tin nhắn ở onTimeline");
       } else {
         addMessage(roomId, {
-          eventId,
+          eventId: finalEventId,
           sender,
           senderDisplayName,
           text,
@@ -210,10 +228,33 @@ export const useTimeline = (roomId: string) => {
 
     client.on("Room.receipt" as any, onReceipt);
 
+    // ✅ Listen cho event khi được server confirm
+    const onEventUpdate = (event: MatrixEvent) => {
+      if (event.getRoomId() !== roomId) return;
+
+      const txnId = event.getUnsigned()?.transaction_id;
+      const realEventId = event.getId();
+
+      // ✅ Update event ID từ txn ID sang real ID
+      if (txnId && realEventId && realEventId.startsWith("$")) {
+        const updateMessage = useChatStore.getState().updateMessage;
+        // console.log(
+        //   "Cập nhật tin nhắn từ txnId sang realEventId",
+        //   roomId,
+        //   txnId,
+        //   realEventId
+        // );
+        updateMessage(roomId, txnId, { eventId: realEventId });
+      }
+    };
+
+    client.on("Room.localEchoUpdated" as any, onEventUpdate);
+
     return () => {
       isMounted = false;
       client.removeListener("Room.timeline" as any, onTimeline);
       client.removeListener("Room.receipt" as any, onReceipt);
+      client.removeListener("Event.localEchoUpdated" as any, onEventUpdate);
     };
   }, [client, roomId]);
 };

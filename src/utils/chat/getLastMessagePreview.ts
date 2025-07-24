@@ -15,88 +15,97 @@ export const getLastMessagePreview = (
   const timeline = room.getLiveTimeline().getEvents();
   const userId = useAuthStore.getState().userId;
 
-  const reversedEvents = [...timeline].reverse();
+  // ✅ Lọc ra chỉ các tin nhắn hợp lệ (không bị redacted)
+  const validMessages = timeline
+    .filter(
+      (event) => event.getType() === "m.room.message" && !event.isRedacted()
+    )
+    .reverse(); // Sắp xếp từ mới nhất đến cũ nhất
 
   let text = "";
   let timestamp = 0;
   let senderId = "";
   let isForwarded = false;
 
-  for (const event of reversedEvents) {
-    const type = event.getType();
-    timestamp = event.getTs();
-    senderId = event.getSender() || "";
+  // ✅ Lấy tin nhắn cuối cùng không bị xóa
+  if (validMessages.length > 0) {
+    const lastValidEvent = validMessages[0]; // Tin nhắn mới nhất
+    const content = lastValidEvent.getContent();
+    const msgType = content.msgtype;
 
-    if (type === "m.room.message") {
-      if (event.isRedacted()) {
-        text = "Tin nhắn đã thu hồi";
-        break;
-      }
+    timestamp = lastValidEvent.getTs();
+    senderId = lastValidEvent.getSender() || "";
 
-      const content = event.getContent();
-      const msgType = content.msgtype;
-
-      if (msgType === "m.text" && typeof content.body === "string") {
-        try {
-          const parsed = JSON.parse(content.body);
-          if (parsed.forward && parsed.text) {
-            text = parsed.text;
-            isForwarded = true;
-          } else {
-            text = content.body;
-          }
-        } catch {
+    if (msgType === "m.text" && typeof content.body === "string") {
+      try {
+        const parsed = JSON.parse(content.body);
+        if (parsed.forward && parsed.text) {
+          text = parsed.text;
+          isForwarded = true;
+        } else {
           text = content.body;
         }
-
-        if (isOnlyEmojis(text)) {
-          text = "send a icon";
-        }
-      } else {
-        switch (msgType) {
-          case "m.image":
-            text = "sent an image";
-            break;
-          case "m.sticker":
-            text = "sent a sticker";
-            break;
-          case "m.file":
-            text = "sent a file";
-            break;
-          case "m.video":
-            text = "sent a video";
-            break;
-          case "m.location":
-            text = "sent a location";
-            break;
-          case "m.audio":
-            text = "sent a audio";
-            break;
-          default:
-            text = "sent a message";
-        }
+      } catch {
+        text = content.body;
       }
 
-      break;
-    } else if (type === "m.room.redaction") {
-      text = "Tin nhắn đã thu hồi";
-      break;
-    }
-  }
-
-  // Nếu không có gì hết (không có message hay redaction)
-  if (!text) {
-    const state = room.getLiveTimeline().getState(sdk.EventTimeline.FORWARDS);
-    const creationEvent = state?.getStateEvents("m.room.create", "");
-
-    if (creationEvent) {
-      timestamp = creationEvent.getTs?.() || Date.now();
-      text = "Room created";
-      senderId = "";
+      if (isOnlyEmojis(text)) {
+        text = "send a icon";
+      }
     } else {
-      timestamp = Date.now();
-      text = "No messages yet";
-      senderId = "";
+      switch (msgType) {
+        case "m.image":
+          text = "sent an image";
+          break;
+        case "m.sticker":
+          text = "sent a sticker";
+          break;
+        case "m.file":
+          text = "sent a file";
+          break;
+        case "m.video":
+          text = "sent a video";
+          break;
+        case "m.location":
+          text = "sent a location";
+          break;
+        case "m.audio":
+          text = "sent a voice";
+          break;
+        default:
+          text = "sent a message";
+      }
+    }
+  } else {
+    // ✅ Không có tin nhắn hợp lệ nào
+    const hasAnyMessages = timeline.some(
+      (event) => event.getType() === "m.room.message"
+    );
+
+    if (hasAnyMessages) {
+      // Có tin nhắn nhưng tất cả đều bị xóa
+      text = "Tin nhắn đã thu hồi";
+      const lastMessage = timeline
+        .filter((event) => event.getType() === "m.room.message")
+        .pop();
+      if (lastMessage) {
+        timestamp = lastMessage.getTs();
+        senderId = lastMessage.getSender() || "";
+      }
+    } else {
+      // Không có tin nhắn nào
+      const state = room.getLiveTimeline().getState(sdk.EventTimeline.FORWARDS);
+      const creationEvent = state?.getStateEvents("m.room.create", "");
+
+      if (creationEvent) {
+        timestamp = creationEvent.getTs?.() || Date.now();
+        text = "Room created";
+        senderId = "";
+      } else {
+        timestamp = Date.now();
+        text = "No messages yet";
+        senderId = "";
+      }
     }
   }
 

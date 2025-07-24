@@ -93,11 +93,9 @@ export const ChatListItem = ({
   const timeline = room.getLiveTimeline().getEvents();
   const lastValidEvent = [...timeline].reverse().find((event) => {
     const type = event.getType();
-    return (
-      type === "m.room.message" || type === "m.room.redaction"
-    );
+    return type === "m.room.message" || type === "m.room.redaction";
   });
-  
+
   const lastMessageSenderId = lastValidEvent?.getSender();
 
   return (
