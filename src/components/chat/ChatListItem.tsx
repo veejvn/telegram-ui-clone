@@ -92,12 +92,10 @@ export const ChatListItem = ({
   // Lấy userId của sender thực sự của tin nhắn cuối cùng
   const timeline = room.getLiveTimeline().getEvents();
   const lastValidEvent = [...timeline].reverse().find((event) => {
-    return (
-      event.getType() === "m.room.message" &&
-      !event.isRedacted() &&
-      !!event.getContent()?.msgtype
-    );
+    const type = event.getType();
+    return type === "m.room.message" || type === "m.room.redaction";
   });
+
   const lastMessageSenderId = lastValidEvent?.getSender();
 
   return (
