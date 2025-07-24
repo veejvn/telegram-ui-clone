@@ -280,7 +280,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     //  1. Gửi message thường trước nếu có nội dung
     if (trimmed) {
       const localId = "local_" + Date.now();
-
+      console.log("Local Id: "  + localId)
       addMessage(roomId, {
         eventId: localId,
         sender: userId ?? undefined,

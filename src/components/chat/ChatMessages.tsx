@@ -23,6 +23,7 @@ type ChatMessagesProps = {
 };
 
 const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
+  //console.log("Room Id in ChatMessages: " + roomId)
   useTimeline(roomId);
   const client = useMatrixClient();
   const router = useRouter();
@@ -297,7 +298,7 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
                   key={msg.eventId}
                   ref={isHighlighted ? firstHighlightedRef : null}
                 >
-                  <ChatMessage msg={msg} />
+                  <ChatMessage msg={msg} roomId={roomId}/>
                 </div>
               );
             })}

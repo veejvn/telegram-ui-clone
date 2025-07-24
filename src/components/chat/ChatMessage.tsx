@@ -14,7 +14,8 @@ import FileMessage from "@/components/chat/message-type/FileMessage";
 import VideoMessage from "@/components/chat/message-type/VideoMessage";
 import StickerMessage from "@/components/chat/message-type/StickerMessage";
 
-const ChatMessage = ({ msg }: { msg: Message }) => {
+const ChatMessage = ({ msg, roomId }: { msg: Message; roomId: string }) => {
+  //console.log("Room Id in ChatMessage: " + roomId)
   const userId = useAuthStore.getState().userId;
   const { type } = msg;
   const isSender = msg.sender === userId;
@@ -68,7 +69,7 @@ const ChatMessage = ({ msg }: { msg: Message }) => {
             forwardMessage={forwardInfo}
           />
         ) : (
-          <TextMessage msg={msg} isSender={isSender} animate={animate} />
+          <TextMessage msg={msg} isSender={isSender} animate={animate} roomId={roomId}/>
         );
       case "emoji":
         return <EmojiMessage msg={msg} isSender={isSender} />;
@@ -79,14 +80,14 @@ const ChatMessage = ({ msg }: { msg: Message }) => {
       case "location":
         return <LocationMessage msg={msg} isSender={isSender} />;
       case "file":
-        return <FileMessage msg={msg} isSender={isSender}/>
+        return <FileMessage msg={msg} isSender={isSender} />;
       case "video":
-        return <VideoMessage msg={msg} isSender={isSender}/>
+        return <VideoMessage msg={msg} isSender={isSender} />;
       case "sticker":
-        return <StickerMessage msg={msg} isSender={isSender}/>
+        return <StickerMessage msg={msg} isSender={isSender} />;
       default:
         //console.warn("⚠️ Unknown type in message:", msg);
-        return <TextMessage msg={msg} isSender={isSender} />;
+        return <TextMessage msg={msg} isSender={isSender} roomId={roomId}/>;
     }
   };
 

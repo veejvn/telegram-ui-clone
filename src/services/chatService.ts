@@ -8,7 +8,7 @@ import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { FileInfo, ImageInfo, LocationInfo } from "@/types/chat";
-import { MatrixClient } from "@/types/matrix";
+import { MatrixClient, MatrixEvent } from "@/types/matrix";
 import { getVideoMetadata } from "@/utils/chat/send-message/getVideoMetadata";
 import { Metadata } from "@/utils/chat/send-message/getVideoMetadata";
 
@@ -130,9 +130,11 @@ export const getTimeline = async (
         const timestamp = event.getTs();
         const time = new Date(timestamp).toLocaleString();
         const eventId = event.getId() || "";
-        const text = content.body ?? "";
+        const isRedacted = event.isRedacted();
 
-        //console.log(text);
+        let text = isRedacted ? "Tin nhắn đã thu hồi" : content.body ?? "";
+
+        //console.log(eventId);
 
         let status: MessageStatus = "sent";
         if (sender === userId && lastReadIndex !== -1 && idx <= lastReadIndex) {
@@ -152,7 +154,7 @@ export const getTimeline = async (
 
         let audioUrl: string | null = null;
         let audioDuration: number | null = null;
-        let isStickerAnimation : boolean = false;
+        let isStickerAnimation: boolean = false;
         let type: MessageType = "text";
 
         if (content.msgtype === "m.image") {
@@ -202,7 +204,7 @@ export const getTimeline = async (
           }
           // nếu server đẩy duration trong info
           audioDuration = content.info?.duration ?? null;
-        } else if(content.msgtype === "m.sticker"){
+        } else if (content.msgtype === "m.sticker") {
           type = "sticker";
           isStickerAnimation = content.info?.isStickerAnimation ?? false;
         }
@@ -667,3 +669,29 @@ export const sendSticker = async (
   }
 };
 
+export const deleteMessage = async (
+  client: MatrixClient,
+  roomId: string,
+  eventId: string
+) => {
+  try {
+    console.log(eventId);
+    const room = client.getRoom(roomId);
+    const event = room?.findEventById(eventId);
+    const waitForSendConfirm = (event: MatrixEvent): Promise<void> =>
+      new Promise((resolve, reject) => {
+        const check = () => {
+          if (!event.status) resolve();
+          else setTimeout(check, 200);
+        };
+        check();
+      });
+    console.log(event?.getContent().body);
+    if (event) await waitForSendConfirm(event);
+    await client.redactEvent(roomId, eventId, undefined);
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting message:", error);
+    throw error;
+  }
+};

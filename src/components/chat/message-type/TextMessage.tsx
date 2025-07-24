@@ -22,8 +22,11 @@ import { useRouter } from "next/navigation";
 import { useForwardStore } from "@/stores/useForwardStore";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { linkify } from "@/utils/chat/linkify";
+import { useChatStore } from "@/stores/useChatStore";
+import { deleteMessage } from "@/services/chatService";
 
-const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
+const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
+  //console.log("Room Id in TextMessage: " + roomId);
   const theme = useTheme();
   const [open, setOpen] = useState(false);
   const client = useMatrixClient();
@@ -31,6 +34,7 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
   const { addMessage } = useForwardStore.getState();
   const holdTimeout = useRef<number | null>(null);
   const allowOpenRef = useRef(false);
+  const updateMessage = useChatStore.getState().updateMessage;
 
   const textClass = clsx(
     "rounded-2xl px-4 py-1.5",
@@ -68,6 +72,22 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
         time: msg.time,
       });
     }, 1000);
+  };
+
+  const handleDelete = async () => {
+    if (!client || !roomId) return;
+    // console.log(
+    //   "Delete Message" + " roomId: " + roomId + " eventId: " + msg.eventId
+    // );
+    try {
+      //updateMessage(roomId ?? "", msg.eventId, { text: "Tin nhắn đã thu hồi" });
+      const res = await deleteMessage(client, roomId, msg.eventId);
+      if (res.success) {
+        console.log("Delete message successfully");
+      }
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const handleHoldStart = () => {
@@ -170,11 +190,18 @@ const TextMessage = ({ msg, isSender, animate }: MessagePros) => {
           <p>Forward</p>
           <ForwardIconSvg isDark={theme.resolvedTheme === "dark"} />
         </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem className="flex justify-between items-center">
-          <p className="text-red-500">Delete</p>
-          <BinIconSvg />
-        </DropdownMenuItem>
+        {isSender && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="flex justify-between items-center"
+              onClick={handleDelete}
+            >
+              <p className="text-red-500">Delete</p>
+              <BinIconSvg />
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
