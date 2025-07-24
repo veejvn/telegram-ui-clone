@@ -740,14 +740,14 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
       const windowHeightDiff = initialViewportHeight - currentHeight;
       const effectiveDiff = Math.max(heightDiff, windowHeightDiff);
 
-      console.log("Keyboard detection:", {
-        initialHeight: initialViewportHeight,
-        currentHeight,
-        visualHeight,
-        effectiveDiff,
-        threshold,
-        isIOSSafari,
-      });
+      // console.log("Keyboard detection:", {
+      //   initialHeight: initialViewportHeight,
+      //   currentHeight,
+      //   visualHeight,
+      //   effectiveDiff,
+      //   threshold,
+      //   isIOSSafari,
+      // });
 
       if (effectiveDiff > threshold) {
         setIsKeyboardOpen(true);
