@@ -18,7 +18,6 @@ interface Props {
 const AudioMessage: React.FC<Props> = ({ msg, isSender = false }) => {
   if (!msg.audioUrl) return null;
 
-  const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [remaining, setRemaining] = useState<number>(msg.audioDuration ?? 0);
   const intervalRef = useRef<number | null>(null);
@@ -35,10 +34,6 @@ const AudioMessage: React.FC<Props> = ({ msg, isSender = false }) => {
 
   const startCountdown = () => {
     if (intervalRef.current) return;
-    if (wavesurferRef.current) {
-      wavesurferRef.current.playPause();
-      // setIsPlaying(!playing);
-    }
     intervalRef.current = window.setInterval(() => {
       setRemaining((r) => {
         if (r <= 1) {
@@ -59,12 +54,13 @@ const AudioMessage: React.FC<Props> = ({ msg, isSender = false }) => {
   };
 
   const togglePlay = () => {
-    if (!audioRef.current) return;
+    if (!wavesurferRef.current) return;
+
     if (playing) {
-      audioRef.current.pause();
+      wavesurferRef.current.pause();
       stopCountdown();
     } else {
-      audioRef.current.play();
+      wavesurferRef.current.play();
       startCountdown();
     }
     setPlaying((p) => !p);
@@ -83,10 +79,14 @@ const AudioMessage: React.FC<Props> = ({ msg, isSender = false }) => {
   const waveformRef = useRef<HTMLDivElement | null>(null);
   const wavesurferRef = useRef<WaveSurfer | null>(null);
 
-  const waveColor = isSender ? isDarkMode ? "#afa4a4" : "#96d78e" : "#e7edf3"
+  const waveColor = isSender ? (isDarkMode ? "#afa4a4" : "#96d78e") : "#e7edf3";
 
-  const progressColor = isSender ? isDarkMode ? "#FFFFFF" : "#79c071" : "#72b6e5"
-  
+  const progressColor = isSender
+    ? isDarkMode
+      ? "#FFFFFF"
+      : "#79c071"
+    : "#72b6e5";
+
   useEffect(() => {
     if (waveformRef.current && !wavesurferRef.current) {
       wavesurferRef.current = WaveSurfer.create({
@@ -101,40 +101,80 @@ const AudioMessage: React.FC<Props> = ({ msg, isSender = false }) => {
       });
 
       wavesurferRef.current.load(msg.audioUrl ?? "");
+
+      // Add event listeners
+      wavesurferRef.current.on("finish", () => {
+        setPlaying(false);
+        stopCountdown();
+        setRemaining(msg.audioDuration ?? 0);
+      });
+
+      wavesurferRef.current.on("pause", () => {
+        setPlaying(false);
+        stopCountdown();
+      });
+
+      wavesurferRef.current.on("play", () => {
+        setPlaying(true);
+        startCountdown();
+      });
     }
+
+    return () => {
+      if (wavesurferRef.current) {
+        wavesurferRef.current.destroy();
+        wavesurferRef.current = null;
+      }
+    };
   }, [msg.audioUrl]);
 
   return (
-    <div className={cn(`bg-[#dcf8c6] dark:bg-[#4567fc] rounded-xl p-2 px-3 max-w-xs flex flex-col shadow-sm w-45 select-none ${!isSender && "bg-white dark:bg-[#222e3a]"}`)}>
+    <div
+      className={cn(
+        `bg-[#dcf8c6] dark:bg-[#4567fc] rounded-xl p-2 px-3 max-w-xs flex flex-col shadow-sm w-45 select-none ${
+          !isSender && "bg-white dark:bg-[#222e3a]"
+        }`
+      )}
+    >
       <div className="flex items-center gap-3">
         <button
           onClick={togglePlay}
-          className={cn(`rounded-full bg-[#79c071] dark:bg-white flex justify-center items-center size-10 p-2 text-white ${!isSender && "bg-[#74b4ec] dark:bg-[#74b4ec]"}`)}
+          className={cn(
+            `rounded-full bg-[#79c071] dark:bg-white flex justify-center items-center size-10 p-2 text-white ${
+              !isSender && "bg-[#74b4ec] dark:bg-[#74b4ec]"
+            }`
+          )}
         >
           {playing ? (
-            <FaPause className={`${isSender ? "dark:text-[#4567fc]" : "dark:text-white"}`} size={16}/>
+            <FaPause
+              className={`${
+                isSender ? "dark:text-[#4567fc]" : "dark:text-white"
+              }`}
+              size={16}
+            />
           ) : (
-            <FaPlay className={`${isSender ? "dark:text-[#4567fc]" : "dark:text-white"}`} size={16} />
+            <FaPlay
+              className={`${
+                isSender ? "dark:text-[#4567fc]" : "dark:text-white"
+              }`}
+              size={16}
+            />
           )}
         </button>
 
         <div className="flex-1">
           <div ref={waveformRef} className="w-full" />
           <div className="flex items-center">
-            <span className={cn(`text-xs text-[#79c071] dark:text-white ${!isSender && "text-[#74b4ec]"}`)}>
+            <span
+              className={cn(
+                `text-xs text-[#79c071] dark:text-white ${
+                  !isSender && "text-[#74b4ec]"
+                }`
+              )}
+            >
               {mm}:{ss}
             </span>
           </div>
-          <audio
-            ref={audioRef}
-            src={msg.audioUrl}
-            onEnded={() => {
-              setPlaying(false);
-              stopCountdown();
-              setRemaining(msg.audioDuration ?? 0);
-            }}
-            className="hidden"
-          />
         </div>
       </div>
       <div className={`flex justify-between ${textClass}`}>
