@@ -8,9 +8,10 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  /* Default height - will be dynamically adjusted by JS on iOS */
-  height: 100vh;
-  max-height: 100vh;
+  /* Use CSS custom property for dynamic height */
+  height: var(--container-height, 100vh);
+  max-height: var(--container-height, 100vh);
+  min-height: var(--container-height, 100vh);
 
   /* Prevent scrolling and bouncing */
   overscroll-behavior: none;

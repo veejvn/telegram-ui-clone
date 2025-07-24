@@ -42,6 +42,10 @@ const ChatPage = () => {
   // Improved iOS Safari keyboard handling
   useEffect(() => {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+    // Debug: Test on any browser (comment out for production)
+    // const isIOS = true;
+
     if (!isIOS) return;
 
     let keyboardTimeout: number | undefined;
@@ -56,8 +60,17 @@ const ChatPage = () => {
 
       // Debounce keyboard state changes
       keyboardTimeout = window.setTimeout(() => {
-        const isKeyboardVisible = heightDiff > 150;
+        const isKeyboardVisible = heightDiff > 100; // Giảm threshold xuống
         setIsKeyboardOpen(isKeyboardVisible);
+
+        console.log("🔍 Viewport Debug:", {
+          isKeyboardVisible,
+          heightDiff,
+          currentHeight,
+          initialHeight: initialViewportHeight,
+          containerRef: !!chatContainerRef.current,
+          containerElement: chatContainerRef.current?.tagName,
+        });
 
         // Apply body styles when keyboard is open
         if (isKeyboardVisible) {
@@ -68,8 +81,36 @@ const ChatPage = () => {
 
           // ✅ CRITICAL: Resize container to match visual viewport
           if (chatContainerRef.current) {
-            chatContainerRef.current.style.height = `${currentHeight}px`;
-            chatContainerRef.current.style.maxHeight = `${currentHeight}px`;
+            const container = chatContainerRef.current;
+            // Use CSS custom property for better CSS integration
+            container.style.setProperty(
+              "--container-height",
+              `${currentHeight}px`
+            );
+            // Also set inline styles as fallback
+            container.style.setProperty(
+              "height",
+              `${currentHeight}px`,
+              "important"
+            );
+            container.style.setProperty(
+              "max-height",
+              `${currentHeight}px`,
+              "important"
+            );
+            container.style.setProperty(
+              "min-height",
+              `${currentHeight}px`,
+              "important"
+            );
+
+            console.log("📏 Container Resized:", {
+              newHeight: `${currentHeight}px`,
+              customProperty:
+                container.style.getPropertyValue("--container-height"),
+              computedHeight: window.getComputedStyle(container).height,
+              inlineStyle: container.style.height,
+            });
           }
         } else {
           document.body.style.overflow = "";
@@ -79,8 +120,14 @@ const ChatPage = () => {
 
           // Restore container to full height
           if (chatContainerRef.current) {
-            chatContainerRef.current.style.height = "100vh";
-            chatContainerRef.current.style.maxHeight = "100vh";
+            const container = chatContainerRef.current;
+            // Remove CSS custom property
+            container.style.removeProperty("--container-height");
+            container.style.removeProperty("height");
+            container.style.removeProperty("max-height");
+            container.style.removeProperty("min-height");
+
+            console.log("🔄 Container Restored to 100vh");
           }
         }
 
@@ -90,7 +137,7 @@ const ChatPage = () => {
           currentHeight,
           initialHeight: initialViewportHeight,
           bodyFixed: isKeyboardVisible,
-          containerHeight: isKeyboardVisible ? `${currentHeight}px` : "100vh",
+          containerHeight: isKeyboardVisible ? `${currentHeight}px` : "removed",
         });
       }, 100); // Small delay to ensure animation completes
     };
@@ -149,8 +196,11 @@ const ChatPage = () => {
 
       // Restore container height
       if (chatContainerRef.current) {
-        chatContainerRef.current.style.height = "";
-        chatContainerRef.current.style.maxHeight = "";
+        const container = chatContainerRef.current;
+        container.style.removeProperty("--container-height");
+        container.style.removeProperty("height");
+        container.style.removeProperty("max-height");
+        container.style.removeProperty("min-height");
       }
 
       if (window.visualViewport) {
