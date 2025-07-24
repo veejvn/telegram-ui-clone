@@ -40,9 +40,7 @@ export default function ProtectedClientLayout({
       ) : (
         <MatrixClientProvider>
           <IncomingCallHandler />
-          <main
-            className="min-h-screen flex flex-col"
-          >
+          <main className="h-screen flex flex-col">
             {children}
             <BottomNavigationWrapper />
           </main>

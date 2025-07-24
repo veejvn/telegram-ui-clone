@@ -15,6 +15,7 @@
   /* Prevent scrolling when keyboard is open */
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: none;
+  z-index: 999; /* Ensure it's above everything */
 }
 
 /* iOS Safari specific styles */
@@ -22,7 +23,7 @@
   .chatContainer {
     /* Use visual viewport height for iOS Safari */
     height: 100vh;
-    min-height: -webkit-fill-available;
+    height: 100dvh;
   }
 
   /* Prevent zoom on input focus in iOS Safari */

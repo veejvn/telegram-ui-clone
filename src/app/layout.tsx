@@ -18,6 +18,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  minimumScale: 1,
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover", // Important for iOS Safari
@@ -33,7 +34,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head></head>
       <body className={`${inter.className} antialiased select-none`}>
-        {/* <NoZoom /> */}
+        <NoZoom />
         <Providers>
           <CallOverlay /> {/*  Luôn lắng nghe sự kiện call */}
           <Toaster richColors position="top-center" />

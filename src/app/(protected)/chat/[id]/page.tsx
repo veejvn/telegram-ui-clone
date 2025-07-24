@@ -39,8 +39,24 @@ const ChatPage = () => {
 
   // Prevent scroll on iOS when keyboard is open
   useEffect(() => {
+    // Prevent all scroll on document level when ChatPage is mounted
+    const originalStyle = window.getComputedStyle(document.body);
+    const originalHtmlStyle = window.getComputedStyle(document.documentElement);
+
+    // Store original styles
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalBodyPosition = document.body.style.position;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    const originalHtmlPosition = document.documentElement.style.position;
+
+    // Apply styles to prevent scroll
+    document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.width = "100%";
+    document.body.style.height = "100%";
+    document.documentElement.style.overflow = "hidden";
+
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    if (!isIOS) return;
 
     const preventScroll = (e: TouchEvent) => {
       const target = e.target as Element;
@@ -52,22 +68,42 @@ const ChatPage = () => {
         target.closest("[data-slot='scroll-area']") ||
         target.closest("[data-slot='scroll-area-viewport']");
 
-      // console.log("Touch event:", {
-      //   target: target.tagName,
-      //   scrollableArea: !!scrollableArea,
-      //   prevented: !scrollableArea,
-      // });
+      if (!scrollableArea) {
+        e.preventDefault();
+      }
+    };
+
+    const preventWheel = (e: WheelEvent) => {
+      const target = e.target as Element;
+      const scrollableArea =
+        target.closest("[data-radix-scroll-area-content]") ||
+        target.closest("[data-radix-scroll-area-viewport]") ||
+        target.closest("[data-slot='scroll-area']") ||
+        target.closest("[data-slot='scroll-area-viewport']");
 
       if (!scrollableArea) {
         e.preventDefault();
       }
     };
 
-    // Only prevent document-level scroll, not all scroll
+    // Prevent all types of scroll
     document.addEventListener("touchmove", preventScroll, { passive: false });
+    document.addEventListener("wheel", preventWheel, { passive: false });
+    document.addEventListener("scroll", (e) => e.preventDefault(), {
+      passive: false,
+    });
 
     return () => {
+      // Restore original styles
+      document.body.style.overflow = originalBodyOverflow;
+      document.body.style.position = originalBodyPosition;
+      document.body.style.width = "";
+      document.body.style.height = "";
+      document.documentElement.style.overflow = originalHtmlOverflow;
+
       document.removeEventListener("touchmove", preventScroll);
+      document.removeEventListener("wheel", preventWheel);
+      document.removeEventListener("scroll", (e) => e.preventDefault());
     };
   }, []);
 
