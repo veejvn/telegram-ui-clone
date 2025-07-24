@@ -114,7 +114,24 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
         }
 
         setMediaStream(stream);
-        const mediaRecorder = new MediaRecorder(stream);
+        // 1️⃣ Chọn mimeType hỗ trợ trên trình duyệt
+        const supported = [
+          "audio/webm;codecs=opus",
+          "audio/mp4",
+          "audio/aac",
+          "audio/mpeg"
+        ];
+        const mimeType = supported.find(t =>
+          MediaRecorder.isTypeSupported?.(t)
+        );
+        if (!mimeType) {
+          console.warn("Recording không được hỗ trợ trên trình duyệt này");
+          setIsRecording(false);
+          return;
+        }
+
+        // 2️⃣ Khởi tạo MediaRecorder với mimeType
+        const mediaRecorder = new MediaRecorder(stream, { mimeType });
         recorderRef.current = mediaRecorder;
         setRecorder(mediaRecorder);
 
@@ -131,14 +148,17 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             return;
           }
 
-          const blob = new Blob(chunks, { type: "audio/webm" });
-          const file = new (globalThis as any).File(
+          // Tạo blob với đúng mimeType và extension
+          const blob = new Blob(chunks, { type: mimeType });
+          const ext = mimeType.includes("mp4") ? ".mp4"
+            : mimeType.includes("mpeg") ? ".mp3"
+              : ".webm";
+          const file = new File(
             [blob],
-            `voice_${Date.now()}.webm`,
-            {
-              type: blob.type,
-            }
+            `voice_${Date.now()}${ext}`,
+            { type: blob.type }
           );
+
 
           if (client) {
             const localId = "local_" + Date.now();
@@ -317,7 +337,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
           originalSender: fwd.sender,
           text: fwd.text,
         });
-        
+
         //console.log(forwardMessages);
         addMessage(roomId, {
           eventId: localId,
@@ -733,9 +753,8 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
       )}
 
       <div
-        className={`relative flex justify-between items-center px-2 py-2 lg:py-3 transition-all duration-300 ${
-          isKeyboardOpen ? "pb-2" : "pb-10"
-        }`}
+        className={`relative flex justify-between items-center px-2 py-2 lg:py-3 transition-all duration-300 ${isKeyboardOpen ? "pb-2" : "pb-10"
+          }`}
       >
         <Paperclip
           // onClick={() => inputRef.current?.click()}
@@ -744,9 +763,8 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
           size={25}
         />
         <div
-          className={`p-1 mx-1.5 relative ${
-            isMultiLine ? "rounded-2xl" : "rounded-full"
-          } flex items-center justify-between w-full bg-white dark:bg-black`}
+          className={`p-1 mx-1.5 relative ${isMultiLine ? "rounded-2xl" : "rounded-full"
+            } flex items-center justify-between w-full bg-white dark:bg-black`}
         >
           <textarea
             ref={textareaRef}
@@ -816,9 +834,8 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
           /* nút mic nhấn giữ để ghi, thả để gửi */
           <Mic
             size={30}
-            className={`text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all duration-700 ${
-              isRecording ? "text-red-500 scale-125" : ""
-            }`}
+            className={`text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all duration-700 ${isRecording ? "text-red-500 scale-125" : ""
+              }`}
             onMouseDown={(e) => {
               e.preventDefault(); // tránh double-trigger
               startRecording();
@@ -927,9 +944,8 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               <TabButton
                 icon={
                   <GrGallery
-                    className={`w-5 h-5 mb-1 ${
-                      tab === "gallery" ? "text-blue-500" : ""
-                    }`}
+                    className={`w-5 h-5 mb-1 ${tab === "gallery" ? "text-blue-500" : ""
+                      }`}
                   />
                 }
                 label="Gallery"
@@ -949,9 +965,8 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               <TabButton
                 icon={
                   <FaFile
-                    className={`w-5 h-5 mb-1 ${
-                      tab === "file" ? "text-blue-500" : ""
-                    }`}
+                    className={`w-5 h-5 mb-1 ${tab === "file" ? "text-blue-500" : ""
+                      }`}
                   />
                 }
                 label="File"
@@ -960,9 +975,8 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               <TabButton
                 icon={
                   <MdLocationOn
-                    className={`w-5 h-5 mb-1 ${
-                      tab === "location" ? "text-blue-500" : ""
-                    }`}
+                    className={`w-5 h-5 mb-1 ${tab === "location" ? "text-blue-500" : ""
+                      }`}
                   />
                 }
                 label="Location"
