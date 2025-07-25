@@ -1,7 +1,13 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 import React, { useState } from "react";
-import { Camera, Check, ChevronLeft, ChevronsUpDown } from "lucide-react";
+import {
+  Camera,
+  Check,
+  ChevronLeft,
+  ChevronsUpDown,
+  Loader2,
+} from "lucide-react";
 import Link from "next/link";
 import {
   Menubar,
@@ -56,7 +62,7 @@ export default function CreateGroupPage() {
     } else {
       console.log("❌ Failed to create room: " + result.error);
     }
-    setIsCreating(false);
+    // setIsCreating(false);
   };
 
   const headerStyle = getHeaderStyleWithStatusBar();
@@ -72,15 +78,19 @@ export default function CreateGroupPage() {
           </div>
         </Link>
         <h1 className="text-md font-semibold text-center">New Group</h1>
-        <button
-          className={`text-base font-semibold cursor-pointer opacity-80 hover:opacity-40 ${
-            groupName.trim() ? "text-blue-600" : "text-gray-400 disabled:true"
-          }`}
-          disabled={!groupName.trim() && true}
-          onClick={handleCreate}
-        >
-          Create
-        </button>
+        {!isCreating ? (
+          <button
+            className={`text-base font-semibold cursor-pointer opacity-80 hover:opacity-40 ${
+              groupName.trim() ? "text-blue-600" : "text-gray-400 disabled:true"
+            }`}
+            disabled={!groupName.trim() && true}
+            onClick={handleCreate}
+          >
+            Create
+          </button>
+        ) : (
+          <Loader2 className="animate-spin text-blue-600" />
+        )}
       </div>
 
       {/* Group Name Input */}
