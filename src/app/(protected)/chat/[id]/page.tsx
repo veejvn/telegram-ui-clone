@@ -37,6 +37,40 @@ const ChatPage = () => {
   const [isBlocked, setIsBlocked] = useState(false);
   const ignoredUsers = useIgnoreStore((state) => state.ignoredUsers);
 
+  // Prevent scroll on iOS when keyboard is open
+  useEffect(() => {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (!isIOS) return;
+
+    const preventScroll = (e: TouchEvent) => {
+      const target = e.target as Element;
+
+      // Allow scrolling inside ScrollArea components
+      const scrollableArea =
+        target.closest("[data-radix-scroll-area-content]") ||
+        target.closest("[data-radix-scroll-area-viewport]") ||
+        target.closest("[data-slot='scroll-area']") ||
+        target.closest("[data-slot='scroll-area-viewport']");
+
+      // console.log("Touch event:", {
+      //   target: target.tagName,
+      //   scrollableArea: !!scrollableArea,
+      //   prevented: !scrollableArea,
+      // });
+
+      if (!scrollableArea) {
+        e.preventDefault();
+      }
+    };
+
+    // Only prevent document-level scroll, not all scroll
+    document.addEventListener("touchmove", preventScroll, { passive: false });
+
+    return () => {
+      document.removeEventListener("touchmove", preventScroll);
+    };
+  }, []);
+
   // Kiểm tra xem người dùng có bị chặn không
   useEffect(() => {
     if (!client || !room || !room.getJoinedMembers) return;
@@ -131,19 +165,29 @@ const ChatPage = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-chat">
+    <div className={clsx("bg-chat", styles.chatContainer)}>
       {/* Header */}
-      <div className="shrink-0">
+      <div className={clsx("shrink-0 z-10", styles.chatHeader)}>
         <ChatHeader room={room} />
       </div>
 
       {/* Chat content scrollable */}
-      <ScrollArea className="flex-1 min-h-0 space-y-1">
-        <ChatMessages roomId={roomId} messagesEndRef={messagesEndRef} />
-      </ScrollArea>
-      {/* Footer */}
+      <div className={clsx("flex-1 min-h-0 relative", styles.chatContent)}>
+        <div className={styles.chatMessages}>
+          <ScrollArea className="h-full w-full">
+            <ChatMessages roomId={roomId} messagesEndRef={messagesEndRef} />
+          </ScrollArea>
+        </div>
+      </div>
+
+      {/* Footer - Fixed at bottom */}
       {isBlocked ? (
-        <div className="flex flex-col items-center justify-center py-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-[#23232b]">
+        <div
+          className={clsx(
+            "shrink-0 z-10 flex flex-col items-center justify-center py-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-[#23232b]",
+            styles.chatFooter
+          )}
+        >
           <button
             onClick={handleUnblockUser}
             className="text-blue-600 font-medium hover:underline"
@@ -152,7 +196,7 @@ const ChatPage = () => {
           </button>
         </div>
       ) : (
-        <div className="shrink-0">
+        <div className={clsx("shrink-0 z-10", styles.chatFooter)}>
           <ChatComposer roomId={roomId} />
         </div>
       )}

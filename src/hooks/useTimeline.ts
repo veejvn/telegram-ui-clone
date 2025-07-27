@@ -1,6 +1,6 @@
 "use client";
 
-import * as sdk from "matrix-js-sdk";
+//import * as sdk from "matrix-js-sdk";
 import { useEffect } from "react";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { getTimeline, sendReadReceipt } from "@/services/chatService";
@@ -8,11 +8,13 @@ import { MessageType, useChatStore } from "@/stores/useChatStore";
 import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
 import { FileInfo, ImageInfo } from "@/types/chat";
 import { Metadata } from "@/utils/chat/send-message/getVideoMetadata";
+import type { Room, MatrixEvent } from "matrix-js-sdk";
 
 export const useTimeline = (roomId: string) => {
+  const client = useMatrixClient();
   const addMessage = useChatStore((state) => state.addMessage);
   const setMessage = useChatStore((state) => state.setMessages);
-  const client = useMatrixClient();
+  const updateMessage = useChatStore.getState().updateMessage;
 
   useEffect(() => {
     if (!client || !roomId) return;
@@ -25,13 +27,54 @@ export const useTimeline = (roomId: string) => {
       }
     });
 
-    const onTimeline = (
-      event: sdk.MatrixEvent,
-      room: any,
-      toStart: boolean
-    ) => {
+    const onTimeline = (event: MatrixEvent, room: any, toStart: boolean) => {
       if (toStart || room.roomId !== roomId) return;
-      if (event.getType() !== "m.room.message") return;
+      const typeEvent = event.getType();
+      //console.log("Nhận sự kiện: " + typeEvent);
+      const userId = client.getUserId();
+      const eventId = event.getId() ?? "";
+      const txnId = event.getUnsigned()?.transaction_id ?? "";
+      //console.log("Event Id nhận từ onTimeline: " + eventId);
+      //console.log("Transaction Id: " + txnId);
+
+      let finalEventId = eventId;
+      if (eventId.includes(":") && !eventId.startsWith("$")) {
+        // Format: ~!roomId:server:txnId -> extract txnId
+        const parts = eventId.split(":");
+        const extractedTxnId = parts[parts.length - 1]; // Lấy phần cuối
+        // ✅ Sử dụng extracted txnId làm finalEventId
+        finalEventId = extractedTxnId;
+        //console.log("Extracted txnId from eventId:", extractedTxnId);
+      } else if (txnId) {
+        // ✅ Nếu có txnId thực sự, ưu tiên dùng nó
+        finalEventId = txnId;
+      }
+
+      //console.log("Final Event Id to use: " + finalEventId);
+
+      if (typeEvent === "m.room.redaction") {
+        // Lấy eventId của tin nhắn bị thu hồi
+        const redactedEventId: string | undefined =
+          (event as any)?.event?.redacts || // ổn định nhất
+          event.getUnsigned()?.redacted_because?.redacts;
+
+        if (redactedEventId) {
+          updateMessage(roomId, redactedEventId, {
+            text: "Tin nhắn đã thu hồi",
+            isDeleted: true
+          });
+          //console.log("Đã thu hồi tin nhắn:", redactedEventId);
+        } else {
+          console.warn(
+            "Không tìm thấy redacted event id trong redaction event",
+            event
+          );
+        }
+
+        return;
+      }
+
+      if (typeEvent !== "m.room.message") return;
 
       // const content = event.getContent();
       // const userId = client.getUserId();
@@ -40,11 +83,10 @@ export const useTimeline = (roomId: string) => {
       // const text = content.body;
 
       const content = event.getContent();
-      const userId = client.getUserId();
       const sender = event.getSender();
-      const eventId = event.getId() || "";
 
-      let text = content.body;
+      const isRedacted = event.isRedacted();
+      let text = isRedacted ? "Tin nhắn đã thu hồi" : content.body ?? "";
       let senderDisplayName = event.sender?.name ?? sender;
       let isForward = false;
 
@@ -131,44 +173,49 @@ export const useTimeline = (roomId: string) => {
         isStickerAnimation = content.info?.isStickerAnimation ?? false;
       }
 
-      addMessage(roomId, {
-        eventId,
-        sender,
-        senderDisplayName,
-        text,
-        time,
-        timestamp,
-        imageUrl,
-        imageInfo,
-        videoUrl,
-        videoInfo,
-        fileUrl,
-        fileInfo,
-        audioUrl,
-        audioDuration,
-        status: "sent",
-        type,
-        isStickerAnimation,
-        location: {
-          latitude,
-          longitude,
-          description: description ?? undefined,
-        },
-        isForward,
-      });
-
-      if (sender && sender !== userId) {
-        const events = room.getLiveTimeline().getEvents();
-        const lastEvent = events.length > 0 ? events[events.length - 1] : null;
-        if (lastEvent) {
-          sendReadReceipt(client, lastEvent);
+      if (isRedacted) {
+        updateMessage(roomId, eventId, { text });
+        console.log("Cập nhật tin nhắn ở onTimeline");
+      } else {
+        addMessage(roomId, {
+          eventId: finalEventId,
+          sender,
+          senderDisplayName,
+          text,
+          time,
+          timestamp,
+          imageUrl,
+          imageInfo,
+          videoUrl,
+          videoInfo,
+          fileUrl,
+          fileInfo,
+          audioUrl,
+          audioDuration,
+          status: "sent",
+          type,
+          isStickerAnimation,
+          location: {
+            latitude,
+            longitude,
+            description: description ?? undefined,
+          },
+          isForward,
+        });
+        if (sender && sender !== userId) {
+          const events = room.getLiveTimeline().getEvents();
+          const lastEvent =
+            events.length > 0 ? events[events.length - 1] : null;
+          if (lastEvent) {
+            sendReadReceipt(client, lastEvent);
+          }
         }
       }
     };
 
     client.on("Room.timeline" as any, onTimeline);
 
-    const onReceipt = async (_event: sdk.MatrixEvent, room: sdk.Room) => {
+    const onReceipt = async (_event: MatrixEvent, room: Room) => {
       if (room.roomId !== roomId) return;
       const userId = client.getUserId();
       if (!userId) return;
@@ -181,10 +228,33 @@ export const useTimeline = (roomId: string) => {
 
     client.on("Room.receipt" as any, onReceipt);
 
+    // ✅ Listen cho event khi được server confirm
+    const onEventUpdate = (event: MatrixEvent) => {
+      if (event.getRoomId() !== roomId) return;
+
+      const txnId = event.getUnsigned()?.transaction_id;
+      const realEventId = event.getId();
+
+      // ✅ Update event ID từ txn ID sang real ID
+      if (txnId && realEventId && realEventId.startsWith("$")) {
+        const updateMessage = useChatStore.getState().updateMessage;
+        // console.log(
+        //   "Cập nhật tin nhắn từ txnId sang realEventId",
+        //   roomId,
+        //   txnId,
+        //   realEventId
+        // );
+        updateMessage(roomId, txnId, { eventId: realEventId });
+      }
+    };
+
+    client.on("Room.localEchoUpdated" as any, onEventUpdate);
+
     return () => {
       isMounted = false;
       client.removeListener("Room.timeline" as any, onTimeline);
       client.removeListener("Room.receipt" as any, onReceipt);
+      client.removeListener("Event.localEchoUpdated" as any, onEventUpdate);
     };
   }, [client, roomId]);
 };

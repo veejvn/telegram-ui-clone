@@ -114,7 +114,24 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
         }
 
         setMediaStream(stream);
-        const mediaRecorder = new MediaRecorder(stream);
+        // 1️⃣ Chọn mimeType hỗ trợ trên trình duyệt
+        const supported = [
+          "audio/webm;codecs=opus",
+          "audio/mp4",
+          "audio/aac",
+          "audio/mpeg",
+        ];
+        const mimeType = supported.find((t) =>
+          MediaRecorder.isTypeSupported?.(t)
+        );
+        if (!mimeType) {
+          console.warn("Recording không được hỗ trợ trên trình duyệt này");
+          setIsRecording(false);
+          return;
+        }
+
+        // 2️⃣ Khởi tạo MediaRecorder với mimeType
+        const mediaRecorder = new MediaRecorder(stream, { mimeType });
         recorderRef.current = mediaRecorder;
         setRecorder(mediaRecorder);
 
@@ -131,14 +148,16 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             return;
           }
 
-          const blob = new Blob(chunks, { type: "audio/webm" });
-          const file = new (globalThis as any).File(
-            [blob],
-            `voice_${Date.now()}.webm`,
-            {
-              type: blob.type,
-            }
-          );
+          // Tạo blob với đúng mimeType và extension
+          const blob = new Blob(chunks, { type: mimeType });
+          const ext = mimeType.includes("mp4")
+            ? ".mp4"
+            : mimeType.includes("mpeg")
+            ? ".mp3"
+            : ".webm";
+          const file = new File([blob], `voice_${Date.now()}${ext}`, {
+            type: blob.type,
+          });
 
           if (client) {
             const localId = "local_" + Date.now();
@@ -280,7 +299,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     //  1. Gửi message thường trước nếu có nội dung
     if (trimmed) {
       const localId = "local_" + Date.now();
-
+      //console.log("Local Id: "  + localId)
       addMessage(roomId, {
         eventId: localId,
         sender: userId ?? undefined,
@@ -317,7 +336,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
           originalSender: fwd.sender,
           text: fwd.text,
         });
-        
+
         //console.log(forwardMessages);
         addMessage(roomId, {
           eventId: localId,
@@ -685,34 +704,107 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     }
   };
 
-  // Detect keyboard open via visualViewport (works reliably on real devices)
+  // Detect keyboard open with improved Safari iOS support
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const onResize = () => {
-      const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-      const visualHeight = window.visualViewport?.height ?? window.innerHeight;
-      const fullHeight = window.innerHeight;
-      const diff = fullHeight - visualHeight;
+    // Improved mobile detection
+    const isMobile = () => {
+      return (
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent
+        ) ||
+        (navigator.maxTouchPoints &&
+          navigator.maxTouchPoints > 2 &&
+          /MacIntel/.test(navigator.platform)) || // iPad with iPadOS 13+
+        window.matchMedia("(pointer: coarse)").matches
+      );
+    };
 
-      if (isMobile && diff > 100) {
+    // Store initial viewport height for better comparison
+    const initialViewportHeight = window.innerHeight;
+    const isIOSSafari =
+      /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+
+    const onResize = () => {
+      if (!isMobile()) return;
+
+      const currentHeight = window.innerHeight;
+      const visualHeight = window.visualViewport?.height ?? currentHeight;
+
+      // Different thresholds for different browsers
+      const threshold = isIOSSafari ? 150 : 100;
+      const heightDiff = initialViewportHeight - visualHeight;
+
+      // For iOS Safari, also check window.innerHeight changes
+      const windowHeightDiff = initialViewportHeight - currentHeight;
+      const effectiveDiff = Math.max(heightDiff, windowHeightDiff);
+
+      // console.log("Keyboard detection:", {
+      //   initialHeight: initialViewportHeight,
+      //   currentHeight,
+      //   visualHeight,
+      //   effectiveDiff,
+      //   threshold,
+      //   isIOSSafari,
+      // });
+
+      if (effectiveDiff > threshold) {
         setIsKeyboardOpen(true);
       } else {
         setIsKeyboardOpen(false);
       }
     };
 
+    // Alternative approach for Safari iOS using focus/blur events
+    const onInputFocus = () => {
+      if (isIOSSafari) {
+        setTimeout(() => setIsKeyboardOpen(true), 300);
+      }
+    };
+
+    const onInputBlur = () => {
+      if (isIOSSafari) {
+        setTimeout(() => setIsKeyboardOpen(false), 300);
+      }
+    };
+
+    // Multiple event listeners for better Safari iOS support
+    const events = ["resize", "orientationchange"];
+
+    // Add visualViewport listeners if available
     if (window.visualViewport) {
       window.visualViewport.addEventListener("resize", onResize);
-    } else {
-      window.addEventListener("resize", onResize); // fallback
+      window.visualViewport.addEventListener("scroll", onResize);
     }
+
+    // Add window event listeners as fallback and for iOS Safari
+    events.forEach((event) => {
+      window.addEventListener(event, onResize);
+    });
+
+    // Add focus/blur listeners for input elements (Safari iOS fallback)
+    if (textareaRef.current) {
+      textareaRef.current.addEventListener("focus", onInputFocus);
+      textareaRef.current.addEventListener("blur", onInputBlur);
+    }
+
+    // Initial check
+    onResize();
 
     return () => {
       if (window.visualViewport) {
         window.visualViewport.removeEventListener("resize", onResize);
-      } else {
-        window.removeEventListener("resize", onResize);
+        window.visualViewport.removeEventListener("scroll", onResize);
+      }
+
+      events.forEach((event) => {
+        window.removeEventListener(event, onResize);
+      });
+
+      if (textareaRef.current) {
+        textareaRef.current.removeEventListener("focus", onInputFocus);
+        textareaRef.current.removeEventListener("blur", onInputBlur);
       }
     };
   }, []);

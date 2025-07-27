@@ -23,6 +23,7 @@ type ChatMessagesProps = {
 };
 
 const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
+  //console.log("Room Id in ChatMessages: " + roomId)
   useTimeline(roomId);
   const client = useMatrixClient();
   const router = useRouter();
@@ -170,7 +171,7 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
   return (
     <div className="flex flex-col h-full">
       {searching && (
-        <div className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md ">
+        <div className="sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md">
           {/* Khối search input */}
           <div className="flex items-center justify-between mb-2 gap-2">
             <div className="relative flex-1">
@@ -297,7 +298,7 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
                   key={msg.eventId}
                   ref={isHighlighted ? firstHighlightedRef : null}
                 >
-                  <ChatMessage msg={msg} />
+                  <ChatMessage msg={msg} roomId={roomId} />
                 </div>
               );
             })}
