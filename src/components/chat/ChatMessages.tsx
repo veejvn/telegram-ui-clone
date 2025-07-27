@@ -298,7 +298,7 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
                   key={msg.eventId}
                   ref={isHighlighted ? firstHighlightedRef : null}
                 >
-                  <ChatMessage msg={msg} roomId={roomId}/>
+                  <ChatMessage msg={msg} roomId={roomId} />
                 </div>
               );
             })}
