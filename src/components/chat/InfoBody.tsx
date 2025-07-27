@@ -694,7 +694,7 @@ export default function InfoBody({
         {/* User info section */}
         {/* User info section */}
         {!hideAvatarHeader && (
-          <div className="w-full px-4">
+          <div className="w-full px-4 bg-white">
             <div
               className={`w-full max-w-md mx-auto bg-white dark:bg-[#232329] px-4 py-2 text-start flex flex-col mb-2 ${
                 scrollPosition > 0 ? "rounded-none" : "mt-4"
