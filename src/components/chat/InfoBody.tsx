@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import * as sdk from "matrix-js-sdk";
 import {
   Popover,
@@ -30,10 +30,21 @@ import MuteButton from "./mute/MuteButton";
 import { useUserPresence } from "@/hooks/useUserPrecense";
 import LinkCard from "./LinkCard";
 import { useTimeline } from "@/hooks/useTimeline";
-
-export default function InfoBody({ user }: { user: sdk.User }) {
+export default function InfoBody({
+  user,
+  onScroll,
+  maxHeaderHeight = 300,
+  hideAvatarHeader = false,
+}: {
+  user: sdk.User;
+  onScroll?: (position: number) => void;
+  maxHeaderHeight?: number;
+  hideAvatarHeader?: boolean;
+}) {
   const client = useMatrixClient();
   const router = useRouter();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [scrollPosition, setScrollPosition] = useState(0);
 
   let lastSeen = null;
   if (client) {
@@ -41,7 +52,6 @@ export default function InfoBody({ user }: { user: sdk.User }) {
   }
   const isActuallyOnline =
     lastSeen !== null && Date.now() - lastSeen.getTime() < 30 * 1000;
-
   const ensureRoomExists = async (): Promise<string | null> => {
     const existingRoom = client
       ?.getRooms()
@@ -63,7 +73,27 @@ export default function InfoBody({ user }: { user: sdk.User }) {
       return null;
     }
   };
+  useEffect(() => {
+    // Xử lý hiển thị/ẩn header mini avatar khi scroll
+    const handleHeaderAvatar = () => {
+      const miniHeader = document.querySelector(".header-mini-avatar");
+      const miniName = document.querySelector(".header-mini-name");
 
+      if (miniHeader && miniName) {
+        if (scrollPosition > 0) {
+          // Ẩn avatar nhỏ và tên ở header khi scroll
+          miniHeader.classList.add("opacity-0", "invisible");
+          miniName.classList.add("opacity-0", "invisible");
+        } else {
+          // Hiện avatar nhỏ và tên khi không scroll
+          miniHeader.classList.remove("opacity-0", "invisible");
+          miniName.classList.remove("opacity-0", "invisible");
+        }
+      }
+    };
+
+    handleHeaderAvatar();
+  }, [scrollPosition]);
   const handleStartCall = async (type: "voice" | "video") => {
     const roomId = await ensureRoomExists();
     if (!roomId) return;
@@ -76,7 +106,39 @@ export default function InfoBody({ user }: { user: sdk.User }) {
     );
   };
   const [avatarUrl, setAvatarUrl] = React.useState<string | null>(null);
+  // Trong useEffect xử lý scroll
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) return;
 
+    const handleScroll = () => {
+      const position = scrollContainer.scrollTop;
+      const threshold = 5;
+
+      // Cập nhật scrollPosition
+      if (position >= threshold) {
+        setScrollPosition(maxHeaderHeight);
+        // Thay đổi màu nền container khi scroll
+        scrollContainer.style.backgroundColor = "black";
+        // Thêm class cho container để thay đổi style khi scroll
+        scrollContainer.classList.add("scrolled");
+      } else {
+        setScrollPosition(0);
+        // Khôi phục màu nền khi không scroll
+        scrollContainer.style.backgroundColor = "";
+        // Xóa class khi không scroll
+        scrollContainer.classList.remove("scrolled");
+      }
+
+      // Báo cho component cha
+      if (onScroll) onScroll(position >= threshold ? maxHeaderHeight : 0);
+    };
+
+    scrollContainer.addEventListener("scroll", handleScroll);
+    return () => {
+      scrollContainer.removeEventListener("scroll", handleScroll);
+    };
+  }, [onScroll, maxHeaderHeight]);
   React.useEffect(() => {
     const fetchAvatar = async () => {
       if (!user?.avatarUrl || !client) return;
@@ -201,7 +263,39 @@ export default function InfoBody({ user }: { user: sdk.User }) {
 
     setShowBlockModal(false);
   };
+  const calculateHeaderStyle = () => {
+    // Thay đổi này: Biến đổi nhanh hơn, ngay khi có scroll
+    const scrollRatio = scrollPosition > 0 ? 1 : 0;
 
+    // Giá trị cố định cho các trạng thái
+    const minHeight = 100; // Tăng chiều cao cho avatar khi scroll
+    const height = scrollRatio > 0 ? minHeight : maxHeaderHeight;
+
+    // Kích thước avatar - giữ avatar lớn hơn khi scroll
+    const scale = scrollRatio > 0 ? 0.9 : 1; // Ít thu nhỏ hơn khi scroll
+    const opacity = scrollRatio > 0 ? 0 : 1; // Ẩn text khi scroll
+
+    // Biến đổi thành hình tròn ngay lập tức
+    const borderRadius = scrollRatio > 0 ? 50 : 0; // 50% = hình tròn
+
+    // Kích thước cố định khi scroll - để avatar nằm giữa và lớn hơn
+    const finalWidth = minHeight; // Chiều rộng bằng chiều cao khi thu nhỏ
+
+    return {
+      height: `${height}px`,
+      width: scrollRatio > 0 ? `${finalWidth}px` : "100%",
+      // Remove 'scale' property, not valid in style object
+      opacity: opacity,
+      transform: scrollRatio > 0 ? "scale(0.9)" : "scale(1)",
+      transformOrigin: "center top",
+      borderRadius: `${borderRadius}%`,
+      // Căn giữa avatar khi scroll
+      marginLeft: scrollRatio > 0 ? "auto" : "0",
+      marginRight: scrollRatio > 0 ? "auto" : "0",
+      position: scrollRatio > 0 ? "relative" : undefined, // Only valid values
+      top: scrollRatio > 0 ? "0" : undefined, // Điều chỉnh vị trí avatar khi scroll
+    };
+  };
   // Hàm unblock user
   const handleUnblockUser = async () => {
     if (!client || !user?.userId) return;
@@ -214,57 +308,248 @@ export default function InfoBody({ user }: { user: sdk.User }) {
     // ✅ Cập nhật Zustand store
     useIgnoreStore.getState().setIgnoredUsers(updatedIgnored);
   };
+  const [pullDownDistance, setPullDownDistance] = useState(0);
+  const touchStartY = useRef(0);
+  const touchingScreen = useRef(false);
+  // Handle touch start
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) return;
 
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartY.current = e.touches[0].clientY;
+      touchingScreen.current = true;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!touchingScreen.current) return;
+
+      const touchY = e.touches[0].clientY;
+      const deltaY = touchY - touchStartY.current;
+
+      // Only apply pull-down effect when at top of scroll
+      if (scrollContainer.scrollTop <= 0 && deltaY > 0) {
+        // Use non-linear transformation for more natural feel
+        // The more you pull, the harder it gets
+        const resistance = 0.4;
+        const distance = Math.min(deltaY * resistance, maxHeaderHeight);
+        setPullDownDistance(distance);
+        e.preventDefault();
+      } else {
+        setPullDownDistance(0);
+      }
+    };
+
+    const handleTouchEnd = () => {
+      // Reset when touch ends
+      touchingScreen.current = false;
+      if (pullDownDistance > 0) {
+        setPullDownDistance(0);
+      }
+    };
+
+    scrollContainer.addEventListener("touchstart", handleTouchStart);
+    scrollContainer.addEventListener("touchmove", handleTouchMove, {
+      passive: false,
+    });
+    scrollContainer.addEventListener("touchend", handleTouchEnd);
+
+    return () => {
+      scrollContainer.removeEventListener("touchstart", handleTouchStart);
+      scrollContainer.removeEventListener("touchmove", handleTouchMove);
+      scrollContainer.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, [maxHeaderHeight, pullDownDistance]);
+
+  // Then in the avatar container:
+  const avatarContainerStyle = {
+    ...calculateHeaderStyle(),
+    height:
+      pullDownDistance > 0
+        ? `${maxHeaderHeight + pullDownDistance}px`
+        : calculateHeaderStyle().height,
+    transform:
+      pullDownDistance > 0
+        ? `scale(${1 + (pullDownDistance / maxHeaderHeight) * 0.2})`
+        : calculateHeaderStyle().transform,
+    transition: "all 0.3s ease-out", // Thêm transition mượt mà
+  };
+
+  const imageStyle = {
+    borderRadius: calculateHeaderStyle().borderRadius + "%",
+    width: "100%",
+    height: "100%",
+    objectFit: "cover" as const,
+    transition: "all 0.3s ease-out", // Thêm transition mượt mà
+  };
+  const actionButtonsStyle = {
+    position: "relative" as React.CSSProperties["position"],
+    marginTop: scrollPosition > 0 ? "20px" : "0", // Giảm khoảng cách
+    display: "flex",
+    justifyContent: "center",
+    width: "100%",
+    padding: "0 16px",
+    backgroundColor: scrollPosition > 0 ? "black" : "transparent", // Thêm màu nền đen
+    paddingBottom: scrollPosition > 0 ? "20px" : "0", // Thêm padding dưới khi scroll
+  };
+  const scrolledButtonStyle = {
+    backgroundColor: "white",
+    color: "#155dfc",
+    borderRadius: "12px",
+    marginHorizontal: "4px",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+  };
   return (
     <>
-      <div className="relative flex flex-col overflow-hidden bg-[#e5e7eb] dark:bg-[black] h-full">
-        {avatarUrl ? (
-          <div className="relative flex flex-col items-center">
-            <img
-              src={avatarUrl}
-              alt="avatar"
-              className="w-full h-full object-cover"
-            />
+      <div
+        ref={scrollContainerRef}
+        className="relative flex flex-col overflow-y-auto overscroll-none bg-white dark:bg-black h-full pb-0"
+      >
+        {/* Container chính bao gồm avatar và các nút bấm */}
+        <div
+          className={`relative ${
+            scrollPosition > 0 ? "bg-white/90 dark:bg-black" : ""
+          }`}
+          style={{
+            height: scrollPosition > 0 ? "280px" : "auto",
+            transition: "height 0.3s cubic-bezier(0.25, 0.1, 0.25, 1.0)", // Thêm cubic-bezier cho animation mượt hơn
+          }}
+        >
+          {/* Avatar container */}
+          {!hideAvatarHeader &&
+            (avatarUrl ? (
+              <div
+                className={`${
+                  scrollPosition > 0
+                    ? "absolute left-1/2 transform -translate-x-1/2 top-10"
+                    : "relative flex flex-col items-center"
+                } transition-all duration-300 ease-out z-10`}
+                style={{
+                  width: scrollPosition > 0 ? "110px" : "100%",
+                  height: scrollPosition > 0 ? "110px" : `${maxHeaderHeight}px`,
+                  borderRadius: scrollPosition > 0 ? "50%" : "0",
+                  overflow: "hidden",
+                  transition: "all 0.35s cubic-bezier(0.25, 0.1, 0.25, 1.0)", // Dùng cubic-bezier thay vì ease-out
+                }}
+              >
+                <img
+                  src={avatarUrl}
+                  alt="avatar"
+                  className="object-cover w-full h-full"
+                  style={{
+                    transition: "all 0.35s cubic-bezier(0.25, 0.1, 0.25, 1.0)", // Thời gian transition cao hơn và dùng cubic-bezier
+                  }}
+                />
 
-            {/* Đè nội dung lên ảnh */}
-            <div className="absolute inset-0 flex flex-col justify-end px-4 pb-4 bg-gradient-to-t from-black/60 to-transparent">
-              <p className="text-xl font-semibold text-white">
-                {user.displayName}
-              </p>
-              <p className="text-sm text-white mb-2">
-                {isActuallyOnline ? "online" : getDetailedStatus(lastSeen)}
-              </p>
-
-              <div className="flex justify-start gap-2 w-full">
+                {/* Chỉ hiển thị gradient background và tên nếu không scroll */}
+                {scrollPosition === 0 && (
+                  <div className="absolute inset-0 flex flex-col justify-end px-4 pb-16 bg-gradient-to-t from-black/60 to-transparent">
+                    <p className="text-xl font-semibold text-white">
+                      {user.displayName}
+                    </p>
+                    <p className="text-sm text-white mb-4">
+                      {isActuallyOnline
+                        ? "online"
+                        : getDetailedStatus(lastSeen)}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div
+                className={`${
+                  scrollPosition > 0 ? "relative" : "relative"
+                } bg-gray-200 dark:bg-black`}
+                style={{
+                  width: "100%",
+                  height: scrollPosition > 0 ? "280px" : `${maxHeaderHeight}px`,
+                }}
+              >
+                {/* Avatar mặc định - áp dụng style tương tự avatar có URL */}
                 <div
-                  className="flex flex-col justify-end gap-0.5 items-center w-[75px] h-[50px] cursor-pointer bg-black/40 rounded-lg py-1 group"
+                  className={`${
+                    scrollPosition > 0
+                      ? "absolute left-1/2 transform -translate-x-1/2 top-10"
+                      : "flex flex-col items-center justify-center pt-6"
+                  } transition-all duration-300 ease-out z-10`}
+                >
+                  <div
+                    className={`${
+                      scrollPosition > 0 ? "h-28 w-28" : "h-28 w-28"
+                    } rounded-full bg-purple-400 text-white text-5xl font-bold flex items-center justify-center transition-all duration-300 ease-out`}
+                  >
+                    {user.displayName?.slice(0, 1)}
+                  </div>
+
+                  {/* Tên và trạng thái - hiển thị giữa màn hình */}
+                  <div
+                    className={`text-center mt-3 ${
+                      scrollPosition > 0 ? "hidden" : "block"
+                    }`}
+                  >
+                    <p className="text-xl font-semibold text-black dark:text-white">
+                      {user.displayName}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-white">
+                      {isActuallyOnline
+                        ? "online"
+                        : getDetailedStatus(lastSeen)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Tên và trạng thái khi scroll */}
+                {scrollPosition > 0 && (
+                  <div className="absolute left-1/2 transform -translate-x-1/2 top-[150px] text-center w-full">
+                    <p className="text-lg font-semibold dark:text-white text-gray-800">
+                      {user.displayName}
+                    </p>
+                    <p className="text-xs dark:text-gray-400 text-gray-500 mt-1">
+                      {isActuallyOnline
+                        ? "online"
+                        : getDetailedStatus(lastSeen)}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ))}
+
+          {/* Action buttons cho avatar mặc định - sử dụng CSS giống khi đã scroll */}
+          {scrollPosition === 0 && !avatarUrl && (
+            <div className="absolute bottom-0 left-0 right-0 px-3 pb-3 z-10">
+              <div className="grid grid-cols-5 gap-2 w-full max-w-md mx-auto">
+                <div
+                  className="flex flex-col justify-center items-center cursor-pointer py-3 rounded-lg dark:bg-[#33333a] bg-white"
                   onClick={() => handleStartCall("voice")}
                 >
                   <CallIcon />
-                  <p className="text-xs text-white">call</p>
+                  <p className="text-xs mt-1 text-[#155dfc]">call</p>
                 </div>
+
                 <div
-                  className="flex flex-col justify-end items-center w-[75px] h-[50px] cursor-pointer bg-black/40 rounded-lg py-1 group"
+                  className="flex flex-col justify-center items-center cursor-pointer py-3 rounded-lg dark:bg-[#33333a] bg-white"
                   onClick={() => handleStartCall("video")}
                 >
                   <VideoIcon />
-                  <p className="text-xs text-white">video</p>
+                  <p className="text-xs mt-1 text-[#155dfc]">video</p>
                 </div>
-                <div className="flex flex-col justify-end items-center w-[75px] h-[50px] bg-black/40 rounded-lg py-1">
+
+                <div className="flex flex-col justify-center items-center cursor-pointer py-3 rounded-lg dark:bg-[#33333a] bg-white">
                   <MuteButton onMuteUntil={handleMuteUntil} roomId={roomId} />
                 </div>
+
                 <div
-                  className="flex flex-col justify-end items-center group cursor-pointer bg-black/40 rounded-lg w-[75px] h-[50px] py-1"
+                  className="flex flex-col justify-center items-center cursor-pointer py-3 rounded-lg dark:bg-[#33333a] bg-white"
                   onClick={() => router.push(`/chat/${roomId}?searching=true`)}
                 >
                   <SearchIcon />
-                  <p className="text-xs text-white">search</p>
+                  <p className="text-xs mt-1 text-[#155dfc]">search</p>
                 </div>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <div className="flex flex-col justify-end items-center group cursor-pointer bg-black/40 rounded-lg w-[75px] h-[50px] py-1">
+                    <div className="flex flex-col justify-center items-center cursor-pointer py-3 rounded-lg dark:bg-[#33333a] bg-white">
                       <MoreIcon />
-                      <p className="text-xs text-white">more</p>
+                      <p className="text-xs text-[#155dfc]">more</p>
                     </div>
                   </PopoverTrigger>
                   <PopoverContent className="mr-4 p-0 w-[240px]">
@@ -282,56 +567,115 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                 </Popover>
               </div>
             </div>
-          </div>
-        ) : (
-          // Nếu không có avatar thì hiển thị như cũ
-          <div className="flex flex-col items-center mt-4 mb-2">
-            <div className="h-28 w-28 rounded-full bg-purple-400 text-white text-5xl font-bold flex items-center justify-center mb-2 mx-auto">
-              {user.displayName?.slice(0, 1)}
+          )}
+
+          {/* Action buttons cho avatar URL (giữ nguyên style cũ) */}
+          {scrollPosition === 0 && avatarUrl && (
+            <div className="absolute bottom-0 left-0 right-0 px-3 pb-3 z-10">
+              <div className="grid grid-cols-5 gap-2 w-full">
+                <div
+                  className="flex flex-col justify-end gap-0.5 items-center cursor-pointer py-3 rounded-lg dark:bg-black/40 bg-gray-300/60"
+                  onClick={() => handleStartCall("voice")}
+                >
+                  <CallIcon />
+                  <p className="text-xs text-[#155dfc]">call</p>
+                </div>
+
+                <div
+                  className="flex flex-col justify-end gap-0.5 items-center cursor-pointer py-3 rounded-lg dark:bg-black/40 bg-gray-300/60"
+                  onClick={() => handleStartCall("video")}
+                >
+                  <VideoIcon />
+                  <p className="text-xs text-[#155dfc]">video</p>
+                </div>
+
+                <div className="flex flex-col justify-end gap-0.5 items-center cursor-pointer py-3 rounded-lg dark:bg-black/40 bg-gray-300/60">
+                  <MuteButton onMuteUntil={handleMuteUntil} roomId={roomId} />
+                </div>
+
+                <div
+                  className="flex flex-col justify-end gap-0.5 items-center cursor-pointer py-3 rounded-lg dark:bg-black/40 bg-gray-300/60"
+                  onClick={() => router.push(`/chat/${roomId}?searching=true`)}
+                >
+                  <SearchIcon />
+                  <p className="text-xs text-[#155dfc]">search</p>
+                </div>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <div className="flex flex-col justify-center items-center cursor-pointer py-3 rounded-lg dark:bg-black/40 bg-gray-300/60">
+                      <MoreIcon />
+                      <p className="text-xs text-[#155dfc]">more</p>
+                    </div>
+                  </PopoverTrigger>
+                  <PopoverContent className="mr-4 p-0 w-[240px]">
+                    <div className="">
+                      <Button
+                        className="flex justify-between items-center w-full my-1 text-red-500 bg-white dark:bg-black"
+                        onClick={() => setShowBlockModal(true)}
+                        disabled={isBlocked}
+                      >
+                        Block User
+                        <Hand />
+                      </Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
-            <p className="text-xl font-semibold">{user.displayName}</p>
-            <p className="text-sm text-muted-foreground">
-              {isActuallyOnline ? "online" : getDetailedStatus(lastSeen)}
-            </p>
+          )}
 
-            <div className="flex justify-center gap-2 my-4 px-4 w-full">
-              <div
-                className="flex flex-col justify-end gap-0.5 items-center w-[75px] h-[50px] cursor-pointer bg-white dark:bg-[#232329] rounded-lg py-1 group"
-                onClick={() => handleStartCall("voice")}
-              >
-                <CallIcon />
-                <p className="text-xs text-[#155dfc]">call</p>
-              </div>
+          {/* Hiển thị tên và trạng thái ở giữa avatar và nút */}
+          {scrollPosition > 0 && avatarUrl && (
+            <div className="absolute left-1/2 transform -translate-x-1/2 top-[145px] text-center w-full z-20">
+              <p className="text-lg font-semibold dark:text-white text-gray-800">
+                {user.displayName}
+              </p>
+              <p className="text-xs dark:text-gray-400 text-gray-500 mt-1">
+                {isActuallyOnline ? "online" : getDetailedStatus(lastSeen)}
+              </p>
+            </div>
+          )}
 
-              <div
-                className="flex flex-col justify-end items-center w-[75px] h-[50px] cursor-pointer bg-white dark:bg-[#232329] rounded-lg py-1 group"
-                onClick={() => handleStartCall("video")}
-              >
-                <VideoIcon />
-                <p className="text-xs text-[#155dfc]">video</p>
-              </div>
+          {/* Đưa cụm nút hành động xuống sát đáy phần đen */}
+          {scrollPosition > 0 && avatarUrl && (
+            <div className="absolute bottom-3 left-0 right-0 px-3 z-20">
+              <div className="grid grid-cols-5 gap-2 w-full max-w-md mx-auto">
+                <div
+                  className="flex flex-col justify-center items-center cursor-pointer py-3 rounded-lg dark:bg-[#33333a] bg-gray-200/80"
+                  onClick={() => handleStartCall("voice")}
+                >
+                  <CallIcon />
+                  <p className="text-xs mt-1 text-[#155dfc]">call</p>
+                </div>
 
-              <div className="flex flex-col justify-end items-center w-[75px] h-[50px] bg-white dark:bg-[#232329] rounded-lg py-1">
-                <MuteButton onMuteUntil={handleMuteUntil} roomId={roomId} />
-              </div>
+                <div
+                  className="flex flex-col justify-center items-center cursor-pointer py-3 rounded-lg dark:bg-[#33333a] bg-gray-200/80"
+                  onClick={() => handleStartCall("video")}
+                >
+                  <VideoIcon />
+                  <p className="text-xs mt-1 text-[#155dfc]">video</p>
+                </div>
 
-              <div
-                className="flex flex-col justify-end items-center group cursor-pointer bg-white dark:bg-[#232329] rounded-lg w-[75px] h-[50px] py-1"
-                onClick={() => router.push(`/chat/${roomId}?searching=true`)}
-              >
-                <SearchIcon />
-                <p className="text-xs text-[#155dfc]">search</p>
-              </div>
+                <div className="flex flex-col justify-center items-center cursor-pointer py-3 rounded-lg dark:bg-[#33333a] bg-gray-200/80">
+                  <MuteButton onMuteUntil={handleMuteUntil} roomId={roomId} />
+                </div>
 
-              <Popover>
-                <PopoverTrigger asChild>
-                  <div className="flex flex-col justify-end items-center group cursor-pointer bg-white dark:bg-[#232329] rounded-lg w-[75px] h-[50px] py-1">
-                    <MoreIcon />
-                    <p className="text-xs text-[#155dfc]">more</p>
-                  </div>
-                </PopoverTrigger>
-                <PopoverContent className="mr-4 p-0 w-[240px]">
-                  <div className="">
+                <div
+                  className="flex flex-col justify-center items-center cursor-pointer py-3 rounded-lg dark:bg-[#33333a] bg-gray-200/80"
+                  onClick={() => router.push(`/chat/${roomId}?searching=true`)}
+                >
+                  <SearchIcon />
+                  <p className="text-xs mt-1 text-[#155dfc]">search</p>
+                </div>
+
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <div className="flex flex-col justify-center items-center cursor-pointer py-3 rounded-lg dark:bg-[#33333a] bg-gray-200/80">
+                      <MoreIcon />
+                      <p className="text-xs text-[#155dfc]">more</p>
+                    </div>
+                  </PopoverTrigger>
+                  <PopoverContent className="mr-4 p-0 w-[240px]">
                     <Button
                       className="flex justify-between items-center w-full my-1 text-red-500 bg-white dark:bg-black"
                       onClick={() => setShowBlockModal(true)}
@@ -340,137 +684,163 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                       Block User
                       <Hand />
                     </Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-        )}
-
-        <div className="w-full max-w-sm mx-auto bg-white dark:bg-[#232329] px-4 py-2 text-start flex flex-col mt-4 mb-2 rounded-xl gap-0.5 shadow">
-          <p className="text-sm text-zinc-500">mobile</p>
-          <p className="text-[#155dfc] break-all">+84 91 502 70 46</p>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-zinc-500">username</p>
-              <p className="text-[#155dfc] break-all">
-                @{user.userId?.split(":")[0].replace(/^@/, "")}
-              </p>
-            </div>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-5 h-5 text-[#155dfc] cursor-pointer"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <rect x="3" y="3" width="4" height="4" rx="1" />
-              <rect x="17" y="3" width="4" height="4" rx="1" />
-              <rect x="3" y="17" width="4" height="4" rx="1" />
-              <rect x="17" y="17" width="4" height="4" rx="1" />
-              <rect x="10" y="10" width="4" height="4" rx="1" />
-            </svg>
-          </div>
-
-          {isBlocked && (
-            <div className="flex flex-col gap-2 mt-2">
-              <hr className="my-1 border-gray-200/50" />
-              <button
-                onClick={() => setShowConfirmUnblock(true)}
-                className="text-[#155dfc] text-base font-normal py-0 cursor-pointer text-left"
-              >
-                Unblock
-              </button>
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
           )}
         </div>
 
-        {(mediaMessages.length > 0 || linkMessages.length > 0) && (
-          <div className="bg-white dark:bg-black mt-2 rounded-none flex-1 min-h-0 flex flex-col">
-            <Tabs
-              defaultValue={
-                mediaMessages.length > 0
-                  ? "media"
-                  : linkMessages.length > 0
-                  ? "link"
-                  : "voice"
-              }
-              className="w-full h-full"
+        {/* User info section */}
+        {/* User info section */}
+        {!hideAvatarHeader && (
+          <div className="w-full px-4">
+            <div
+              className={`w-full max-w-md mx-auto bg-white dark:bg-[#232329] px-4 py-2 text-start flex flex-col mb-2 ${
+                scrollPosition > 0 ? "rounded-none" : "mt-4"
+              } gap-2 shadow-sm border border-gray-200 dark:border-[#3a3b3d] rounded-xl`}
             >
-              <TabsList className="grid w-full grid-cols-4">
-                {mediaMessages.length > 0 && (
-                  <TabsTrigger value="media">Media</TabsTrigger>
-                )}
-                <TabsTrigger value="voice">Voice</TabsTrigger>
-                {linkMessages.length > 0 && (
-                  <TabsTrigger value="link">Links</TabsTrigger>
-                )}
-                <TabsTrigger value="groups">Groups</TabsTrigger>
-              </TabsList>
+              <div>
+                <p className="text-sm text-zinc-500">mobile</p>
+                <p className="text-[#155dfc] break-all">+84 91 502 70 46</p>
+              </div>
 
-              {mediaMessages.length > 0 && (
-                <TabsContent value="media" className="h-full">
-                  <div className="h-full overflow-y-auto overscroll-contain pb-18">
-                    <div className="grid grid-cols-3 gap-0.5 p-1">
-                      {mediaMessages.map((msg, idx) => (
-                        <div key={msg.eventId || idx} className="aspect-square">
-                          {msg.type === "image" && msg.imageUrl ? (
-                            <Image
-                              src={msg.imageUrl}
-                              alt="media"
-                              width={500}
-                              height={500}
-                              className="w-full h-full object-cover rounded"
-                              priority
-                            />
-                          ) : msg.type === "video" && msg.videoUrl ? (
-                            <video
-                              src={msg.videoUrl}
-                              controls
-                              className="w-full h-full object-cover rounded bg-white"
-                            />
-                          ) : null}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </TabsContent>
+              <div className="w-full h-[1px] bg-gray-200 dark:bg-[#3a3b3d]" />
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-zinc-500">username</p>
+                  <p className="text-[#155dfc] break-all">
+                    @{user.userId?.split(":")[0].replace(/^@/, "")}
+                  </p>
+                </div>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-5 h-5 text-[#155dfc] cursor-pointer"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <rect x="3" y="3" width="4" height="4" rx="1" />
+                  <rect x="17" y="3" width="4" height="4" rx="1" />
+                  <rect x="3" y="17" width="4" height="4" rx="1" />
+                  <rect x="17" y="17" width="4" height="4" rx="1" />
+                  <rect x="10" y="10" width="4" height="4" rx="1" />
+                </svg>
+              </div>
+
+              {isBlocked && (
+                <div className="flex flex-col gap-2 mt-2">
+                  <div className="w-full h-[1px] bg-gray-200 dark:bg-[#3a3b3d]" />
+                  <button
+                    onClick={() => setShowConfirmUnblock(true)}
+                    className="text-[#155dfc] text-base font-normal py-0 cursor-pointer text-left"
+                  >
+                    Unblock
+                  </button>
+                </div>
               )}
-
-              {linkMessages.length > 0 && (
-                <TabsContent value="link">
-                  <div className="max-h-[420px] overflow-y-auto overscroll-contain">
-                    <Card className="w-full shadow-sm pt-3 pb-0 rounded-none">
-                      <CardContent className="px-2">
-                        <div className="space-y-4">
-                          {linkMessages.map((msg, index) => {
-                            if (!msg) return null;
-                            const match = msg.text.match(
-                              /(https?:\/\/[^\s]+|\b(?:[a-z0-9-]+\.)+[a-z]{2,}(\/[^\s]*)?)/i
-                            );
-                            const rawUrl = match?.[0];
-                            const url = rawUrl?.startsWith("http")
-                              ? rawUrl
-                              : `https://${rawUrl}`;
-
-                            return url ? (
-                              <div key={msg.eventId || index}>
-                                <LinkCard url={url} title={msg.text} />
-                              </div>
-                            ) : null;
-                          })}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </TabsContent>
-              )}
-
-              {/* TabsContent cho voice & groups */}
-            </Tabs>
+            </div>
           </div>
         )}
+
+        {!hideAvatarHeader &&
+          (mediaMessages.length > 0 || linkMessages.length > 0) && (
+            <div className="bg-white dark:bg-black rounded-none flex-1 min-h-0 flex flex-col mt-0 relative">
+              {" "}
+              {/* Thêm mt-0 */}
+              <Tabs
+                defaultValue={
+                  mediaMessages.length > 0
+                    ? "media"
+                    : linkMessages.length > 0
+                    ? "link"
+                    : "voice"
+                }
+                className="w-full h-full"
+              >
+                <TabsList className="grid w-full grid-cols-4">
+                  {mediaMessages.length > 0 && (
+                    <TabsTrigger value="media">Media</TabsTrigger>
+                  )}
+                  <TabsTrigger value="voice">Voice</TabsTrigger>
+                  {linkMessages.length > 0 && (
+                    <TabsTrigger value="link">Links</TabsTrigger>
+                  )}
+                  <TabsTrigger value="groups">Groups</TabsTrigger>
+                </TabsList>
+
+                {mediaMessages.length > 0 && (
+                  <TabsContent value="media" className="h-full pb-0 mb-0">
+                    {" "}
+                    {/* Loại bỏ padding-bottom */}
+                    <div className="h-full overflow-y-auto overscroll-contain pb-8">
+                      {" "}
+                      {/* Thêm pb-0 */}
+                      <div className="grid grid-cols-3 gap-0.5 p-1">
+                        {mediaMessages.map((msg, idx) => (
+                          <div
+                            key={msg.eventId || idx}
+                            className="aspect-square"
+                          >
+                            {msg.type === "image" && msg.imageUrl ? (
+                              <Image
+                                src={msg.imageUrl}
+                                alt="media"
+                                width={500}
+                                height={500}
+                                className="w-full h-full object-cover rounded"
+                                priority
+                              />
+                            ) : msg.type === "video" && msg.videoUrl ? (
+                              <video
+                                src={msg.videoUrl}
+                                controls
+                                className="w-full h-full object-cover rounded bg-white"
+                              />
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </TabsContent>
+                )}
+
+                {linkMessages.length > 0 && (
+                  <TabsContent value="link" className="pb-0 mb-0">
+                    {" "}
+                    {/* Loại bỏ padding-bottom */}
+                    <div className="max-h-[420px] overflow-y-auto overscroll-contain pb-0">
+                      {" "}
+                      {/* Thêm pb-0 */}
+                      <Card className="w-full shadow-sm pt-3 pb-0 rounded-none">
+                        <CardContent className="px-2">
+                          <div className="space-y-4">
+                            {linkMessages.map((msg, index) => {
+                              if (!msg) return null;
+                              const match = msg.text.match(
+                                /(https?:\/\/[^\s]+|\b(?:[a-z0-9-]+\.)+[a-z]{2,}(\/[^\s]*)?)/i
+                              );
+                              const rawUrl = match?.[0];
+                              const url = rawUrl?.startsWith("http")
+                                ? rawUrl
+                                : `https://${rawUrl}`;
+
+                              return url ? (
+                                <div key={msg.eventId || index}>
+                                  <LinkCard url={url} title={msg.text} />
+                                </div>
+                              ) : null;
+                            })}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </TabsContent>
+                )}
+              </Tabs>
+            </div>
+          )}
       </div>
 
       {/* Modal xác nhận block user */}
@@ -482,7 +852,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
               messaging and calling you on Hii Chat?
             </p>
             <button
-              className="w-full py-3 text-lg font-semibold text-red-600 bg-white dark:bg-[#23232b] rounded-xl mb-2 border border-red-200"
+              className="w-full py-3 text-lg font-semibold text-red-600 bg-white dark:bg-[#23232b] rounded-xl mb-2 border border-red-200 dark:border-red-800"
               onClick={handleBlockUser}
             >
               Block {user.displayName || user.userId}
@@ -496,6 +866,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
           </div>
         </div>
       )}
+
       {/* Modal xác nhận unblock user */}
       {showConfirmUnblock && (
         <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center">
@@ -506,8 +877,8 @@ export default function InfoBody({ user }: { user: sdk.User }) {
             <div className="flex justify-between gap-3">
               <button
                 onClick={() => setShowConfirmUnblock(false)}
-                className="w-full py-2 text-base font-medium text-[#155dfc] rounded-lg border border-[#dcdcdc] bg-white 
-      hover:border-[#155dfc] hover:bg-[#f0f6ff] focus:outline-none"
+                className="w-full py-2 text-base font-medium text-[#155dfc] rounded-lg border border-[#dcdcdc] bg-white dark:bg-[#23232b] dark:border-[#444]
+hover:border-[#155dfc] hover:bg-[#f0f6ff] dark:hover:bg-[#2a2a33] focus:outline-none"
               >
                 No
               </button>
@@ -516,8 +887,8 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                   await handleUnblockUser();
                   setShowConfirmUnblock(false);
                 }}
-                className="w-full py-2 text-base font-medium text-[#155dfc] rounded-lg border border-[#dcdcdc] bg-white 
-      hover:border-[#155dfc] hover:bg-[#f0f6ff] focus:outline-none"
+                className="w-full py-2 text-base font-medium text-[#155dfc] rounded-lg border border-[#dcdcdc] bg-white dark:bg-[#23232b] dark:border-[#444]
+hover:border-[#155dfc] hover:bg-[#f0f6ff] dark:hover:bg-[#2a2a33] focus:outline-none"
               >
                 Yes
               </button>
