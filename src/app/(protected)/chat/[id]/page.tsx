@@ -74,21 +74,9 @@ const ChatPage = () => {
 
     let initialHeight = window.innerHeight;
 
-    // Prevent body scroll on Safari iOS by controlling the entire document
+    // Add class to body for CSS targeting
     if (isSafari) {
-      // Prevent scroll on document and main layout
-      document.documentElement.style.overflow = "hidden";
-      document.body.style.overflow = "hidden";
-      document.body.style.position = "fixed";
-      document.body.style.width = "100%";
-      document.body.style.height = "100%";
-
-      // Also hide the main container to prevent any layout issues
-      const mainElement = document.querySelector("main");
-      if (mainElement) {
-        mainElement.style.overflow = "hidden";
-        mainElement.style.height = "100%";
-      }
+      document.body.classList.add("chat-page-active");
     }
 
     const handleViewportChange = () => {
@@ -173,18 +161,8 @@ const ChatPage = () => {
         window.removeEventListener("resize", handleViewportChange);
         window.removeEventListener("orientationchange", handleViewportChange);
 
-        // Reset all document styles when component unmounts
-        document.documentElement.style.overflow = "";
-        document.body.style.overflow = "";
-        document.body.style.position = "";
-        document.body.style.width = "";
-        document.body.style.height = "";
-
-        const mainElement = document.querySelector("main");
-        if (mainElement) {
-          mainElement.style.overflow = "";
-          mainElement.style.height = "";
-        }
+        // Remove class from body
+        document.body.classList.remove("chat-page-active");
       } else if (window.visualViewport) {
         window.visualViewport.removeEventListener(
           "resize",

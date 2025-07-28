@@ -21,7 +21,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover", // Important for iOS Safari
-  interactiveWidget: "resizes-content",
+  interactiveWidget: "resizes-visual", // Changed from "resizes-content" to prevent auto-resize
 };
 
 export default function RootLayout({
