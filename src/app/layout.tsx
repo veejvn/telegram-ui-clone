@@ -21,7 +21,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover", // Important for iOS Safari
-  // Thêm các thuộc tính khác nếu muốn
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({
@@ -32,7 +32,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head></head>
-      <body className={`${inter.className} antialiased select-none`}>
+      <body className={`${inter.className} antialiased`}>
         {/* <NoZoom /> */}
         <Providers>
           <CallOverlay /> {/*  Luôn lắng nghe sự kiện call */}
