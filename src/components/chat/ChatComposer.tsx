@@ -44,7 +44,13 @@ import { MdLocationOn } from "react-icons/md";
 import { FileInfo, ImageInfo } from "@/types/chat";
 import StickerPicker from "@/components/common/StickerPicker";
 
-const ChatComposer = ({ roomId }: { roomId: string }) => {
+const ChatComposer = ({
+  roomId,
+  messagesEndRef,
+}: {
+  roomId: string;
+  messagesEndRef?: React.RefObject<HTMLDivElement | null>;
+}) => {
   const [text, setText] = useState("");
   const [isMultiLine, setIsMultiLine] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -317,6 +323,16 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
       setIsTyping(false);
       sendTypingEvent(client, roomId, false);
 
+      // Scroll to bottom after sending message
+      setTimeout(() => {
+        if (messagesEndRef?.current) {
+          messagesEndRef.current.scrollIntoView({
+            behavior: "smooth",
+            block: "end",
+          });
+        }
+      }, 100);
+
       setTimeout(() => {
         sendMessage(roomId, trimmed, client)
           .then((res) => {
@@ -354,6 +370,16 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
       });
 
       clearMessages();
+
+      // Scroll to bottom after forwarding messages
+      setTimeout(() => {
+        if (messagesEndRef?.current) {
+          messagesEndRef.current.scrollIntoView({
+            behavior: "smooth",
+            block: "end",
+          });
+        }
+      }, 100);
     }
   };
 
@@ -760,12 +786,34 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     const onInputFocus = () => {
       if (isIOSSafari) {
         setTimeout(() => setIsKeyboardOpen(true), 300);
+        // Check if user is near bottom before scrolling
+        setTimeout(() => {
+          if (messagesEndRef?.current) {
+            const scrollContainer = messagesEndRef.current.closest(
+              "[data-radix-scroll-area-viewport]"
+            );
+            if (scrollContainer) {
+              const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+              const isNearBottom =
+                scrollHeight - scrollTop - clientHeight < 100;
+
+              // Only scroll to bottom if user is already near bottom
+              if (isNearBottom) {
+                messagesEndRef.current.scrollIntoView({
+                  behavior: "smooth",
+                  block: "end",
+                });
+              }
+            }
+          }
+        }, 400);
       }
     };
 
     const onInputBlur = () => {
       if (isIOSSafari) {
         setTimeout(() => setIsKeyboardOpen(false), 300);
+        // No need to scroll on blur, let user stay where they are
       }
     };
 

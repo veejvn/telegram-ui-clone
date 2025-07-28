@@ -55,6 +55,27 @@ const ChatPage = () => {
         const vh = window.innerHeight * 0.01;
         document.documentElement.style.setProperty("--vh", `${vh}px`);
       }
+
+      // Trigger layout recalculation after viewport change
+      setTimeout(() => {
+        if (messagesEndRef.current) {
+          const scrollContainer = messagesEndRef.current.closest(
+            "[data-radix-scroll-area-viewport]"
+          );
+          if (scrollContainer) {
+            const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+            const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+
+            // If user is near bottom, scroll to actual bottom after viewport change
+            if (isNearBottom) {
+              messagesEndRef.current.scrollIntoView({
+                behavior: "smooth",
+                block: "end",
+              });
+            }
+          }
+        }
+      }, 300);
     };
 
     // Set initial viewport and capture scroll position
@@ -265,7 +286,7 @@ const ChatPage = () => {
         </div>
       ) : (
         <div className={clsx("shrink-0 z-10", styles.chatFooter)}>
-          <ChatComposer roomId={roomId} />
+          <ChatComposer roomId={roomId} messagesEndRef={messagesEndRef} />
         </div>
       )}
     </div>
