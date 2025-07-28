@@ -16,6 +16,7 @@ import { sendReadReceipt } from "@/services/chatService";
 import { useUserStore } from "@/stores/useUserStore";
 import { useIgnoreStore } from "@/stores/useIgnoreStore";
 import clsx from "clsx";
+import { createPortal } from "react-dom";
 
 const ChatPage = () => {
   const { resolvedTheme } = useTheme();
@@ -74,9 +75,24 @@ const ChatPage = () => {
 
     let initialHeight = window.innerHeight;
 
-    // Add class to body for CSS targeting
+    // COMPREHENSIVE Safari Fix - address all potential layout issues
     if (isSafari) {
+      // 1. Prevent body from having any scrollable content
       document.body.classList.add("chat-page-active");
+
+      // 2. Hide main element completely to prevent layout conflicts
+      const mainElement = document.querySelector("main");
+      if (mainElement) {
+        mainElement.style.display = "none";
+      }
+
+      // 3. Debug logging to see what's happening
+      console.log("🐛 Initial setup:", {
+        bodyHeight: document.body.scrollHeight,
+        windowHeight: window.innerHeight,
+        documentHeight: document.documentElement.scrollHeight,
+        bodyClassList: [...document.body.classList],
+      });
     }
 
     const handleViewportChange = () => {
@@ -84,12 +100,16 @@ const ChatPage = () => {
         // Safari specific handling
         const currentHeight = window.innerHeight;
         const heightDiff = initialHeight - currentHeight;
+        const isKeyboardOpen = heightDiff > 100;
 
-        console.log("Safari viewport change:", {
+        console.log("🐛 Safari viewport change:", {
           initialHeight,
           currentHeight,
           heightDiff,
-          isKeyboardOpen: heightDiff > 100,
+          isKeyboardOpen,
+          bodyScrollHeight: document.body.scrollHeight,
+          documentScrollHeight: document.documentElement.scrollHeight,
+          canScroll: document.body.scrollHeight > window.innerHeight,
         });
 
         const chatContainer = document.querySelector(
@@ -97,14 +117,14 @@ const ChatPage = () => {
         ) as HTMLElement;
 
         if (chatContainer) {
-          if (heightDiff > 100) {
+          if (isKeyboardOpen) {
             // Keyboard is open - use current window height
             chatContainer.style.height = `${currentHeight}px`;
             chatContainer.style.maxHeight = `${currentHeight}px`;
             // Force Safari to recalculate layout
             chatContainer.style.transform = "translateZ(0)";
             console.log(
-              "Keyboard open, container height set to:",
+              "🔧 Keyboard open, container height set to:",
               currentHeight
             );
           } else {
@@ -113,10 +133,13 @@ const ChatPage = () => {
             chatContainer.style.maxHeight = `${initialHeight}px`;
             chatContainer.style.transform = "none";
             console.log(
-              "Keyboard closed, container height reset to:",
+              "🔧 Keyboard closed, container height reset to:",
               initialHeight
             );
           }
+
+          // Force immediate layout recalculation
+          chatContainer.offsetHeight; // Trigger reflow
         }
       } else {
         // Other browsers - use visual viewport
@@ -146,8 +169,15 @@ const ChatPage = () => {
     // Different event listeners for Safari vs other browsers
     if (isSafari) {
       window.addEventListener("resize", handleViewportChange);
-      // Also listen for orientation changes
       window.addEventListener("orientationchange", handleViewportChange);
+
+      // Additional debug events
+      document.addEventListener("scroll", () => {
+        console.log("🐛 Document scroll detected!");
+      });
+      document.body.addEventListener("scroll", () => {
+        console.log("🐛 Body scroll detected!");
+      });
     } else if (window.visualViewport) {
       window.visualViewport.addEventListener("resize", handleViewportChange);
       window.visualViewport.addEventListener("scroll", handleViewportChange);
@@ -161,8 +191,16 @@ const ChatPage = () => {
         window.removeEventListener("resize", handleViewportChange);
         window.removeEventListener("orientationchange", handleViewportChange);
 
+        // Restore main element
+        const mainElement = document.querySelector("main");
+        if (mainElement) {
+          mainElement.style.display = "";
+        }
+
         // Remove class from body
         document.body.classList.remove("chat-page-active");
+
+        console.log("🔄 Cleanup completed");
       } else if (window.visualViewport) {
         window.visualViewport.removeEventListener(
           "resize",
@@ -287,42 +325,100 @@ const ChatPage = () => {
   };
 
   return (
-    <div className={clsx("bg-chat", styles.chatContainer)}>
-      {/* Header */}
-      <div className={clsx("shrink-0 z-10", styles.chatHeader)}>
-        <ChatHeader room={room} />
-      </div>
+    <>
+      {/* For Safari iOS - render as portal outside main element */}
+      {typeof window !== "undefined" &&
+        /iPad|iPhone|iPod/.test(navigator.userAgent) &&
+        /^((?!chrome|android).)*safari/i.test(navigator.userAgent) &&
+        createPortal(
+          <div className={clsx("bg-chat", styles.chatContainer)}>
+            {/* Header */}
+            <div className={clsx("shrink-0 z-10", styles.chatHeader)}>
+              <ChatHeader room={room} />
+            </div>
 
-      {/* Chat content scrollable */}
-      <div className={clsx("flex-1 min-h-0 relative", styles.chatContent)}>
-        <div className={styles.chatMessages}>
-          <ScrollArea className="h-full w-full">
-            <ChatMessages roomId={roomId} messagesEndRef={messagesEndRef} />
-          </ScrollArea>
-        </div>
-      </div>
+            {/* Chat content scrollable */}
+            <div
+              className={clsx("flex-1 min-h-0 relative", styles.chatContent)}
+            >
+              <div className={styles.chatMessages}>
+                <ScrollArea className="h-full w-full">
+                  <ChatMessages
+                    roomId={roomId}
+                    messagesEndRef={messagesEndRef}
+                  />
+                </ScrollArea>
+              </div>
+            </div>
 
-      {/* Footer - Fixed at bottom */}
-      {isBlocked ? (
-        <div
-          className={clsx(
-            "shrink-0 z-10 flex flex-col items-center justify-center py-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-[#23232b]",
-            styles.chatFooter
+            {/* Footer - Fixed at bottom */}
+            {isBlocked ? (
+              <div
+                className={clsx(
+                  "shrink-0 z-10 flex flex-col items-center justify-center py-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-[#23232b]",
+                  styles.chatFooter
+                )}
+              >
+                <button
+                  onClick={handleUnblockUser}
+                  className="text-blue-600 font-medium hover:underline"
+                >
+                  Unblock
+                </button>
+              </div>
+            ) : (
+              <div className={clsx("shrink-0 z-10", styles.chatFooter)}>
+                <ChatComposer roomId={roomId} />
+              </div>
+            )}
+          </div>,
+          document.body
+        )}
+
+      {/* For other browsers - render normally */}
+      {(typeof window === "undefined" ||
+        !(
+          /iPad|iPhone|iPod/.test(navigator.userAgent) &&
+          /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+        )) && (
+        <div className={clsx("bg-chat", styles.chatContainer)}>
+          {/* Header */}
+          <div className={clsx("shrink-0 z-10", styles.chatHeader)}>
+            <ChatHeader room={room} />
+          </div>
+
+          {/* Chat content scrollable */}
+          <div className={clsx("flex-1 min-h-0 relative", styles.chatContent)}>
+            <div className={styles.chatMessages}>
+              <ScrollArea className="h-full w-full">
+                <ChatMessages roomId={roomId} messagesEndRef={messagesEndRef} />
+              </ScrollArea>
+            </div>
+          </div>
+
+          {/* Footer - Fixed at bottom */}
+          {isBlocked ? (
+            <div
+              className={clsx(
+                "shrink-0 z-10 flex flex-col items-center justify-center py-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-[#23232b]",
+                styles.chatFooter
+              )}
+            >
+              <button
+                onClick={handleUnblockUser}
+                className="text-blue-600 font-medium hover:underline"
+              >
+                Unblock
+              </button>
+            </div>
+          ) : (
+            <div className={clsx("shrink-0 z-10", styles.chatFooter)}>
+              <ChatComposer roomId={roomId} />
+            </div>
           )}
-        >
-          <button
-            onClick={handleUnblockUser}
-            className="text-blue-600 font-medium hover:underline"
-          >
-            Unblock
-          </button>
-        </div>
-      ) : (
-        <div className={clsx("shrink-0 z-10", styles.chatFooter)}>
-          <ChatComposer roomId={roomId} />
         </div>
       )}
-    </div>
+    </>
   );
 };
 
