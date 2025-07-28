@@ -42,6 +42,16 @@ const ChatPage = () => {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     if (!isIOS) return;
 
+    // Fix viewport height for iOS Safari
+    const setViewportHeight = () => {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty("--vh", `${vh}px`);
+    };
+
+    setViewportHeight();
+    window.addEventListener("resize", setViewportHeight);
+    window.addEventListener("orientationchange", setViewportHeight);
+
     const preventScroll = (e: TouchEvent) => {
       const target = e.target as Element;
 
@@ -52,22 +62,37 @@ const ChatPage = () => {
         target.closest("[data-slot='scroll-area']") ||
         target.closest("[data-slot='scroll-area-viewport']");
 
-      // console.log("Touch event:", {
-      //   target: target.tagName,
-      //   scrollableArea: !!scrollableArea,
-      //   prevented: !scrollableArea,
-      // });
-
-      if (!scrollableArea) {
+      // Prevent body scroll but allow scrollable areas
+      if (!scrollableArea && e.touches.length === 1) {
         e.preventDefault();
       }
     };
 
-    // Only prevent document-level scroll, not all scroll
+    // Prevent document body from scrolling
+    const originalBodyStyle = {
+      position: document.body.style.position,
+      width: document.body.style.width,
+      height: document.body.style.height,
+      overflow: document.body.style.overflow,
+    };
+
+    document.body.style.position = "fixed";
+    document.body.style.width = "100%";
+    document.body.style.height = "100vh";
+    document.body.style.overflow = "hidden";
+
     document.addEventListener("touchmove", preventScroll, { passive: false });
 
     return () => {
       document.removeEventListener("touchmove", preventScroll);
+      window.removeEventListener("resize", setViewportHeight);
+      window.removeEventListener("orientationchange", setViewportHeight);
+
+      // Reset body styles
+      document.body.style.position = originalBodyStyle.position;
+      document.body.style.width = originalBodyStyle.width;
+      document.body.style.height = originalBodyStyle.height;
+      document.body.style.overflow = originalBodyStyle.overflow;
     };
   }, []);
 

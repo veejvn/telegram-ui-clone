@@ -10,18 +10,17 @@
   overflow: hidden;
   /* Safari iOS viewport units fix */
   height: 100vh;
-  height: 100dvh; /* Dynamic viewport height for newer browsers */
+  height: calc(var(--vh, 1vh) * 100); /* Use custom viewport height */
 
-  /* Prevent scrolling when keyboard is open */
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: none;
+  /* Prevent iOS Safari bounce */
+  touch-action: pan-y;
 }
 
 /* iOS Safari specific styles */
 @supports (-webkit-appearance: none) {
   .chatContainer {
     /* Use visual viewport height for iOS Safari */
-    height: 100vh;
+    height: calc(var(--vh, 1vh) * 100);
     min-height: -webkit-fill-available;
   }
 
@@ -29,6 +28,13 @@
   .chatContainer input,
   .chatContainer textarea {
     font-size: 16px !important;
+  }
+}
+
+/* Modern browsers with dynamic viewport height support */
+@supports (height: 100dvh) {
+  .chatContainer {
+    height: 100dvh;
   }
 }
 
@@ -81,6 +87,6 @@
 
   .chatMessages {
     -ms-overflow-style: none;
-    scrollbar-width: none;
+    /* scrollbar-width: none; Removed for compatibility */
   }
 }
