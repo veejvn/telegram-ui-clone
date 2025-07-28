@@ -786,27 +786,26 @@ const ChatComposer = ({
     const onInputFocus = () => {
       if (isIOSSafari) {
         setTimeout(() => setIsKeyboardOpen(true), 300);
-        // Check if user is near bottom before scrolling
+        // Always scroll to bottom when focusing input on iOS Safari
+        // Use multiple attempts to ensure scroll works
         setTimeout(() => {
           if (messagesEndRef?.current) {
-            const scrollContainer = messagesEndRef.current.closest(
-              "[data-radix-scroll-area-viewport]"
-            );
-            if (scrollContainer) {
-              const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
-              const isNearBottom =
-                scrollHeight - scrollTop - clientHeight < 100;
-
-              // Only scroll to bottom if user is already near bottom
-              if (isNearBottom) {
-                messagesEndRef.current.scrollIntoView({
-                  behavior: "smooth",
-                  block: "end",
-                });
-              }
-            }
+            messagesEndRef.current.scrollIntoView({
+              behavior: "smooth",
+              block: "end",
+            });
           }
-        }, 400);
+        }, 500);
+
+        // Backup scroll attempt in case first one fails
+        setTimeout(() => {
+          if (messagesEndRef?.current) {
+            messagesEndRef.current.scrollIntoView({
+              behavior: "smooth",
+              block: "end",
+            });
+          }
+        }, 800);
       }
     };
 

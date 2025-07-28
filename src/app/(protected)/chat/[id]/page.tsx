@@ -59,23 +59,23 @@ const ChatPage = () => {
       // Trigger layout recalculation after viewport change
       setTimeout(() => {
         if (messagesEndRef.current) {
-          const scrollContainer = messagesEndRef.current.closest(
-            "[data-radix-scroll-area-viewport]"
-          );
-          if (scrollContainer) {
-            const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
-            const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
-
-            // If user is near bottom, scroll to actual bottom after viewport change
-            if (isNearBottom) {
-              messagesEndRef.current.scrollIntoView({
-                behavior: "smooth",
-                block: "end",
-              });
-            }
-          }
+          // Always scroll to bottom when viewport changes (keyboard appears)
+          messagesEndRef.current.scrollIntoView({
+            behavior: "smooth",
+            block: "end",
+          });
         }
-      }, 300);
+      }, 400);
+
+      // Backup scroll attempt for more reliable behavior
+      setTimeout(() => {
+        if (messagesEndRef.current) {
+          messagesEndRef.current.scrollIntoView({
+            behavior: "smooth",
+            block: "end",
+          });
+        }
+      }, 700);
     };
 
     // Set initial viewport and capture scroll position
