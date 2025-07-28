@@ -52,12 +52,6 @@ const ChatPage = () => {
         target.closest("[data-slot='scroll-area']") ||
         target.closest("[data-slot='scroll-area-viewport']");
 
-      // console.log("Touch event:", {
-      //   target: target.tagName,
-      //   scrollableArea: !!scrollableArea,
-      //   prevented: !scrollableArea,
-      // });
-
       if (!scrollableArea) {
         e.preventDefault();
       }
@@ -68,6 +62,65 @@ const ChatPage = () => {
 
     return () => {
       document.removeEventListener("touchmove", preventScroll);
+    };
+  }, []);
+
+  // Handle visual viewport changes for Safari iOS keyboard
+  useEffect(() => {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (!isIOS || !window.visualViewport) return;
+
+    const handleViewportChange = () => {
+      const viewport = window.visualViewport;
+      if (viewport) {
+        // Adjust container height to match visual viewport
+        const chatContainer = document.querySelector(
+          `.${styles.chatContainer}`
+        ) as HTMLElement;
+        if (chatContainer) {
+          // Force immediate height change
+          chatContainer.style.height = `${viewport.height}px`;
+          // Ensure the container takes up the full visual viewport
+          chatContainer.style.maxHeight = `${viewport.height}px`;
+        }
+
+        // Scroll to bottom when keyboard appears/disappears
+        if (messagesEndRef.current) {
+          // Use a shorter timeout for immediate response
+          setTimeout(() => {
+            messagesEndRef.current?.scrollIntoView({
+              behavior: "auto", // Changed to 'auto' for immediate scroll
+              block: "end",
+            });
+          }, 50);
+        }
+      }
+    };
+
+    // Listen for viewport changes
+    window.visualViewport.addEventListener("resize", handleViewportChange);
+    window.visualViewport.addEventListener("scroll", handleViewportChange);
+
+    // Initial adjustment
+    handleViewportChange();
+
+    return () => {
+      window.visualViewport?.removeEventListener(
+        "resize",
+        handleViewportChange
+      );
+      window.visualViewport?.removeEventListener(
+        "scroll",
+        handleViewportChange
+      );
+
+      // Reset height when component unmounts
+      const chatContainer = document.querySelector(
+        `.${styles.chatContainer}`
+      ) as HTMLElement;
+      if (chatContainer) {
+        chatContainer.style.height = "";
+      }
     };
   }, []);
 
@@ -124,6 +177,13 @@ const ChatPage = () => {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Auto scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (messagesEndRef.current && mounted) {
+      messagesEndRef.current.scrollIntoView({ behavior: "auto" });
+    }
+  }, [room, mounted]);
 
   if (!mounted) return null;
 

@@ -4,11 +4,11 @@
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
+  /* Don't use bottom: 0 for iOS Safari - use height instead */
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  /* Safari iOS viewport units fix */
+  /* Use visual viewport height for keyboard handling */
   height: 100vh;
   height: 100dvh; /* Dynamic viewport height for newer browsers */
 
@@ -20,9 +20,10 @@
 /* iOS Safari specific styles */
 @supports (-webkit-appearance: none) {
   .chatContainer {
-    /* Use visual viewport height for iOS Safari */
+    /* Use visual viewport height for iOS Safari when keyboard appears */
     height: 100vh;
-    min-height: -webkit-fill-available;
+    height: 100dvh;
+    /* Remove min-height that causes issues */
   }
 
   /* Prevent zoom on input focus in iOS Safari */
@@ -54,6 +55,11 @@
   flex-shrink: 0;
   z-index: 10;
   position: relative;
+}
+
+/* Ensure proper flex layout when height changes */
+.chatContainer {
+  transition: height 0.3s ease;
 }
 
 /* Prevent body scroll when keyboard is open on iOS */
