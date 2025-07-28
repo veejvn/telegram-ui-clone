@@ -118,22 +118,30 @@ const ChatPage = () => {
 
         if (chatContainer) {
           if (isKeyboardOpen) {
+            // ✅ KEY FIX: Đồng bộ body height với container height
+            document.body.style.height = `${currentHeight}px`;
+            document.documentElement.style.height = `${currentHeight}px`;
+
             // Keyboard is open - use current window height
             chatContainer.style.height = `${currentHeight}px`;
             chatContainer.style.maxHeight = `${currentHeight}px`;
             // Force Safari to recalculate layout
             chatContainer.style.transform = "translateZ(0)";
             console.log(
-              "🔧 Keyboard open, container height set to:",
+              "🔧 Keyboard open, body & container height set to:",
               currentHeight
             );
           } else {
+            // ✅ KEY FIX: Reset body height cùng với container
+            document.body.style.height = `${initialHeight}px`;
+            document.documentElement.style.height = `${initialHeight}px`;
+
             // Keyboard is closed - reset to full height
             chatContainer.style.height = `${initialHeight}px`;
             chatContainer.style.maxHeight = `${initialHeight}px`;
             chatContainer.style.transform = "none";
             console.log(
-              "🔧 Keyboard closed, container height reset to:",
+              "🔧 Keyboard closed, body & container height reset to:",
               initialHeight
             );
           }
@@ -196,6 +204,10 @@ const ChatPage = () => {
         if (mainElement) {
           mainElement.style.display = "";
         }
+
+        // ✅ CLEANUP: Reset body và document height
+        document.body.style.height = "";
+        document.documentElement.style.height = "";
 
         // Remove class from body
         document.body.classList.remove("chat-page-active");
