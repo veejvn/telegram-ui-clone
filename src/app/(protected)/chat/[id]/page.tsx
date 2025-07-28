@@ -59,21 +59,41 @@ const ChatPage = () => {
       // Trigger layout recalculation after viewport change
       setTimeout(() => {
         if (messagesEndRef.current) {
+          console.log("🖥️ Viewport changed, first scroll attempt");
           // Always scroll to bottom when viewport changes (keyboard appears)
-          messagesEndRef.current.scrollIntoView({
-            behavior: "smooth",
-            block: "end",
-          });
+          const scrollContainer = messagesEndRef.current.closest(
+            "[data-radix-scroll-area-viewport]"
+          );
+          if (scrollContainer) {
+            console.log("✅ Found scroll container in viewport change");
+            // Force scroll to bottom with direct scrollTop manipulation
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+          } else {
+            console.log("❌ No scroll container in viewport change");
+            // Fallback to scrollIntoView
+            messagesEndRef.current.scrollIntoView({
+              behavior: "auto",
+              block: "end",
+            });
+          }
         }
       }, 400);
 
       // Backup scroll attempt for more reliable behavior
       setTimeout(() => {
         if (messagesEndRef.current) {
-          messagesEndRef.current.scrollIntoView({
-            behavior: "smooth",
-            block: "end",
-          });
+          console.log("🖥️ Viewport backup scroll attempt");
+          const scrollContainer = messagesEndRef.current.closest(
+            "[data-radix-scroll-area-viewport]"
+          );
+          if (scrollContainer) {
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+          } else {
+            messagesEndRef.current.scrollIntoView({
+              behavior: "auto",
+              block: "end",
+            });
+          }
         }
       }, 700);
     };
@@ -158,7 +178,7 @@ const ChatPage = () => {
       // Restore scroll position
       window.scrollTo(0, initialScrollY);
     };
-  }, []);
+  }, [messagesEndRef]);
 
   // Kiểm tra xem người dùng có bị chặn không
   useEffect(() => {

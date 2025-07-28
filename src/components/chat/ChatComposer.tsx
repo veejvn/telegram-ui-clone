@@ -785,27 +785,50 @@ const ChatComposer = ({
     // Alternative approach for Safari iOS using focus/blur events
     const onInputFocus = () => {
       if (isIOSSafari) {
+        console.log("🎯 iOS Safari input focused, starting scroll process");
         setTimeout(() => setIsKeyboardOpen(true), 300);
         // Always scroll to bottom when focusing input on iOS Safari
-        // Use multiple attempts to ensure scroll works
+        // Use direct scroll control for more reliability
         setTimeout(() => {
           if (messagesEndRef?.current) {
-            messagesEndRef.current.scrollIntoView({
-              behavior: "smooth",
-              block: "end",
-            });
+            console.log("📱 First scroll attempt");
+            const scrollContainer = messagesEndRef.current.closest(
+              "[data-radix-scroll-area-viewport]"
+            );
+            if (scrollContainer) {
+              console.log("✅ Found scroll container, scrolling to bottom");
+              // Scroll to the very bottom
+              scrollContainer.scrollTop = scrollContainer.scrollHeight;
+            } else {
+              console.log("❌ No scroll container found, using fallback");
+              // Fallback to scrollIntoView
+              messagesEndRef.current.scrollIntoView({
+                behavior: "auto",
+                block: "end",
+              });
+            }
+          } else {
+            console.log("❌ messagesEndRef not available");
           }
-        }, 500);
+        }, 400);
 
-        // Backup scroll attempt in case first one fails
+        // Backup scroll attempt with longer delay
         setTimeout(() => {
           if (messagesEndRef?.current) {
-            messagesEndRef.current.scrollIntoView({
-              behavior: "smooth",
-              block: "end",
-            });
+            console.log("📱 Backup scroll attempt");
+            const scrollContainer = messagesEndRef.current.closest(
+              "[data-radix-scroll-area-viewport]"
+            );
+            if (scrollContainer) {
+              scrollContainer.scrollTop = scrollContainer.scrollHeight;
+            } else {
+              messagesEndRef.current.scrollIntoView({
+                behavior: "auto",
+                block: "end",
+              });
+            }
           }
-        }, 800);
+        }, 700);
       }
     };
 
@@ -854,7 +877,7 @@ const ChatComposer = ({
         textareaRef.current.removeEventListener("blur", onInputBlur);
       }
     };
-  }, []);
+  }, [messagesEndRef]);
 
   return (
     <div className="bg-[#e0ece6] dark:bg-[#1b1a1f]">
