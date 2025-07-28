@@ -217,7 +217,6 @@ export default function InfoBody({
     });
   const voiceMessages = [...roomMessages]
     .filter((msg) => {
-      console.log("Checking message type:", msg.type, msg); // Debug log
       return msg.type === "audio" && msg.audioUrl;
     })
     .sort((a, b) => (b.timestamp || Date.now()) - (a.timestamp || Date.now()));
