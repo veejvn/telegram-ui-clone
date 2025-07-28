@@ -42,7 +42,19 @@ const ChatPage = () => {
 
   // Prevent scroll on iOS when keyboard is open
   useEffect(() => {
+    // More accurate iOS Safari detection
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isSafari =
+      /^((?!chrome|android).)*safari/i.test(navigator.userAgent) ||
+      (/iPad|iPhone|iPod/.test(navigator.userAgent) &&
+        !(window as any).MSStream);
+
+    console.log("🔍 Browser detection:", {
+      isIOS,
+      isSafari,
+      userAgent: navigator.userAgent,
+    });
+
     if (!isIOS) return;
 
     let initialScrollY = 0;
@@ -54,21 +66,33 @@ const ChatPage = () => {
         const vh = (window as any).visualViewport.height * 0.01;
         document.documentElement.style.setProperty("--vh", `${vh}px`);
 
-        // Check if keyboard is open based on viewport height
-        const keyboardOpen =
-          (window as any).visualViewport.height < window.innerHeight * 0.8;
+        // More accurate keyboard detection for Safari iOS
+        const visualHeight = (window as any).visualViewport.height;
+        const windowHeight = window.innerHeight;
+        const heightDiff = windowHeight - visualHeight;
+
+        // Safari iOS specific threshold
+        const threshold = isSafari ? 150 : 100;
+        const keyboardOpen = heightDiff > threshold;
+
         console.log("🖥️ Viewport change detected:", {
-          visualHeight: (window as any).visualViewport.height,
-          windowHeight: window.innerHeight,
-          threshold: window.innerHeight * 0.8,
+          visualHeight,
+          windowHeight,
+          heightDiff,
+          threshold,
           keyboardOpen,
+          isSafari,
         });
         setIsKeyboardOpen(keyboardOpen);
       } else {
         // Fallback for older versions
         const vh = window.innerHeight * 0.01;
         document.documentElement.style.setProperty("--vh", `${vh}px`);
-        setIsKeyboardOpen(false);
+
+        // For older iOS versions, use window.innerHeight changes
+        const heightDiff = window.screen.height - window.innerHeight;
+        const keyboardOpen = heightDiff > 200;
+        setIsKeyboardOpen(keyboardOpen);
       }
 
       // Auto scroll to bottom when layout changes (keyboard appears/disappears)
@@ -112,14 +136,18 @@ const ChatPage = () => {
         target.closest("[data-slot='scroll-area']") ||
         target.closest("[data-slot='scroll-area-viewport']");
 
-      // console.log("Touch event:", {
-      //   target: target.tagName,
-      //   scrollableArea: !!scrollableArea,
-      //   prevented: !scrollableArea,
-      // });
-
-      if (!scrollableArea) {
-        e.preventDefault();
+      // More aggressive prevention for Safari iOS when keyboard is open
+      if (isSafari && isKeyboardOpen) {
+        if (!scrollableArea) {
+          e.preventDefault();
+          e.stopPropagation();
+          return false;
+        }
+      } else {
+        // Normal prevention for other cases
+        if (!scrollableArea) {
+          e.preventDefault();
+        }
       }
     };
 
@@ -134,11 +162,54 @@ const ChatPage = () => {
     document.documentElement.style.overflow = "hidden";
     document.documentElement.style.position = "relative";
 
-    // Add event listeners
-    document.addEventListener("touchmove", preventScroll, { passive: false });
+    // Safari iOS specific body locking
+    if (isSafari) {
+      (document.body.style as any).webkitOverflowScrolling = "touch";
+      document.body.style.touchAction = "none";
+      document.documentElement.style.touchAction = "none";
+    }
+
+    // Add event listeners with more aggressive options for Safari
+    const eventOptions = isSafari
+      ? { passive: false, capture: true }
+      : { passive: false };
+    document.addEventListener("touchmove", preventScroll, eventOptions);
+
+    // Additional Safari iOS specific events
+    if (isSafari) {
+      document.addEventListener("touchstart", preventScroll, eventOptions);
+      document.addEventListener(
+        "scroll",
+        (e) => e.preventDefault(),
+        eventOptions
+      );
+      window.addEventListener(
+        "scroll",
+        (e) => e.preventDefault(),
+        eventOptions
+      );
+    }
 
     return () => {
-      document.removeEventListener("touchmove", preventScroll);
+      const eventOptions = isSafari
+        ? { passive: false, capture: true }
+        : { passive: false };
+      document.removeEventListener("touchmove", preventScroll, eventOptions);
+
+      // Remove Safari iOS specific events
+      if (isSafari) {
+        document.removeEventListener("touchstart", preventScroll, eventOptions);
+        document.removeEventListener(
+          "scroll",
+          (e) => e.preventDefault(),
+          eventOptions
+        );
+        window.removeEventListener(
+          "scroll",
+          (e) => e.preventDefault(),
+          eventOptions
+        );
+      }
 
       if ((window as any).visualViewport) {
         (window as any).visualViewport.removeEventListener(
@@ -155,6 +226,13 @@ const ChatPage = () => {
       document.body.style.width = "";
       document.body.style.height = "";
       document.body.style.overflow = "";
+
+      // Reset Safari iOS specific styles
+      if (isSafari) {
+        (document.body.style as any).webkitOverflowScrolling = "";
+        document.body.style.touchAction = "";
+        document.documentElement.style.touchAction = "";
+      }
 
       // Reset document styles
       document.documentElement.style.overflow = "";

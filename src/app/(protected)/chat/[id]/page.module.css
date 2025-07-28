@@ -22,18 +22,32 @@
   height: calc(var(--vh, 1vh) * 100);
 }
 
-/* iOS Safari specific styles */
+/* Safari iOS specific styles */
 @supports (-webkit-appearance: none) {
   .chatContainer {
     /* Use visual viewport height for iOS Safari */
     height: calc(var(--vh, 1vh) * 100);
     min-height: -webkit-fill-available;
+    /* Prevent Safari bounce scrolling */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: none;
   }
 
   /* Prevent zoom on input focus in iOS Safari */
   .chatContainer input,
   .chatContainer textarea {
     font-size: 16px !important;
+  }
+
+  /* Additional Safari iOS scroll prevention */
+  .chatContainer.keyboardOpen {
+    position: fixed;
+    width: 100%;
+    height: calc(var(--vh, 1vh) * 100);
+    overflow: hidden;
+    touch-action: none;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: none;
   }
 }
 
@@ -86,6 +100,23 @@
   bottom: 0;
   /* Allow ScrollArea to handle touch events */
   touch-action: pan-y;
+  /* Safari iOS specific scrolling fixes */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Safari iOS ScrollArea specific fixes */
+@supports (-webkit-appearance: none) {
+  .chatMessages [data-radix-scroll-area-viewport] {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
+
+  .chatMessages [data-radix-scroll-area-content] {
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+  }
 }
 
 .chatHeader,
