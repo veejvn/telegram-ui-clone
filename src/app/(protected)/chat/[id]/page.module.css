@@ -45,9 +45,23 @@
     width: 100%;
     height: calc(var(--vh, 1vh) * 100);
     overflow: hidden;
-    touch-action: none;
+    touch-action: pan-y; /* Changed from none to allow touch interactions */
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: none;
+  }
+  
+  /* Ensure interactive elements work */
+  .chatContainer.keyboardOpen button,
+  .chatContainer.keyboardOpen input,
+  .chatContainer.keyboardOpen textarea,
+  .chatContainer.keyboardOpen select,
+  .chatContainer.keyboardOpen a,
+  .chatContainer.keyboardOpen [role="button"],
+  .chatContainer.keyboardOpen [data-radix-dropdown-menu-trigger],
+  .chatContainer.keyboardOpen [data-radix-popover-trigger],
+  .chatContainer.keyboardOpen .cursor-pointer {
+    touch-action: manipulation;
+    pointer-events: auto;
   }
 }
 

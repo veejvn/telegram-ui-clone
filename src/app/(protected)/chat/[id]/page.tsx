@@ -136,16 +136,38 @@ const ChatPage = () => {
         target.closest("[data-slot='scroll-area']") ||
         target.closest("[data-slot='scroll-area-viewport']");
 
-      // More aggressive prevention for Safari iOS when keyboard is open
-      if (isSafari && isKeyboardOpen) {
-        if (!scrollableArea) {
+      // Allow touch events on interactive elements
+      const interactiveElement =
+        target.closest("button") ||
+        target.closest("input") ||
+        target.closest("textarea") ||
+        target.closest("select") ||
+        target.closest("a") ||
+        target.closest("[role='button']") ||
+        target.closest("[data-radix-dropdown-menu-trigger]") ||
+        target.closest("[data-radix-popover-trigger]") ||
+        target.closest(".cursor-pointer") ||
+        target.tagName === "BUTTON" ||
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.tagName === "SELECT" ||
+        target.tagName === "A";
+
+      console.log("🎯 Touch event:", {
+        targetTag: target.tagName,
+        hasScrollArea: !!scrollableArea,
+        hasInteractive: !!interactiveElement,
+        isSafari,
+        isKeyboardOpen,
+        willPrevent: !scrollableArea && !interactiveElement
+      });
+
+      // Only prevent scroll for non-interactive elements outside scroll areas
+      if (!scrollableArea && !interactiveElement) {
+        // For Safari iOS, be more careful about when to prevent
+        if (isSafari && isKeyboardOpen) {
           e.preventDefault();
-          e.stopPropagation();
-          return false;
-        }
-      } else {
-        // Normal prevention for other cases
-        if (!scrollableArea) {
+        } else if (!isSafari) {
           e.preventDefault();
         }
       }
@@ -169,46 +191,62 @@ const ChatPage = () => {
       document.documentElement.style.touchAction = "none";
     }
 
-    // Add event listeners with more aggressive options for Safari
-    const eventOptions = isSafari
-      ? { passive: false, capture: true }
-      : { passive: false };
-    document.addEventListener("touchmove", preventScroll, eventOptions);
+    // Add event listeners with more careful options for Safari
+    document.addEventListener("touchmove", preventScroll, false);
 
-    // Additional Safari iOS specific events
+    // Store references for cleanup
+    let scrollHandler: ((e: Event) => void) | null = null;
+    let windowScrollHandler: ((e: Event) => void) | null = null;
+
+    // For Safari iOS, only prevent scroll events, not touch events for interactions
     if (isSafari) {
-      document.addEventListener("touchstart", preventScroll, eventOptions);
-      document.addEventListener(
-        "scroll",
-        (e) => e.preventDefault(),
-        eventOptions
-      );
-      window.addEventListener(
-        "scroll",
-        (e) => e.preventDefault(),
-        eventOptions
-      );
+      scrollHandler = (e: Event) => {
+        const target = e.target as Element;
+        const interactiveElement =
+          target.closest("button") ||
+          target.closest("input") ||
+          target.closest("textarea") ||
+          target.closest("select") ||
+          target.closest("a") ||
+          target.closest("[role='button']") ||
+          target.closest("[data-radix-dropdown-menu-trigger]") ||
+          target.closest("[data-radix-popover-trigger]") ||
+          target.closest(".cursor-pointer");
+        
+        if (!interactiveElement) {
+          e.preventDefault();
+        }
+      };
+      
+      windowScrollHandler = (e: Event) => {
+        const target = e.target as Element;
+        const interactiveElement =
+          target?.closest("button") ||
+          target?.closest("input") ||
+          target?.closest("textarea") ||
+          target?.closest("select") ||
+          target?.closest("a") ||
+          target?.closest("[role='button']") ||
+          target?.closest("[data-radix-dropdown-menu-trigger]") ||
+          target?.closest("[data-radix-popover-trigger]") ||
+          target?.closest(".cursor-pointer");
+        
+        if (!interactiveElement) {
+          e.preventDefault();
+        }
+      };
+      
+      document.addEventListener("scroll", scrollHandler, false);
+      window.addEventListener("scroll", windowScrollHandler, false);
     }
 
     return () => {
-      const eventOptions = isSafari
-        ? { passive: false, capture: true }
-        : { passive: false };
-      document.removeEventListener("touchmove", preventScroll, eventOptions);
+      document.removeEventListener("touchmove", preventScroll, false);
 
       // Remove Safari iOS specific events
-      if (isSafari) {
-        document.removeEventListener("touchstart", preventScroll, eventOptions);
-        document.removeEventListener(
-          "scroll",
-          (e) => e.preventDefault(),
-          eventOptions
-        );
-        window.removeEventListener(
-          "scroll",
-          (e) => e.preventDefault(),
-          eventOptions
-        );
+      if (isSafari && scrollHandler && windowScrollHandler) {
+        document.removeEventListener("scroll", scrollHandler, false);
+        window.removeEventListener("scroll", windowScrollHandler, false);
       }
 
       if ((window as any).visualViewport) {
