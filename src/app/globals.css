@@ -148,3 +148,20 @@
 .flash-background {
   animation: flashBackground 3s ease-in-out;
 }
+
+/* iOS Safari scroll prevention */
+@supports (-webkit-touch-callout: none) {
+  /* Only apply when body is fixed (during keyboard open) */
+  body.ios-keyboard-open {
+    position: fixed !important;
+    width: 100% !important;
+    height: 100vh !important;
+    overflow: hidden !important;
+    touch-action: none !important;
+  }
+
+  html.ios-keyboard-open {
+    overflow: hidden !important;
+    touch-action: none !important;
+  }
+}

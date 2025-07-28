@@ -12,8 +12,8 @@
   height: 100vh;
   height: calc(var(--vh, 1vh) * 100); /* Use custom viewport height */
 
-  /* Prevent iOS Safari bounce */
-  touch-action: pan-y;
+  /* Prevent iOS Safari bounce and scroll */
+  touch-action: none;
 }
 
 /* iOS Safari specific styles */
@@ -22,7 +22,6 @@
     /* Use visual viewport height for iOS Safari */
     height: calc(var(--vh, 1vh) * 100);
     min-height: -webkit-fill-available;
-    /* Prevent overscroll bounce - only for newer iOS versions */
   }
 
   /* Prevent zoom on input focus in iOS Safari */
