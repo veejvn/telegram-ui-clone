@@ -159,7 +159,7 @@ const ChatPage = () => {
         hasInteractive: !!interactiveElement,
         isSafari,
         isKeyboardOpen,
-        willPrevent: !scrollableArea && !interactiveElement
+        willPrevent: !scrollableArea && !interactiveElement,
       });
 
       // Only prevent scroll for non-interactive elements outside scroll areas
@@ -212,12 +212,12 @@ const ChatPage = () => {
           target.closest("[data-radix-dropdown-menu-trigger]") ||
           target.closest("[data-radix-popover-trigger]") ||
           target.closest(".cursor-pointer");
-        
+
         if (!interactiveElement) {
           e.preventDefault();
         }
       };
-      
+
       windowScrollHandler = (e: Event) => {
         const target = e.target as Element;
         const interactiveElement =
@@ -230,12 +230,12 @@ const ChatPage = () => {
           target?.closest("[data-radix-dropdown-menu-trigger]") ||
           target?.closest("[data-radix-popover-trigger]") ||
           target?.closest(".cursor-pointer");
-        
+
         if (!interactiveElement) {
           e.preventDefault();
         }
       };
-      
+
       document.addEventListener("scroll", scrollHandler, false);
       window.addEventListener("scroll", windowScrollHandler, false);
     }

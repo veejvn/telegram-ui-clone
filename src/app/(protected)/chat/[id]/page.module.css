@@ -49,7 +49,7 @@
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: none;
   }
-  
+
   /* Ensure interactive elements work */
   .chatContainer.keyboardOpen button,
   .chatContainer.keyboardOpen input,
