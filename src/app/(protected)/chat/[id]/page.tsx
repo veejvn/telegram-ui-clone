@@ -68,58 +68,126 @@ const ChatPage = () => {
   // Handle visual viewport changes for Safari iOS keyboard
   useEffect(() => {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    if (!isIOS || !window.visualViewport) return;
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+    if (!isIOS) return;
+
+    let initialHeight = window.innerHeight;
+
+    // Prevent body scroll on Safari iOS
+    if (isSafari) {
+      document.body.style.overflow = "hidden";
+      document.body.style.position = "fixed";
+      document.body.style.width = "100%";
+      document.body.style.height = "100%";
+    }
 
     const handleViewportChange = () => {
-      const viewport = window.visualViewport;
-      if (viewport) {
-        // Adjust container height to match visual viewport
+      if (isSafari) {
+        // Safari specific handling
+        const currentHeight = window.innerHeight;
+        const heightDiff = initialHeight - currentHeight;
+
+        console.log("Safari viewport change:", {
+          initialHeight,
+          currentHeight,
+          heightDiff,
+          isKeyboardOpen: heightDiff > 100,
+        });
+
         const chatContainer = document.querySelector(
           `.${styles.chatContainer}`
         ) as HTMLElement;
-        if (chatContainer) {
-          // Force immediate height change
-          chatContainer.style.height = `${viewport.height}px`;
-          // Ensure the container takes up the full visual viewport
-          chatContainer.style.maxHeight = `${viewport.height}px`;
-        }
 
-        // Scroll to bottom when keyboard appears/disappears
-        if (messagesEndRef.current) {
-          // Use a shorter timeout for immediate response
-          setTimeout(() => {
-            messagesEndRef.current?.scrollIntoView({
-              behavior: "auto", // Changed to 'auto' for immediate scroll
-              block: "end",
-            });
-          }, 50);
+        if (chatContainer) {
+          if (heightDiff > 100) {
+            // Keyboard is open - use current window height
+            chatContainer.style.height = `${currentHeight}px`;
+            chatContainer.style.maxHeight = `${currentHeight}px`;
+            // Force Safari to recalculate layout
+            chatContainer.style.transform = "translateZ(0)";
+            console.log(
+              "Keyboard open, container height set to:",
+              currentHeight
+            );
+          } else {
+            // Keyboard is closed - reset to full height
+            chatContainer.style.height = `${initialHeight}px`;
+            chatContainer.style.maxHeight = `${initialHeight}px`;
+            chatContainer.style.transform = "none";
+            console.log(
+              "Keyboard closed, container height reset to:",
+              initialHeight
+            );
+          }
         }
+      } else {
+        // Other browsers - use visual viewport
+        const viewport = window.visualViewport;
+        if (viewport) {
+          const chatContainer = document.querySelector(
+            `.${styles.chatContainer}`
+          ) as HTMLElement;
+          if (chatContainer) {
+            chatContainer.style.height = `${viewport.height}px`;
+            chatContainer.style.maxHeight = `${viewport.height}px`;
+          }
+        }
+      }
+
+      // Scroll to bottom when keyboard appears/disappears
+      if (messagesEndRef.current) {
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({
+            behavior: "auto",
+            block: "end",
+          });
+        }, 100);
       }
     };
 
-    // Listen for viewport changes
-    window.visualViewport.addEventListener("resize", handleViewportChange);
-    window.visualViewport.addEventListener("scroll", handleViewportChange);
+    // Different event listeners for Safari vs other browsers
+    if (isSafari) {
+      window.addEventListener("resize", handleViewportChange);
+      // Also listen for orientation changes
+      window.addEventListener("orientationchange", handleViewportChange);
+    } else if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", handleViewportChange);
+      window.visualViewport.addEventListener("scroll", handleViewportChange);
+    }
 
     // Initial adjustment
     handleViewportChange();
 
     return () => {
-      window.visualViewport?.removeEventListener(
-        "resize",
-        handleViewportChange
-      );
-      window.visualViewport?.removeEventListener(
-        "scroll",
-        handleViewportChange
-      );
+      if (isSafari) {
+        window.removeEventListener("resize", handleViewportChange);
+        window.removeEventListener("orientationchange", handleViewportChange);
 
-      // Reset height when component unmounts
+        // Reset body styles when component unmounts
+        document.body.style.overflow = "";
+        document.body.style.position = "";
+        document.body.style.width = "";
+        document.body.style.height = "";
+      } else if (window.visualViewport) {
+        window.visualViewport.removeEventListener(
+          "resize",
+          handleViewportChange
+        );
+        window.visualViewport.removeEventListener(
+          "scroll",
+          handleViewportChange
+        );
+      }
+
+      // Reset container styles when component unmounts
       const chatContainer = document.querySelector(
         `.${styles.chatContainer}`
       ) as HTMLElement;
       if (chatContainer) {
         chatContainer.style.height = "";
+        chatContainer.style.maxHeight = "";
+        chatContainer.style.transform = "";
       }
     };
   }, []);

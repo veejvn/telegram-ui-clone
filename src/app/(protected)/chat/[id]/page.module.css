@@ -8,22 +8,27 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  /* Use visual viewport height for keyboard handling */
+  /* Default height - will be overridden by JavaScript for Safari */
   height: 100vh;
   height: 100dvh; /* Dynamic viewport height for newer browsers */
 
   /* Prevent scrolling when keyboard is open */
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: none;
+
+  /* Force Safari to respect the height changes */
+  will-change: height;
+  backface-visibility: hidden;
 }
 
 /* iOS Safari specific styles */
 @supports (-webkit-appearance: none) {
   .chatContainer {
-    /* Use visual viewport height for iOS Safari when keyboard appears */
+    /* Safari specific handling - height will be controlled by JavaScript */
     height: 100vh;
-    height: 100dvh;
-    /* Remove min-height that causes issues */
+    /* Prevent any overflow that could cause scroll */
+    max-height: 100vh;
+    overflow: hidden !important;
   }
 
   /* Prevent zoom on input focus in iOS Safari */
@@ -59,7 +64,15 @@
 
 /* Ensure proper flex layout when height changes */
 .chatContainer {
-  transition: height 0.3s ease;
+  /* Disable transition on Safari iOS to prevent lag */
+  transition: none;
+}
+
+/* Only enable transition on non-iOS devices */
+@media screen and (min-width: 769px) {
+  .chatContainer {
+    transition: height 0.3s ease;
+  }
 }
 
 /* Prevent body scroll when keyboard is open on iOS */
