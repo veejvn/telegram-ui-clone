@@ -74,12 +74,21 @@ const ChatPage = () => {
 
     let initialHeight = window.innerHeight;
 
-    // Prevent body scroll on Safari iOS
+    // Prevent body scroll on Safari iOS by controlling the entire document
     if (isSafari) {
+      // Prevent scroll on document and main layout
+      document.documentElement.style.overflow = "hidden";
       document.body.style.overflow = "hidden";
       document.body.style.position = "fixed";
       document.body.style.width = "100%";
       document.body.style.height = "100%";
+
+      // Also hide the main container to prevent any layout issues
+      const mainElement = document.querySelector("main");
+      if (mainElement) {
+        mainElement.style.overflow = "hidden";
+        mainElement.style.height = "100%";
+      }
     }
 
     const handleViewportChange = () => {
@@ -164,11 +173,18 @@ const ChatPage = () => {
         window.removeEventListener("resize", handleViewportChange);
         window.removeEventListener("orientationchange", handleViewportChange);
 
-        // Reset body styles when component unmounts
+        // Reset all document styles when component unmounts
+        document.documentElement.style.overflow = "";
         document.body.style.overflow = "";
         document.body.style.position = "";
         document.body.style.width = "";
         document.body.style.height = "";
+
+        const mainElement = document.querySelector("main");
+        if (mainElement) {
+          mainElement.style.overflow = "";
+          mainElement.style.height = "";
+        }
       } else if (window.visualViewport) {
         window.visualViewport.removeEventListener(
           "resize",
