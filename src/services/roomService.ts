@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import * as sdk from "matrix-js-sdk";
-import { MatrixClient } from "@/lib/matrix-sdk"
+import { MatrixClient } from "@/lib/matrix-sdk";
+
 export async function createPublicRoom(
   roomName: string,
   client: sdk.MatrixClient,
@@ -11,6 +11,7 @@ export async function createPublicRoom(
   try {
     if (!client) throw new Error("Matrix client not initialized");
 
+    // 1. Tạo phòng công khai
     const res = await client.createRoom({
       name: roomName,
       visibility: "public" as sdk.Visibility,
@@ -18,22 +19,31 @@ export async function createPublicRoom(
 
     const roomId = res.room_id;
 
+    // 2. Đợi phòng sync xong
     await waitUntilRoomSynced(client, roomId);
 
+    // 3. Nếu có ảnh avatar -> upload lên server và set cho phòng
     if (avatarFile) {
-      const mxcUrl = await client.uploadContent(avatarFile, {
+      const uploadRes = await client.uploadContent(avatarFile, {
         name: avatarFile.name,
         type: avatarFile.type,
+        includeFilename: true,
       });
+
+      const mxcUrl =
+        typeof uploadRes === "string"
+          ? uploadRes
+          : (uploadRes as any).content_uri;
 
       await client.sendStateEvent(
         roomId,
         "m.room.avatar" as any,
         { url: mxcUrl },
-        ""
+        "" // state_key rỗng
       );
     }
 
+    // 4. Mời người dùng (nếu có)
     if (invitees?.length) {
       for (const userId of invitees) {
         try {
@@ -46,10 +56,11 @@ export async function createPublicRoom(
 
     return { roomId };
   } catch (err: any) {
-    return { error: err.message || "Failed to create room" };
+    return { error: err.message || "❌ Failed to create room" };
   }
 }
 
+// Hàm đợi cho đến khi room được đồng bộ với client
 function waitUntilRoomSynced(
   client: sdk.MatrixClient,
   roomId: string
@@ -57,7 +68,7 @@ function waitUntilRoomSynced(
   return new Promise((resolve) => {
     const timeout = setTimeout(() => {
       client.removeListener("Room" as any, handler);
-      resolve(); // fallback nếu chờ quá lâu
+      resolve(); // fallback sau 4s
     }, 4000);
 
     const handler = (room: sdk.Room) => {
@@ -72,28 +83,29 @@ function waitUntilRoomSynced(
   });
 }
 
-const userIdChatBot = process.env.NEXT_PUBLIC_USER_ID_BOT || "@bot:matrix.teknix.dev"
+const userIdChatBot =
+  process.env.NEXT_PUBLIC_USER_ID_BOT || "@bot:matrix.teknix.dev";
 
 export function hasRoomWithChatBot(client: MatrixClient) {
   if (!client) return false;
-  
+
   // Kiểm tra sync state
   const syncState = client.getSyncState();
   if (!syncState || syncState === "STOPPED" || syncState === "ERROR") {
     console.log("Client chưa sync xong, không thể kiểm tra chat bot");
     return false;
   }
-  
+
   const userId = client.getUserId();
   if (!userId) return false;
-  
+
   const rooms = client.getRooms();
   for (const room of rooms) {
     if (room.getMyMembership() !== "join") continue;
     // Kiểm tra có bot là thành viên (dù là joined, invited, v.v.)
     const allMembers = room.getMembers();
     //console.log("Room:", room.roomId, "members:", allMembers.map(m => m.userId));
-    const botMember = allMembers.find(m => m.userId === userIdChatBot);
+    const botMember = allMembers.find((m) => m.userId === userIdChatBot);
     if (botMember) {
       //console.log("Bot found in room", room.roomId, "membership:", botMember.membership);
       return true;
@@ -106,20 +118,20 @@ export async function addChatBot(client: MatrixClient) {
   if (!client) {
     throw new Error("Không có client");
   }
-  
+
   // Kiểm tra sync state trước khi tạo room
   const syncState = client.getSyncState();
   if (!syncState || syncState === "STOPPED" || syncState === "ERROR") {
     throw new Error("Client chưa sẵn sàng, không thể tạo room");
   }
-  
+
   try {
     const response = await client.createRoom({
       name: "Assistant",
       invite: [userIdChatBot],
       is_direct: true,
     });
-    
+
     const roomId = response.room_id;
     //console.log("Đã tạo room với chat bot:", roomId);
 
@@ -148,7 +160,11 @@ export async function addChatBot(client: MatrixClient) {
         }
         if (waited >= maxWait) {
           clearInterval(poll);
-          reject(new Error("Timeout: Không thể lấy thông tin phòng vừa tạo sau 10 giây"));
+          reject(
+            new Error(
+              "Timeout: Không thể lấy thông tin phòng vừa tạo sau 10 giây"
+            )
+          );
         }
       }, interval);
 
@@ -160,7 +176,7 @@ export async function addChatBot(client: MatrixClient) {
           resolve(room);
         }
       };
-      
+
       client.on("Room" as any, handler);
     });
   } catch (error) {
