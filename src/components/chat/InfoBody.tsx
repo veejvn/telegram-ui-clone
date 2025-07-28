@@ -102,7 +102,7 @@ export default function InfoBody({
     router.push(
       `/call/${type}?calleeId=${encodeURIComponent(
         roomId
-      )}&contact=${encodeURIComponent(user.userId)}`
+      )}&contact=${encodeURIComponent(user.displayName ?? user.userId)}`
     );
   };
   const [avatarUrl, setAvatarUrl] = React.useState<string | null>(null);
@@ -215,7 +215,23 @@ export default function InfoBody({
       if (!b) return -1;
       return (b.timestamp || 0) - (a.timestamp || 0);
     });
+  const voiceMessages = [...roomMessages]
+    .filter((msg) => {
+      console.log("Checking message type:", msg.type, msg); // Debug log
+      return msg.type === "audio" && msg.audioUrl;
+    })
+    .sort((a, b) => (b.timestamp || Date.now()) - (a.timestamp || Date.now()));
+  type VoiceMessage = {
+    eventId?: string;
+    senderDisplayName?: string;
+    sender?: string;
+    audioUrl?: string;
+    audioDuration?: number;
+    timestamp?: number;
+    [key: string]: any;
+  };
 
+  const groupMessages: any[] = [];
   // Thêm vào đầu component
   const [toastMessage, setToastMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
@@ -399,6 +415,7 @@ export default function InfoBody({
     marginHorizontal: "4px",
     boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
   };
+
   return (
     <>
       <div
@@ -692,9 +709,8 @@ export default function InfoBody({
         </div>
 
         {/* User info section */}
-        {/* User info section */}
         {!hideAvatarHeader && (
-          <div className="w-full px-4 bg-white">
+          <div className="w-full px-4 bg-white dark:bg-black">
             <div
               className={`w-full max-w-md mx-auto bg-white dark:bg-[#232329] px-4 py-2 text-start flex flex-col mb-2 ${
                 scrollPosition > 0 ? "rounded-none" : "mt-4"
@@ -745,38 +761,53 @@ export default function InfoBody({
         )}
 
         {!hideAvatarHeader &&
-          (mediaMessages.length > 0 || linkMessages.length > 0) && (
+          (mediaMessages.length > 0 ||
+            linkMessages.length > 0 ||
+            voiceMessages.length > 0 ||
+            groupMessages.length > 0) && (
             <div className="bg-white dark:bg-black rounded-none flex-1 min-h-0 flex flex-col mt-0 relative">
-              {" "}
-              {/* Thêm mt-0 */}
               <Tabs
                 defaultValue={
                   mediaMessages.length > 0
                     ? "media"
                     : linkMessages.length > 0
                     ? "link"
-                    : "voice"
+                    : voiceMessages.length > 0
+                    ? "voice"
+                    : "groups"
                 }
                 className="w-full h-full"
               >
-                <TabsList className="grid w-full grid-cols-4">
-                  {mediaMessages.length > 0 && (
-                    <TabsTrigger value="media">Media</TabsTrigger>
-                  )}
-                  <TabsTrigger value="voice">Voice</TabsTrigger>
-                  {linkMessages.length > 0 && (
-                    <TabsTrigger value="link">Links</TabsTrigger>
-                  )}
-                  <TabsTrigger value="groups">Groups</TabsTrigger>
-                </TabsList>
+                {(() => {
+                  const visibleTabsCount =
+                    (mediaMessages.length > 0 ? 1 : 0) +
+                    (voiceMessages.length > 0 ? 1 : 0) +
+                    (linkMessages.length > 0 ? 1 : 0) +
+                    (groupMessages.length > 0 ? 1 : 0);
+
+                  return (
+                    <TabsList
+                      className={`grid w-full grid-cols-${visibleTabsCount}`}
+                    >
+                      {mediaMessages.length > 0 && (
+                        <TabsTrigger value="media">Media</TabsTrigger>
+                      )}
+                      {voiceMessages.length > 0 && (
+                        <TabsTrigger value="voice">Voice</TabsTrigger>
+                      )}
+                      {linkMessages.length > 0 && (
+                        <TabsTrigger value="link">Links</TabsTrigger>
+                      )}
+                      {groupMessages.length > 0 && (
+                        <TabsTrigger value="groups">Groups</TabsTrigger>
+                      )}
+                    </TabsList>
+                  );
+                })()}
 
                 {mediaMessages.length > 0 && (
                   <TabsContent value="media" className="h-full pb-0 mb-0">
-                    {" "}
-                    {/* Loại bỏ padding-bottom */}
-                    <div className="h-full overflow-y-auto overscroll-contain pb-8">
-                      {" "}
-                      {/* Thêm pb-0 */}
+                    <div className="h-full overflow-y-auto overscroll-contain pb-8 bg-white dark:bg-[#1c1c1e]">
                       <div className="grid grid-cols-3 gap-0.5 p-1">
                         {mediaMessages.map((msg, idx) => (
                           <div
@@ -806,13 +837,102 @@ export default function InfoBody({
                   </TabsContent>
                 )}
 
+                {voiceMessages.length > 0 && (
+                  <TabsContent value="voice" className="pb-0 mb-0">
+                    <div className="max-h-[420px] overflow-y-auto overscroll-contain pb-0 bg-white dark:bg-[#1c1c1e]">
+                      <Card className="w-full shadow-sm pt-3 pb-0 rounded-none">
+                        <CardContent className="px-2 pb-10">
+                          <div className="space-y-4">
+                            {voiceMessages.map((msg, idx) => (
+                              <div
+                                key={msg.eventId || idx}
+                                className="flex items-center bg-gray-100 dark:bg-[#2c2c2e] rounded-lg p-3 mb-2"
+                              >
+                                <button
+                                  className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center mr-3 flex-shrink-0"
+                                  onClick={() => {
+                                    // Thêm xử lý play/pause audio
+                                    const audio = document.getElementById(
+                                      `audio-${msg.eventId}`
+                                    ) as HTMLAudioElement;
+                                    if (audio) {
+                                      audio.paused
+                                        ? audio.play()
+                                        : audio.pause();
+                                    }
+                                  }}
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-5 w-5 text-white"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                  >
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                </button>
+
+                                <div className="flex-1">
+                                  <div className="flex justify-between items-center">
+                                    <p className="text-sm font-medium dark:text-white">
+                                      {msg.senderDisplayName ===
+                                      user.displayName
+                                        ? "You"
+                                        : msg.senderDisplayName}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      {new Date(
+                                        msg.timestamp || 0
+                                      ).toLocaleDateString()}{" "}
+                                      at{" "}
+                                      {new Date(
+                                        msg.timestamp || 0
+                                      ).toLocaleTimeString([], {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })}
+                                    </p>
+                                  </div>
+
+                                  <div className="mt-1 relative">
+                                    <audio
+                                      id={`audio-${msg.eventId}`}
+                                      src={msg.audioUrl || ""}
+                                      className="hidden"
+                                    />
+                                    <div className="h-1 bg-gray-300 dark:bg-gray-600 rounded-full w-full">
+                                      <div
+                                        className="h-full bg-blue-500 rounded-full"
+                                        style={{ width: "0%" }}
+                                      ></div>
+                                    </div>
+                                    <span className="text-xs text-gray-500 mt-1 absolute right-0">
+                                      {msg.audioDuration
+                                        ? `${Math.floor(
+                                            msg.audioDuration / 60
+                                          )}:${String(
+                                            Math.floor(msg.audioDuration % 60)
+                                          ).padStart(2, "0")}`
+                                        : "0:00"}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </TabsContent>
+                )}
+
                 {linkMessages.length > 0 && (
                   <TabsContent value="link" className="pb-0 mb-0">
-                    {" "}
-                    {/* Loại bỏ padding-bottom */}
                     <div className="max-h-[420px] overflow-y-auto overscroll-contain pb-0">
-                      {" "}
-                      {/* Thêm pb-0 */}
                       <Card className="w-full shadow-sm pt-3 pb-0 rounded-none">
                         <CardContent className="px-2 pb-10">
                           <div className="space-y-4">
@@ -835,6 +955,14 @@ export default function InfoBody({
                           </div>
                         </CardContent>
                       </Card>
+                    </div>
+                  </TabsContent>
+                )}
+
+                {groupMessages.length > 0 && (
+                  <TabsContent value="groups" className="pb-0 mb-0">
+                    <div className="p-4 text-center text-muted-foreground">
+                      Group messages content here.
                     </div>
                   </TabsContent>
                 )}
