@@ -40,9 +40,6 @@ const ChatPage = () => {
   // Prevent scroll on iOS when keyboard is open
   useEffect(() => {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const isSafari =
-      /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
-
     if (!isIOS) return;
 
     let initialScrollY = 0;
@@ -87,35 +84,18 @@ const ChatPage = () => {
         target.closest("[data-radix-scroll-area-content]") ||
         target.closest("[data-radix-scroll-area-viewport]") ||
         target.closest("[data-slot='scroll-area']") ||
-        target.closest("[data-slot='scroll-area-viewport']") ||
-        target.closest(".scroll-area") ||
-        target.closest(".overflow-auto") ||
-        target.closest(".overflow-y-auto");
+        target.closest("[data-slot='scroll-area-viewport']");
 
-      // Only prevent scroll outside scrollable areas and for body/document
-      if (
-        !scrollableArea &&
-        (target === document.body ||
-          target === document.documentElement ||
-          !target.closest("[data-radix-scroll-area-viewport]"))
-      ) {
+      // console.log("Touch event:", {
+      //   target: target.tagName,
+      //   scrollableArea: !!scrollableArea,
+      //   prevented: !scrollableArea,
+      // });
+
+      if (!scrollableArea) {
         e.preventDefault();
-        e.stopPropagation();
-        return false;
       }
     };
-
-    // Prevent document from scrolling when touching outside scroll areas
-    const preventDocumentScroll = (e: Event) => {
-      if (window.scrollY !== initialScrollY) {
-        window.scrollTo(0, initialScrollY);
-      }
-      e.preventDefault();
-    };
-
-    // More aggressive body locking for iOS Safari
-    document.body.classList.add("ios-keyboard-open");
-    document.documentElement.classList.add("ios-keyboard-open");
 
     // Store scroll position and lock it
     document.body.style.position = "fixed";
@@ -130,17 +110,9 @@ const ChatPage = () => {
 
     // Add event listeners
     document.addEventListener("touchmove", preventScroll, { passive: false });
-    document.addEventListener("scroll", preventDocumentScroll, {
-      passive: false,
-    });
-    window.addEventListener("scroll", preventDocumentScroll, {
-      passive: false,
-    });
 
     return () => {
       document.removeEventListener("touchmove", preventScroll);
-      document.removeEventListener("scroll", preventDocumentScroll);
-      window.removeEventListener("scroll", preventDocumentScroll);
 
       if ((window as any).visualViewport) {
         (window as any).visualViewport.removeEventListener(
@@ -161,10 +133,6 @@ const ChatPage = () => {
       // Reset document styles
       document.documentElement.style.overflow = "";
       document.documentElement.style.position = "";
-
-      // Remove CSS classes
-      document.body.classList.remove("ios-keyboard-open");
-      document.documentElement.classList.remove("ios-keyboard-open");
 
       // Restore scroll position
       window.scrollTo(0, initialScrollY);

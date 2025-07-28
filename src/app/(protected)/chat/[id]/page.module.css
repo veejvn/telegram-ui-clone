@@ -12,8 +12,8 @@
   height: 100vh;
   height: calc(var(--vh, 1vh) * 100); /* Use custom viewport height */
 
-  /* Allow vertical pan but prevent scroll bounce */
-  touch-action: pan-y pinch-zoom;
+  /* Prevent iOS Safari bounce and scroll */
+  touch-action: none;
 }
 
 /* iOS Safari specific styles */
@@ -71,7 +71,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  /* Don't override ScrollArea's overflow handling */
+  /* Allow ScrollArea to handle touch events */
+  touch-action: pan-y;
 }
 
 .chatHeader,
