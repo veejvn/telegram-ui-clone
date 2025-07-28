@@ -16,6 +16,12 @@
   touch-action: none;
 }
 
+/* Dynamic height adjustment when keyboard is open */
+.chatContainer.keyboardOpen {
+  /* When keyboard is open, use visual viewport height */
+  height: calc(var(--vh, 1vh) * 100);
+}
+
 /* iOS Safari specific styles */
 @supports (-webkit-appearance: none) {
   .chatContainer {
@@ -62,6 +68,13 @@
   min-height: 0;
   position: relative;
   overflow: hidden;
+  transition: height 0.3s ease-in-out;
+}
+
+/* When keyboard is open, adjust the content area */
+.chatContainer.keyboardOpen .chatContent {
+  /* ScrollArea will automatically adjust to available space */
+  height: auto;
 }
 
 .chatMessages {

@@ -785,57 +785,24 @@ const ChatComposer = ({
     // Alternative approach for Safari iOS using focus/blur events
     const onInputFocus = () => {
       if (isIOSSafari) {
-        console.log("🎯 iOS Safari input focused, starting scroll process");
+        console.log("🎯 iOS Safari input focused");
         setTimeout(() => setIsKeyboardOpen(true), 300);
-        // Always scroll to bottom when focusing input on iOS Safari
-        // Use direct scroll control for more reliability
+        // Simple scroll to bottom after layout settles
         setTimeout(() => {
           if (messagesEndRef?.current) {
-            console.log("📱 First scroll attempt");
-            const scrollContainer = messagesEndRef.current.closest(
-              "[data-radix-scroll-area-viewport]"
-            );
-            if (scrollContainer) {
-              console.log("✅ Found scroll container, scrolling to bottom");
-              // Scroll to the very bottom
-              scrollContainer.scrollTop = scrollContainer.scrollHeight;
-            } else {
-              console.log("❌ No scroll container found, using fallback");
-              // Fallback to scrollIntoView
-              messagesEndRef.current.scrollIntoView({
-                behavior: "auto",
-                block: "end",
-              });
-            }
-          } else {
-            console.log("❌ messagesEndRef not available");
+            console.log("📱 Scrolling to bottom after focus");
+            messagesEndRef.current.scrollIntoView({
+              behavior: "smooth",
+              block: "end",
+            });
           }
-        }, 400);
-
-        // Backup scroll attempt with longer delay
-        setTimeout(() => {
-          if (messagesEndRef?.current) {
-            console.log("📱 Backup scroll attempt");
-            const scrollContainer = messagesEndRef.current.closest(
-              "[data-radix-scroll-area-viewport]"
-            );
-            if (scrollContainer) {
-              scrollContainer.scrollTop = scrollContainer.scrollHeight;
-            } else {
-              messagesEndRef.current.scrollIntoView({
-                behavior: "auto",
-                block: "end",
-              });
-            }
-          }
-        }, 700);
+        }, 500);
       }
     };
 
     const onInputBlur = () => {
       if (isIOSSafari) {
         setTimeout(() => setIsKeyboardOpen(false), 300);
-        // No need to scroll on blur, let user stay where they are
       }
     };
 

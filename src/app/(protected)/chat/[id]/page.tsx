@@ -37,6 +37,9 @@ const ChatPage = () => {
   const [isBlocked, setIsBlocked] = useState(false);
   const ignoredUsers = useIgnoreStore((state) => state.ignoredUsers);
 
+  // Track keyboard state for layout adjustment
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+
   // Prevent scroll on iOS when keyboard is open
   useEffect(() => {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
@@ -50,52 +53,34 @@ const ChatPage = () => {
       if ((window as any).visualViewport) {
         const vh = (window as any).visualViewport.height * 0.01;
         document.documentElement.style.setProperty("--vh", `${vh}px`);
+
+        // Check if keyboard is open based on viewport height
+        const keyboardOpen =
+          (window as any).visualViewport.height < window.innerHeight * 0.8;
+        console.log("🖥️ Viewport change detected:", {
+          visualHeight: (window as any).visualViewport.height,
+          windowHeight: window.innerHeight,
+          threshold: window.innerHeight * 0.8,
+          keyboardOpen,
+        });
+        setIsKeyboardOpen(keyboardOpen);
       } else {
         // Fallback for older versions
         const vh = window.innerHeight * 0.01;
         document.documentElement.style.setProperty("--vh", `${vh}px`);
+        setIsKeyboardOpen(false);
       }
 
-      // Trigger layout recalculation after viewport change
+      // Auto scroll to bottom when layout changes (keyboard appears/disappears)
       setTimeout(() => {
-        if (messagesEndRef.current) {
-          console.log("🖥️ Viewport changed, first scroll attempt");
-          // Always scroll to bottom when viewport changes (keyboard appears)
-          const scrollContainer = messagesEndRef.current.closest(
-            "[data-radix-scroll-area-viewport]"
-          );
-          if (scrollContainer) {
-            console.log("✅ Found scroll container in viewport change");
-            // Force scroll to bottom with direct scrollTop manipulation
-            scrollContainer.scrollTop = scrollContainer.scrollHeight;
-          } else {
-            console.log("❌ No scroll container in viewport change");
-            // Fallback to scrollIntoView
-            messagesEndRef.current.scrollIntoView({
-              behavior: "auto",
-              block: "end",
-            });
-          }
+        if (messagesEndRef.current && isKeyboardOpen) {
+          console.log("🖥️ Layout changed, scrolling to bottom");
+          messagesEndRef.current.scrollIntoView({
+            behavior: "smooth",
+            block: "end",
+          });
         }
-      }, 400);
-
-      // Backup scroll attempt for more reliable behavior
-      setTimeout(() => {
-        if (messagesEndRef.current) {
-          console.log("🖥️ Viewport backup scroll attempt");
-          const scrollContainer = messagesEndRef.current.closest(
-            "[data-radix-scroll-area-viewport]"
-          );
-          if (scrollContainer) {
-            scrollContainer.scrollTop = scrollContainer.scrollHeight;
-          } else {
-            messagesEndRef.current.scrollIntoView({
-              behavior: "auto",
-              block: "end",
-            });
-          }
-        }
-      }, 700);
+      }, 300);
     };
 
     // Set initial viewport and capture scroll position
@@ -178,7 +163,20 @@ const ChatPage = () => {
       // Restore scroll position
       window.scrollTo(0, initialScrollY);
     };
-  }, [messagesEndRef]);
+  }, [messagesEndRef, isKeyboardOpen]);
+
+  // Auto scroll when keyboard state changes
+  useEffect(() => {
+    if (isKeyboardOpen && messagesEndRef.current) {
+      console.log("📱 Keyboard opened, auto scrolling to bottom");
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "end",
+        });
+      }, 400);
+    }
+  }, [isKeyboardOpen]);
 
   // Kiểm tra xem người dùng có bị chặn không
   useEffect(() => {
@@ -274,7 +272,11 @@ const ChatPage = () => {
   };
 
   return (
-    <div className={clsx("bg-chat", styles.chatContainer)}>
+    <div
+      className={clsx("bg-chat", styles.chatContainer, {
+        [styles.keyboardOpen]: isKeyboardOpen,
+      })}
+    >
       {/* Header */}
       <div className={clsx("shrink-0 z-10", styles.chatHeader)}>
         <ChatHeader room={room} />
