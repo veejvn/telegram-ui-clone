@@ -786,20 +786,26 @@ export default function InfoBody({
                     (groupMessages.length > 0 ? 1 : 0);
 
                   return (
-                    <TabsList
-                      className={`grid w-full grid-cols-${visibleTabsCount}`}
-                    >
+                    <TabsList className="grid w-full grid-cols-4">
                       {mediaMessages.length > 0 && (
-                        <TabsTrigger value="media">Media</TabsTrigger>
+                        <TabsTrigger value="media" className="flex-1">
+                          Media
+                        </TabsTrigger>
                       )}
                       {voiceMessages.length > 0 && (
-                        <TabsTrigger value="voice">Voice</TabsTrigger>
+                        <TabsTrigger value="voice" className="flex-1">
+                          Voice
+                        </TabsTrigger>
                       )}
                       {linkMessages.length > 0 && (
-                        <TabsTrigger value="link">Links</TabsTrigger>
+                        <TabsTrigger value="link" className="flex-1">
+                          Links
+                        </TabsTrigger>
                       )}
                       {groupMessages.length > 0 && (
-                        <TabsTrigger value="groups">Groups</TabsTrigger>
+                        <TabsTrigger value="groups" className="flex-1">
+                          Groups
+                        </TabsTrigger>
                       )}
                     </TabsList>
                   );
@@ -808,11 +814,12 @@ export default function InfoBody({
                 {mediaMessages.length > 0 && (
                   <TabsContent value="media" className="h-full pb-0 mb-0">
                     <div className="h-full overflow-y-auto overscroll-contain pb-8 bg-white dark:bg-[#1c1c1e]">
-                      <div className="grid grid-cols-3 gap-0.5 p-1">
+                      {/* Thay đổi từ grid sang flex wrap để căn trái */}
+                      <div className="flex flex-wrap gap-1 p-2 justify-start">
                         {mediaMessages.map((msg, idx) => (
                           <div
                             key={msg.eventId || idx}
-                            className="aspect-square"
+                            className="w-[32%] aspect-square"
                           >
                             {msg.type === "image" && msg.imageUrl ? (
                               <Image
