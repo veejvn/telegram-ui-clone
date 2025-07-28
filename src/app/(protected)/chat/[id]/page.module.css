@@ -22,6 +22,7 @@
     /* Use visual viewport height for iOS Safari */
     height: calc(var(--vh, 1vh) * 100);
     min-height: -webkit-fill-available;
+    /* Prevent overscroll bounce - only for newer iOS versions */
   }
 
   /* Prevent zoom on input focus in iOS Safari */
@@ -36,8 +37,27 @@
   .chatContainer {
     height: 100dvh;
   }
+
+  /* But still use custom --vh for iOS Safari */
+  @supports (-webkit-appearance: none) {
+    .chatContainer {
+      height: calc(var(--vh, 1vh) * 100);
+    }
+  }
 }
 
+/* Prevent scroll on iOS Safari when body is fixed */
+@supports (-webkit-touch-callout: none) {
+  .chatContainer {
+    height: 100vh;
+    height: calc(var(--vh, 1vh) * 100);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+}
 .chatContent {
   flex: 1;
   min-height: 0;

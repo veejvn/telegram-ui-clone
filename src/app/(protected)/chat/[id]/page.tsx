@@ -40,17 +40,40 @@ const ChatPage = () => {
   // Prevent scroll on iOS when keyboard is open
   useEffect(() => {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isSafari =
+      /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+
     if (!isIOS) return;
 
     // Fix viewport height for iOS Safari
     const setViewportHeight = () => {
-      const vh = window.innerHeight * 0.01;
-      document.documentElement.style.setProperty("--vh", `${vh}px`);
+      // Use visualViewport API if available (iOS Safari 13+)
+      if ((window as any).visualViewport) {
+        const vh = (window as any).visualViewport.height * 0.01;
+        document.documentElement.style.setProperty("--vh", `${vh}px`);
+      } else {
+        // Fallback for older versions
+        const vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty("--vh", `${vh}px`);
+      }
     };
 
     setViewportHeight();
+
+    // Visual Viewport API listeners (iOS Safari 13+)
+    if ((window as any).visualViewport) {
+      (window as any).visualViewport.addEventListener(
+        "resize",
+        setViewportHeight
+      );
+    }
+
+    // Fallback listeners
     window.addEventListener("resize", setViewportHeight);
-    window.addEventListener("orientationchange", setViewportHeight);
+    window.addEventListener("orientationchange", () => {
+      // Delay to ensure orientation change is complete
+      setTimeout(setViewportHeight, 100);
+    });
 
     const preventScroll = (e: TouchEvent) => {
       const target = e.target as Element;
@@ -60,7 +83,10 @@ const ChatPage = () => {
         target.closest("[data-radix-scroll-area-content]") ||
         target.closest("[data-radix-scroll-area-viewport]") ||
         target.closest("[data-slot='scroll-area']") ||
-        target.closest("[data-slot='scroll-area-viewport']");
+        target.closest("[data-slot='scroll-area-viewport']") ||
+        target.closest(".scroll-area") ||
+        target.closest(".overflow-auto") ||
+        target.closest(".overflow-y-auto");
 
       // Prevent body scroll but allow scrollable areas
       if (!scrollableArea && e.touches.length === 1) {
@@ -68,23 +94,42 @@ const ChatPage = () => {
       }
     };
 
-    // Prevent document body from scrolling
+    // Prevent document body from scrolling - more aggressive approach for iOS
     const originalBodyStyle = {
       position: document.body.style.position,
       width: document.body.style.width,
       height: document.body.style.height,
       overflow: document.body.style.overflow,
+      touchAction: document.body.style.touchAction,
     };
 
+    // More aggressive body locking for iOS Safari
     document.body.style.position = "fixed";
     document.body.style.width = "100%";
     document.body.style.height = "100vh";
     document.body.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
+
+    // Also lock document element
+    const originalDocumentStyle = {
+      overflow: document.documentElement.style.overflow,
+      touchAction: document.documentElement.style.touchAction,
+    };
+
+    document.documentElement.style.overflow = "hidden";
+    document.documentElement.style.touchAction = "none";
 
     document.addEventListener("touchmove", preventScroll, { passive: false });
 
     return () => {
       document.removeEventListener("touchmove", preventScroll);
+
+      if ((window as any).visualViewport) {
+        (window as any).visualViewport.removeEventListener(
+          "resize",
+          setViewportHeight
+        );
+      }
       window.removeEventListener("resize", setViewportHeight);
       window.removeEventListener("orientationchange", setViewportHeight);
 
@@ -93,6 +138,12 @@ const ChatPage = () => {
       document.body.style.width = originalBodyStyle.width;
       document.body.style.height = originalBodyStyle.height;
       document.body.style.overflow = originalBodyStyle.overflow;
+      document.body.style.touchAction = originalBodyStyle.touchAction;
+
+      // Reset document styles
+      document.documentElement.style.overflow = originalDocumentStyle.overflow;
+      document.documentElement.style.touchAction =
+        originalDocumentStyle.touchAction;
     };
   }, []);
 
