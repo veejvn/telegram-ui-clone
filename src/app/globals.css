@@ -157,11 +157,19 @@
     width: 100% !important;
     height: 100vh !important;
     overflow: hidden !important;
-    touch-action: none !important;
+    /* Allow pan-y for ScrollArea but prevent document scroll */
+    touch-action: pan-y pinch-zoom !important;
   }
 
   html.ios-keyboard-open {
     overflow: hidden !important;
-    touch-action: none !important;
+    position: relative !important;
+    /* Allow pan-y for ScrollArea but prevent document scroll */
+    touch-action: pan-y pinch-zoom !important;
+  }
+
+  /* Ensure scroll areas still work */
+  .ios-keyboard-open [data-radix-scroll-area-viewport] {
+    touch-action: pan-y !important;
   }
 }

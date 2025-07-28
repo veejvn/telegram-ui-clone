@@ -45,6 +45,8 @@ const ChatPage = () => {
 
     if (!isIOS) return;
 
+    let initialScrollY = 0;
+
     // Fix viewport height for iOS Safari
     const setViewportHeight = () => {
       // Use visualViewport API if available (iOS Safari 13+)
@@ -58,7 +60,9 @@ const ChatPage = () => {
       }
     };
 
+    // Set initial viewport and capture scroll position
     setViewportHeight();
+    initialScrollY = window.scrollY;
 
     // Visual Viewport API listeners (iOS Safari 13+)
     if ((window as any).visualViewport) {
@@ -88,77 +92,55 @@ const ChatPage = () => {
         target.closest(".overflow-auto") ||
         target.closest(".overflow-y-auto");
 
-      // Always prevent scroll outside scrollable areas
-      if (!scrollableArea) {
+      // Only prevent scroll outside scrollable areas and for body/document
+      if (
+        !scrollableArea &&
+        (target === document.body ||
+          target === document.documentElement ||
+          !target.closest("[data-radix-scroll-area-viewport]"))
+      ) {
         e.preventDefault();
         e.stopPropagation();
         return false;
       }
     };
 
-    // More comprehensive scroll prevention
-    const preventScrollPassive = (e: TouchEvent) => {
-      const target = e.target as Element;
-      const scrollableArea =
-        target.closest("[data-radix-scroll-area-content]") ||
-        target.closest("[data-radix-scroll-area-viewport]") ||
-        target.closest("[data-slot='scroll-area']") ||
-        target.closest("[data-slot='scroll-area-viewport']") ||
-        target.closest(".scroll-area") ||
-        target.closest(".overflow-auto") ||
-        target.closest(".overflow-y-auto");
-
-      if (!scrollableArea) {
-        return false;
+    // Prevent document from scrolling when touching outside scroll areas
+    const preventDocumentScroll = (e: Event) => {
+      if (window.scrollY !== initialScrollY) {
+        window.scrollTo(0, initialScrollY);
       }
-    };
-
-    // Prevent document body from scrolling - more aggressive approach for iOS
-    const originalBodyStyle = {
-      position: document.body.style.position,
-      width: document.body.style.width,
-      height: document.body.style.height,
-      overflow: document.body.style.overflow,
-      touchAction: document.body.style.touchAction,
+      e.preventDefault();
     };
 
     // More aggressive body locking for iOS Safari
     document.body.classList.add("ios-keyboard-open");
     document.documentElement.classList.add("ios-keyboard-open");
 
-    // Fallback inline styles for maximum compatibility
+    // Store scroll position and lock it
     document.body.style.position = "fixed";
+    document.body.style.top = `-${initialScrollY}px`;
     document.body.style.width = "100%";
     document.body.style.height = "100vh";
     document.body.style.overflow = "hidden";
-    document.body.style.touchAction = "none";
 
-    // Also lock document element
-    const originalDocumentStyle = {
-      overflow: document.documentElement.style.overflow,
-      touchAction: document.documentElement.style.touchAction,
-    };
-
+    // Lock document element
     document.documentElement.style.overflow = "hidden";
-    document.documentElement.style.touchAction = "none";
+    document.documentElement.style.position = "relative";
 
-    // Add multiple event listeners for comprehensive prevention
+    // Add event listeners
     document.addEventListener("touchmove", preventScroll, { passive: false });
-    document.addEventListener("touchstart", preventScrollPassive, {
-      passive: true,
-    });
-    document.addEventListener("scroll", (e) => e.preventDefault(), {
+    document.addEventListener("scroll", preventDocumentScroll, {
       passive: false,
     });
-    document.addEventListener("wheel", (e) => e.preventDefault(), {
+    window.addEventListener("scroll", preventDocumentScroll, {
       passive: false,
     });
 
     return () => {
       document.removeEventListener("touchmove", preventScroll);
-      document.removeEventListener("touchstart", preventScrollPassive);
-      document.removeEventListener("scroll", (e) => e.preventDefault());
-      document.removeEventListener("wheel", (e) => e.preventDefault());
+      document.removeEventListener("scroll", preventDocumentScroll);
+      window.removeEventListener("scroll", preventDocumentScroll);
 
       if ((window as any).visualViewport) {
         (window as any).visualViewport.removeEventListener(
@@ -170,20 +152,22 @@ const ChatPage = () => {
       window.removeEventListener("orientationchange", setViewportHeight);
 
       // Reset body styles
-      document.body.style.position = originalBodyStyle.position;
-      document.body.style.width = originalBodyStyle.width;
-      document.body.style.height = originalBodyStyle.height;
-      document.body.style.overflow = originalBodyStyle.overflow;
-      document.body.style.touchAction = originalBodyStyle.touchAction;
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
+      document.body.style.height = "";
+      document.body.style.overflow = "";
 
       // Reset document styles
-      document.documentElement.style.overflow = originalDocumentStyle.overflow;
-      document.documentElement.style.touchAction =
-        originalDocumentStyle.touchAction;
+      document.documentElement.style.overflow = "";
+      document.documentElement.style.position = "";
 
       // Remove CSS classes
       document.body.classList.remove("ios-keyboard-open");
       document.documentElement.classList.remove("ios-keyboard-open");
+
+      // Restore scroll position
+      window.scrollTo(0, initialScrollY);
     };
   }, []);
 
