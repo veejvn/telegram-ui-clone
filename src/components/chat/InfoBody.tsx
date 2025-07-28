@@ -9,8 +9,7 @@ import {
 } from "@/components/ui/popover";
 import { Hand } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TabsContent } from "@radix-ui/react-tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
@@ -94,6 +93,7 @@ export default function InfoBody({
 
     handleHeaderAvatar();
   }, [scrollPosition]);
+
   const handleStartCall = async (type: "voice" | "video") => {
     const roomId = await ensureRoomExists();
     if (!roomId) return;
@@ -836,81 +836,137 @@ export default function InfoBody({
                     </div>
                   </TabsContent>
                 )}
-
                 {voiceMessages.length > 0 && (
-                  <TabsContent value="voice" className="pb-0 mb-0">
-                    <div className="max-h-[420px] overflow-y-auto overscroll-contain pb-0 bg-white dark:bg-[#1c1c1e]">
-                      <Card className="w-full shadow-sm pt-3 pb-0 rounded-none">
-                        <CardContent className="px-2 pb-10">
-                          <div className="space-y-4">
-                            {voiceMessages.map((msg, idx) => (
-                              <div
-                                key={msg.eventId || idx}
-                                className="flex items-center bg-gray-100 dark:bg-[#2c2c2e] rounded-lg p-3 mb-2"
-                              >
-                                <button
-                                  className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center mr-3 flex-shrink-0"
-                                  onClick={() => {
-                                    // Thêm xử lý play/pause audio
-                                    const audio = document.getElementById(
-                                      `audio-${msg.eventId}`
-                                    ) as HTMLAudioElement;
-                                    if (audio) {
-                                      audio.paused
-                                        ? audio.play()
-                                        : audio.pause();
+                  <TabsContent value="voice" className="h-full pb-0 mb-0">
+                    <div className="h-full overflow-y-auto overscroll-contain pb-4 bg-white dark:bg-[#1c1c1e]">
+                      <ul className="divide-y divide-gray-200 dark:divide-gray-800">
+                        {voiceMessages.map((msg, idx) => (
+                          <li
+                            key={msg.eventId || idx}
+                            className="flex items-center bg-gray-100 dark:bg-[#2c2c2e] p-4 m-2 rounded-lg"
+                          >
+                            <div className="flex-1">
+                              <div className="flex justify-between items-center">
+                                <p className="text-sm font-medium dark:text-white">
+                                  {msg.senderDisplayName === user.displayName
+                                    ? "You"
+                                    : msg.senderDisplayName}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {new Date(
+                                    msg.timestamp || 0
+                                  ).toLocaleDateString()}{" "}
+                                  at{" "}
+                                  {new Date(
+                                    msg.timestamp || 0
+                                  ).toLocaleTimeString([], {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </p>
+                              </div>
+
+                              <div className="mt-2 relative">
+                                <audio
+                                  id={`audio-${msg.eventId}`}
+                                  src={msg.audioUrl || ""}
+                                  preload="metadata"
+                                  className="hidden"
+                                  onTimeUpdate={(e) => {
+                                    const target = e.target as HTMLAudioElement;
+                                    const progress =
+                                      (target.currentTime / target.duration) *
+                                        100 || 0;
+                                    const progressBar = document.getElementById(
+                                      `progress-${msg.eventId}`
+                                    );
+                                    const timeDisplay = document.getElementById(
+                                      `time-${msg.eventId}`
+                                    );
+                                    if (progressBar) {
+                                      progressBar.style.width = `${progress}%`;
+                                    }
+                                    if (timeDisplay) {
+                                      const currentMin = Math.floor(
+                                        target.currentTime / 60
+                                      );
+                                      const currentSec = Math.floor(
+                                        target.currentTime % 60
+                                      );
+                                      const durationMin = Math.floor(
+                                        target.duration / 60
+                                      );
+                                      const durationSec = Math.floor(
+                                        target.duration % 60
+                                      );
+
+                                      timeDisplay.textContent = `${currentMin}:${currentSec
+                                        .toString()
+                                        .padStart(
+                                          2,
+                                          "0"
+                                        )} / ${durationMin}:${durationSec
+                                        .toString()
+                                        .padStart(2, "0")}`;
                                     }
                                   }}
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-5 w-5 text-white"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
+                                />
+
+                                {/* Player UI với 1 nút play duy nhất */}
+                                <div className="flex items-center space-x-2">
+                                  <button
+                                    className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 hover:bg-blue-600 transition-colors"
+                                    onClick={() => {
+                                      const audio = document.getElementById(
+                                        `audio-${msg.eventId}`
+                                      ) as HTMLAudioElement;
+                                      if (audio) {
+                                        if (audio.paused) {
+                                          document
+                                            .querySelectorAll("audio")
+                                            .forEach((a) => {
+                                              if (
+                                                a.id !== `audio-${msg.eventId}`
+                                              )
+                                                a.pause();
+                                            });
+                                          audio.play();
+                                        } else {
+                                          audio.pause();
+                                        }
+                                      }
+                                    }}
                                   >
-                                    <path
-                                      fillRule="evenodd"
-                                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
-                                      clipRule="evenodd"
-                                    />
-                                  </svg>
-                                </button>
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      className="h-4 w-4 text-white"
+                                      viewBox="0 0 20 20"
+                                      fill="currentColor"
+                                    >
+                                      <path
+                                        fillRule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                                        clipRule="evenodd"
+                                      />
+                                    </svg>
+                                  </button>
 
-                                <div className="flex-1">
-                                  <div className="flex justify-between items-center">
-                                    <p className="text-sm font-medium dark:text-white">
-                                      {msg.senderDisplayName ===
-                                      user.displayName
-                                        ? "You"
-                                        : msg.senderDisplayName}
-                                    </p>
-                                    <p className="text-xs text-gray-500">
-                                      {new Date(
-                                        msg.timestamp || 0
-                                      ).toLocaleDateString()}{" "}
-                                      at{" "}
-                                      {new Date(
-                                        msg.timestamp || 0
-                                      ).toLocaleTimeString([], {
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      })}
-                                    </p>
-                                  </div>
-
-                                  <div className="mt-1 relative">
-                                    <audio
-                                      id={`audio-${msg.eventId}`}
-                                      src={msg.audioUrl || ""}
-                                      className="hidden"
-                                    />
-                                    <div className="h-1 bg-gray-300 dark:bg-gray-600 rounded-full w-full">
+                                  <div className="flex-1">
+                                    <div className="h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
                                       <div
+                                        id={`progress-${msg.eventId}`}
                                         className="h-full bg-blue-500 rounded-full"
-                                        style={{ width: "0%" }}
+                                        style={{
+                                          width: "0%",
+                                          transition: "width 0.2s",
+                                        }}
                                       ></div>
                                     </div>
-                                    <span className="text-xs text-gray-500 mt-1 absolute right-0">
+                                    <p
+                                      id={`time-${msg.eventId}`}
+                                      className="text-xs text-gray-500 mt-1"
+                                    >
+                                      0:00 /{" "}
                                       {msg.audioDuration
                                         ? `${Math.floor(
                                             msg.audioDuration / 60
@@ -918,14 +974,39 @@ export default function InfoBody({
                                             Math.floor(msg.audioDuration % 60)
                                           ).padStart(2, "0")}`
                                         : "0:00"}
-                                    </span>
+                                    </p>
                                   </div>
+
+                                  <button
+                                    className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                                    onClick={() => {
+                                      const audio = document.getElementById(
+                                        `audio-${msg.eventId}`
+                                      ) as HTMLAudioElement;
+                                      if (audio) {
+                                        audio.muted = !audio.muted;
+                                      }
+                                    }}
+                                  >
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      className="h-5 w-5"
+                                      viewBox="0 0 20 20"
+                                      fill="currentColor"
+                                    >
+                                      <path
+                                        fillRule="evenodd"
+                                        d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217z"
+                                        clipRule="evenodd"
+                                      />
+                                    </svg>
+                                  </button>
                                 </div>
                               </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   </TabsContent>
                 )}
