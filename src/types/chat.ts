@@ -1,6 +1,7 @@
 import { Message } from "@/stores/useChatStore";
 
 export interface MessagePros {
+  roomId?: string;
   msg: Message;
   isSender: boolean;
   animate?: boolean;

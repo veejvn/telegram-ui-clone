@@ -186,9 +186,9 @@ export default function StickerPicker({
               </TabsContent>
 
               <TabsContent value="emoji">
-                <div className="max-h-72">
+                <div className="max-h-72 w-full">
                   <EmojiPicker
-                    width={350}
+                     width="100%"
                     height={350}
                     onEmojiClick={onEmojiSelect}
                     lazyLoadEmojis={true}
@@ -199,6 +199,8 @@ export default function StickerPicker({
                         ? EmojiTheme.DARK
                         : EmojiTheme.LIGHT
                     }
+                    style={{ width: '100%' }}
+                    skinTonesDisabled={true}
                   />
                 </div>
               </TabsContent>

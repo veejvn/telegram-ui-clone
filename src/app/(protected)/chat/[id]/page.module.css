@@ -1,0 +1,86 @@
+/* Safari iOS specific fixes for keyboard handling */
+.chatContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* Safari iOS viewport units fix */
+  height: 100vh;
+  height: 100dvh; /* Dynamic viewport height for newer browsers */
+
+  /* Prevent scrolling when keyboard is open */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: none;
+}
+
+/* iOS Safari specific styles */
+@supports (-webkit-appearance: none) {
+  .chatContainer {
+    /* Use visual viewport height for iOS Safari */
+    height: 100vh;
+    min-height: -webkit-fill-available;
+  }
+
+  /* Prevent zoom on input focus in iOS Safari */
+  .chatContainer input,
+  .chatContainer textarea {
+    font-size: 16px !important;
+  }
+}
+
+.chatContent {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.chatMessages {
+  /* Ensure ScrollArea takes full space */
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* Don't override ScrollArea's overflow handling */
+}
+
+.chatHeader,
+.chatFooter {
+  flex-shrink: 0;
+  z-index: 10;
+  position: relative;
+}
+
+/* Prevent body scroll when keyboard is open on iOS */
+@media screen and (max-width: 768px) {
+  .chatContainer {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+  }
+}
+
+/* Additional iOS Safari keyboard fixes */
+@media screen and (max-device-width: 812px) and (-webkit-min-device-pixel-ratio: 2) {
+  .chatContainer {
+    /* iPhone X and newer */
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Hide scrollbars on iOS */
+  .chatMessages::-webkit-scrollbar {
+    display: none;
+  }
+
+  .chatMessages {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
