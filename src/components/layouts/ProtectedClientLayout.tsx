@@ -42,7 +42,7 @@ export default function ProtectedClientLayout({
           <IncomingCallHandler />
           <main className="flex flex-col">
             {children}
-            <BottomNavigationWrapper />
+            {/* <BottomNavigationWrapper /> */}
           </main>
           <InviteChatBot />
           {/* <TokenExpirationToast /> */}

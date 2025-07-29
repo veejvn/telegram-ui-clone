@@ -70,10 +70,10 @@ const AudioMessage: React.FC<Props> = ({ msg, isSender = false }) => {
   const ss = String(remaining % 60).padStart(2, "0");
 
   const textClass = clsx(
-    "flex items-center justify-end gap-1 text-xs",
-    isSender
-      ? "text-[#79c071]  dark:text-white"
-      : "text-zinc-400 dark:text-white"
+    "flex items-center justify-end gap-1 text-xs text=[#181818]",
+    // isSender
+    //   ? "text-[#79c071]  dark:text-white"
+    //   : "text-zinc-400 dark:text-white"
   );
 
   const waveformRef = useRef<HTMLDivElement | null>(null);
@@ -131,8 +131,8 @@ const AudioMessage: React.FC<Props> = ({ msg, isSender = false }) => {
   return (
     <div
       className={cn(
-        `bg-[#dcf8c6] dark:bg-[#4567fc] rounded-xl p-2 px-3 max-w-xs flex flex-col shadow-sm w-45 select-none ${
-          !isSender && "bg-white dark:bg-[#222e3a]"
+        `bg-[#cbc1b9] dark:bg-[#cbc1b9] rounded-xl p-2 px-3 max-w-xs flex flex-col shadow-sm w-45 select-none ${
+          !isSender && "bg-[#cbc1b9] dark:bg-[#cbc1b9]"
         }`
       )}
     >

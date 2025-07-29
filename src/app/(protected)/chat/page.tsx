@@ -187,7 +187,7 @@ export default function ChatsPage() {
     <div>
       <div
         style={headerStyle}
-        className="sticky bg-white dark:bg-[#1a1a1a] top-0 z-10"
+        className="sticky bg-white bg-white dark:bg-[#1a1a1a] top-0 z-10"
       >
         <div className="grid grid-cols-3 items-center px-4 py-4">
           <div className="flex items-center">
