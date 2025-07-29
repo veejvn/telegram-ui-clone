@@ -16,6 +16,7 @@ import { sendReadReceipt } from "@/services/chatService";
 import { useUserStore } from "@/stores/useUserStore";
 import { useIgnoreStore } from "@/stores/useIgnoreStore";
 import clsx from "clsx";
+import { createPortal } from "react-dom";
 
 const ChatPage = () => {
   const { resolvedTheme } = useTheme();
@@ -52,12 +53,6 @@ const ChatPage = () => {
         target.closest("[data-slot='scroll-area']") ||
         target.closest("[data-slot='scroll-area-viewport']");
 
-      // console.log("Touch event:", {
-      //   target: target.tagName,
-      //   scrollableArea: !!scrollableArea,
-      //   prevented: !scrollableArea,
-      // });
-
       if (!scrollableArea) {
         e.preventDefault();
       }
@@ -68,6 +63,176 @@ const ChatPage = () => {
 
     return () => {
       document.removeEventListener("touchmove", preventScroll);
+    };
+  }, []);
+
+  // Handle visual viewport changes for Safari iOS keyboard
+  useEffect(() => {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+    if (!isIOS) return;
+
+    let initialHeight = window.innerHeight;
+
+    // COMPREHENSIVE Safari Fix - address all potential layout issues
+    if (isSafari) {
+      // 1. Prevent body from having any scrollable content
+      document.body.classList.add("chat-page-active");
+
+      // 2. Hide main element completely to prevent layout conflicts
+      const mainElement = document.querySelector("main");
+      if (mainElement) {
+        mainElement.style.display = "none";
+      }
+
+      // 3. Debug logging to see what's happening
+      console.log("🐛 Initial setup:", {
+        bodyHeight: document.body.scrollHeight,
+        windowHeight: window.innerHeight,
+        documentHeight: document.documentElement.scrollHeight,
+        bodyClassList: [...document.body.classList],
+      });
+    }
+
+    const handleViewportChange = () => {
+      if (isSafari) {
+        // Safari specific handling
+        const currentHeight = window.innerHeight;
+        const heightDiff = initialHeight - currentHeight;
+        const isKeyboardOpen = heightDiff > 100;
+
+        console.log("🐛 Safari viewport change:", {
+          initialHeight,
+          currentHeight,
+          heightDiff,
+          isKeyboardOpen,
+          bodyScrollHeight: document.body.scrollHeight,
+          documentScrollHeight: document.documentElement.scrollHeight,
+          canScroll: document.body.scrollHeight > window.innerHeight,
+        });
+
+        const chatContainer = document.querySelector(
+          `.${styles.chatContainer}`
+        ) as HTMLElement;
+
+        if (chatContainer) {
+          if (isKeyboardOpen) {
+            // ✅ KEY FIX: Đồng bộ body height với container height
+            document.body.style.height = `${currentHeight}px`;
+            document.documentElement.style.height = `${currentHeight}px`;
+
+            // Keyboard is open - use current window height
+            chatContainer.style.height = `${currentHeight}px`;
+            chatContainer.style.maxHeight = `${currentHeight}px`;
+            // Force Safari to recalculate layout
+            chatContainer.style.transform = "translateZ(0)";
+            console.log(
+              "🔧 Keyboard open, body & container height set to:",
+              currentHeight
+            );
+          } else {
+            // ✅ KEY FIX: Reset body height cùng với container
+            document.body.style.height = `${initialHeight}px`;
+            document.documentElement.style.height = `${initialHeight}px`;
+
+            // Keyboard is closed - reset to full height
+            chatContainer.style.height = `${initialHeight}px`;
+            chatContainer.style.maxHeight = `${initialHeight}px`;
+            chatContainer.style.transform = "none";
+            console.log(
+              "🔧 Keyboard closed, body & container height reset to:",
+              initialHeight
+            );
+          }
+
+          // Force immediate layout recalculation
+          chatContainer.offsetHeight; // Trigger reflow
+        }
+      } else {
+        // Other browsers - use visual viewport
+        const viewport = window.visualViewport;
+        if (viewport) {
+          const chatContainer = document.querySelector(
+            `.${styles.chatContainer}`
+          ) as HTMLElement;
+          if (chatContainer) {
+            chatContainer.style.height = `${viewport.height}px`;
+            chatContainer.style.maxHeight = `${viewport.height}px`;
+          }
+        }
+      }
+
+      // Scroll to bottom when keyboard appears/disappears
+      if (messagesEndRef.current) {
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({
+            behavior: "auto",
+            block: "end",
+          });
+        }, 100);
+      }
+    };
+
+    // Different event listeners for Safari vs other browsers
+    if (isSafari) {
+      window.addEventListener("resize", handleViewportChange);
+      window.addEventListener("orientationchange", handleViewportChange);
+
+      // Additional debug events
+      document.addEventListener("scroll", () => {
+        console.log("🐛 Document scroll detected!");
+      });
+      document.body.addEventListener("scroll", () => {
+        console.log("🐛 Body scroll detected!");
+      });
+    } else if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", handleViewportChange);
+      window.visualViewport.addEventListener("scroll", handleViewportChange);
+    }
+
+    // Initial adjustment
+    handleViewportChange();
+
+    return () => {
+      if (isSafari) {
+        window.removeEventListener("resize", handleViewportChange);
+        window.removeEventListener("orientationchange", handleViewportChange);
+
+        // Restore main element
+        const mainElement = document.querySelector("main");
+        if (mainElement) {
+          mainElement.style.display = "";
+        }
+
+        // ✅ CLEANUP: Reset body và document height
+        document.body.style.height = "";
+        document.documentElement.style.height = "";
+
+        // Remove class from body
+        document.body.classList.remove("chat-page-active");
+
+        console.log("🔄 Cleanup completed");
+      } else if (window.visualViewport) {
+        window.visualViewport.removeEventListener(
+          "resize",
+          handleViewportChange
+        );
+        window.visualViewport.removeEventListener(
+          "scroll",
+          handleViewportChange
+        );
+      }
+
+      // Reset container styles when component unmounts
+      const chatContainer = document.querySelector(
+        `.${styles.chatContainer}`
+      ) as HTMLElement;
+      if (chatContainer) {
+        chatContainer.style.height = "";
+        chatContainer.style.maxHeight = "";
+        chatContainer.style.transform = "";
+      }
     };
   }, []);
 
@@ -125,6 +290,13 @@ const ChatPage = () => {
     setMounted(true);
   }, []);
 
+  // Auto scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (messagesEndRef.current && mounted) {
+      messagesEndRef.current.scrollIntoView({ behavior: "auto" });
+    }
+  }, [room, mounted]);
+
   if (!mounted) return null;
 
   if (!room) return null;
@@ -165,42 +337,100 @@ const ChatPage = () => {
   };
 
   return (
-    <div className={clsx("bg-gradient-to-b from-cyan-700/30 via-cyan-300/15 to-yellow-600/25", styles.chatContainer)}>
-      {/* Header */}
-      <div className={clsx("shrink-0 z-10", styles.chatHeader)}>
-        <ChatHeader room={room} />
-      </div>
+    <>
+      {/* For Safari iOS - render as portal outside main element */}
+      {typeof window !== "undefined" &&
+        /iPad|iPhone|iPod/.test(navigator.userAgent) &&
+        /^((?!chrome|android).)*safari/i.test(navigator.userAgent) &&
+        createPortal(
+          <div className={clsx("bg-gradient-to-b from-cyan-700/30 via-cyan-300/15 to-yellow-600/25", styles.chatContainer)}>
+            {/* Header */}
+            <div className={clsx("shrink-0 z-10", styles.chatHeader)}>
+              <ChatHeader room={room} />
+            </div>
 
-      {/* Chat content scrollable */}
-      <div className={clsx("flex-1 min-h-0 relative", styles.chatContent)}>
-        <div className={styles.chatMessages}>
-          <ScrollArea className="h-full w-full">
-            <ChatMessages roomId={roomId} messagesEndRef={messagesEndRef} />
-          </ScrollArea>
-        </div>
-      </div>
+            {/* Chat content scrollable */}
+            <div
+              className={clsx("flex-1 min-h-0 relative", styles.chatContent)}
+            >
+              <div className={styles.chatMessages}>
+                <ScrollArea className="h-full w-full">
+                  <ChatMessages
+                    roomId={roomId}
+                    messagesEndRef={messagesEndRef}
+                  />
+                </ScrollArea>
+              </div>
+            </div>
 
-      {/* Footer - Fixed at bottom */}
-      {isBlocked ? (
-        <div
-          className={clsx(
-            "shrink-0 z-10 flex flex-col items-center justify-center py-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-[#23232b]",
-            styles.chatFooter
+            {/* Footer - Fixed at bottom */}
+            {isBlocked ? (
+              <div
+                className={clsx(
+                  "shrink-0 z-10 flex flex-col items-center justify-center py-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-[#23232b]",
+                  styles.chatFooter
+                )}
+              >
+                <button
+                  onClick={handleUnblockUser}
+                  className="text-blue-600 font-medium hover:underline"
+                >
+                  Unblock
+                </button>
+              </div>
+            ) : (
+              <div className={clsx("shrink-0 z-10", styles.chatFooter)}>
+                <ChatComposer roomId={roomId} />
+              </div>
+            )}
+          </div>,
+          document.body
+        )}
+
+      {/* For other browsers - render normally */}
+      {(typeof window === "undefined" ||
+        !(
+          /iPad|iPhone|iPod/.test(navigator.userAgent) &&
+          /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+        )) && (
+        <div className={clsx("bg-gradient-to-b from-cyan-700/30 via-cyan-300/15 to-yellow-600/25", styles.chatContainer)}>
+          {/* Header */}
+          <div className={clsx("shrink-0 z-10", styles.chatHeader)}>
+            <ChatHeader room={room} />
+          </div>
+
+          {/* Chat content scrollable */}
+          <div className={clsx("flex-1 min-h-0 relative", styles.chatContent)}>
+            <div className={styles.chatMessages}>
+              <ScrollArea className="h-full w-full">
+                <ChatMessages roomId={roomId} messagesEndRef={messagesEndRef} />
+              </ScrollArea>
+            </div>
+          </div>
+
+          {/* Footer - Fixed at bottom */}
+          {isBlocked ? (
+            <div
+              className={clsx(
+                "shrink-0 z-10 flex flex-col items-center justify-center py-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-[#23232b]",
+                styles.chatFooter
+              )}
+            >
+              <button
+                onClick={handleUnblockUser}
+                className="text-blue-600 font-medium hover:underline"
+              >
+                Unblock
+              </button>
+            </div>
+          ) : (
+            <div className={clsx("shrink-0 z-10", styles.chatFooter)}>
+              <ChatComposer roomId={roomId} />
+            </div>
           )}
-        >
-          <button
-            onClick={handleUnblockUser}
-            className="text-blue-600 font-medium hover:underline"
-          >
-            Unblock
-          </button>
-        </div>
-      ) : (
-        <div className={clsx("shrink-0 z-10", styles.chatFooter)}>
-          <ChatComposer roomId={roomId} />
         </div>
       )}
-    </div>
+    </>
   );
 };
 
