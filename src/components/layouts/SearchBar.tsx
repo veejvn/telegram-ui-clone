@@ -71,7 +71,7 @@ const SearchBar = () => {
   return (
     <div className="relative py-3">
       <div className="relative px-4">
-        <div className="relative h-10 w-full bg-[#e5e5ea] dark:bg-[#080808] rounded-[10px] transition-all duration-200">
+        <div className="relative h-10 w-full bg-[#e3e3e3] dark:bg-[#080808] rounded-[10px] transition-all duration-200">
           {/* Input */}
           <Input
             type="text"
@@ -84,16 +84,16 @@ const SearchBar = () => {
           {/* Icon + chữ Search */}
           <div
             className={cn(
-              "absolute inset-0 flex items-center transition-all duration-200 pointer-events-none",
+              "absolute inset-0 flex items-center transition-all duration-200 pointer-events-none text-[#8d8d8d]",
               searchTerm
                 ? "justify-start pl-3"
                 : "peer-focus:justify-start peer-focus:pl-3 justify-center"
             )}
           >
-            <Search className="h-5 w-5 text-gray-500 mr-2" />
+            <Search className="h-5 w-5 mr-2" />
             <span
               className={cn(
-                "text-[17px] text-gray-500 transition-opacity duration-150",
+                "text-[17px] transition-opacity duration-150",
                 searchTerm ? "opacity-0" : "opacity-100",
                 "peer-focus:opacity-100"
               )}
