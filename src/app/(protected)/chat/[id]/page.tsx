@@ -165,7 +165,7 @@ const ChatPage = () => {
   };
 
   return (
-    <div className={clsx("bg-chat", styles.chatContainer)}>
+    <div className={clsx("bg-gradient-to-b from-cyan-700/30 via-cyan-300/15 to-yellow-600/25", styles.chatContainer)}>
       {/* Header */}
       <div className={clsx("shrink-0 z-10", styles.chatHeader)}>
         <ChatHeader room={room} />

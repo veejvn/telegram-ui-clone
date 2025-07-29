@@ -38,18 +38,18 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
   const isDeleted = msg.isDeleted || msg.text === "Tin nhắn đã thu hồi";
 
   const textClass = clsx(
-    "rounded-2xl px-4 py-1.5",
-    isSender
-      ? "text-black bg-[#DCF8C6] dark:text-white dark:bg-[#6f42c1] rounded-br-none"
-      : "text-black bg-white dark:text-white dark:bg-[#282434] rounded-bl-none",
+    "rounded-3xl px-4 py-1.5 text=[#181818] bg-[#cbc1b9] dark:text=[#181818] dark:bg-[#cbc1b9]",
+    // isSender
+    //   ? "text=[#181818] bg-[#cbc1b9] dark:text=[#181818] dark:bg-[#cbc1b9]"
+    //   : "text=[#181818] bg-[#cbc1b9] dark:text=[#181818] dark:bg-[#cbc1b9]",
     animate && "flash-background"
   );
 
   const timeClass = clsx(
-    "flex items-center justify-end gap-1 text-xs mt-1 select-none",
-    isSender
-      ? "text-[#79c071] dark:text-white"
-      : "text-gray-400 dark:text-gray-400"
+    "flex text-[#444444] items-center justify-end gap-1 text-xs mt-1 select-none pb-2",
+    // isSender
+    //   ? "text-[#444444] dark:text-white"
+    //   : "text-gray-400 dark:text-gray-400"
   );
 
   const handleCopy = async (text: string) => {
@@ -135,14 +135,14 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
           onTouchStart={isDeleted ? undefined : handleHoldStart}
           onTouchEnd={isDeleted ? undefined : handleHoldEnd}
           className={clsx(
-            "flex items-end text-message", // Đảm bảo tail căn đáy với bubble
+            "flex relative items-end text-message", // Đảm bảo tail căn đáy với bubble
             isSender ? "justify-end" : "justify-start",
             isDeleted && "cursor-default"
           )}
         >
           {/* 🡐 Tail cho tin nhận */}
           {!isSender && (
-            <div className="text-[#FFFFFF] dark:text-[#282434]">
+            <div className="text-[#cbc1b9] absolute bottom-1 left-[-7px] w-[16px]">
               <BubbleTail isSender={false} fillColor="currentColor" />
             </div>
           )}
@@ -152,7 +152,7 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
             <div className={clsx(textClass, "max-w-[75vw] break-words")}>
               <p
                 className={
-                  "whitespace-pre-wrap break-words leading-snug select-none"
+                  "py-2 whitespace-pre-wrap break-words leading-snug select-none"
                 }
               >
                 {linkify(msg.text)}
@@ -172,7 +172,7 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
 
           {/* 🡒 Tail cho tin gửi */}
           {isSender && (
-            <div className="text-[#DCF8C6] dark:text-[#6f42c1]">
+            <div className={clsx("text-[#cbc1b9] absolute bottom-1 right-[-10px] w-[16px]")}>
               <BubbleTail isSender={true} fillColor="currentColor" />
             </div>
           )}
