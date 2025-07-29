@@ -9,8 +9,7 @@ import {
 } from "@/components/ui/popover";
 import { Hand } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TabsContent } from "@radix-ui/react-tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
@@ -94,6 +93,7 @@ export default function InfoBody({
 
     handleHeaderAvatar();
   }, [scrollPosition]);
+
   const handleStartCall = async (type: "voice" | "video") => {
     const roomId = await ensureRoomExists();
     if (!roomId) return;
@@ -102,7 +102,7 @@ export default function InfoBody({
     router.push(
       `/call/${type}?calleeId=${encodeURIComponent(
         roomId
-      )}&contact=${encodeURIComponent(user.userId)}`
+      )}&contact=${encodeURIComponent(user.displayName ?? user.userId)}`
     );
   };
   const [avatarUrl, setAvatarUrl] = React.useState<string | null>(null);
@@ -215,7 +215,22 @@ export default function InfoBody({
       if (!b) return -1;
       return (b.timestamp || 0) - (a.timestamp || 0);
     });
+  const voiceMessages = [...roomMessages]
+    .filter((msg) => {
+      return msg.type === "audio" && msg.audioUrl;
+    })
+    .sort((a, b) => (b.timestamp || Date.now()) - (a.timestamp || Date.now()));
+  type VoiceMessage = {
+    eventId?: string;
+    senderDisplayName?: string;
+    sender?: string;
+    audioUrl?: string;
+    audioDuration?: number;
+    timestamp?: number;
+    [key: string]: any;
+  };
 
+  const groupMessages: any[] = [];
   // Thêm vào đầu component
   const [toastMessage, setToastMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
@@ -399,6 +414,7 @@ export default function InfoBody({
     marginHorizontal: "4px",
     boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
   };
+
   return (
     <>
       <div
@@ -692,9 +708,8 @@ export default function InfoBody({
         </div>
 
         {/* User info section */}
-        {/* User info section */}
         {!hideAvatarHeader && (
-          <div className="w-full px-4 bg-white">
+          <div className="w-full px-4 bg-white dark:bg-black">
             <div
               className={`w-full max-w-md mx-auto bg-white dark:bg-[#232329] px-4 py-2 text-start flex flex-col mb-2 ${
                 scrollPosition > 0 ? "rounded-none" : "mt-4"
@@ -745,43 +760,65 @@ export default function InfoBody({
         )}
 
         {!hideAvatarHeader &&
-          (mediaMessages.length > 0 || linkMessages.length > 0) && (
+          (mediaMessages.length > 0 ||
+            linkMessages.length > 0 ||
+            voiceMessages.length > 0 ||
+            groupMessages.length > 0) && (
             <div className="bg-white dark:bg-black rounded-none flex-1 min-h-0 flex flex-col mt-0 relative">
-              {" "}
-              {/* Thêm mt-0 */}
               <Tabs
                 defaultValue={
                   mediaMessages.length > 0
                     ? "media"
                     : linkMessages.length > 0
                     ? "link"
-                    : "voice"
+                    : voiceMessages.length > 0
+                    ? "voice"
+                    : "groups"
                 }
                 className="w-full h-full"
               >
-                <TabsList className="grid w-full grid-cols-4">
-                  {mediaMessages.length > 0 && (
-                    <TabsTrigger value="media">Media</TabsTrigger>
-                  )}
-                  <TabsTrigger value="voice">Voice</TabsTrigger>
-                  {linkMessages.length > 0 && (
-                    <TabsTrigger value="link">Links</TabsTrigger>
-                  )}
-                  <TabsTrigger value="groups">Groups</TabsTrigger>
-                </TabsList>
+                {(() => {
+                  const visibleTabsCount =
+                    (mediaMessages.length > 0 ? 1 : 0) +
+                    (voiceMessages.length > 0 ? 1 : 0) +
+                    (linkMessages.length > 0 ? 1 : 0) +
+                    (groupMessages.length > 0 ? 1 : 0);
+
+                  return (
+                    <TabsList className="grid w-full grid-cols-4">
+                      {mediaMessages.length > 0 && (
+                        <TabsTrigger value="media" className="flex-1">
+                          Media
+                        </TabsTrigger>
+                      )}
+                      {voiceMessages.length > 0 && (
+                        <TabsTrigger value="voice" className="flex-1">
+                          Voice
+                        </TabsTrigger>
+                      )}
+                      {linkMessages.length > 0 && (
+                        <TabsTrigger value="link" className="flex-1">
+                          Links
+                        </TabsTrigger>
+                      )}
+                      {groupMessages.length > 0 && (
+                        <TabsTrigger value="groups" className="flex-1">
+                          Groups
+                        </TabsTrigger>
+                      )}
+                    </TabsList>
+                  );
+                })()}
 
                 {mediaMessages.length > 0 && (
                   <TabsContent value="media" className="h-full pb-0 mb-0">
-                    {" "}
-                    {/* Loại bỏ padding-bottom */}
-                    <div className="h-full overflow-y-auto overscroll-contain pb-8">
-                      {" "}
-                      {/* Thêm pb-0 */}
-                      <div className="grid grid-cols-3 gap-0.5 p-1">
+                    <div className="h-full overflow-y-auto overscroll-contain pb-8 bg-white dark:bg-[#1c1c1e]">
+                      {/* Thay đổi từ grid sang flex wrap để căn trái */}
+                      <div className="flex flex-wrap gap-1 p-2 justify-start">
                         {mediaMessages.map((msg, idx) => (
                           <div
                             key={msg.eventId || idx}
-                            className="aspect-square"
+                            className="w-[32%] aspect-square"
                           >
                             {msg.type === "image" && msg.imageUrl ? (
                               <Image
@@ -805,14 +842,184 @@ export default function InfoBody({
                     </div>
                   </TabsContent>
                 )}
+                {voiceMessages.length > 0 && (
+                  <TabsContent value="voice" className="h-full pb-0 mb-0">
+                    <div className="h-full overflow-y-auto overscroll-contain pb-4 bg-white dark:bg-[#1c1c1e]">
+                      <ul className="divide-y divide-gray-200 dark:divide-gray-800">
+                        {voiceMessages.map((msg, idx) => (
+                          <li
+                            key={msg.eventId || idx}
+                            className="flex items-center bg-gray-100 dark:bg-[#2c2c2e] p-4 m-2 rounded-lg"
+                          >
+                            <div className="flex-1">
+                              <div className="flex justify-between items-center">
+                                <p className="text-sm font-medium dark:text-white">
+                                  {msg.senderDisplayName === user.displayName
+                                    ? "You"
+                                    : msg.senderDisplayName}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {new Date(
+                                    msg.timestamp || 0
+                                  ).toLocaleDateString()}{" "}
+                                  at{" "}
+                                  {new Date(
+                                    msg.timestamp || 0
+                                  ).toLocaleTimeString([], {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </p>
+                              </div>
+
+                              <div className="mt-2 relative">
+                                <audio
+                                  id={`audio-${msg.eventId}`}
+                                  src={msg.audioUrl || ""}
+                                  preload="metadata"
+                                  className="hidden"
+                                  onTimeUpdate={(e) => {
+                                    const target = e.target as HTMLAudioElement;
+                                    const progress =
+                                      (target.currentTime / target.duration) *
+                                        100 || 0;
+                                    const progressBar = document.getElementById(
+                                      `progress-${msg.eventId}`
+                                    );
+                                    const timeDisplay = document.getElementById(
+                                      `time-${msg.eventId}`
+                                    );
+                                    if (progressBar) {
+                                      progressBar.style.width = `${progress}%`;
+                                    }
+                                    if (timeDisplay) {
+                                      const currentMin = Math.floor(
+                                        target.currentTime / 60
+                                      );
+                                      const currentSec = Math.floor(
+                                        target.currentTime % 60
+                                      );
+                                      const durationMin = Math.floor(
+                                        target.duration / 60
+                                      );
+                                      const durationSec = Math.floor(
+                                        target.duration % 60
+                                      );
+
+                                      timeDisplay.textContent = `${currentMin}:${currentSec
+                                        .toString()
+                                        .padStart(
+                                          2,
+                                          "0"
+                                        )} / ${durationMin}:${durationSec
+                                        .toString()
+                                        .padStart(2, "0")}`;
+                                    }
+                                  }}
+                                />
+
+                                {/* Player UI với 1 nút play duy nhất */}
+                                <div className="flex items-center space-x-2">
+                                  <button
+                                    className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 hover:bg-blue-600 transition-colors"
+                                    onClick={() => {
+                                      const audio = document.getElementById(
+                                        `audio-${msg.eventId}`
+                                      ) as HTMLAudioElement;
+                                      if (audio) {
+                                        if (audio.paused) {
+                                          document
+                                            .querySelectorAll("audio")
+                                            .forEach((a) => {
+                                              if (
+                                                a.id !== `audio-${msg.eventId}`
+                                              )
+                                                a.pause();
+                                            });
+                                          audio.play();
+                                        } else {
+                                          audio.pause();
+                                        }
+                                      }
+                                    }}
+                                  >
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      className="h-4 w-4 text-white"
+                                      viewBox="0 0 20 20"
+                                      fill="currentColor"
+                                    >
+                                      <path
+                                        fillRule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                                        clipRule="evenodd"
+                                      />
+                                    </svg>
+                                  </button>
+
+                                  <div className="flex-1">
+                                    <div className="h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+                                      <div
+                                        id={`progress-${msg.eventId}`}
+                                        className="h-full bg-blue-500 rounded-full"
+                                        style={{
+                                          width: "0%",
+                                          transition: "width 0.2s",
+                                        }}
+                                      ></div>
+                                    </div>
+                                    <p
+                                      id={`time-${msg.eventId}`}
+                                      className="text-xs text-gray-500 mt-1"
+                                    >
+                                      0:00 /{" "}
+                                      {msg.audioDuration
+                                        ? `${Math.floor(
+                                            msg.audioDuration / 60
+                                          )}:${String(
+                                            Math.floor(msg.audioDuration % 60)
+                                          ).padStart(2, "0")}`
+                                        : "0:00"}
+                                    </p>
+                                  </div>
+
+                                  <button
+                                    className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                                    onClick={() => {
+                                      const audio = document.getElementById(
+                                        `audio-${msg.eventId}`
+                                      ) as HTMLAudioElement;
+                                      if (audio) {
+                                        audio.muted = !audio.muted;
+                                      }
+                                    }}
+                                  >
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      className="h-5 w-5"
+                                      viewBox="0 0 20 20"
+                                      fill="currentColor"
+                                    >
+                                      <path
+                                        fillRule="evenodd"
+                                        d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217z"
+                                        clipRule="evenodd"
+                                      />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </TabsContent>
+                )}
 
                 {linkMessages.length > 0 && (
                   <TabsContent value="link" className="pb-0 mb-0">
-                    {" "}
-                    {/* Loại bỏ padding-bottom */}
                     <div className="max-h-[420px] overflow-y-auto overscroll-contain pb-0">
-                      {" "}
-                      {/* Thêm pb-0 */}
                       <Card className="w-full shadow-sm pt-3 pb-0 rounded-none">
                         <CardContent className="px-2 pb-10">
                           <div className="space-y-4">
@@ -835,6 +1042,14 @@ export default function InfoBody({
                           </div>
                         </CardContent>
                       </Card>
+                    </div>
+                  </TabsContent>
+                )}
+
+                {groupMessages.length > 0 && (
+                  <TabsContent value="groups" className="pb-0 mb-0">
+                    <div className="p-4 text-center text-muted-foreground">
+                      Group messages content here.
                     </div>
                   </TabsContent>
                 )}
