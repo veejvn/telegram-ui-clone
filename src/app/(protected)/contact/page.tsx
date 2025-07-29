@@ -44,6 +44,8 @@ const ContactPage = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [showNewContact, setShowNewContact] = useState(false);
+  const userIdChatBot =
+    process.env.NEXT_PUBLIC_USER_ID_BOT || "@bot:matrix.teknix.dev";
 
   useEffect(() => {
     if (!client) return;
@@ -58,7 +60,7 @@ const ContactPage = () => {
     loadContacts();
   }, [client]);
 
-  const handleAddContact = (contact: Contact) => { };
+  const handleAddContact = (contact: Contact) => {};
 
   const handleSettingClick = () => {
     router.push(ROUTES.SETTING);
@@ -90,14 +92,18 @@ const ContactPage = () => {
               <PopoverContent className="w-44 p-0 ml-3 rounded-2xl">
                 <div className="flex flex-col">
                   <Button
-                    className={`flex items-center justify-between px-4 py-2 bg-white text-black hover:bg-zinc-200 text-left rounded-none rounded-t-2xl ${sortBy === "lastSeen" ? "font-bold" : ""}`}
+                    className={`flex items-center justify-between px-4 py-2 bg-white text-black hover:bg-zinc-200 text-left rounded-none rounded-t-2xl ${
+                      sortBy === "lastSeen" ? "font-bold" : ""
+                    }`}
                     onClick={() => setSortBy("lastSeen")}
                   >
                     By Last Seen
                     {sortBy === "lastSeen" && <Check />}
                   </Button>
                   <Button
-                    className={`flex items-center justify-between px-4 py-2 bg-white text-black hover:bg-zinc-200 text-left rounded-none rounded-b-2xl ${sortBy === "name" ? "font-bold" : ""}`}
+                    className={`flex items-center justify-between px-4 py-2 bg-white text-black hover:bg-zinc-200 text-left rounded-none rounded-b-2xl ${
+                      sortBy === "name" ? "font-bold" : ""
+                    }`}
                     onClick={() => setSortBy("name")}
                   >
                     By Name
@@ -120,9 +126,7 @@ const ContactPage = () => {
           </div>
         </div>
         {/* --- SEARCHBAR: chỉ cần render, không truyền prop --- */}
-        {!options.includes("search") && (
-          <SearchBar />
-        )}
+        {!options.includes("search") && <SearchBar />}
       </div>
       <div className="px-4 py-2">
         {loading ? (
@@ -146,7 +150,8 @@ const ContactPage = () => {
             </div>
             <h2 className="text-xl font-semibold my-4">Access to Contacts</h2>
             <p className="text-gray-400 mb-6">
-              Please allow Telegram access to your phonebook to seamlessly find all your friends.
+              Please allow Telegram access to your phonebook to seamlessly find
+              all your friends.
             </p>
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -184,10 +189,17 @@ const ContactPage = () => {
           // --------- UI KHI ĐÃ CÓ LIÊN HỆ (NHƯ ẢNH SAU) ---------
           <div>
             {/* Alert: đồng bộ theme */}
-            <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl p-4 mb-4 shadow-sm flex flex-col gap-2">
+            {/* <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl p-4 mb-4 shadow-sm flex flex-col gap-2">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-red-500">
-                  <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <svg
+                    width="20"
+                    height="20"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
                     <circle cx="12" cy="12" r="10" />
                     <line x1="12" y1="8" x2="12" y2="12" />
                     <circle cx="12" cy="16" r="1" />
@@ -198,7 +210,8 @@ const ContactPage = () => {
                 </span>
               </div>
               <div className="text-sm text-gray-700 dark:text-gray-300">
-                Please allow Telegram access to your phonebook to seamlessly find all your friends.
+                Please allow Telegram access to your phonebook to seamlessly
+                find all your friends.
               </div>
               <Button
                 variant="link"
@@ -207,7 +220,7 @@ const ContactPage = () => {
               >
                 Allow in Settings
               </Button>
-            </div>
+            </div> */}
             {/* Invite friends */}
             <Button
               variant="ghost"
@@ -228,37 +241,50 @@ const ContactPage = () => {
               Contacts
             </div>
             <ul className="divide-y divide-gray-200 dark:divide-zinc-800">
-              {contacts.length === 0 ? (
-                <li className="py-6 text-center text-gray-400 dark:text-gray-500 select-none">
-                  No contacts found.
-                </li>
-              ) : (
-                contacts.map((room) => {
+              {(() => {
+                const filteredContacts = contacts.filter((room) => {
                   const other = client
-                    ? room.getJoinedMembers().find((m) => m.userId !== client.getUserId())
+                    ? room
+                        .getJoinedMembers()
+                        .find((m) => m.userId !== client.getUserId())
                     : undefined;
-                  return (
-                    <li
-                      key={room.roomId}
-                      className="flex items-center gap-3 py-3 px-2 hover:bg-blue-50 dark:hover:bg-zinc-800 transition-colors rounded-lg cursor-pointer"
-                    >
-                      <Avatar className="flex items-center justify-center w-10 h-10 text-base bg-zinc-300 dark:bg-zinc-700">
-                        {other?.name?.[0]?.toUpperCase() ||
-                          other?.userId?.[1]?.toUpperCase() ||
-                          "?"}
-                      </Avatar>
-                      <div className="flex flex-col flex-1 min-w-0">
-                        <span className="font-medium truncate text-gray-900 dark:text-white">
-                          {other?.name || other?.userId}
-                        </span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                          {other?.userId}
-                        </span>
-                      </div>
-                    </li>
-                  );
-                })
-              )}
+                  return other?.userId !== userIdChatBot;
+                });
+
+                return filteredContacts.length === 0 ? (
+                  <li className="py-6 text-center text-gray-400 dark:text-gray-500 select-none">
+                    No contacts found.
+                  </li>
+                ) : (
+                  filteredContacts.map((room) => {
+                    const other = client
+                      ? room
+                          .getJoinedMembers()
+                          .find((m) => m.userId !== client.getUserId())
+                      : undefined;
+                    return (
+                      <li
+                        key={room.roomId}
+                        className="flex items-center gap-3 py-3 px-2 hover:bg-blue-50 dark:hover:bg-zinc-800 transition-colors rounded-lg cursor-pointer"
+                      >
+                        <Avatar className="flex items-center justify-center w-10 h-10 text-base bg-zinc-300 dark:bg-zinc-700">
+                          {other?.name?.[0]?.toUpperCase() ||
+                            other?.userId?.[1]?.toUpperCase() ||
+                            "?"}
+                        </Avatar>
+                        <div className="flex flex-col flex-1 min-w-0">
+                          <span className="font-medium truncate text-gray-900 dark:text-white">
+                            {other?.name || other?.userId}
+                          </span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                            {other?.userId}
+                          </span>
+                        </div>
+                      </li>
+                    );
+                  })
+                );
+              })()}
             </ul>
           </div>
         )}

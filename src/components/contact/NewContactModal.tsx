@@ -74,6 +74,7 @@ const NewContactModal = ({
 
   const handleCancel = () => {
     setModalOpen(false);
+    resetForm();
     if (onClose) onClose();
   };
 
@@ -103,20 +104,20 @@ const NewContactModal = ({
       )}
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-md p-6">
+        <DialogContent className="max-w-md px-6 py-4">
           <DialogTitle />
           <DialogDescription />
           <div className="flex justify-between items-center text-sm mb-4">
             <Button
               onClick={handleCancel}
-              className="text-blue-400 bg-transparent hover:bg-zinc-300 dark:hover:bg-zinc-800 border dark:border-none px-1"
+              className="text-blue-400 bg-transparent hover:bg-zinc-300 dark:hover:bg-zinc-800 px-1 shadow-none"
               type="button"
             >
               Cancel
             </Button>
             <h2 className="text-base font-semibold">New Contact</h2>
             <Button
-              className="text-black bg-transparent hover:bg-zinc-300 dark:hover:bg-zinc-800 dark:text-white border dark:border-none px-1"
+              className="text-black bg-transparent hover:bg-zinc-300 dark:hover:bg-zinc-800 dark:text-white px-1 shadow-none"
               onClick={handleCreate}
               type="button"
             >
@@ -132,13 +133,13 @@ const NewContactModal = ({
               placeholder="First Name"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              className="col-span-1 mb-2 placeholder:font-normal placeholder:text-gray-300"
+              className="col-span-1 mb-2 placeholder:font-normal placeholder:text-gray-600"
             />
             <Input
               placeholder="Last Name"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              className="col-span-1 mb-2 placeholder:font-normal placeholder:text-gray-300"
+              className="col-span-1 mb-2 placeholder:font-normal placeholder:text-gray-600"
             />
           </div>
 
@@ -156,11 +157,10 @@ const NewContactModal = ({
                   <CircleMinus className="size-full" />
                 </Button>
                 <span className="text-blue-500  text-sm w-16 select-none">
-                  di động
+                  mobile
                 </span>
                 <Input
-                  className="flex-1 placeholder:font-normal placeholder:text-gray-300"
-                  placeholder="+"
+                  className="flex-1 placeholder:font-normal placeholder:text-gray-600"
                   value={phone}
                   onChange={(e) => handlePhoneChange(idx, e.target.value)}
                   type="tel"
