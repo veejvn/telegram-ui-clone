@@ -1,0 +1,119 @@
+"use client";
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import { ChevronRight } from "lucide-react";
+export default function ContactEditPage() {
+    const router = useRouter();
+    return (
+        <div className="w-full mx-auto p-4">
+            {/* Header */}
+            <div className="flex justify-between items-center mb-6">
+                <button
+                    onClick={() => router.back()}
+                    className="w-10 h-10 rounded-full bg-gray-400 hover:bg-gray-500 flex items-center justify-center"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 16 16"
+                        fill="currentColor"
+                    >
+                        <path
+                            d="M11 2L5 8L11 14"
+                            strokeWidth="2"
+                            stroke="white"
+                            fill="none"
+                        />
+                    </svg>
+                </button>
+                <h1 className="text-lg font-semibold">Edit</h1>
+                <Button
+                    onClick={() => router.back()}
+                    variant="ghost"
+                    className="text-blue-500 font-semibold"
+                >
+                    Done
+                </Button>
+            </div>
+
+
+
+            {/* Avatar + Name Section */}
+            <div className="container mx-auto px-4">
+                <div className="flex gap-4 p-4 rounded-2xl border border-gray-200 w-full items-start mb-4">
+                    {/* Avatar */}
+                    <img
+                        src="/avatar.png"
+                        alt="Avatar"
+                        className="w-14 h-14 rounded-full bg-gray-300 object-cover shrink-0"
+                    />
+
+                    {/* Name + input */}
+                    <div className="flex-1 min-w-0">
+                        <p className="font-medium text-black">Hello Hoang</p>
+
+                        {/* Line */}
+                        <div className="overflow-hidden w-full my-1">
+                            <div className="h-px bg-gray-300 w-full" />
+                        </div>
+
+                        {/* Last name input */}
+                        <div className="flex items-center gap-2 mt-1 w-full min-w-0">
+                            <span className="italic text-gray-500 whitespace-nowrap">Last name</span>
+                            <input
+                                placeholder=""
+                                className="flex-1 min-w-0 border-none bg-transparent outline-none italic text-dark-500 placeholder:italic"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+
+
+
+                {/* Action Sections */}
+                <div className="rounded-2xl border border-gray-200 overflow-hidden mb-4">
+                    {/* Suggest Photo */}
+                    <div className="p-4 flex justify-between items-start cursor-pointer hover:bg-gray-100">
+                        <div>
+                            <p className="font-medium">Suggest photo for Hello Hoang</p>
+                            <p className="text-sm text-gray-500">
+                                You can replace Hello Hoang's photo with another photo that only you can see.
+                            </p>
+                        </div>
+                        <ChevronRight className="h-5 w-5 text-gray-400" />
+                    </div>
+
+                    <div className="h-px bg-gray-200 mx-4" />
+
+                    {/* Set Photo */}
+                    <div className="p-4 flex justify-between items-start cursor-pointer hover:bg-gray-100">
+                        <div>
+                            <p className="font-medium">Set photo for Hello Hoang</p>
+                            <p className="text-sm text-gray-500">
+                                You can replace Hello Hoang's photo with another photo that only you can see.
+                            </p>
+                        </div>
+                        <ChevronRight className="h-5 w-5 text-gray-400" />
+
+                    </div>
+                </div>
+
+                {/* Remove Contact */}
+                <div className="mt-6 p-4 rounded-xl border border-gray-400 cursor-pointer hover:bg-gray-50 flex items-start justify-between">
+                    <div>
+                        <p className="text-red-600 font-medium">Remove contact</p>
+                        <p className="text-sm text-gray-500 mt-1">
+                            This will remove the contact from your list.
+                        </p>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-gray-400 mt-1 flex-shrink-0" />
+                </div>
+
+
+            </div>
+        </div>
+    );
+}
