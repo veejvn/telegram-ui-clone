@@ -114,8 +114,7 @@ export function MatrixClientProvider({
           if (!whoAmIResponse.ok) {
             const errorData = await whoAmIResponse.json();
             throw new Error(
-              `WhoAmI failed (${whoAmIResponse.status}): ${
-                errorData.error || "Unknown error"
+              `WhoAmI failed (${whoAmIResponse.status}): ${errorData.error || "Unknown error"
               }`
             );
           }
@@ -155,12 +154,12 @@ export function MatrixClientProvider({
             "[MatrixClientProvider] Token verification failed:",
             tokenError
           );
-          setError(`Lỗi xác thực token: ${tokenError.message} Chi tiết: 
-            - Error: ${tokenError.message}
-            Vui lòng đăng nhập lại.`);
-          logout();
-          clearUser();
-          window.location.href = "/chat/login";
+          setError(`Lỗi xác thực token: ${tokenError.message}
+
+Chi tiết:
+- Error: ${tokenError.message}
+
+Vui lòng đăng nhập lại.`);
           return;
         }
 
@@ -231,9 +230,8 @@ export function MatrixClientProvider({
       } catch (error: any) {
         console.error("[MatrixClientProvider] Failed to setup client:", error);
 
-        const errorMsg = `Lỗi khởi tạo Matrix client: ${
-          error?.message || "Không xác định"
-        }
+        const errorMsg = `Lỗi khởi tạo Matrix client: ${error?.message || "Không xác định"
+          }
 
 Chi tiết:
 - HTTP Status: ${error?.httpStatus || "N/A"}

@@ -130,39 +130,44 @@ export const ChatListItem = ({
         </Avatar>
       </div>
 
-      {/* <div className="flex-1 ps-2.5">
-        <h1 className="text-[18px] mb-0.5">{room.name}</h1>
-        <p className="text-sm ">{sender}</p>
-        <p className="text-sm text-muted-foreground">{content}</p>
-      </div> */}
-
-      <div className="flex-1 ps-2.5">
+      <div className="flex-1 ps-2.5 relative">
         <div className="flex items-center gap-1">
           <h1 className="text-[18px] mb-0.5">{room.name}</h1>
           {isMuted && <VolumeX className="w-4 h-4 text-zinc-400" />}
         </div>
-        {/* <p className="text-sm ">{sender}</p> */}
-        <p className="text-sm text-muted-foreground">
-          {truncateText(content || "")}
+        <p className="text-sm text-muted-foreground line-clamp-2">
+          {lastMessageSenderId === userId ? (
+            <>
+              <span className="text-black/80">You: </span>
+              {truncateText(content || "")}
+            </>
+          ) : (
+            <>
+              <span className="text-black/80">{sender}: </span>
+              {truncateText(content || "")}
+            </>
+          )}
         </p>
-      </div>
-
-      <div className="flex flex-col justify-between pb-1.5">
-        <div className="flex gap-1 text-sm">
-          {/* Chỉ hiển thị dấu check nếu tin nhắn cuối cùng là của mình */}
-          {lastMessageSenderId === userId &&
-            (lastReadReceipts ? (
-              <CheckCheck className="h-4 w-4 mt-0.5 text-green-600 dark:text-blue-600" />
-            ) : (
-              <Check className="h-4 w-4 mt-0.5 text-green-600 dark:text-blue-600" />
-            ))}
-          <span className="text-muted-foreground">{time}</span>
+        <div className="flex flex-col justify-between pb-1.5 absolute right-0 top-0 h-full items-end">
+          <span className="text-xs text-gray-400 mb-1">{time}</span>
+          {/* Tick hoặc badge unread */}
+          {lastMessageSenderId === userId ? (
+            <span
+              className={`inline-flex items-center justify-center w-5 h-5 rounded-full mt-1 ${
+                lastReadReceipts ? "bg-blue-500" : "bg-gray-300"
+              }`}
+            >
+              <Check className="w-3.5 h-3.5 text-white" />
+            </span>
+          ) : (
+            unreadMsgs &&
+            unreadMsgs.length > 0 && (
+              <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-white text-[10px] font-bold mt-1">
+                {unreadMsgs.length}
+              </span>
+            )
+          )}
         </div>
-        {unreadMsgs && (
-          <div className="text-right flex justify-end">
-            <UnreadMsgsCount count={unreadMsgs.length} />
-          </div>
-        )}
       </div>
     </div>
   );
