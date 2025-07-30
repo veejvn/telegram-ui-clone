@@ -121,6 +121,43 @@
   }
 }
 
+/* iOS Safari specific fixes */
+@supports (-webkit-appearance: none) {
+  html,
+  body {
+    /* Prevent overscroll and bounce on iOS */
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+    /* Ensure stable height */
+    height: 100%;
+    min-height: 100vh;
+    /* Prevent any unwanted scrolling */
+    overflow-x: hidden;
+  }
+
+  /* Prevent zoom on input focus */
+  input,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  /* Prevent body scroll during keyboard events on chat pages */
+  body.chat-page-active {
+    overflow: hidden !important;
+    position: fixed !important;
+    width: 100% !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    top: 0 !important;
+    left: 0 !important;
+  }
+
+  /* Hide main element when chat is active to prevent layout conflicts */
+  body.chat-page-active main {
+    display: none !important;
+  }
+}
+
 .bg-chat {
   @apply bg-cover bg-center bg-no-repeat;
   background-image: url("../../public/images/chat-bg-light.jpg");
