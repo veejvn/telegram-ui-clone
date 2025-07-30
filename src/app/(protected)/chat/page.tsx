@@ -1,3 +1,4 @@
+/*src/app/(protected)/chat/page.tsx*/
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
@@ -5,7 +6,7 @@ import SearchBar from "@/components/layouts/SearchBar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from "next/link";
 import { ChatList } from "@/components/chat/ChatList";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import * as sdk from "@/lib/matrix-sdk";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
@@ -22,6 +23,8 @@ import {
   Search,
   ShoppingCart,
   SquarePen,
+  UserCheck,
+  X,
 } from "lucide-react";
 import useSortedRooms from "@/hooks/useSortedRooms";
 import useListenRoomInvites from "@/hooks/useListenRoomInvites";
@@ -29,9 +32,13 @@ import { getLS, removeLS } from "@/tools/localStorage.tool";
 import { useSearchParams } from "next/navigation";
 import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
 import { useRoomStore } from "@/stores/useRoomStore";
+import { searchMatrixUsers } from "@/services/matrixUserSearch";
+import ContactService from "@/services/contactService";
+import { getDetailedStatus } from "@/utils/chat/presencesHelpers";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/contexts/ToastProvider";
 
 export default function ChatsPage() {
-  // const [rooms, setRooms] = useState<sdk.Room[]>([]);
   const { refreshRooms, loading } = useSortedRooms();
   const rooms = useRoomStore((state) => state.rooms);
   const client = useMatrixClient();
@@ -39,28 +46,29 @@ export default function ChatsPage() {
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   useListenRoomInvites();
-  // useEffect(() => {
-  //   if (!client) return;
-  //   getUserRooms(client)
-  //     .then((res) => {
-  //       if (res.success && res.rooms) {
-  //         setRooms(res.rooms);
-  //       } else {
-  //         console.error("Failed to fetch user rooms or rooms are undefined.");
-  //       }
-  //     })
-  //     .catch((error) => {
-  //       console.error("An error occurred while fetching user rooms:", error);
-  //     });
-  // }, [client]);
+  const router = useRouter();
+  const { showToast } = useToast(); // Tìm kiếm states
 
+  const [isFocused, setIsFocused] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isFullScreenSearch, setIsFullScreenSearch] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [messageResults, setMessageResults] = useState<any[]>([]);
+  const [recentSearches, setRecentSearches] = useState<any[]>([]);
+  const [contacts, setContacts] = useState<any[]>([]);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const userIdChatBot =
+    process.env.NEXT_PUBLIC_USER_ID_BOT || "@bot:matrix.teknix.dev"; // Chức năng chọn phòng
   const handleSelectRoom = (roomId: string) => {
     setSelectedRooms((prev) =>
       prev.includes(roomId)
         ? prev.filter((id) => id !== roomId)
         : [...prev, roomId]
     );
-  };
+  }; // Chức năng đánh dấu đã đọc tất cả
 
   const handleReadAll = async () => {
     if (!client || selectedRooms.length < 2) return;
@@ -97,21 +105,6 @@ export default function ChatsPage() {
   const handleDelete = () => {
     setShowDeleteModal(true);
   };
-
-  // const refreshRooms = () => {
-  //   if (!client) return;
-  //   getUserRooms(client)
-  //     .then((res) => {
-  //       if (res.success && res.rooms) {
-  //         setRooms(res.rooms);
-  //       } else {
-  //         console.error("Failed to fetch user rooms or rooms are undefined.");
-  //       }
-  //     })
-  //     .catch((error) => {
-  //       console.error("An error occurred while fetching user rooms:", error);
-  //     });
-  // };
 
   const handleDeleteMine = async () => {
     if (!client) return;
@@ -154,13 +147,8 @@ export default function ChatsPage() {
   };
 
   const headerStyle = getHeaderStyleWithStatusBar();
-
-  // const [showBackButton, setShowBackButton] = useState(false);
-
   const backUrl = getLS("backUrl");
-
   const fromMainApp = getLS("fromMainApp");
-
   const MAIN_APP_ORIGIN =
     typeof window !== "undefined" ? window.location.origin : "";
 
@@ -180,80 +168,646 @@ export default function ChatsPage() {
     }
   };
 
-  // const searchParams = useSearchParams();
-  // const hideFromQuery = searchParams.get("hide");
   const hide = getLS("hide") || [];
   const hideArray = typeof hide === "string" ? hide.split(",") : hide;
-  const options = Array.isArray(hideArray) ? hideArray : [];
-  //console.log(options)
+  const options = Array.isArray(hideArray) ? hideArray : []; // Các hàm utility cho tìm kiếm
 
-  const [isFocused, setIsFocused] = useState(false);
-  const [searchValue, setSearchValue] = useState("");
+  const getMxcAvatarUrl = (url: string | null) => {
+    if (!url || !client) return null;
+
+    try {
+      if (url.startsWith("mxc://")) {
+        return client.mxcUrlToHttp(url, 60, 60, "crop");
+      } else if (url.startsWith("http")) {
+        return url;
+      }
+      return null;
+    } catch (error) {
+      console.error(`Lỗi xử lý avatar URL:`, error);
+      return null;
+    }
+  }; // Tải danh sách liên hệ
+
+  useEffect(() => {
+    const loadContacts = async () => {
+      if (!client) return;
+
+      try {
+        const directRooms = await ContactService.getDirectMessageRooms(client);
+
+        const contactsList = directRooms
+          .map((room) => {
+            const otherMembers = room
+              .getJoinedMembers()
+              .filter(
+                (member) =>
+                  member.userId !== client.getUserId() &&
+                  member.userId !== userIdChatBot
+              );
+
+            if (otherMembers.length === 0) return null;
+
+            const otherUser = otherMembers[0];
+
+            let avatarUrl = null;
+            try {
+              if (otherUser.getAvatarUrl) {
+                avatarUrl = otherUser.getAvatarUrl(
+                  client.getHomeserverUrl(),
+                  60,
+                  60,
+                  "crop",
+                  false,
+                  false,
+                  false
+                );
+              }
+            } catch (error) {
+              console.error("Lỗi khi lấy avatar URL:", error);
+            }
+
+            let processedAvatarUrl = null;
+            if (avatarUrl) {
+              try {
+                processedAvatarUrl = getMxcAvatarUrl(avatarUrl);
+              } catch (error) {
+                console.error("Lỗi khi chuyển đổi avatar URL:", error);
+              }
+            }
+
+            let lastSeen = null;
+            let isOnline = false;
+
+            try {
+              const presence = client.getUser(otherUser.userId)?.presence;
+              if (presence) {
+                if (presence === "online") {
+                  isOnline = true;
+                  lastSeen = new Date();
+                } else if (
+                  typeof presence === "object" &&
+                  presence !== null &&
+                  "lastActiveAgo" in presence &&
+                  typeof (presence as { lastActiveAgo?: number })
+                    .lastActiveAgo === "number"
+                ) {
+                  const lastActive =
+                    Date.now() -
+                    (presence as { lastActiveAgo: number }).lastActiveAgo;
+                  lastSeen = new Date(lastActive);
+                  isOnline = Date.now() - lastActive < 2 * 60 * 1000;
+                }
+              }
+            } catch (error) {
+              console.error("Lỗi khi lấy thông tin presence:", error);
+            }
+
+            return {
+              user_id: otherUser.userId,
+              display_name: otherUser.name || otherUser.userId,
+              avatar_url: avatarUrl,
+              processed_avatar_url: processedAvatarUrl,
+              room_id: room.roomId,
+              isOnline: isOnline,
+              lastSeen: lastSeen,
+            };
+          })
+          .filter(Boolean);
+
+        setContacts(contactsList);
+      } catch (err) {
+        console.error("Lỗi khi tải danh sách liên hệ:", err);
+      }
+    };
+
+    loadContacts();
+  }, [client]); // Tải recent searches từ localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("recentSearches");
+      if (saved) {
+        const parsedSearches = JSON.parse(saved);
+
+        const processedSearches = parsedSearches.map((item: any) => {
+          if (
+            item.avatar_url &&
+            (!item.processed_avatar_url || item.processed_avatar_url === "") &&
+            client
+          ) {
+            try {
+              const avatarUrl = getMxcAvatarUrl(item.avatar_url);
+              return {
+                ...item,
+                processed_avatar_url: avatarUrl || null,
+              };
+            } catch (error) {
+              console.error("Lỗi khi xử lý URL:", error);
+              return item;
+            }
+          }
+          return item;
+        });
+
+        setRecentSearches(processedSearches);
+      }
+    } catch (err) {
+      console.error("Failed to load recent searches:", err);
+    }
+  }, [client]); // Xử lý tìm kiếm
+
+  useEffect(() => {
+    if (searchTerm.length > 0 && client && isFullScreenSearch) {
+      setSearchLoading(true);
+      setIsSearching(true);
+
+      const processedUserIds = new Set();
+      let combinedResults: any[] = []; // Tìm trong danh sách contacts và recent searches
+
+      const localResults = [...contacts, ...recentSearches].filter(
+        (contact) => {
+          const displayName = (contact.display_name || "").toLowerCase();
+          const userId = (contact.user_id || "").toLowerCase();
+          const term = searchTerm.toLowerCase();
+
+          return (
+            userId !== userIdChatBot.toLowerCase() &&
+            (displayName.includes(term) || userId.includes(term))
+          );
+        }
+      );
+
+      localResults.forEach((user) => {
+        if (!processedUserIds.has(user.user_id)) {
+          processedUserIds.add(user.user_id);
+          combinedResults.push(user);
+        }
+      }); // Tìm trong phòng chat
+
+      if (client) {
+        const rooms = client.getRooms() || [];
+
+        for (const room of rooms) {
+          const isDirectRoom =
+            client.getAccountData("m.direct" as keyof sdk.AccountDataEvents) &&
+            Object.values(
+              client
+                .getAccountData("m.direct" as keyof sdk.AccountDataEvents)
+                ?.getContent() || {}
+            ).some(
+              (roomIds: any) =>
+                Array.isArray(roomIds) && roomIds.includes(room.roomId)
+            );
+          if (!isDirectRoom) continue;
+
+          const members = room
+            .getJoinedMembers()
+            .filter((member) => member.userId !== client.getUserId());
+
+          for (const member of members) {
+            const memberName = (member.name || "").toLowerCase();
+            const memberId = member.userId.toLowerCase();
+            const term = searchTerm.toLowerCase();
+
+            if (
+              (memberName.includes(term) || memberId.includes(term)) &&
+              !processedUserIds.has(member.userId)
+            ) {
+              processedUserIds.add(member.userId);
+
+              let avatarUrl = null;
+              try {
+                if (member.getAvatarUrl) {
+                  avatarUrl = member.getAvatarUrl(
+                    client.getHomeserverUrl(),
+                    60,
+                    60,
+                    "crop",
+                    false,
+                    false,
+                    false
+                  );
+                }
+              } catch (error) {
+                console.error("Lỗi khi lấy avatar URL:", error);
+              }
+
+              let processedAvatarUrl = null;
+              if (avatarUrl) {
+                try {
+                  processedAvatarUrl = getMxcAvatarUrl(avatarUrl);
+                } catch (error) {
+                  console.error("Lỗi khi xử lý avatar URL:", error);
+                }
+              }
+
+              let lastSeen = null;
+              let isOnline = false;
+
+              try {
+                const presence = client.getUser(member.userId)?.presence;
+                if (presence) {
+                  if (presence === "online") {
+                    isOnline = true;
+                    lastSeen = new Date();
+                  } else if (
+                    typeof presence === "object" &&
+                    presence !== null &&
+                    "lastActiveAgo" in presence &&
+                    typeof (presence as { lastActiveAgo?: number })
+                      .lastActiveAgo === "number"
+                  ) {
+                    const lastActive =
+                      Date.now() -
+                      (presence as { lastActiveAgo: number }).lastActiveAgo;
+                    lastSeen = new Date(lastActive);
+                    isOnline = Date.now() - lastActive < 2 * 60 * 1000;
+                  }
+                }
+              } catch (error) {
+                console.error("Lỗi khi lấy thông tin presence:", error);
+              }
+
+              combinedResults.push({
+                user_id: member.userId,
+                display_name: member.name || member.userId,
+                avatar_url: avatarUrl || "",
+                processed_avatar_url: processedAvatarUrl,
+                room_id: room.roomId,
+                isOnline: isOnline,
+                lastSeen: lastSeen,
+              });
+              break;
+            }
+          }
+        }
+      }
+
+      const timeoutId = setTimeout(() => {
+        // Tìm kiếm thông qua API Matrix
+        searchMatrixUsers(client, searchTerm)
+          .then((apiResults) => {
+            const filteredApiResults = apiResults.filter(
+              (user) => user.user_id !== userIdChatBot
+            ); // Xử lý avatar URL và presence info
+            const processedApiResults = apiResults.map((user) => {
+              if (user.avatar_url && !user.processed_avatar_url) {
+                try {
+                  user.processed_avatar_url = getMxcAvatarUrl(user.avatar_url);
+                } catch (error) {
+                  console.error("Lỗi xử lý avatar từ API:", error);
+                }
+              }
+
+              if (client) {
+                try {
+                  const presence = client.getUser(user.user_id)?.presence;
+                  if (presence) {
+                    if (presence === "online") {
+                      user.isOnline = true;
+                      user.lastSeen = new Date();
+                    } else if (
+                      typeof presence === "object" &&
+                      presence !== null &&
+                      "lastActiveAgo" in presence &&
+                      typeof (presence as { lastActiveAgo?: number })
+                        .lastActiveAgo === "number"
+                    ) {
+                      const lastActive =
+                        Date.now() -
+                        (presence as { lastActiveAgo: number }).lastActiveAgo;
+                      user.lastSeen = new Date(lastActive);
+                      user.isOnline = Date.now() - lastActive < 2 * 60 * 1000;
+                    }
+                  }
+                } catch (error) {
+                  console.error("Lỗi khi lấy thông tin presence:", error);
+                }
+              }
+
+              return user;
+            }); // Kết hợp kết quả và loại bỏ trùng lặp
+
+            processedApiResults.forEach((user) => {
+              if (!processedUserIds.has(user.user_id)) {
+                processedUserIds.add(user.user_id);
+                combinedResults.push(user);
+              }
+            }); // Loại bỏ trùng lặp bằng Set
+
+            const uniqueResults = Array.from(
+              new Map(
+                combinedResults.map((item) => [item.user_id, item])
+              ).values()
+            );
+
+            setSearchResults(uniqueResults);
+            setSearchLoading(false);
+          })
+          .catch((err) => {
+            console.error("Lỗi tìm kiếm API:", err); // Loại bỏ trùng lặp
+
+            const uniqueResults = Array.from(
+              new Map(
+                combinedResults.map((item) => [item.user_id, item])
+              ).values()
+            );
+            setSearchResults(uniqueResults);
+            setSearchLoading(false);
+          }); // Tìm tin nhắn
+
+        client
+          .searchMessageText({ query: searchTerm })
+          .then((res) => {
+            const rawResults =
+              res?.search_categories?.room_events?.results || [];
+            const filteredMessages = rawResults.filter((msg: any) => {
+              const content = msg?.result?.content?.body || "";
+              return content.toLowerCase().includes(searchTerm.toLowerCase());
+            });
+            setMessageResults(filteredMessages);
+          })
+          .catch(() => {
+            setMessageResults([]);
+          });
+      }, 300);
+
+      return () => clearTimeout(timeoutId);
+    } else {
+      setSearchResults([]);
+      setMessageResults([]);
+      setSearchLoading(false);
+      setIsSearching(false);
+    }
+  }, [searchTerm, client, isFullScreenSearch, contacts, recentSearches]); // Các hàm xử lý
+
+  const normalizeUserIdInput = (raw: string, client: sdk.MatrixClient) => {
+    if (!raw) return raw;
+    let id = raw.trim();
+    if (!id.startsWith("@")) id = "@" + id;
+
+    if (!id.includes(":")) {
+      const domain = client
+        .getHomeserverUrl()
+        .replace(/^https?:\/\//, "")
+        .replace(/\/$/, "");
+      id += `:${domain}`;
+    }
+
+    return id;
+  };
+
+  const handleAddContact = async (client: sdk.MatrixClient, rawId: string) => {
+    const userId = normalizeUserIdInput(rawId, client);
+    try {
+      const room = await ContactService.addContact(client, userId);
+      if (room) {
+        router.push(`/chat/${room.roomId}`);
+        closeFullScreenSearch();
+      }
+    } catch (error: any) {
+      console.error("Lỗi khi tạo phòng:", error.message);
+    }
+  };
+
+  const handleUserClick = async (user: any) => {
+    if (!client || user.user_id === userIdChatBot) return; // Thêm vào recent searches
+
+    const newRecent = [...recentSearches];
+    const existingIndex = newRecent.findIndex(
+      (r) => r.user_id === user.user_id
+    );
+
+    let avatarUrl = null;
+    if (user.processed_avatar_url && user.processed_avatar_url !== "") {
+      avatarUrl = user.processed_avatar_url;
+    } else if (user.avatar_url && user.avatar_url !== "") {
+      try {
+        avatarUrl = getMxcAvatarUrl(user.avatar_url);
+      } catch (error) {
+        console.error("Lỗi chuyển đổi mxc URL:", error);
+      }
+    }
+
+    let lastSeen = user.lastSeen;
+    let isOnline = user.isOnline;
+
+    try {
+      const presence = client.getUser(user.user_id)?.presence;
+      if (presence) {
+        if (presence === "online") {
+          isOnline = true;
+          lastSeen = new Date();
+        } else if (
+          typeof presence === "object" &&
+          presence !== null &&
+          "lastActiveAgo" in presence &&
+          typeof (presence as { lastActiveAgo?: number }).lastActiveAgo ===
+            "number"
+        ) {
+          const lastActive =
+            Date.now() - (presence as { lastActiveAgo: number }).lastActiveAgo;
+          lastSeen = new Date(lastActive);
+          isOnline = Date.now() - lastActive < 2 * 60 * 1000;
+        }
+      }
+    } catch (error) {
+      console.error("Lỗi khi lấy thông tin presence:", error);
+    }
+
+    const userToSave = {
+      ...user,
+      processed_avatar_url: avatarUrl,
+      isOnline: isOnline,
+      lastSeen: lastSeen,
+    };
+
+    if (existingIndex >= 0) {
+      newRecent.splice(existingIndex, 1);
+    }
+
+    newRecent.unshift(userToSave);
+    const updatedRecent = newRecent.slice(0, 5);
+    setRecentSearches(updatedRecent);
+
+    try {
+      localStorage.setItem("recentSearches", JSON.stringify(updatedRecent));
+    } catch (err) {
+      console.error("Failed to save recent searches:", err);
+    }
+
+    const isFriend = client
+      ?.getRooms()
+      .some((room) =>
+        room.getJoinedMembers().some((member) => member.userId === user.user_id)
+      );
+
+    if (isFriend) {
+      const room = client
+        .getRooms()
+        .find((r) =>
+          r.getJoinedMembers().some((m) => m.userId === user.user_id)
+        );
+      if (room) {
+        router.push(`/chat/${room.roomId}`);
+        closeFullScreenSearch();
+      }
+    } else {
+      await handleAddContact(client, user.user_id);
+    }
+  };
+
+  const clearHistory = () => {
+    setRecentSearches([]);
+    localStorage.removeItem("recentSearches");
+  };
+
+  const renderAvatar = (user: any) => {
+    let avatarUrl = user.processed_avatar_url;
+
+    if (!avatarUrl && user.avatar_url) {
+      try {
+        avatarUrl = getMxcAvatarUrl(user.avatar_url);
+        user.processed_avatar_url = avatarUrl;
+      } catch (error) {
+        console.error("Lỗi khi xử lý avatar trong renderAvatar:", error);
+      }
+    }
+
+    if (avatarUrl) {
+      return (
+        <div className="relative w-full h-full">
+          <img
+            src={avatarUrl}
+            alt="avatar"
+            className="w-12 h-12 rounded-full object-cover"
+            onError={(e) => {
+              console.error("Lỗi tải avatar:", avatarUrl);
+              e.currentTarget.style.display = "none";
+              const parent = e.currentTarget.parentElement;
+              if (parent) {
+                const fallbackAvatar = document.createElement("div");
+                fallbackAvatar.className =
+                  "w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center font-bold text-orange-800 text-lg";
+                fallbackAvatar.innerText = (
+                  user.display_name ||
+                  user.user_id ||
+                  "?"
+                )
+                  .charAt(0)
+                  .toUpperCase();
+                parent.appendChild(fallbackAvatar);
+              }
+            }}
+          />
+          {user.isOnline && (
+            <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+          )}
+        </div>
+      );
+    }
+
+    const firstChar = (user.display_name || user.user_id || "?")
+      .charAt(0)
+      .toUpperCase();
+
+    return (
+      <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center font-bold text-orange-800 text-lg relative">
+        {firstChar}
+        {user.isOnline && (
+          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+        )}
+      </div>
+    );
+  };
+
+  const openFullScreenSearch = () => {
+    setIsFullScreenSearch(true);
+    setSearchTerm("");
+    if (searchInputRef.current) {
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 100);
+    }
+  };
+
+  const closeFullScreenSearch = () => {
+    setIsFullScreenSearch(false);
+    setSearchTerm("");
+  };
+
+  const renderContactItem = (contact: any) => {
+    const name = contact.display_name?.split(" ")[0] || "User";
+    const shortenedName =
+      name.length > 10 ? name.substring(0, 7) + "..." : name;
+
+    let avatarUrl = contact.processed_avatar_url;
+
+    if (!avatarUrl && contact.avatar_url) {
+      try {
+        avatarUrl = getMxcAvatarUrl(contact.avatar_url);
+        contact.processed_avatar_url = avatarUrl;
+      } catch (error) {
+        console.error("Lỗi khi xử lý avatar trong renderContactItem:", error);
+      }
+    }
+
+    let statusText = "offline";
+    if (contact.isOnline) {
+      statusText = "online";
+    } else if (contact.lastSeen) {
+      statusText = getDetailedStatus(contact.lastSeen);
+    }
+
+    return (
+      <div
+        key={contact.user_id}
+        className="flex flex-col items-center cursor-pointer"
+        onClick={() => handleUserClick(contact)}
+      >
+        <div className="relative">
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt={contact.display_name}
+              className="w-14 h-14 rounded-full object-cover"
+              onError={(e) => {
+                console.error("Lỗi tải avatar:", avatarUrl);
+                e.currentTarget.style.display = "none";
+                const parent = e.currentTarget.parentElement;
+                if (parent) {
+                  const fallbackAvatar = document.createElement("div");
+                  fallbackAvatar.className =
+                    "w-14 h-14 rounded-full bg-orange-100 flex items-center justify-center";
+                  fallbackAvatar.innerHTML = `<span class="text-orange-800 font-medium text-xl">${(
+                    contact.display_name || "U"
+                  )
+                    .charAt(0)
+                    .toUpperCase()}</span>`;
+                  parent.appendChild(fallbackAvatar);
+                }
+              }}
+            />
+          ) : (
+            <div className="w-14 h-14 rounded-full bg-orange-100 flex items-center justify-center">
+              <span className="text-orange-800 font-medium text-xl">
+                {(contact.display_name || "U").charAt(0).toUpperCase()}
+              </span>
+            </div>
+          )}
+          {contact.isOnline && (
+            <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+          )}
+        </div>
+        <div className="mt-1 text-xs text-center text-gray-600 max-w-[60px] truncate">
+          {shortenedName}
+          <span className="block text-xs text-blue-500 mt-1">{statusText}</span>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="flex flex-col h-screen space-y-2 bg-gradient-to-b from-cyan-700/30 via-cyan-300/15 to-yellow-600/25">
-      {/*
-      <div
-        style={headerStyle}
-        className="sticky bg-white dark:bg-[#1a1a1a] top-0 z-10"
-      >
-        <div className="grid grid-cols-3 items-center px-4 py-4">
-          <div className="flex items-center">
-            {fromMainApp && (
-              <button
-                className="text-blue-500 font-medium w-10 cursor-pointer"
-                onClick={handleBack}
-                title="Back"
-                aria-label="Back"
-              >
-                <ChevronLeft />
-              </button>
-            )}
-            {!fromMainApp && (
-              <ChatEditButton
-                isEditMode={isEditMode}
-                onEdit={() => setIsEditMode(true)}
-                onDone={handleDone}
-              />
-            )}
-          </div>
-
-          <h1 className="text-center text-lg">Chats</h1>
-
-          <div className="flex gap-3 justify-end items-center">
-            {fromMainApp && (
-              <ChatEditButton
-                isEditMode={isEditMode}
-                onEdit={() => setIsEditMode(true)}
-                onDone={handleDone}
-              />
-            )}
-            {!fromMainApp && (
-              <>
-                <div
-                  className="text-blue-500 cursor-pointer
-            hover:scale-105 duration-500 transition-all ease-in-out
-            hover:opacity-50"
-                >
-                  <CircleFadingPlus className="rotate-y-180" />
-                </div>
-                <div
-                  className="text-blue-500 cursor-pointer
-            hover:scale-105 duration-500 transition-all ease-in-out
-            hover:opacity-50"
-                >
-                  <Link href={"/chat/newMessage"}>
-                    <SquarePen />
-                  </Link>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-        {!options.includes("search") && <SearchBar />}
-      </div>
-      */}
-
       {/* HEADER */}
       <div className="shrink-0 space-y-4 p-3.5">
         <div className="flex justify-between items-center">
@@ -308,7 +862,6 @@ export default function ChatsPage() {
           </div>
         </div>
       </div>
-
       {/* ChatList scroll được */}
       <ScrollArea className="flex-1 min-h-0 m-0">
         {loading ? (
@@ -369,11 +922,9 @@ export default function ChatsPage() {
           </div>
         )}
       </ScrollArea>
-
-      <div className="fixed -bottom-3 left-0 w-full z-5  pointer-events-none">
-        <div className="w-full h-36  bg-gradient-to-b from-transparent via-white/20 to-gray-400/30" />
+      <div className="fixed -bottom-3 left-0 w-full z-5 pointer-events-none">
+        <div className="w-full h-36 bg-gradient-to-b from-transparent via-white/20 to-gray-400/30" />
       </div>
-
       {/* Search bar */}
       <div className="fixed bottom-10 left-0 w-full z-10 flex justify-center pointer-events-none">
         <label
@@ -390,6 +941,7 @@ export default function ChatsPage() {
             }
           `}
           style={{ marginBottom: "env(safe-area-inset-bottom, 12px)" }}
+          onClick={openFullScreenSearch}
         >
           <input
             type="text"
@@ -397,18 +949,288 @@ export default function ChatsPage() {
               outline-none bg-transparent w-full
               transition-all duration-300
             `}
-            placeholder={
-              isFocused || searchValue ? "Tìm kiếm mọi thứ bằng AI" : "Tìm kiếm"
-            }
+            placeholder="Tìm kiếm"
             value={searchValue}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
             onChange={(e) => setSearchValue(e.target.value)}
+            readOnly
           />
           <Search size={20} className="text-zinc-700" />
         </label>
       </div>
+      {/* Full screen search interface */}
+      {isFullScreenSearch && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col"
+          style={{
+            backgroundImage:
+              "linear-gradient(to bottom, #c7e2f0, #c5cfd6, #d6d3cf, #e4d6c6, #f4e4ca)",
+          }}
+        >
+          {/* Search header */}
+          <div className="flex items-center justify-between p-3 flex-shrink-0">
+            <div className="text-2xl font-medium px-4 text-black">Search</div>
+            <button
+              onClick={closeFullScreenSearch}
+              className="w-10 h-10 rounded-full bg-[#e2edf3] flex items-center justify-center text-black"
+              aria-label="Close search"
+            >
+              <X size={20} />
+            </button>
+          </div>
+          {/* Contact and chat section header */}
+          {!(
+            searchTerm.length > 0 &&
+            !searchLoading &&
+            searchResults.length === 0 &&
+            messageResults.length === 0
+          ) && (
+            <div className="px-4 py-2 text-sm text-gray-600 border-t border-b border-[#a7cfe8] flex-shrink-0">
+              Contact and chat
+            </div>
+          )}
+          {/* Search content with scroll */}
+          <div className="flex-1 overflow-y-auto">
+            {searchTerm.length > 0 ? (
+              <div className="flex flex-col">
+                {searchLoading ? (
+                  <div className="text-center p-8">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#6ab3e2] mb-4 mx-auto"></div>
+                    <div className="text-gray-600">Đang tìm kiếm...</div>
+                  </div>
+                ) : searchResults.filter(
+                    (user) =>
+                      user.user_id !== client?.getUserId() &&
+                      user.user_id !== userIdChatBot
+                  ).length === 0 && messageResults.length === 0 ? (
+                  // Thay đổi điều kiện để kiểm tra sau khi lọc, không phải trước khi lọc
+                  <div className="text-center p-8">
+                    <div className="bg-[#8ac2ee] w-16 h-16 rounded-md mx-auto mb-4 flex items-center justify-center">
+                      <X size={32} className="text-[#4193cf]" />
+                    </div>
+                    <div className="text-black text-xl font-medium mb-2">
+                      No results
+                    </div>
+                    <div className="text-gray-600">
+                      No results found for
+                      <span className="font-medium">{searchTerm}</span>. Please
+                      try a different search.
+                    </div>
+                  </div>
+                ) : (
+                  <div className="pb-4">
+                    {searchResults
+                      .filter(
+                        (user) =>
+                          user.user_id !== client?.getUserId() &&
+                          user.user_id !== userIdChatBot
+                      )
+                      .map((user) => {
+                        let onlineStatus = "offline";
+                        let isOnline = user.isOnline || false;
 
+                        if (user.lastSeen) {
+                          isOnline =
+                            Date.now() - new Date(user.lastSeen).getTime() <
+                            2 * 60 * 1000;
+
+                          onlineStatus = getDetailedStatus(user.lastSeen);
+                        }
+
+                        return (
+                          <div
+                            key={user.user_id}
+                            className="flex items-center px-4 py-3 border-b border-[#a7cfe8]"
+                            onClick={() => handleUserClick(user)}
+                          >
+                            <div className="w-12 h-12 mr-3 relative">
+                              {renderAvatar(user)}
+                            </div>
+                            <div>
+                              <div>
+                                <div className="font-medium text-black">
+                                  {user.display_name ||
+                                    user.user_id ||
+                                    "Người dùng"}
+                                </div>
+                                <div className="text-sm text-blue-500">
+                                  {isOnline ? "online" : onlineStatus}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div>
+                {/* Hiển thị liên hệ theo hàng ngang */}
+                {contacts.length > 0 && (
+                  <div className="flex overflow-x-auto px-4 py-2 space-x-4 no-scrollbar">
+                    {contacts
+                      .slice(0, 10)
+                      .map((contact) => renderContactItem(contact))}
+                  </div>
+                )}
+                {/* Recent section */}
+                <div className="flex justify-between items-center px-4 py-2 border-t border-b border-[#a7cfe8] mt-2 bg-[#d4e5f0]">
+                  <span className="text-sm text-gray-500">Recent</span>
+                  <button
+                    className="text-sm text-red-500"
+                    onClick={clearHistory}
+                  >
+                    Clear history
+                  </button>
+                </div>
+                {/* Hiển thị danh sách recent searches */}
+                {recentSearches.length > 0 ? (
+                  <div className="pb-4">
+                    {recentSearches.map((item) => {
+                      let avatarUrl = item.processed_avatar_url;
+                      if (!avatarUrl && item.avatar_url && client) {
+                        try {
+                          avatarUrl = getMxcAvatarUrl(item.avatar_url);
+                          item.processed_avatar_url = avatarUrl;
+                        } catch (error) {
+                          console.error("Lỗi khi xử lý avatar URL:", error);
+                        }
+                      }
+
+                      let statusText = "Recent search";
+                      if (item.isOnline) {
+                        statusText = "online";
+                      } else if (item.lastSeen) {
+                        statusText = getDetailedStatus(item.lastSeen);
+                      }
+
+                      return (
+                        <div
+                          key={item.user_id}
+                          className="flex items-center px-4 py-3 border-b border-[#a7cfe8] cursor-pointer"
+                          onClick={() => handleUserClick(item)}
+                        >
+                          <div className="w-12 h-12 mr-3">
+                            {avatarUrl ? (
+                              <img
+                                src={avatarUrl}
+                                alt={item.display_name || "User"}
+                                className="w-12 h-12 rounded-full object-cover"
+                                onError={(e) => {
+                                  console.error("Lỗi tải avatar:", avatarUrl);
+                                  e.currentTarget.style.display = "none";
+                                  const parent = e.currentTarget.parentElement;
+                                  if (parent) {
+                                    const fallbackAvatar =
+                                      document.createElement("div");
+                                    fallbackAvatar.className =
+                                      "w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center";
+                                    fallbackAvatar.innerHTML = `<span class="text-orange-800 font-medium">${(
+                                      item.display_name || "U"
+                                    )
+                                      .charAt(0)
+                                      .toUpperCase()}</span>`;
+                                    parent.appendChild(fallbackAvatar);
+                                  }
+                                }}
+                              />
+                            ) : (
+                              <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
+                                <span className="text-orange-800 font-medium">
+                                  {(item.display_name || item.user_id || "?")
+                                    .charAt(0)
+                                    .toUpperCase()}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <div className="font-medium text-black">
+                              {item.display_name ||
+                                item.user_id ||
+                                "Unknown User"}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {statusText}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="pb-4">
+                    {/* Demo data khi không có recent searches */}
+                    <div className="flex items-center px-4 py-3 border-b border-[#a7cfe8] cursor-pointer">
+                      <div className="w-12 h-12 bg-gray-300 rounded-full mr-3 flex items-center justify-center overflow-hidden">
+                        <div className="flex flex-wrap w-full h-full">
+                          <div className="w-1/2 h-1/2 bg-yellow-200"></div>
+                          <div className="w-1/2 h-1/2 bg-blue-200"></div>
+                          <div className="w-1/2 h-1/2 bg-green-200"></div>
+                          <div className="w-1/2 h-1/2 bg-red-200"></div>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="font-medium text-black">
+                          Workspace group
+                        </div>
+                        <div className="text-sm text-gray-500">Group</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center px-4 py-3 border-b border-[#a7cfe8] cursor-pointer">
+                      <div className="w-12 h-12 bg-blue-500 rounded-md mr-3 flex items-center justify-center text-white font-bold">
+                        DOC
+                      </div>
+                      <div>
+                        <div className="font-medium text-black">
+                          Papercoin.docs
+                        </div>
+                        <div className="text-sm text-gray-500">File</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center px-4 py-3 border-b border-[#a7cfe8] cursor-pointer">
+                      <div className="w-12 h-12 bg-gray-800 rounded-md mr-3 flex items-center justify-center overflow-hidden">
+                        <div className="text-xs text-white font-bold">BDS</div>
+                      </div>
+                      <div>
+                        <div className="font-medium text-black">BDS.Land</div>
+                        <div className="text-sm text-blue-500">
+                          https://website.com.vn
+                        </div>
+                        <div className="text-xs text-gray-500">Link</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          {/* Search input at bottom */}
+          <div className="px-4 py-3 border-t border-[#a7cfe8] flex-shrink-0">
+            <div className="flex items-center bg-[#fad3e6] rounded-full overflow-hidden px-2">
+              <div className="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center">
+                <Search className="h-5 w-5 text-white" />
+              </div>
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Tìm kiếm"
+                className="flex-1 h-10 px-3 border-none focus:outline-none bg-transparent"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm("")}
+                  className="p-2 text-gray-500"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       {/* Action bar cố định */}
       {isEditMode && (
         <ChatActionBar
