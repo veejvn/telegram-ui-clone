@@ -91,6 +91,7 @@ export default function InfoBody({
       }
     };
 
+
     handleHeaderAvatar();
   }, [scrollPosition]);
 
@@ -129,6 +130,7 @@ export default function InfoBody({
         // Xóa class khi không scroll
         scrollContainer.classList.remove("scrolled");
       }
+
 
       // Báo cho component cha
       if (onScroll) onScroll(position >= threshold ? maxHeaderHeight : 0);
@@ -390,6 +392,7 @@ export default function InfoBody({
     transition: "all 0.3s ease-out", // Thêm transition mượt mà
   };
 
+
   const imageStyle = {
     borderRadius: calculateHeaderStyle().borderRadius + "%",
     width: "100%",
@@ -456,6 +459,7 @@ export default function InfoBody({
                     transition: "all 0.35s cubic-bezier(0.25, 0.1, 0.25, 1.0)", // Thời gian transition cao hơn và dùng cubic-bezier
                   }}
                 />
+
 
                 {/* Chỉ hiển thị gradient background và tên nếu không scroll */}
                 {scrollPosition === 0 && (
@@ -549,6 +553,7 @@ export default function InfoBody({
                   <VideoIcon />
                   <p className="text-xs mt-1 text-[#155dfc]">video</p>
                 </div>
+
 
                 <div className="flex flex-col justify-center items-center cursor-pointer py-3 rounded-lg dark:bg-[#33333a] bg-white">
                   <MuteButton onMuteUntil={handleMuteUntil} roomId={roomId} />
@@ -708,6 +713,7 @@ export default function InfoBody({
         </div>
 
         {/* User info section */}
+
         {!hideAvatarHeader && (
           <div className="w-full px-4 bg-white dark:bg-black">
             <div
@@ -760,11 +766,13 @@ export default function InfoBody({
         )}
 
         {!hideAvatarHeader &&
+
           (mediaMessages.length > 0 ||
             linkMessages.length > 0 ||
             voiceMessages.length > 0 ||
             groupMessages.length > 0) && (
             <div className="bg-white dark:bg-black rounded-none flex-1 min-h-0 flex flex-col mt-0 relative">
+
               <Tabs
                 defaultValue={
                   mediaMessages.length > 0
@@ -812,6 +820,7 @@ export default function InfoBody({
 
                 {mediaMessages.length > 0 && (
                   <TabsContent value="media" className="h-full pb-0 mb-0">
+
                     <div className="h-full overflow-y-auto overscroll-contain pb-8 bg-white dark:bg-[#1c1c1e]">
                       {/* Thay đổi từ grid sang flex wrap để căn trái */}
                       <div className="flex flex-wrap gap-1 p-2 justify-start">
@@ -942,6 +951,7 @@ export default function InfoBody({
                                         }
                                       }
                                     }}
+                                    aria-label="Play audio"
                                   >
                                     <svg
                                       xmlns="http://www.w3.org/2000/svg"
@@ -993,6 +1003,7 @@ export default function InfoBody({
                                         audio.muted = !audio.muted;
                                       }
                                     }}
+                                    aria-label="Toggle mute"
                                   >
                                     <svg
                                       xmlns="http://www.w3.org/2000/svg"
@@ -1019,6 +1030,7 @@ export default function InfoBody({
 
                 {linkMessages.length > 0 && (
                   <TabsContent value="link" className="pb-0 mb-0">
+
                     <div className="max-h-[420px] overflow-y-auto overscroll-contain pb-0">
                       <Card className="w-full shadow-sm pt-3 pb-0 rounded-none">
                         <CardContent className="px-2 pb-10">
@@ -1045,6 +1057,7 @@ export default function InfoBody({
                     </div>
                   </TabsContent>
                 )}
+
 
                 {groupMessages.length > 0 && (
                   <TabsContent value="groups" className="pb-0 mb-0">

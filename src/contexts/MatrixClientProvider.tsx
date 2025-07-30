@@ -20,6 +20,7 @@ import { ErrorDisplay } from "@/components/common/ErrorDisplay";
 import { useAuthStore } from "@/stores/useAuthStore";
 import useRegisterPushKey from "@/hooks/useRegisterPushKey ";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
+import { useUserStore } from "@/stores/useUserStore";
 
 const HOMESERVER_URL =
   process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
@@ -39,6 +40,8 @@ export function MatrixClientProvider({
   const accessToken = useAuthStore((state) => state.accessToken);
   const rawUserId = useAuthStore((state) => state.userId);
   const deviceId = useAuthStore((state) => state.deviceId);
+  const logout = useAuthStore((state) => state.logout);
+  const clearUser = useUserStore.getState().clearUser;
   const prevSyncState = useRef<string | null>(null);
 
   const handleRetry = () => {
@@ -153,11 +156,11 @@ export function MatrixClientProvider({
             tokenError
           );
           setError(`Lỗi xác thực token: ${tokenError.message}
-
-Chi tiết:
-- Error: ${tokenError.message}
-
-Vui lòng đăng nhập lại.`);
+            Chi tiết: - Error: ${tokenError.message}
+            Vui lòng đăng nhập lại.`);
+          logout();
+          clearUser();
+          window.location.href = "/chat/login";
           return;
         }
 
