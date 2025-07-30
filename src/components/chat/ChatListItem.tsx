@@ -154,7 +154,7 @@ export const ChatListItem = ({
           {lastMessageSenderId === userId ? (
             <span
               className={`inline-flex items-center justify-center w-5 h-5 rounded-full mt-1 ${
-                lastReadReceipts ? "bg-gray-300" : "bg-blue-500"
+                lastReadReceipts ? "bg-blue-500" : "bg-gray-300"
               }`}
             >
               <Check className="w-3.5 h-3.5 text-white" />
@@ -162,7 +162,7 @@ export const ChatListItem = ({
           ) : (
             unreadMsgs &&
             unreadMsgs.length > 0 && (
-              <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-blue-500 text-white text-xs font-bold mt-1">
+              <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-white text-[10px] font-bold mt-1">
                 {unreadMsgs.length}
               </span>
             )

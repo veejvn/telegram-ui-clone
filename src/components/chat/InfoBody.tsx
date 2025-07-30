@@ -95,9 +95,6 @@ export default function InfoBody({
     handleHeaderAvatar();
   }, [scrollPosition]);
 
-
-    handleHeaderAvatar();
-  }, [scrollPosition]);
   const handleStartCall = async (type: "voice" | "video") => {
     const roomId = await ensureRoomExists();
     if (!roomId) return;
@@ -421,31 +418,6 @@ export default function InfoBody({
     boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
   };
 
-
-  const imageStyle = {
-    borderRadius: calculateHeaderStyle().borderRadius + "%",
-    width: "100%",
-    height: "100%",
-    objectFit: "cover" as const,
-    transition: "all 0.3s ease-out", // Thêm transition mượt mà
-  };
-  const actionButtonsStyle = {
-    position: "relative" as React.CSSProperties["position"],
-    marginTop: scrollPosition > 0 ? "20px" : "0", // Giảm khoảng cách
-    display: "flex",
-    justifyContent: "center",
-    width: "100%",
-    padding: "0 16px",
-    backgroundColor: scrollPosition > 0 ? "black" : "transparent", // Thêm màu nền đen
-    paddingBottom: scrollPosition > 0 ? "20px" : "0", // Thêm padding dưới khi scroll
-  };
-  const scrolledButtonStyle = {
-    backgroundColor: "white",
-    color: "#155dfc",
-    borderRadius: "12px",
-    marginHorizontal: "4px",
-    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-  };
   return (
     <>
       <div
@@ -979,6 +951,7 @@ export default function InfoBody({
                                         }
                                       }
                                     }}
+                                    aria-label="Play audio"
                                   >
                                     <svg
                                       xmlns="http://www.w3.org/2000/svg"
@@ -1030,6 +1003,7 @@ export default function InfoBody({
                                         audio.muted = !audio.muted;
                                       }
                                     }}
+                                    aria-label="Toggle mute"
                                   >
                                     <svg
                                       xmlns="http://www.w3.org/2000/svg"
