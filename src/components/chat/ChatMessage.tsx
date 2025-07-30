@@ -69,7 +69,12 @@ const ChatMessage = ({ msg, roomId }: { msg: Message; roomId: string }) => {
             forwardMessage={forwardInfo}
           />
         ) : (
-          <TextMessage msg={msg} isSender={isSender} animate={animate} roomId={roomId}/>
+          <TextMessage
+            msg={msg}
+            isSender={isSender}
+            animate={animate}
+            roomId={roomId}
+          />
         );
       case "emoji":
         return <EmojiMessage msg={msg} isSender={isSender} />;
@@ -87,7 +92,7 @@ const ChatMessage = ({ msg, roomId }: { msg: Message; roomId: string }) => {
         return <StickerMessage msg={msg} isSender={isSender} />;
       default:
         //console.warn("⚠️ Unknown type in message:", msg);
-        return <TextMessage msg={msg} isSender={isSender} roomId={roomId}/>;
+        return <TextMessage msg={msg} isSender={isSender} roomId={roomId} />;
     }
   };
 
