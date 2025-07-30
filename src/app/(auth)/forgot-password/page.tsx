@@ -1,94 +1,53 @@
 "use client";
-
-import { useState } from "react";
-import Image from "next/image";
-import { ForgotPasswordForm } from "@/components/auth/ForgotPasswordForm";
-import { VerificationCodeForm } from "@/components/auth/VerificationCodeForm";
-import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { MatrixAuthService } from "@/services/matrixAuthService";
-
-enum ForgotPasswordStep {
-  EnterEmail,
-  EnterCode,
-  ResetPassword,
-}
+import { ROUTES } from "@/constants/routes";
 
 export default function ForgotPasswordPage() {
-  const [currentStep, setCurrentStep] = useState(ForgotPasswordStep.EnterEmail);
-  const [email, setEmail] = useState("");
-  const [sid, setSid] = useState<string | null>(null);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [otpCode, setOtpCode] = useState<string | null>(null);
   const router = useRouter();
+  const [email, setEmail] = useState("");
 
-  const handleEmailSubmit = async (submittedEmail: string) => {
-    // Gọi API gửi email OTP
-    try {
-      const matrixAuth = new MatrixAuthService();
-      const result = await matrixAuth.forgotPassword(submittedEmail);
-      setEmail(submittedEmail);
-      setSid(result.sid);
-      setClientSecret(result.client_secret);
-      setCurrentStep(ForgotPasswordStep.EnterCode);
-    } catch (error) {
-      // Có thể show toast ở đây nếu muốn
-    }
-  };
-
-  const handleVerificationSuccess = (code: string) => {
-    setOtpCode(code);
-    setCurrentStep(ForgotPasswordStep.ResetPassword);
-  };
-
-  const handlePasswordResetSuccess = () => {
-    router.push("/login");
-  };
-
-  const renderStep = () => {
-    switch (currentStep) {
-      case ForgotPasswordStep.EnterEmail:
-        return <ForgotPasswordForm onEmailSubmit={handleEmailSubmit} />;
-      case ForgotPasswordStep.EnterCode:
-        return (
-          <VerificationCodeForm
-            email={email}
-            onSuccess={handleVerificationSuccess}
-            onBack={() => setCurrentStep(ForgotPasswordStep.EnterEmail)}
-          />
-        );
-      case ForgotPasswordStep.ResetPassword:
-        return (
-          <ResetPasswordForm
-            email={email}
-            sid={sid}
-            clientSecret={clientSecret}
-            otpCode={otpCode}
-            onSuccess={handlePasswordResetSuccess}
-            onBack={() => setCurrentStep(ForgotPasswordStep.EnterCode)}
-          />
-        );
-      default:
-        return null;
-    }
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Xử lý logic gửi email reset password
+    console.log("Sending reset email to:", email);
+    // Chuyển đến trang OTP verification
+    router.push(ROUTES.OTP_VERIFICATION);
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
-      <div className="relative w-full max-w-md px-4 py-8">
-        <div className="flex justify-center mb-8">
-          <Image
-            src="/images/logo.png"
-            alt="Logo"
-            width={48}
-            height={48}
-            className="rounded-xl"
-            loading="eager"
-            priority
-          />
+    <div className="flex items-center justify-center min-h-screen px-2">
+      <div className="bg-white/30 rounded-[32px] min-h-[350px] px-6 py-8 border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.10)] backdrop-blur-[16px] flex flex-col justify-center items-center w-full max-w-md">
+        {/* Header */}
+        <div className="w-full text-center mb-8">
+          <p className="text-sm text-gray-900 mb-4 font-bold font-sans">Log in</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-1 font-sans">Forgot Password</h1>
+          <p className="text-sm text-gray-600 font-sans">New Generation Teknix Account: Safe, Fast and Conveniently Integrated.</p>
         </div>
-        {renderStep()}
+
+        {/* Form */}
+        <form className="w-full flex flex-col gap-6" onSubmit={handleSubmit}>
+          {/* Email */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1 font-sans">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your email"
+              className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-white/80 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm placeholder-gray-400 text-gray-900 placeholder:italic placeholder:font-light font-sans"
+              required
+            />
+          </div>
+
+          {/* Continue Button */}
+          <button
+            type="submit"
+            className="w-full bg-blue-600 text-white py-3 rounded-full font-medium hover:bg-blue-700 transition text-base shadow-[inset_-2px_-2px_4px_rgba(255,255,255,0.2),inset_2px_2px_4px_rgba(0,0,0,0.2),0_4px_8px_rgba(0,0,0,0.2)] hover:shadow-[inset_-1px_-1px_2px_rgba(255,255,255,0.2),inset_1px_1px_2px_rgba(0,0,0,0.2),0_2px_4px_rgba(0,0,0,0.2)] font-sans"
+          >
+            Continue
+          </button>
+        </form>
       </div>
     </div>
   );
