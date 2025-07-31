@@ -195,7 +195,7 @@ export default function ChatsPage() {
       {/*
       <div
         style={headerStyle}
-        className="sticky bg-white dark:bg-[#1a1a1a] top-0 z-10"
+        className="sticky bg-white bg-white dark:bg-[#1a1a1a] top-0 z-10"
       >
         <div className="grid grid-cols-3 items-center px-4 py-4">
           <div className="flex items-center">
@@ -262,7 +262,9 @@ export default function ChatsPage() {
             <button className="h-10 px-4 text-sm font-medium border border-white rounded-full cursor-pointer bg-gradient-to-br from-slate-100/50 via-gray-400/10 to-slate-50/15 backdrop-blur-xs shadow-xs hover:scale-105 duration-300 transition-all ease-in-out">
               Edit
             </button>
-            <button className="h-10 w-10 flex items-center justify-center border border-white rounded-full cursor-pointer bg-gradient-to-br from-slate-100/50 via-gray-400/10 to-slate-50/15 backdrop-blur-xs shadow-xs hover:scale-105 duration-300 transition-all ease-in-out">
+            <button className="h-10 w-10 flex items-center justify-center border border-white rounded-full cursor-pointer bg-gradient-to-br from-slate-100/50 via-gray-400/10 to-slate-50/15 backdrop-blur-xs shadow-xs hover:scale-105 duration-300 transition-all ease-in-out" 
+              aria-label="More options" title="More options"
+            >
               <Ellipsis className="w-5 h-5" />
             </button>
           </div>
