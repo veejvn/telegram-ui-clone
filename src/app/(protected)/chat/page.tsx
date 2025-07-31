@@ -22,6 +22,7 @@ import {
   Loader2,
   Search,
   ShoppingCart,
+  Sparkles,
   SquarePen,
   UserCheck,
   X,
@@ -59,7 +60,11 @@ export default function ChatsPage() {
   const [recentSearches, setRecentSearches] = useState<any[]>([]);
   const [contacts, setContacts] = useState<any[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchBarRef = useRef<HTMLDivElement>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [searchBarState, setSearchBarState] = useState("collapsed");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [expandedSearchActive, setExpandedSearchActive] = useState(false);
   const userIdChatBot =
     process.env.NEXT_PUBLIC_USER_ID_BOT || "@bot:matrix.teknix.dev"; // Chức năng chọn phòng
   const handleSelectRoom = (roomId: string) => {
@@ -121,7 +126,46 @@ export default function ChatsPage() {
     setIsEditMode(false);
     setShowDeleteModal(false);
   };
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        searchBarRef.current &&
+        !searchBarRef.current.contains(event.target as Node) &&
+        searchBarState === "expanded"
+      ) {
+        setSearchBarState("collapsed");
+        setSearchQuery("");
+      }
+    };
 
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [searchBarState]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
+      if (
+        searchBarRef.current &&
+        !searchBarRef.current.contains(event.target as Node) &&
+        searchBarState === "expanded"
+      ) {
+        setSearchBarState("collapsed");
+        setSearchQuery("");
+        setExpandedSearchActive(false);
+      }
+    }
+
+    // Use both mousedown and touchend for better mobile support
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchend", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchend", handleClickOutside);
+    };
+  }, [searchBarState]);
   const handleDeleteBoth = async () => {
     if (!client) return;
 
@@ -733,6 +777,14 @@ export default function ChatsPage() {
   const closeFullScreenSearch = () => {
     setIsFullScreenSearch(false);
     setSearchTerm("");
+    setSearchQuery("");
+    setSearchBarState("collapsed");
+    setExpandedSearchActive(false);
+
+    // Reset focus
+    if (searchInputRef.current) {
+      searchInputRef.current.blur();
+    }
   };
 
   const renderContactItem = (contact: any) => {
@@ -809,20 +861,46 @@ export default function ChatsPage() {
   return (
     <div className="flex flex-col h-screen space-y-2 bg-gradient-to-b from-cyan-700/30 via-cyan-300/15 to-yellow-600/25">
       {/* HEADER */}
-      <div className="shrink-0 space-y-4 p-3.5">
-        <div className="flex justify-between items-center">
-          <p className="font-bold text-2xl">Message</p>
-          <div className="flex items-center gap-2">
-            <button className="h-10 px-4 text-sm font-medium border border-white rounded-full cursor-pointer bg-gradient-to-br from-slate-100/50 via-gray-400/10 to-slate-50/15 backdrop-blur-xs shadow-xs hover:scale-105 duration-300 transition-all ease-in-out">
-              Edit
-            </button>
-            <button className="h-10 w-10 flex items-center justify-center border border-white rounded-full cursor-pointer bg-gradient-to-br from-slate-100/50 via-gray-400/10 to-slate-50/15 backdrop-blur-xs shadow-xs hover:scale-105 duration-300 transition-all ease-in-out">
-              <Ellipsis className="w-5 h-5" />
-            </button>
-          </div>
+      <div className="shrink-0 p-3.5">
+        <div className="flex justify-between items-center border-b border-gray-200/30 pb-3">
+          {isEditMode ? (
+            <>
+              <p className="font-bold text-2xl">Message</p>
+              <button
+                className="text-blue-500 font-medium"
+                onClick={handleDone}
+              >
+                Done
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="font-bold text-2xl">Message</p>
+              <div className="flex items-center gap-2">
+                <button
+                  className="h-10 px-4 text-sm font-medium border border-white rounded-full cursor-pointer bg-gradient-to-br from-slate-100/50 via-gray-400/10 to-slate-50/15 backdrop-blur-xs shadow-xs hover:scale-105 duration-300 transition-all ease-in-out"
+                  onClick={() => {
+                    setIsEditMode(true);
+                    setSelectedRooms([]);
+                  }}
+                >
+                  Edit
+                </button>
+                <button
+                  className="h-10 w-10 flex items-center justify-center border border-white rounded-full cursor-pointer bg-gradient-to-br from-slate-100/50 via-gray-400/10 to-slate-50/15 backdrop-blur-xs shadow-xs hover:scale-105 duration-300 transition-all ease-in-out"
+                  aria-label="More options"
+                  title="More options"
+                >
+                  <Ellipsis className="w-5 h-5" />
+                </button>
+              </div>
+            </>
+          )}
         </div>
-        {/* Service */}
-        <div className="flex items-center space-x-2">
+
+        {/* Only show Service section when not in edit mode */}
+
+        <div className="flex items-center space-x-2 pt-3">
           <div className="flex items-center gap-2 bg-blue-600 py-3 px-4.5 text-white rounded-2xl outline">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -927,40 +1005,229 @@ export default function ChatsPage() {
       </div>
       {/* Search bar */}
       <div className="fixed bottom-10 left-0 w-full z-10 flex justify-center pointer-events-none">
-        <label
+        <div
+          ref={searchBarRef}
           className={`
-            group flex items-center rounded-full
-            transition-all duration-300
-            shadow-lg
-            backdrop-blur-md
-            pointer-events-auto
-            ${
-              isFocused || searchValue
-                ? "bg-white/50 px-5 py-2 w-[90vw] max-w-md"
-                : "bg-white px-3 py-1 w-30"
+      group flex items-center rounded-full
+      transition-all duration-300 ease-in-out
+      pointer-events-auto
+      ${
+        searchBarState === "collapsed"
+          ? "bg-white py-1.5 px-2.5 w-[120px]"
+          : "bg-[#fce0f0] py-2 px-3 w-[90vw] max-w-md"
+      }
+    `}
+          style={{
+            marginBottom: "env(safe-area-inset-bottom, 12px)",
+            boxShadow:
+              searchBarState === "expanded"
+                ? "0 0 0 1px #9370DB, 0 0 10px 1px rgba(147, 112, 219, 0.5)"
+                : "0 1px 5px rgba(0,0,0,0.06)",
+            transform: `scale(${searchBarState === "expanded" ? "1.05" : "1"}) 
+         translateY(${searchBarState === "expanded" ? "-5px" : "0"})`,
+            transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
+          }}
+          onClick={() => {
+            if (searchBarState === "collapsed") {
+              setSearchBarState("expanded");
+              setExpandedSearchActive(true);
+
+              // Short delay to make the expansion visible before going fullscreen
+              setTimeout(() => {
+                setIsFullScreenSearch(true);
+              }, 200);
             }
-          `}
-          style={{ marginBottom: "env(safe-area-inset-bottom, 12px)" }}
-          onClick={openFullScreenSearch}
+          }}
         >
+          {/* Sparkles icon - consistent in both expanded and fullscreen states */}
+          {searchBarState !== "collapsed" && (
+            <div className="w-9 h-9 rounded-full bg-[#6b46c1] flex items-center justify-center mr-2 my-0 transition-all duration-300">
+              <Sparkles className="w-5 h-5 text-white transition-all duration-300" />
+            </div>
+          )}
+
           <input
+            ref={searchInputRef}
             type="text"
             className={`
-              outline-none bg-transparent w-full
-              transition-all duration-300
-            `}
-            placeholder="Tìm kiếm"
-            value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-            readOnly
+        outline-none bg-transparent transition-all duration-300 text-gray-800 text-sm
+        ${
+          searchBarState === "collapsed"
+            ? "w-[80px] text-center px-0"
+            : "w-full text-base text-left"
+        }
+      `}
+            placeholder={
+              searchBarState === "collapsed" ? "Tìm kiếm" : "Tìm kiếm"
+            }
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setSearchTerm(e.target.value);
+            }}
+            onFocus={() => {
+              if (searchBarState === "collapsed") {
+                setSearchBarState("expanded");
+                setExpandedSearchActive(true);
+
+                // Short delay to make the expansion visible before going fullscreen
+                setTimeout(() => {
+                  setIsFullScreenSearch(true);
+                }, 200);
+              }
+            }}
+            readOnly={searchBarState === "collapsed"}
           />
-          <Search size={20} className="text-zinc-700" />
-        </label>
+
+          {/* Right search icon in collapsed state */}
+          {searchBarState === "collapsed" && (
+            <Search size={16} className="text-gray-500 min-w-[16px] ml-0.5" />
+          )}
+
+          {/* X button only shown in expanded state */}
+          {searchBarState === "expanded" && !isFullScreenSearch && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setSearchBarState("collapsed");
+                setSearchQuery("");
+                setExpandedSearchActive(false);
+                if (searchInputRef.current) {
+                  searchInputRef.current.blur();
+                }
+              }}
+              className="p-1 ml-1 text-[#9370DB]"
+              aria-label="Close search"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Add animation for fullscreen appearance */}
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        .fullscreen-search-enter {
+          animation: fadeIn 1.5s ease-out forwards;
+        }
+
+        .search-bar-persistent {
+          transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+        }
+      `}</style>
+
       {/* Full screen search interface */}
       {isFullScreenSearch && (
         <div
-          className="fixed inset-0 z-50 flex flex-col"
+          className="fixed inset-0 z-50 flex flex-col fullscreen-search-enter"
+          style={{
+            backgroundImage:
+              "linear-gradient(to bottom, #c7e2f0, #c5cfd6, #d6d3cf, #e4d6c6, #f4e4ca)",
+          }}
+        >
+          {/* Search header */}
+          <div className="flex items-center justify-between p-3 flex-shrink-0">
+            <div className="text-2xl font-medium px-4 text-black">Search</div>
+            <button
+              onClick={() => {
+                setIsFullScreenSearch(false);
+                setSearchTerm("");
+                setSearchQuery("");
+                setSearchBarState("collapsed");
+                setExpandedSearchActive(false);
+              }}
+              className="w-10 h-10 rounded-full bg-[#e2edf3] flex items-center justify-center text-black"
+              aria-label="Close search"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          {/* Content area */}
+          <div className="flex-1 overflow-y-auto">
+            {/* Your search results content here */}
+          </div>
+
+          {/* IMPORTANT: Use the exact same search bar styling at the bottom for continuity */}
+          <div className="px-4 py-3 border-t border-[#a7cfe8] flex-shrink-0">
+            <div
+              className="flex items-center rounded-full overflow-hidden px-2 bg-[#fce0f0]"
+              style={{
+                boxShadow:
+                  "0 0 0 1px #9370DB, 0 0 10px 1px rgba(147, 112, 219, 0.5)",
+              }}
+            >
+              {/* Sparkles icon - identical to the expanded state */}
+              <div className="w-9 h-9 rounded-full bg-[#6b46c1] flex items-center justify-center mr-2 my-1">
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+
+              {/* Text input field - with the same styling */}
+              <input
+                autoFocus
+                type="text"
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setSearchQuery(e.target.value);
+                }}
+                placeholder="Tìm kiếm mọi thứ bằng AI"
+                className="flex-1 h-10 px-1 border-none focus:outline-none bg-transparent text-gray-800 text-base"
+              />
+
+              {/* Search icon on the right */}
+              <div className="flex items-center justify-center w-9 h-9 rounded-full">
+                <Search className="w-5 h-5 text-[#9370DB]" />
+              </div>
+
+              {/* Clear button when there's text */}
+              {searchTerm && (
+                <button
+                  onClick={() => {
+                    setSearchTerm("");
+                    setSearchQuery("");
+                  }}
+                  className="p-2 text-[#9370DB]"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add transition styles for the fullscreen search */}
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .fullscreen-search-enter {
+          animation: fadeIn 1s ease-out forwards;
+        }
+      `}</style>
+
+      {/* Full screen search interface */}
+      {isFullScreenSearch && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col fullscreen-search-enter"
           style={{
             backgroundImage:
               "linear-gradient(to bottom, #c7e2f0, #c5cfd6, #d6d3cf, #e4d6c6, #f4e4ca)",
@@ -1012,8 +1279,8 @@ export default function ChatsPage() {
                     </div>
                     <div className="text-gray-600">
                       No results found for
-                      <span className="font-medium">{searchTerm}</span>. Please
-                      try a different search.
+                      <span className="font-medium">{" " + searchTerm}</span>.
+                      Please try a different search.
                     </div>
                   </div>
                 ) : (
@@ -1207,22 +1474,50 @@ export default function ChatsPage() {
           </div>
           {/* Search input at bottom */}
           <div className="px-4 py-3 border-t border-[#a7cfe8] flex-shrink-0">
-            <div className="flex items-center bg-[#fad3e6] rounded-full overflow-hidden px-2">
-              <div className="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center">
-                <Search className="h-5 w-5 text-white" />
+            {/* Thanh tìm kiếm với hiệu ứng hào quang */}
+            <div
+              className="relative flex items-center rounded-full overflow-hidden px-2 bg-[#fce0f0]"
+              style={{
+                boxShadow:
+                  "0 0 0 1px #9370DB, 0 0 10px 1px rgba(147, 112, 219, 0.5)",
+              }}
+            >
+              {/* Biểu tượng tròn bên trái */}
+              <div className="w-9 h-9 rounded-full bg-[#6b46c1] flex items-center justify-center mr-2 my-1">
+                <Sparkles className="w-5 h-5 text-white" />
               </div>
+
+              {/* Text input field */}
               <input
                 ref={searchInputRef}
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Tìm kiếm"
-                className="flex-1 h-10 px-3 border-none focus:outline-none bg-transparent"
+                placeholder="Tìm kiếm"
+                className="flex-1 h-10 px-1 border-none focus:outline-none bg-transparent text-gray-800"
               />
+
+              {/* Right search icon */}
+              <div className="flex items-center justify-center w-9 h-9 rounded-full">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="w-5 h-5 text-[#9370DB]"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10.5 3.75a6.75 6.75 0 100 13.5 6.75 6.75 0 000-13.5zM2.25 10.5a8.25 8.25 0 1114.59 5.28l4.69 4.69a.75.75 0 11-1.06 1.06l-4.69-4.69A8.25 8.25 0 012.25 10.5z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+
+              {/* Clear button (only shown when there's text) */}
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm("")}
-                  className="p-2 text-gray-500"
+                  className="p-2 text-[#9370DB]"
                 >
                   <X size={16} />
                 </button>
