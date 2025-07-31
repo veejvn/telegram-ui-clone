@@ -26,7 +26,7 @@ export default function ResetPasswordPage() {
 
     return (
         <div className="flex items-center justify-center min-h-screen px-2">
-            <div className="bg-white/20 rounded-[32px] min-h-[350px] px-6 py-8 border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.10)] backdrop-blur-[16px] flex flex-col justify-center items-center w-full max-w-md">
+            <div className="bg-white/30 rounded-[32px] min-h-[350px] px-6 py-8 border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.10)] backdrop-blur-[16px] flex flex-col justify-center items-center w-full max-w-md">
                 <div className="w-full text-center mb-8">
                     <p className="text-lg text-gray-900 mb-4 font-bold font-sans">Log in</p>
                     <h1 className="text-2xl font-bold text-gray-900 mb-1 font-sans">Enter OTP to Reset Password</h1>
@@ -41,7 +41,7 @@ export default function ResetPasswordPage() {
                                 value={password}
                                 onChange={e => setPassword(e.target.value)}
                                 placeholder="Enter your password"
-                                className="w-full px-4 py-3 rounded-2xl border-none bg-white/70 shadow-[0_4px_24px_rgba(0,0,0,0.08)] focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base placeholder-gray-400 text-gray-900 placeholder:italic placeholder:font-light font-sans"
+                                className="w-full px-4 py-3 rounded-2xl border-none bg-white/70 shadow-[0_4px_24px_rgba(0,0,0,0.08)] focus:outline-none text-base placeholder-gray-400 text-gray-900 placeholder:italic placeholder:font-light font-sans"
                                 required
                             />
                             <button
@@ -66,7 +66,7 @@ export default function ResetPasswordPage() {
                                 value={confirmPassword}
                                 onChange={e => setConfirmPassword(e.target.value)}
                                 placeholder="Confirm password"
-                                className="w-full px-4 py-3 rounded-2xl border-none bg-white/70 shadow-[0_4px_24px_rgba(0,0,0,0.08)] focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base placeholder-gray-400 text-gray-900 placeholder:italic placeholder:font-light font-sans"
+                                className="w-full px-4 py-3 rounded-2xl border-none bg-white/70 shadow-[0_4px_24px_rgba(0,0,0,0.08)] focus:outline-none text-base placeholder-gray-400 text-gray-900 placeholder:italic placeholder:font-light font-sans"
                                 required
                             />
                             <button

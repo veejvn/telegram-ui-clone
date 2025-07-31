@@ -14,7 +14,7 @@ export default function ConnectSocialPage() {
 
     return (
         <div className="flex items-center justify-center min-h-screen px-2">
-            <div className="bg-white/20 rounded-[32px] min-h-[540px] px-6 py-8 shadow-lg backdrop-blur-[16px] flex flex-col items-center w-full max-w-md">
+            <div className="bg-white/30 rounded-[32px] min-h-[540px] px-6 py-8 shadow-lg backdrop-blur-[16px] flex flex-col items-center w-full max-w-md">
                 {/* Header với nút back bo tròn, chữ Supplement căn giữa */}
                 <div className="relative w-full flex flex-col items-center mb-6">
                     <button
@@ -43,8 +43,8 @@ export default function ConnectSocialPage() {
                     {/* Apple ID */}
                     <div className="flex items-center justify-between py-5">
                         <div className="flex items-center gap-3">
-                            <div className="w-14 h-14 bg-gray-300 rounded-full flex items-center justify-center">
-                                <FaApple className="w-8 h-8 text-white" />
+                            <div className="w-14 h-14 bg-[#808080]/30 rounded-full flex items-center justify-center">
+                                <FaApple className="w-8 h-8 text-[#FFFFFF]" />
                             </div>
                             <span className="font-semibold text-lg text-gray-900">Apple ID</span>
                         </div>
@@ -59,8 +59,8 @@ export default function ConnectSocialPage() {
                     {/* Google Account */}
                     <div className="flex items-center justify-between py-5">
                         <div className="flex items-center gap-3">
-                            <div className="w-14 h-14 bg-gray-300 rounded-full flex items-center justify-center">
-                                <FaGoogle className="w-8 h-8 text-white" />
+                            <div className="w-14 h-14 bg-[#808080]/30 rounded-full flex items-center justify-center">
+                                <FaGoogle className="w-8 h-8 text-[#FFFFFF]" />
                             </div>
                             <span className="font-semibold text-lg text-gray-900">Google Account</span>
                         </div>
@@ -75,8 +75,8 @@ export default function ConnectSocialPage() {
                     {/* Telegram */}
                     <div className="flex items-center justify-between py-5">
                         <div className="flex items-center gap-3">
-                            <div className="w-14 h-14 bg-gray-300 rounded-full flex items-center justify-center">
-                                <FaTelegramPlane className="w-8 h-8 text-white" />
+                            <div className="w-14 h-14 bg-[#808080]/30 rounded-full flex items-center justify-center">
+                                <FaTelegramPlane className="w-8 h-8 text-[#FFFFFF]" />
                             </div>
                             <span className="font-semibold text-lg text-gray-900">Telegram</span>
                         </div>

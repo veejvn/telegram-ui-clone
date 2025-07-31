@@ -127,24 +127,24 @@ export default function LoginPage() {
             handleSubmit(data);
           }}>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Username</label>
+              <label className="block text-sm font-semibold text-[#121212] mb-1">Username</label>
               <input
                 name="username"
                 type="text"
                 placeholder="Enter your username"
-                className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-white/80 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm placeholder-gray-400 text-gray-900 placeholder:italic placeholder:font-light"
+                className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-white/80 focus:outline-none text-sm placeholder-gray-400 text-gray-900 placeholder:italic placeholder:font-light"
                 disabled={isLoading || isLocked}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Password</label>
+              <label className="block text-sm font-semibold text-[#121212] mb-1">Password</label>
               <div className="relative">
                 <input
                   name="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
-                  className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-white/80 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm pr-12 placeholder-gray-400 text-gray-900 placeholder:italic placeholder:font-light"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-white/80 focus:outline-none text-sm pr-12 placeholder-gray-400 text-gray-900 placeholder:italic placeholder:font-light"
                   disabled={isLoading || isLocked}
                 />
                 <button
@@ -162,10 +162,10 @@ export default function LoginPage() {
             </div>
 
             <div className="flex items-center justify-between">
-              <label className="flex items-center text-sm text-gray-700">
+              <label className="flex items-center text-[11px] font-normal leading-[140%] tracking-[0%] text-[#A3A3A3]">
                 <input
                   type="checkbox"
-                  className="w-5 h-5 rounded-lg border-2 border-gray-300 mr-3 text-gray-600 focus:ring-2 focus:ring-gray-300 focus:ring-offset-0 bg-white/30"
+                  className="w-[13px] h-[13px] rounded border border-[#A3A3A3] mr-3 text-gray-600 focus:ring-0 focus:ring-offset-0 bg-white/30"
                   disabled={isLoading || isLocked}
                 />
                 Remember me
@@ -177,7 +177,7 @@ export default function LoginPage() {
                   console.log('ROUTES.FORGOT_PASSWORD:', ROUTES.FORGOT_PASSWORD);
                   router.push(ROUTES.FORGOT_PASSWORD);
                 }}
-                className="text-sm text-blue-600 hover:underline"
+                className="text-sm text-[#026AE0] hover:underline"
                 disabled={isLoading || isLocked}
               >
                 Forgot Password?
@@ -198,6 +198,28 @@ export default function LoginPage() {
             >
               {isLoading ? 'Signing in...' : isLocked ? 'Account Locked' : 'Continue'}
             </button>
+
+            {/* Social Login Buttons */}
+            <div className="flex justify-center gap-4 mt-6">
+              <button
+                type="button"
+                className="w-[48px] h-[48px] rounded-full bg-[#808080]/30 flex items-center justify-center shadow-md"
+              >
+                <FaApple className="w-6 h-6 text-[#FFFFFF]" />
+              </button>
+              <button
+                type="button"
+                className="w-[48px] h-[48px] rounded-full bg-[#808080]/30 flex items-center justify-center shadow-md"
+              >
+                <FaGoogle className="w-6 h-6 text-[#FFFFFF]" />
+              </button>
+              <button
+                type="button"
+                className="w-[48px] h-[48px] rounded-full bg-[#808080]/30 flex items-center justify-center shadow-md"
+              >
+                <FaTelegramPlane className="w-6 h-6 text-[#FFFFFF]" />
+              </button>
+            </div>
           </form>
         );
 
@@ -302,7 +324,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen px-2">
-      <div className="bg-white/20 rounded-[32px] min-h-[540px] px-6 py-8 shadow-lg backdrop-blur-[16px] flex flex-col items-center w-full max-w-md">
+      <div className="bg-white/30 rounded-[32px] min-h-[540px] px-6 py-8 shadow-lg backdrop-blur-[16px] flex flex-col items-center w-full max-w-md">
         {/* Header */}
         <div className="w-full text-center mb-6">
           <p className="text-sm text-gray-900 mb-1 font-bold">Log in</p>
@@ -313,14 +335,14 @@ export default function LoginPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex w-full bg-gray-300 rounded-full p-2 mb-6 shadow-md">
+        <div className="flex w-full bg-[#808080]/30 rounded-full p-2 mb-6 shadow-md">
           {["Password", "Biometrics", "QR Bank", "Seedphrase"].map((method) => (
             <button
               key={method}
               className={`flex-1 py-3 text-sm font-medium rounded-full transition
-                 ${selectedTab === method
-                  ? "bg-white/60 shadow-lg text-gray-900 font-semibold"
-                  : "text-gray-500"
+                   ${selectedTab === method
+                  ? "bg-white/60 shadow-lg text-[#121212] font-semibold"
+                  : "text-[#6B7271]"
                 }`}
               onClick={() => setSelectedTab(method)}
             >

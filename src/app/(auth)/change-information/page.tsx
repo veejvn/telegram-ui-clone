@@ -28,7 +28,7 @@ export default function ChangeInformationPage() {
 
     return (
         <div className="flex items-center justify-center min-h-screen px-2">
-            <div className="bg-white/20 rounded-[32px] min-h-[540px] px-6 py-8 shadow-lg backdrop-blur-[16px] flex flex-col items-center w-full max-w-md">
+            <div className="bg-white/30 rounded-[32px] min-h-[540px] px-6 py-8 shadow-lg backdrop-blur-[16px] flex flex-col items-center w-full max-w-md">
                 {/* Header với nút back bo tròn, chữ Supplement căn giữa */}
                 <div className="relative w-full flex flex-col items-center mb-6">
                     <button
@@ -62,7 +62,7 @@ export default function ChangeInformationPage() {
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
                             placeholder="Enter user name"
-                            className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-white/80 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm placeholder-gray-400 text-gray-900 placeholder:italic placeholder:font-light"
+                            className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-white/80 focus:outline-none text-sm placeholder-gray-400 text-gray-900 placeholder:italic placeholder:font-light"
                         />
                     </div>
 
@@ -75,7 +75,7 @@ export default function ChangeInformationPage() {
                                 value={newPassword}
                                 onChange={(e) => setNewPassword(e.target.value)}
                                 placeholder="Enter your password"
-                                className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-white/80 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm pr-12 placeholder-gray-400 text-gray-900 placeholder:italic placeholder:font-light"
+                                className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-white/80 focus:outline-none text-sm pr-12 placeholder-gray-400 text-gray-900 placeholder:italic placeholder:font-light"
                             />
                             <button
                                 type="button"
@@ -99,7 +99,7 @@ export default function ChangeInformationPage() {
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                 placeholder="Confirm password"
-                                className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-white/80 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm pr-12 placeholder-gray-400 text-gray-900 placeholder:italic placeholder:font-light"
+                                className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-white/80 focus:outline-none text-sm pr-12 placeholder-gray-400 text-gray-900 placeholder:italic placeholder:font-light"
                             />
                             <button
                                 type="button"
