@@ -115,51 +115,57 @@ const AudioMessage: React.FC<Props> = ({ msg, isSender = false }) => {
   }, [msg.audioUrl]);
 
   return (
-    <div className="bg-[#cac1b8] rounded-2xl p-3 w-45 max-w-xs flex flex-col shadow-sm select-none">
-      {/* Transfer info */}
-      {/* <div className="flex items-center gap-2 mb-2">
-        <div className="w-6 h-6 bg-orange-400 rounded-full flex items-center justify-center">
-          <span className="text-white text-xs font-semibold">A</span>
+    <div className="flex relative items-end">
+      {/* Check icon cho tin gửi - đặt bên trái */}
+      {isSender && (
+        <div className="flex items-end mr-2 my-auto">
+          <span
+            className={`inline-flex items-center justify-center w-4 h-4 rounded-full ${
+              msg.status === "read" ? "bg-blue-500" : "bg-gray-300"
+            }`}
+          >
+            <Check className="w-2.5 h-2.5 text-white" />
+          </span>
         </div>
-        <span className="text-sm text-gray-600">Transfer from Andrew</span>
-      </div> */}
+      )}
 
-      {/* Audio player */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={togglePlay}
-          className="rounded-full bg-[#000088] flex justify-center items-center w-10 h-10 text-white hover:bg-blue-600 transition-colors"
-        >
-          {playing ? (
-            <FaPause size={14} />
-          ) : (
-            <FaPlay size={14} className="ml-0.5" />
-          )}
-        </button>
+      <div className="bg-[#808080]/30 rounded-2xl p-3 w-45 max-w-xs flex flex-col shadow-sm select-none">
+        {/* Transfer info */}
+        {/* <div className="flex items-center gap-2 mb-2">
+          <div className="w-6 h-6 bg-orange-400 rounded-full flex items-center justify-center">
+            <span className="text-white text-xs font-semibold">A</span>
+          </div>
+          <span className="text-sm text-gray-600">Transfer from Andrew</span>
+        </div> */}
 
-        <div className="flex-1">
-          <div ref={waveformRef} className="w-full mb-1" />
-          <div className="flex items-center">
-            <span className="text-[10px] text-[#6B7271]">
-              {mm}:{ss}
-            </span>
+        {/* Audio player */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={togglePlay}
+            className="rounded-full bg-[#000088] flex justify-center items-center w-10 h-10 text-white hover:bg-blue-600 transition-colors"
+          >
+            {playing ? (
+              <FaPause size={14} />
+            ) : (
+              <FaPlay size={14} className="ml-0.5" />
+            )}
+          </button>
+
+          <div className="flex-1">
+            <div ref={waveformRef} className="w-full mb-1" />
+            <div className="flex items-center">
+              <span className="text-[10px] text-[#6B7271]">
+                {mm}:{ss}
+              </span>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Time and status at bottom */}
-      <div className="flex justify-end mt-1">
-        <div className="flex items-center gap-1 text-[10px] text-[#6B7271]">
-          <span>{formatMsgTime(msg.time)}</span>
-          {isSender && (
-            <>
-              {msg.status === "read" ? (
-                <CheckCheck size={14} />
-              ) : (
-                <Check size={14} />
-              )}
-            </>
-          )}
+        {/* Time at bottom */}
+        <div className="flex justify-end mt-1">
+          <div className="flex items-center gap-1 text-[10px] text-[#6B7271]">
+            <span>{formatMsgTime(msg.time)}</span>
+          </div>
         </div>
       </div>
     </div>

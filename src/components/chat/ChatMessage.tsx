@@ -13,6 +13,9 @@ import { LocationMessage } from "@/components/chat/message-type/LocationMessage"
 import FileMessage from "@/components/chat/message-type/FileMessage";
 import VideoMessage from "@/components/chat/message-type/VideoMessage";
 import StickerMessage from "@/components/chat/message-type/StickerMessage";
+import { useSelectionStore } from "@/stores/useSelectionStore";
+import { Check } from "lucide-react";
+import { clsx } from "clsx";
 
 const ChatMessage = ({ msg, roomId }: { msg: Message; roomId: string }) => {
   //console.log("Room Id in ChatMessage: " + roomId)
@@ -23,6 +26,12 @@ const ChatMessage = ({ msg, roomId }: { msg: Message; roomId: string }) => {
   const searchParams = useSearchParams();
   const highlightId = searchParams.get("highlight");
   const [animate, setAnimate] = useState(false);
+
+  // Selection store
+  const { isSelectionMode, isMessageSelected, toggleMessage } =
+    useSelectionStore();
+
+  const isSelected = isMessageSelected(msg.eventId);
 
   useEffect(() => {
     if (msg.eventId === highlightId && messageRef.current) {
@@ -99,12 +108,46 @@ const ChatMessage = ({ msg, roomId }: { msg: Message; roomId: string }) => {
   return (
     <div
       ref={messageRef}
-      className={`flex ${isSender ? "justify-end" : "justify-start"} my-2`}
+      className={clsx(
+        "flex my-2",
+        // Khi ở selection mode, luôn justify-start để checkbox ở bên trái
+        isSelectionMode
+          ? "justify-start"
+          : isSender
+          ? "justify-end"
+          : "justify-start"
+      )}
     >
+      {/* Selection checkbox - chỉ hiển thị khi ở selection mode */}
+      {isSelectionMode && (
+        <div
+          className={clsx(
+            "flex items-center mr-3 my-auto",
+            // Làm mờ checkbox nếu tin nhắn chưa được chọn
+            !isSelected && "opacity-50"
+          )}
+          onClick={() => toggleMessage(msg.eventId)}
+        >
+          <div
+            className={clsx(
+              "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
+              isSelected
+                ? "bg-blue-500 border-blue-500"
+                : "border-gray-300 bg-white"
+            )}
+          >
+            {isSelected && <Check className="w-4 h-4 text-white" />}
+          </div>
+        </div>
+      )}
+
       <div
-        className={`flex flex-col max-w-[90%] w-fit rounded-xl transition ${
-          animate ? "flash-background" : ""
-        }`}
+        className={clsx(
+          "flex flex-col max-w-[90%] w-fit rounded-xl transition",
+          animate && "flash-background",
+          // Khi ở selection mode, điều chỉnh layout cho phù hợp
+          isSelectionMode && isSender && "ml-auto"
+        )}
       >
         {renderContent()}
       </div>

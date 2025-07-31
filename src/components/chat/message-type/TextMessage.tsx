@@ -1,7 +1,7 @@
 "use client";
 import React, { useRef, useState, useEffect } from "react";
 import { clsx } from "clsx";
-import { Check, CheckCheck } from "lucide-react";
+import { Check, CheckCheck, CheckCircle } from "lucide-react";
 import { MessagePros } from "@/types/chat";
 import { formatMsgTime } from "@/utils/chat/formatMsgTime";
 import { useTheme } from "next-themes";
@@ -13,15 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Reply,
-  Copy,
-  Edit,
-  Pin,
-  Forward,
-  Trash2,
-  CheckCircle,
-} from "lucide-react";
+import { Reply, Copy, Edit, Pin, Forward, Trash2 } from "lucide-react";
 import CopyIconSvg from "../icons/CopyIconSvg";
 import ForwardIconSvg from "../icons/ForwardIconSvg";
 import BinIconSvg from "../icons/BinIconSvg";
@@ -34,6 +26,7 @@ import { linkify } from "@/utils/chat/linkify";
 import { useChatStore } from "@/stores/useChatStore";
 import { deleteMessage } from "@/services/chatService";
 import { useMessageMenu } from "@/contexts/MessageMenuContext";
+import { useSelectionStore } from "@/stores/useSelectionStore";
 
 const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
   //console.log("TextMessage rendered for:", msg.eventId); // Debug log
@@ -49,6 +42,16 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
   const updateMessage = useChatStore.getState().updateMessage;
   const isDeleted = msg.isDeleted || msg.text === "Tin nhắn đã thu hồi";
   const { activeMenuMessageId, setActiveMenuMessageId } = useMessageMenu();
+
+  // Selection store
+  const {
+    isSelectionMode,
+    isMessageSelected,
+    toggleMessage,
+    enterSelectionMode,
+  } = useSelectionStore();
+
+  const isSelected = isMessageSelected(msg.eventId);
 
   // Debug effect
   // useEffect(() => {
@@ -73,10 +76,9 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
   ];
 
   const textClass = clsx(
-    "rounded-3xl px-4 py-1.5 text-[#181818] bg-[#cbc1b8] dark:text-[#181818] dark:bg-[#cbc1b8]",
-    // isSender
-    //   ? "text-[#181818] bg-[#cbc1b9] dark:text-[#181818] dark:bg-[#cbc1b9]"
-    //   : "text-[#181818] bg-[#cbc1b9] dark:text-[#181818] dark:bg-[#cbc1b9]",
+    "rounded-3xl px-4 py-1.5 text-[#181818] dark:text-[#181818] transition-all duration-200",
+    // Background colors
+    "bg-[#808080]/30 dark:bg-[#808080]",
     animate && "flash-background"
   );
 
@@ -140,12 +142,39 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
   };
 
   const handleHoldStart = () => {
-    // Nếu menu đã mở thì không làm gì
-    if (open || isDeleted) return;
+    // Nếu tin nhắn đã bị xóa thì không làm gì
+    if (isDeleted) return;
+
+    // Nếu đã ở selection mode thì không làm gì (click sẽ handle)
+    if (isSelectionMode) return;
+
     holdTimeout.current = window.setTimeout(() => {
-      // Tính toán và di chuyển tin nhắn lên vị trí tối ưu
-      calculateOptimalPosition();
-    }, 1000);
+      // Enter selection mode với tin nhắn này
+      enterSelectionMode(msg.eventId);
+    }, 500); // Giảm thời gian từ 1000ms xuống 500ms
+  };
+
+  const handleHoldEnd = () => {
+    // Clear timeout nếu chưa đủ thời gian
+    if (holdTimeout.current) {
+      clearTimeout(holdTimeout.current);
+      holdTimeout.current = null;
+    }
+  };
+
+  const handleClick = () => {
+    // Nếu tin nhắn đã bị xóa thì không làm gì
+    if (isDeleted) return;
+
+    // Nếu đang ở selection mode thì toggle selection
+    if (isSelectionMode) {
+      toggleMessage(msg.eventId);
+      return;
+    }
+
+    // Nếu không ở selection mode thì hiện reactions + dropdown menu
+    allowOpenRef.current = true;
+    calculateOptimalPosition();
   };
 
   const calculateOptimalPosition = () => {
@@ -156,6 +185,7 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
       // Fallback: mở menu ngay nếu không tìm thấy element
       allowOpenRef.current = true;
       setOpen(true);
+      setActiveMenuMessageId(msg.eventId);
       return;
     }
 
@@ -188,74 +218,70 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
     setTimeout(() => {
       allowOpenRef.current = true;
       setOpen(true);
+      setActiveMenuMessageId(msg.eventId);
     }, 100);
   };
 
-  const handleHoldEnd = () => {
-    // Nếu chưa đủ 3s thì clear timeout, không mở menu
-    if (isDeleted) return;
-    if (!open && holdTimeout.current) {
-      clearTimeout(holdTimeout.current);
-      holdTimeout.current = null;
-    }
-    // Nếu menu đã mở thì không đóng ở đây (để user chọn menu)
-  };
-
   const handleOpenChange = (nextOpen: boolean) => {
-    if (isDeleted) return;
+    if (isDeleted || isSelectionMode) return;
     if (nextOpen) {
-      // Chỉ cho phép mở nếu là do giữ lâu
-      if (allowOpenRef.current) {
+      // Chỉ cho phép mở nếu không ở selection mode
+      if (allowOpenRef.current && !isSelectionMode) {
         setOpen(true);
-        setActiveMenuMessageId(msg.eventId); // Set active message
+        setActiveMenuMessageId(msg.eventId);
         allowOpenRef.current = false;
       }
-      // Nếu không phải giữ lâu thì bỏ qua (không mở)
     } else {
       setOpen(false);
-      setActiveMenuMessageId(null); // Clear active message
-      setTransformOffset(0); // Reset vị trí tin nhắn
+      setActiveMenuMessageId(null);
+      setTransformOffset(0);
       allowOpenRef.current = false;
     }
   };
 
   return (
     <>
-      {/* Overlay khi menu mở - đặt bên ngoài và z-index cao nhất */}
-      {open && !isDeleted && (
+      {/* Overlay khi menu mở - chỉ hiện khi không ở selection mode */}
+      {open && !isDeleted && !isSelectionMode && (
         <div className="fixed inset-0 bg-white opacity-90 z-[100]" />
       )}
 
       <div
         className={clsx(
           "flex flex-col relative transition-transform duration-300 ease-out",
-          open ? "z-[110]" : "z-auto"
+          open && !isSelectionMode ? "z-[110]" : "z-auto",
+          // Transition cho selection
+          isSelectionMode && "transition-all duration-200"
         )}
         data-message-id={msg.eventId}
         {...(transformOffset !== 0 && {
           style: { transform: `translateY(${transformOffset}px)` },
         })}
       >
-        <DropdownMenu open={open} onOpenChange={handleOpenChange}>
+        <DropdownMenu
+          open={open && !isSelectionMode}
+          onOpenChange={handleOpenChange}
+        >
           <DropdownMenuTrigger asChild>
             <div
-              // onMouseDown={handleHoldStart}
-              // onMouseUp={handleHoldEnd}
-              // onMouseLeave={handleHoldEnd}
+              onClick={handleClick}
               onTouchStart={isDeleted ? undefined : handleHoldStart}
               onTouchEnd={isDeleted ? undefined : handleHoldEnd}
+              onMouseDown={isDeleted ? undefined : handleHoldStart}
+              onMouseUp={isDeleted ? undefined : handleHoldEnd}
+              onMouseLeave={isDeleted ? undefined : handleHoldEnd}
               className={clsx(
-                "flex flex-col relative transition-opacity duration-200",
-                open && "z-[115]"
+                "flex flex-col relative transition-opacity duration-200 cursor-pointer",
+                open && !isSelectionMode && "z-[115]"
               )}
             >
-              {/* Reactions - hiển thị cùng lúc với DropdownMenu */}
-              {open && !isDeleted && (
+              {/* Reactions - chỉ hiển thị khi không ở selection mode */}
+              {open && !isDeleted && !isSelectionMode && (
                 <div
                   className="flex gap-1 mb-2 justify-center relative z-[120]"
                   onClick={(e) => {
                     e.stopPropagation();
-                    console.log("Reaction container clicked!"); // Debug log
+                    console.log("Reaction container clicked!");
                   }}
                 >
                   <div className="flex gap-1 bg-white rounded-full px-3 py-2 shadow-md border border-gray-200">
@@ -272,7 +298,7 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
                           e.stopPropagation();
                         }}
                         onClick={(e) => {
-                          console.log("Reaction BUTTON clicked!"); // Debug log
+                          console.log("Reaction BUTTON clicked!");
                           e.stopPropagation();
                           e.preventDefault();
                           handleReactionClick(reaction.emoji);
@@ -295,57 +321,69 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
                 </div>
               )}
 
-              <div
-                className={clsx(
-                  "flex relative items-end text-message", // Đảm bảo tail căn đáy với bubble
-                  isSender ? "justify-end" : "justify-start",
-                  isDeleted && "cursor-default"
-                )}
-              >
-                {/* 🡐 Tail cho tin nhận */}
-                {!isSender && (
-                  <div className="text-[#cbc1b9] absolute bottom-1 left-[-7px] w-[16px]">
-                    <BubbleTail isSender={false} fillColor="currentColor" />
-                  </div>
-                )}
+              <div className="flex relative items-end w-full">
+                {/* Container cho tin nhắn với justify riêng */}
+                <div
+                  className={clsx(
+                    "flex relative items-end text-message flex-1",
+                    isSender ? "justify-end" : "justify-start",
+                    isDeleted && "cursor-default",
+                    // Làm mờ toàn bộ tin nhắn nếu chưa được chọn trong selection mode
+                    isSelectionMode && !isSelected && "opacity-50"
+                  )}
+                >
+                  {/* Check icon cho tin gửi - đặt bên trái (chỉ khi không ở selection mode) */}
+                  {isSender && !isSelectionMode && (
+                    <div className="flex items-end mr-2 my-auto">
+                      <span
+                        className={`inline-flex items-center justify-center w-4 h-4 rounded-full ${
+                          msg.status === "read" ? "bg-blue-500" : "bg-gray-300"
+                        }`}
+                      >
+                        <Check className="w-2.5 h-2.5 text-white" />
+                      </span>
+                    </div>
+                  )}
 
-                {/* 💬 Nội dung tin nhắn */}
-                <div className="flex flex-col  ">
-                  <div className={clsx(textClass, "max-w-[75vw] break-words")}>
-                    <p
-                      className={
-                        "py-2 whitespace-pre-wrap break-words leading-snug select-none"
-                      }
+                  {/* 🡐 Tail cho tin nhận */}
+                  {!isSender && (
+                    <div className="text-[#808080]/30 absolute bottom-1 left-[-7px] w-[16px]">
+                      <BubbleTail isSender={false} fillColor="currentColor" />
+                    </div>
+                  )}
+
+                  {/* 💬 Nội dung tin nhắn */}
+                  <div className="flex flex-col  ">
+                    <div
+                      className={clsx(textClass, "max-w-[75vw] break-words")}
                     >
-                      {linkify(msg.text)}
-                    </p>
+                      <p
+                        className={
+                          "py-2 whitespace-pre-wrap break-words leading-snug select-none"
+                        }
+                      >
+                        {linkify(msg.text)}
+                      </p>
 
-                    <div className={timeClass}>
-                      {formatMsgTime(msg.time)}
-                      {isSender &&
-                        (msg.status === "read" ? (
-                          <CheckCheck size={14} />
-                        ) : (
-                          <Check size={14} />
-                        ))}
+                      <div className={timeClass}>{formatMsgTime(msg.time)}</div>
                     </div>
                   </div>
-                </div>
 
-                {/* 🡒 Tail cho tin gửi */}
-                {isSender && (
-                  <div
-                    className={clsx(
-                      "text-[#cbc1b9] absolute bottom-1 right-[-10px] w-[16px]"
-                    )}
-                  >
-                    <BubbleTail isSender={true} fillColor="currentColor" />
-                  </div>
-                )}
+                  {/* 🡒 Tail cho tin gửi */}
+                  {isSender && (
+                    <div
+                      className={clsx(
+                        "text-[#808080]/30 absolute bottom-1 right-[-10px] w-[16px]"
+                      )}
+                    >
+                      <BubbleTail isSender={true} fillColor="currentColor" />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </DropdownMenuTrigger>
-          {!isDeleted && (
+          {!isDeleted && !isSelectionMode && (
             <DropdownMenuContent
               className="mx-2 min-w-[200px] rounded-3xl relative z-[120]"
               side="bottom"

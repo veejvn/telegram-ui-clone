@@ -3,6 +3,7 @@
 import ChatComposer from "@/components/chat/ChatComposer";
 import ChatHeader from "@/components/chat/ChatHeader";
 import ChatMessages from "@/components/chat/ChatMessages";
+import ChatLayout from "@/components/chat/ChatLayout";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTheme } from "next-themes";
 import { useParams } from "next/navigation";
@@ -343,7 +344,70 @@ const ChatPage = () => {
         /iPad|iPhone|iPod/.test(navigator.userAgent) &&
         /^((?!chrome|android).)*safari/i.test(navigator.userAgent) &&
         createPortal(
-          <div className={clsx("bg-gradient-to-b from-cyan-700/30 via-cyan-300/15 to-yellow-600/25", styles.chatContainer)}>
+          <ChatLayout roomId={roomId}>
+            <div
+              className={clsx(
+                "bg-gradient-to-b from-cyan-700/30 via-cyan-300/15 to-yellow-600/25",
+                styles.chatContainer
+              )}
+            >
+              {/* Header */}
+              <div className={clsx("shrink-0 z-10", styles.chatHeader)}>
+                <ChatHeader room={room} />
+              </div>
+
+              {/* Chat content scrollable */}
+              <div
+                className={clsx("flex-1 min-h-0 relative", styles.chatContent)}
+              >
+                <div className={styles.chatMessages}>
+                  <ScrollArea className="h-full w-full">
+                    <ChatMessages
+                      roomId={roomId}
+                      messagesEndRef={messagesEndRef}
+                    />
+                  </ScrollArea>
+                </div>
+              </div>
+
+              {/* Footer - Fixed at bottom */}
+              {isBlocked ? (
+                <div
+                  className={clsx(
+                    "shrink-0 z-10 flex flex-col items-center justify-center py-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-[#23232b]",
+                    styles.chatFooter
+                  )}
+                >
+                  <button
+                    onClick={handleUnblockUser}
+                    className="text-blue-600 font-medium hover:underline"
+                  >
+                    Unblock
+                  </button>
+                </div>
+              ) : (
+                <div className={clsx("shrink-0 z-10", styles.chatFooter)}>
+                  <ChatComposer roomId={roomId} />
+                </div>
+              )}
+            </div>
+          </ChatLayout>,
+          document.body
+        )}
+
+      {/* For other browsers - render normally */}
+      {(typeof window === "undefined" ||
+        !(
+          /iPad|iPhone|iPod/.test(navigator.userAgent) &&
+          /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+        )) && (
+        <ChatLayout roomId={roomId}>
+          <div
+            className={clsx(
+              "bg-gradient-to-b from-cyan-700/30 via-cyan-300/15 to-yellow-600/25",
+              styles.chatContainer
+            )}
+          >
             {/* Header */}
             <div className={clsx("shrink-0 z-10", styles.chatHeader)}>
               <ChatHeader room={room} />
@@ -383,52 +447,8 @@ const ChatPage = () => {
                 <ChatComposer roomId={roomId} />
               </div>
             )}
-          </div>,
-          document.body
-        )}
-
-      {/* For other browsers - render normally */}
-      {(typeof window === "undefined" ||
-        !(
-          /iPad|iPhone|iPod/.test(navigator.userAgent) &&
-          /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
-        )) && (
-        <div className={clsx("bg-gradient-to-b from-cyan-700/30 via-cyan-300/15 to-yellow-600/25", styles.chatContainer)}>
-          {/* Header */}
-          <div className={clsx("shrink-0 z-10", styles.chatHeader)}>
-            <ChatHeader room={room} />
           </div>
-
-          {/* Chat content scrollable */}
-          <div className={clsx("flex-1 min-h-0 relative", styles.chatContent)}>
-            <div className={styles.chatMessages}>
-              <ScrollArea className="h-full w-full">
-                <ChatMessages roomId={roomId} messagesEndRef={messagesEndRef} />
-              </ScrollArea>
-            </div>
-          </div>
-
-          {/* Footer - Fixed at bottom */}
-          {isBlocked ? (
-            <div
-              className={clsx(
-                "shrink-0 z-10 flex flex-col items-center justify-center py-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-[#23232b]",
-                styles.chatFooter
-              )}
-            >
-              <button
-                onClick={handleUnblockUser}
-                className="text-blue-600 font-medium hover:underline"
-              >
-                Unblock
-              </button>
-            </div>
-          ) : (
-            <div className={clsx("shrink-0 z-10", styles.chatFooter)}>
-              <ChatComposer roomId={roomId} />
-            </div>
-          )}
-        </div>
+        </ChatLayout>
       )}
     </>
   );
