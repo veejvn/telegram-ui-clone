@@ -33,6 +33,7 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
   //console.log("Message: " + msg.text + ", isDeleted: " + msg.isDeleted);
   const theme = useTheme();
   const [open, setOpen] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(false);
   const [transformOffset, setTransformOffset] = useState(0);
   const client = useMatrixClient();
   const router = useRouter();
@@ -53,23 +54,10 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
 
   const isSelected = isMessageSelected(msg.eventId);
 
-  // Debug effect
-  // useEffect(() => {
-  //   console.log("TextMessage state changed:", {
-  //     open,
-  //     isDeleted,
-  //     msgId: msg.eventId,
-  //   });
-  // }, [open, isDeleted, msg.eventId]);
-
-  // Check if any menu is open and if this is the active one
-  // const isAnyMenuOpen = activeMenuMessageId !== null;
-  // const isThisMenuOpen = activeMenuMessageId === msg.eventId;
-
   // Mock reactions data - in real app this would come from msg.reactions
   const reactions = [
     { emoji: "❤️", count: 2, userReacted: false },
-    { emoji: "👍", count: 1, userReacted: true },
+    { emoji: "👍", count: 1, userReacted: false },
     { emoji: "😊", count: 3, userReacted: false },
     { emoji: "😢", count: 1, userReacted: false },
     { emoji: "😡", count: 1, userReacted: false },
@@ -83,7 +71,7 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
   );
 
   const timeClass = clsx(
-    "flex text-[#444444] items-center justify-end gap-1 text-[10px] mt-1 select-none pb-2"
+    "flex text-[#444444] items-center justify-end gap-1 text-[10px] select-none pb-2"
     // isSender
     //   ? "text-[#444444] dark:text-white"
     //   : "text-gray-400 dark:text-gray-400"
@@ -135,6 +123,7 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
     // Đóng sự kiện click vào reaction
     if (open) {
       setOpen(false);
+      setShowOverlay(false); // Ẩn overlay khi click reaction
       setActiveMenuMessageId(null); // Clear active message
       setTransformOffset(0); // Reset vị trí tin nhắn
     }
@@ -171,6 +160,9 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
       toggleMessage(msg.eventId);
       return;
     }
+
+    // Hiển thị overlay ngay lập tức khi click
+    setShowOverlay(true);
 
     // Nếu không ở selection mode thì hiện reactions + dropdown menu
     allowOpenRef.current = true;
@@ -233,6 +225,7 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
       }
     } else {
       setOpen(false);
+      setShowOverlay(false); // Ẩn overlay khi menu đóng
       setActiveMenuMessageId(null);
       setTransformOffset(0);
       allowOpenRef.current = false;
@@ -242,14 +235,14 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
   return (
     <>
       {/* Overlay khi menu mở - chỉ hiện khi không ở selection mode */}
-      {open && !isDeleted && !isSelectionMode && (
-        <div className="fixed inset-0 bg-white opacity-90 z-[100]" />
+      {showOverlay && !isDeleted && !isSelectionMode && (
+        <div className="fixed inset-0 bg-[#FFFFFF3D] backdrop-blur-[50px] z-[100]" />
       )}
 
       <div
         className={clsx(
           "flex flex-col relative transition-transform duration-300 ease-out",
-          open && !isSelectionMode ? "z-[110]" : "z-auto",
+          (showOverlay || open) && !isSelectionMode ? "z-[110]" : "z-auto",
           // Transition cho selection
           isSelectionMode && "transition-all duration-200"
         )}
@@ -272,19 +265,19 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
               onMouseLeave={isDeleted ? undefined : handleHoldEnd}
               className={clsx(
                 "flex flex-col relative transition-opacity duration-200 cursor-pointer",
-                open && !isSelectionMode && "z-[115]"
+                (showOverlay || open) && !isSelectionMode && "z-[115]"
               )}
             >
               {/* Reactions - chỉ hiển thị khi không ở selection mode */}
               {open && !isDeleted && !isSelectionMode && (
                 <div
-                  className="flex gap-1 mb-2 justify-center relative z-[120]"
+                  className={clsx("absolute top-[-45px] transform -translate-x-1/2 flex gap-1 justify-center z-[120]", !isSender && "left-23")}
                   onClick={(e) => {
                     e.stopPropagation();
                     console.log("Reaction container clicked!");
                   }}
                 >
-                  <div className="flex gap-1 bg-white rounded-full px-3 py-2 shadow-md border border-gray-200">
+                  <div className="flex bg-[#FFFFFF4D] justify-between rounded-full w-[192px] px-3 py-2 shadow-md border border-gray-200">
                     {reactions.map((reaction, index) => (
                       <button
                         key={index}
@@ -303,18 +296,13 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
                           e.preventDefault();
                           handleReactionClick(reaction.emoji);
                         }}
-                        className={`flex items-center gap-1 px-2 py-1 text-xs cursor-pointer transition-all hover:scale-105 border-0 bg-transparent ${
+                        className={`flex items-center text-xs cursor-pointer transition-all hover:scale-105 border-0 bg-transparent ${
                           reaction.userReacted
                             ? "bg-blue-100 rounded-full"
                             : "hover:bg-gray-100 rounded-full"
                         }`}
                       >
                         <span className="text-sm">{reaction.emoji}</span>
-                        {reaction.count > 0 && (
-                          <span className="text-xs text-gray-600">
-                            {reaction.count}
-                          </span>
-                        )}
                       </button>
                     ))}
                   </div>
@@ -385,7 +373,7 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
           </DropdownMenuTrigger>
           {!isDeleted && !isSelectionMode && (
             <DropdownMenuContent
-              className="mx-2 min-w-[200px] rounded-3xl relative z-[120]"
+              className="mx-2 w-[192px] h-[261px] rounded-3xl relative z-[120]"
               side="bottom"
               align="center"
               sideOffset={10}

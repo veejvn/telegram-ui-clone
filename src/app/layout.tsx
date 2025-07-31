@@ -33,7 +33,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head></head>
       <body
-        className={`${inter.className} antialiased h-screen bg-gradient-to-b from-cyan-700/30 via-cyan-300/15 to-yellow-600/25`}
+        className={`${inter.className} antialiased h-screen bg-gradient-to-b from-[#e3f1fb] to-[#fdeee7]`}
       >
         {/* <NoZoom /> */}
         <Providers>
