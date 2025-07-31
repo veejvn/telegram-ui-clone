@@ -3,6 +3,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { ChevronRight } from "lucide-react";
+
 export default function ContactEditPage() {
     const router = useRouter();
     return (
@@ -11,23 +12,24 @@ export default function ContactEditPage() {
             <div className="flex justify-between items-center mb-6">
                 <button
                     onClick={() => router.back()}
-                    className="w-10 h-10 rounded-full bg-gray-400 hover:bg-gray-500 flex items-center justify-center"
+                    className="w-10 h-10 rounded-full bg-white/30 hover:bg-white/40 backdrop-blur-md flex items-center justify-center shadow-sm"
                 >
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="16"
                         height="16"
                         viewBox="0 0 16 16"
-                        fill="currentColor"
+                        fill="none"
                     >
                         <path
                             d="M11 2L5 8L11 14"
                             strokeWidth="2"
-                            stroke="white"
+                            stroke="black"
                             fill="none"
                         />
                     </svg>
                 </button>
+
                 <h1 className="text-lg font-semibold">Edit</h1>
                 <Button
                     onClick={() => router.back()}
@@ -42,7 +44,8 @@ export default function ContactEditPage() {
 
             {/* Avatar + Name Section */}
             <div className="container mx-auto px-4">
-                <div className="flex gap-4 p-4 rounded-2xl border border-gray-200 w-full items-start mb-4">
+                <div className="flex gap-4 p-4 rounded-2xl border border-white/30 bg-white/20 backdrop-blur-md w-full items-start mb-4 shadow-sm">
+
                     {/* Avatar */}
                     <img
                         src="/avatar.png"
@@ -56,8 +59,10 @@ export default function ContactEditPage() {
 
                         {/* Line */}
                         <div className="overflow-hidden w-full my-1">
-                            <div className="h-px bg-gray-300 w-full" />
+                            <div className="h-px w-full bg-white/30" />
                         </div>
+
+
 
                         {/* Last name input */}
                         <div className="flex items-center gap-2 mt-1 w-full min-w-0">
@@ -74,7 +79,8 @@ export default function ContactEditPage() {
 
 
                 {/* Action Sections */}
-                <div className="rounded-2xl border border-gray-200 overflow-hidden mb-4">
+                <div className="rounded-2xl border border-white/30 bg-white/20 backdrop-blur-md overflow-hidden mb-4 shadow-sm">
+
                     {/* Suggest Photo */}
                     <div className="p-4 flex justify-between items-start cursor-pointer hover:bg-gray-100">
                         <div>
@@ -102,7 +108,8 @@ export default function ContactEditPage() {
                 </div>
 
                 {/* Remove Contact */}
-                <div className="mt-6 p-4 rounded-xl border border-gray-400 cursor-pointer hover:bg-gray-50 flex items-start justify-between">
+                <div className="mt-6 p-4 rounded-xl border border-white/30 bg-white/20 backdrop-blur-md shadow-sm cursor-pointer hover:bg-white/30 flex items-start justify-between">
+
                     <div>
                         <p className="text-red-600 font-medium">Remove contact</p>
                         <p className="text-sm text-gray-500 mt-1">
