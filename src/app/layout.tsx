@@ -32,7 +32,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head></head>
-      <body className={`${inter.className} antialiased`}>
+      <body
+        className={`${inter.className} antialiased h-screen bg-gradient-to-b from-cyan-700/30 via-cyan-300/15 to-yellow-600/25`}
+      >
         {/* <NoZoom /> */}
         <Providers>
           <CallOverlay /> {/*  Luôn lắng nghe sự kiện call */}

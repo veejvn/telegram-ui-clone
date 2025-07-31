@@ -13,7 +13,11 @@
   height: 100dvh; /* Dynamic viewport height for newer browsers */
 
   /* Ensure it's above all other elements including main layout */
+<<<<<<< HEAD
   z-index: 50;
+=======
+  z-index: 10;
+>>>>>>> d2896f1232f8761f79c30de4c374a77c2903c794
 
   /* Prevent scrolling when keyboard is open */
   -webkit-overflow-scrolling: touch;
