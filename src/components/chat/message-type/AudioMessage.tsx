@@ -22,10 +22,7 @@ const AudioMessage: React.FC<Props> = ({ msg, isSender = false }) => {
   const [remaining, setRemaining] = useState<number>(msg.audioDuration ?? 0);
   const intervalRef = useRef<number | null>(null);
   const { theme } = useTheme();
-  const isDarkMode =
-    theme === "dark" ||
-    (theme === "system" &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const isDarkMode = false; // Force light mode as requested
 
   // Sync remaining when msg.audioDuration changes
   useEffect(() => {
@@ -69,23 +66,12 @@ const AudioMessage: React.FC<Props> = ({ msg, isSender = false }) => {
   const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
   const ss = String(remaining % 60).padStart(2, "0");
 
-  const textClass = clsx(
-    "flex items-center justify-end gap-1 text-xs",
-    isSender
-      ? "text-[#79c071]  dark:text-white"
-      : "text-zinc-400 dark:text-white"
-  );
-
   const waveformRef = useRef<HTMLDivElement | null>(null);
   const wavesurferRef = useRef<WaveSurfer | null>(null);
 
-  const waveColor = isSender ? (isDarkMode ? "#afa4a4" : "#96d78e") : "#e7edf3";
-
-  const progressColor = isSender
-    ? isDarkMode
-      ? "#FFFFFF"
-      : "#79c071"
-    : "#72b6e5";
+  // Colors to match the design in the image
+  const waveColor = "#e5e6e6"; // Light gray for inactive bars
+  const progressColor = "#007aff"; // Blue for active/progress bars
 
   useEffect(() => {
     if (waveformRef.current && !wavesurferRef.current) {
@@ -93,8 +79,8 @@ const AudioMessage: React.FC<Props> = ({ msg, isSender = false }) => {
         container: waveformRef.current,
         waveColor: waveColor,
         progressColor: progressColor,
-        height: 30,
-        barWidth: 2,
+        height: 24,
+        barWidth: 3,
         responsive: true,
         interact: false,
         cursorWidth: 0,
@@ -129,64 +115,58 @@ const AudioMessage: React.FC<Props> = ({ msg, isSender = false }) => {
   }, [msg.audioUrl]);
 
   return (
-    <div
-      className={cn(
-        `bg-[#dcf8c6] dark:bg-[#4567fc] rounded-xl p-2 px-3 max-w-xs flex flex-col shadow-sm w-45 select-none ${
-          !isSender && "bg-white dark:bg-[#222e3a]"
-        }`
+    <div className="flex relative items-end">
+      {/* Check icon cho tin gửi - đặt bên trái */}
+      {isSender && (
+        <div className="flex items-end mr-2 my-auto">
+          <span
+            className={`inline-flex items-center justify-center w-4 h-4 rounded-full ${
+              msg.status === "read" ? "bg-blue-500" : "bg-gray-300"
+            }`}
+          >
+            <Check className="w-2.5 h-2.5 text-white" />
+          </span>
+        </div>
       )}
-    >
-      <div className="flex items-center gap-3">
-        <button
-          onClick={togglePlay}
-          className={cn(
-            `rounded-full bg-[#79c071] dark:bg-white flex justify-center items-center size-10 p-2 text-white ${
-              !isSender && "bg-[#74b4ec] dark:bg-[#74b4ec]"
-            }`
-          )}
-        >
-          {playing ? (
-            <FaPause
-              className={`${
-                isSender ? "dark:text-[#4567fc]" : "dark:text-white"
-              }`}
-              size={16}
-            />
-          ) : (
-            <FaPlay
-              className={`${
-                isSender ? "dark:text-[#4567fc]" : "dark:text-white"
-              }`}
-              size={16}
-            />
-          )}
-        </button>
 
-        <div className="flex-1">
-          <div ref={waveformRef} className="w-full" />
-          <div className="flex items-center">
-            <span
-              className={cn(
-                `text-xs text-[#79c071] dark:text-white ${
-                  !isSender && "text-[#74b4ec]"
-                }`
-              )}
-            >
-              {mm}:{ss}
-            </span>
+      <div className="bg-[#808080]/30 rounded-2xl p-3 w-45 max-w-xs flex flex-col shadow-sm select-none">
+        {/* Transfer info */}
+        {/* <div className="flex items-center gap-2 mb-2">
+          <div className="w-6 h-6 bg-orange-400 rounded-full flex items-center justify-center">
+            <span className="text-white text-xs font-semibold">A</span>
+          </div>
+          <span className="text-sm text-gray-600">Transfer from Andrew</span>
+        </div> */}
+
+        {/* Audio player */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={togglePlay}
+            className="rounded-full bg-[#000088] flex justify-center items-center w-10 h-10 text-white hover:bg-blue-600 transition-colors"
+          >
+            {playing ? (
+              <FaPause size={14} />
+            ) : (
+              <FaPlay size={14} className="ml-0.5" />
+            )}
+          </button>
+
+          <div className="flex-1">
+            <div ref={waveformRef} className="w-full mb-1" />
+            <div className="flex items-center">
+              <span className="text-[10px] text-[#6B7271]">
+                {mm}:{ss}
+              </span>
+            </div>
           </div>
         </div>
-      </div>
-      <div className={`flex justify-between ${textClass}`}>
-        <span className="flex items-center gap-1">
-          {formatMsgTime(msg.time)}
-          {isSender &&
-            (msg.status === "read" ? (
-              <CheckCheck size={14} />
-            ) : (
-              <Check size={14} />
-            ))}
-        </span>
+
+        {/* Time at bottom */}
+        <div className="flex justify-end mt-1">
+          <div className="flex items-center gap-1 text-[10px] text-[#6B7271]">
+            <span>{formatMsgTime(msg.time)}</span>
+          </div>
+        </div>
       </div>
     </div>
   );

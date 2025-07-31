@@ -16,6 +16,7 @@ import { convertEventsToMessages } from "@/utils/chat/convertEventsToMessages";
 import { groupMessagesByDate } from "@/utils/chat/groupMessagesByDate";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Search } from "lucide-react";
+import { MessageMenuProvider } from "@/contexts/MessageMenuContext";
 
 type ChatMessagesProps = {
   roomId: string;
@@ -279,38 +280,40 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
         </div>
       )}
 
-      <div
-        className="py-1 px-4 flex-1 overflow-y-auto"
-        ref={containerRef}
-        onScroll={handleScroll}
-      >
-        {Object.entries(groupedFiltered).map(([dateLabel, msgs]) => (
-          <div key={dateLabel}>
-            <div className="text-center text-sm my-1.5">
-              <p className="bg-gray-900/15 rounded-full backdrop-blur-2xl text-white inline-block py-1 px-2">
-                {dateLabel}
-              </p>
+      <MessageMenuProvider>
+        <div
+          className="py-1 px-4 flex-1 overflow-y-auto"
+          ref={containerRef}
+          onScroll={handleScroll}
+        >
+          {Object.entries(groupedFiltered).map(([dateLabel, msgs]) => (
+            <div key={dateLabel}>
+              <div className="text-center text-sm my-1.5">
+                <p className="bg-gray-900/15 rounded-full backdrop-blur-2xl text-white inline-block py-1 px-2 select-none">
+                  {dateLabel}
+                </p>
+              </div>
+              {msgs.map((msg) => {
+                const isHighlighted = msg.eventId === highlightId;
+                return (
+                  <div
+                    key={msg.eventId}
+                    ref={isHighlighted ? firstHighlightedRef : null}
+                  >
+                    <ChatMessage msg={msg} roomId={roomId} />
+                  </div>
+                );
+              })}
             </div>
-            {msgs.map((msg) => {
-              const isHighlighted = msg.eventId === highlightId;
-              return (
-                <div
-                  key={msg.eventId}
-                  ref={isHighlighted ? firstHighlightedRef : null}
-                >
-                  <ChatMessage msg={msg} roomId={roomId} />
-                </div>
-              );
-            })}
-          </div>
-        ))}
-        <div ref={messagesEndRef} />
-        {isLoadingMore && (
-          <div className="text-center text-gray-400 dark:text-gray-500">
-            Loading more...
-          </div>
-        )}
-      </div>
+          ))}
+          <div ref={messagesEndRef} />
+          {isLoadingMore && (
+            <div className="text-center text-gray-400 dark:text-gray-500">
+              Loading more...
+            </div>
+          )}
+        </div>
+      </MessageMenuProvider>
     </div>
   );
 };
