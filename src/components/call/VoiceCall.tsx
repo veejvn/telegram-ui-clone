@@ -5,12 +5,13 @@ import {
     User,
     Mic,
     MicOff,
-    PhoneOff,
+    Phone,
     Volume2,
     VolumeX,
     Video,
     ChevronLeft,
     Lock,
+    UserPlus, ChevronUp, ChevronDown
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import useCallStore from '@/stores/useCallStore';
@@ -22,13 +23,15 @@ interface VoiceCallProps {
     callState?: string;
     callDuration?: number;
     onEndCall: () => void;
-    onSwitchToVideo?: () => Promise<void> | void;
+    onUpgrade?: () => void;
 }
 
 export function VoiceCall({
     contactName,
     callState,
     callDuration,
+    contactAvatar,
+    onUpgrade,
     onEndCall,
 }: VoiceCallProps) {
     const {
@@ -37,7 +40,7 @@ export function VoiceCall({
         toggleMic,
         state: storeState,
         hangup,
-        upgradeToVideo,
+
     } = useCallStore();
 
     const state = callState ?? storeState;
@@ -53,6 +56,11 @@ export function VoiceCall({
     const [showEndNotification, setShowEndNotification] = useState<boolean>(false);
     const [finalCallDuration, setFinalCallDuration] = useState<number>(0);
     const [internalCallDuration, setInternalCallDuration] = useState<number>(0);
+
+    // Audio states - tách riêng cho từng chức năng
+    const [isSpeakerOn, setIsSpeakerOn] = useState<boolean>(true); // Cho tắt tiếng
+    const [audioOutput, setAudioOutput] = useState<'speaker' | 'earpiece'>('speaker'); // Cho loa trong/ngoài
+    const audioRef = useRef<HTMLAudioElement>(null);
 
     // --- 1) Cleanup timeout chỉ trên unmount ---
     useEffect(() => {
@@ -88,8 +96,6 @@ export function VoiceCall({
     }, [state, callDuration, internalCallDuration, onEndCall]);
 
     // Gán stream vào audio element
-    const [isSpeakerOn, setIsSpeakerOn] = useState<boolean>(true);
-    const audioRef = useRef<HTMLAudioElement>(null);
     useEffect(() => {
         if (audioRef.current && remoteStream) {
             audioRef.current.srcObject = remoteStream;
@@ -130,30 +136,29 @@ export function VoiceCall({
 
     const router = useRouter();
     const params = useSearchParams();
-    const handleSwitchToVideo = async () => {
-        await upgradeToVideo();
-        const calleeId = params.get('calleeId');
-        const contact = params.get('contact') || contactName;
-        router.replace(
-            `/call/video?calleeId=${calleeId}&contact=${encodeURIComponent(
-                contact
-            )}`
-        );
+    const [toolsOpen, setToolsOpen] = useState(false);
+
+    // Handler thêm người
+    const handleAddGroup = () => {
+        // TODO: mở modal hoặc điều hướng để chọn người, rồi client.invite(...)
+        console.log('Add group functionality');
+    };
+
+    // Handler dịch thuật
+    const handleTranslate = () => {
+        // TODO: bật chế độ dịch
+        console.log('Translate functionality');
     };
 
     const handleToggleMic = () => {
         toggleMic(!micOn);
     };
 
-    // Speaker/Earpiece cho mobile
-    const [audioOutput, setAudioOutput] = useState<'speaker' | 'earpiece'>(
-        'speaker'
-    );
-    const isMobile =
-        typeof window !== 'undefined' &&
-        /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    // Mobile detection
+    const isMobile = typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-    const handleToggleSpeaker = async () => {
+    // Handler cho chuyển đổi loa trong/ngoài (riêng biệt)
+    const handleToggleAudioOutput = async () => {
         if (audioRef.current && 'setSinkId' in audioRef.current && isMobile) {
             const next = audioOutput === 'speaker' ? 'earpiece' : 'speaker';
             try {
@@ -162,26 +167,65 @@ export function VoiceCall({
                 );
                 setAudioOutput(next);
             } catch (err) {
-                alert('Không thể chuyển loa: ' + (err instanceof Error ? err.message : err));
+                console.warn('Không thể chuyển loa:', err);
+                // Fallback: toggle visual state anyway
+                setAudioOutput(next);
             }
-        } else if (audioRef.current) {
-            audioRef.current.muted = !audioRef.current.muted;
-            setIsSpeakerOn(!audioRef.current.muted);
+        } else {
+            // Desktop/fallback: just toggle state
+            setAudioOutput(audioOutput === 'speaker' ? 'earpiece' : 'speaker');
         }
     };
+
+    // Handler cho tắt/bật tiếng (sử dụng handleToggleSpeaker như yêu cầu)
+    const handleToggleSpeaker = () => {
+        const newState = !isSpeakerOn;
+        setIsSpeakerOn(newState);
+
+        if (audioRef.current) {
+            audioRef.current.muted = !newState;
+        }
+    };
+
+    // Camera toggle
+    const [isCameraOn, setIsCameraOn] = useState(false);
+    const handleToggleCamera = async () => {
+        const next = !isCameraOn;
+        setIsCameraOn(next);
+        if (next) {
+            try {
+                // 1) Yêu cầu upgrade để thêm track video
+                onUpgrade?.();
+                // 2) Việc điều hướng chuyển layout để khi remoteStream đã sẵn sàng
+            } catch (err) {
+                console.error("Chuyển sang video thất bại:", err);
+            }
+        }
+    };
+
     const headerStyle = getHeaderStyleWithStatusBar();
 
     const isRinging = ['ringing', 'connecting', 'incoming'].includes(state);
 
+    const dynamicBgStyle: React.CSSProperties = contactAvatar
+        ? {
+            backgroundImage: `
+        linear-gradient(rgba(255, 255, 255, 0.591), rgba(255, 255, 255, 0.509)),
+        url(${contactAvatar})
+      `,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+        }
+        : {
+            background: isRinging || showEndNotification
+                ? "linear-gradient(160deg, #a18cd1 0%, #fbc2eb 100%)"
+                : "linear-gradient(160deg, #6fb0d2 0%, #a3e4a0 100%)",
+        };
+
     return (
         <div
             className="relative flex flex-col items-center justify-between min-h-screen w-full"
-            style={{
-                background: isRinging || showEndNotification
-                    ? 'linear-gradient(160deg, #a18cd1 0%, #fbc2eb 100%)'
-                    : 'linear-gradient(160deg, #6fb0d2 0%, #a3e4a0 100%)',
-
-            }}
+            style={dynamicBgStyle}
         >
             {/* Header */}
             <header
@@ -189,45 +233,48 @@ export function VoiceCall({
                 className="sticky top-0 z-10 w-full bg-transparent"
             >
                 <div className="flex items-center justify-between px-4 pt-4">
+                    {/* Back button */}
                     <button
-                        className="flex items-center gap-1 text-white/90 text-lg"
                         onClick={showEndNotification ? handleCloseEndNotification : undefined}
+                        className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur flex items-center justify-center border border-white/30 transition-colors mb-2"
                     >
-                        <ChevronLeft className="w-5 h-5" />
-                        Back
+                        <ChevronLeft className="w-6 h-6 text-black" />
                     </button>
-                    <div className="bg-blue-500 text-white rounded-full px-3 py-0.5 text-xs font-bold">
-                        Ting Tong
-                    </div>
-                    <div className="size-8 rounded-full bg-white/20 flex items-center justify-center ml-8">
-                        <User className="w-5 h-5 text-white/80" />
-                    </div>
+
+                    {/* Camera toggle */}
+                    <button
+                        onClick={handleToggleCamera}
+                        className={`
+        relative flex items-center
+        w-14 h-8 rounded-full
+        bg-white/20 backdrop-blur-md border border-white/30 shadow
+        transition-colors
+        px-1
+    `}
+                        aria-label="Chuyển camera"
+                    >
+                        <span
+                            className={`
+        flex items-center justify-center
+        w-6 h-6 rounded-full
+        ${isCameraOn
+                                    ? 'bg-blue-500 border-blue-500'
+                                    : 'bg-white/20 hover:bg-white/30 backdrop-blur border-white/30'
+                                }
+        transition-colors transition-transform
+        ${isCameraOn ? 'translate-x-6' : 'translate-x-0'}
+    `}
+                        >
+                            <Video className="w-5 h-5 text-white" />
+                        </span>
+                    </button>
                 </div>
             </header>
 
-            {/* Emoji & Encryption */}
-            <div className="mt-4 flex flex-col items-center">
-                {/* <div className="text-3xl">🏦💵🚜🙀</div> */}
-                <div className="mt-2 bg-white/20 rounded-xl px-4 py-1 text-white text-sm flex items-center gap-1">
-                    <Lock className="w-4 h-4" /> Encryption key of this call
-                </div>
-            </div>
-
             {/* Avatar with Pulse */}
             <div className="flex flex-col items-center mt-12">
-                <div className="relative w-40 h-40">
-                    {!showEndNotification && <div className="pulse-ring"></div>}
-                    <div className="absolute inset-0 rounded-full bg-gradient-to-br from-purple-400 to-pink-300 border-4 border-white/30 flex items-center justify-center z-10">
-                        <span className="text-6xl text-white font-bold">
-                            {contactName?.[0]?.toUpperCase() || 'U'}
-                        </span>
-                    </div>
-                </div>
-
                 <div className="mt-6 text-center">
-                    <div className="text-white text-2xl font-semibold">
-                        {contactName}
-                    </div>
+
                     {showEndNotification ? (
                         <div className="flex flex-col items-center gap-2 mt-1">
                             <div className="text-white/90 text-lg font-normal tracking-wide">
@@ -251,94 +298,139 @@ export function VoiceCall({
                             Requesting ...
                         </div>
                     ) : (
-                        <div className="flex items-center justify-center gap-2 mt-1">
-                            <span className="text-white/80 text-sm">📶</span>
-                            <span className="text-white/80 text-lg font-mono">
-                                {formatDuration(callDuration ?? internalCallDuration)}
-                            </span>
-                        </div>
+                        <>
+                            <div className="flex items-center justify-center gap-2 mt-1">
+                                <span className="text-white/80 text-lg font-mono">
+                                    {formatDuration(callDuration ?? internalCallDuration)}
+                                </span>
+                            </div>
+                            {/* Tên người gọi nằm dưới đồng hồ */}
+                            <div className="text-white text-2xl font-semibold mt-1">
+                                {contactName}
+                            </div>
+                        </>
                     )}
                 </div>
             </div>
 
             {/* Controls */}
-            <div className="flex items-center justify-center gap-6 mb-12 mt-auto">
-                {/* Speaker/Earpiece */}
-                <div className="flex flex-col items-center">
-                    <button
-                        className={`w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-1 backdrop-blur ${isRinging || showEndNotification ? 'opacity-60' : ''
-                            }`}
-                        onClick={handleToggleSpeaker}
-                        disabled={isRinging || showEndNotification}
-                    >
-                        {isMobile ? (
-                            audioOutput === 'speaker' ? (
-                                <Volume2 className="w-8 h-8 text-white" />
-                            ) : (
-                                <VolumeX className="w-8 h-8 text-white/60" />
-                            )
-                        ) : isSpeakerOn ? (
-                            <Volume2 className="w-8 h-8 text-white" />
-                        ) : (
-                            <VolumeX className="w-8 h-8 text-white/60" />
-                        )}
-                    </button>
-                    <span className="text-xs text-white/80">
-                        {isMobile
-                            ? audioOutput === 'speaker'
-                                ? 'loa ngoài'
-                                : 'loa trong'
-                            : isSpeakerOn
-                                ? 'bật tiếng'
-                                : 'tắt tiếng'}
-                    </span>
-                </div>
+            <div className="w-full mb-12 mt-auto">
+                {/* Row 1: End Call và Translate trên cùng một hàng */}
+                <div className="flex items-start justify-between w-full px-4 mb-6">
+                    {/* Khoảng trống bên trái */}
+                    <div className="w-12"></div>
 
-                {/* (Video upgrade button, tạm ẩn) */}
-                {/*
-        <div className="flex flex-col items-center">
-          <button
-            className={`w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-1 backdrop-blur ${
-              isRinging ? 'opacity-60' : ''
-            }`}
-            onClick={handleSwitchToVideo}
-            disabled={isRinging}
-          >
-            <Video className="w-8 h-8 text-white" />
-          </button>
-          <span className="text-xs text-white/80">video</span>
-        </div>
-        */}
-
-                {/* Mute */}
-                <div className="flex flex-col items-center">
+                    {/* End Call - nút đỏ lớn ở giữa */}
                     <button
-                        className={`w-16 h-16 rounded-full flex items-center justify-center mb-1 backdrop-blur ${micOn ? 'bg-white/20' : 'bg-red-500/80'
-                            } ${isRinging || showEndNotification ? 'opacity-60' : ''}`}
-                        onClick={handleToggleMic}
-                        disabled={isRinging || showEndNotification}
-                    >
-                        {micOn ? (
-                            <Mic className="w-8 h-8 text-white" />
-                        ) : (
-                            <MicOff className="w-8 h-8 text-white" />
-                        )}
-                    </button>
-                    <span className="text-xs text-white/80">mute</span>
-                </div>
-
-                {/* End */}
-                <div className="flex flex-col items-center">
-                    <button
-                        className={`w-16 h-16 rounded-full bg-red-500 flex items-center justify-center mb-1 ${showEndNotification ? 'opacity-60' : ''
-                            }`}
                         onClick={handleEnd}
                         disabled={showEndNotification}
+                        className="flex flex-col items-center group"
                         aria-label="End call"
                     >
-                        <PhoneOff className="w-8 h-8 text-white" />
+                        <div className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center shadow-lg group-disabled:opacity-60">
+                            <Phone className="w-8 h-8 text-white rotate-[135deg]" />
+                        </div>
+                        <span className="mt-1 text-xs text-gray-200 font-medium select-none">Kết thúc</span>
                     </button>
-                    <span className="text-xs text-white/80">end</span>
+
+                    {/* Translate - nút nhỏ bên phải */}
+                    <button
+                        onClick={handleTranslate}
+                        className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur flex items-center justify-center border border-white/30 transition-colors"
+                        aria-label="Translate"
+                    >
+                        {/* Google Dịch style icon */}
+                        <svg viewBox="0 0 32 32" width="22" height="22" fill="none">
+                            <text x="3" y="20" fontSize="16" fontFamily="Arial" fill="black">文</text>
+                            <text x="15" y="24" fontSize="14" fontFamily="Arial" fill="black">A</text>
+                        </svg>
+                    </button>
+                </div>
+
+                {/* Panel với nút mũi tên */}
+                <div className="pointer-events-auto flex justify-center">
+                    {toolsOpen ? (
+                        // Khi mở: hiển thị khung panel đầy đủ
+                        <div
+                            className="bg-transparent backdrop-blur-md border border-white/30 rounded-2xl transition-all duration-300 ease-in-out"
+                            style={{
+                                boxShadow: '0 12px 32px -8px rgba(255,255,255,0.18)',
+                            }}
+                        >
+                            {/* Nút mũi tên để đóng */}
+                            <div className="flex justify-center px-7 py-1">
+                                <button
+                                    onClick={() => setToolsOpen((o) => !o)}
+                                    className="w-8 h-8 flex items-center justify-center"
+                                    aria-label="Close tools"
+                                >
+                                    <ChevronDown className="w-5 h-5 text-black" />
+                                </button>
+                            </div>
+
+                            {/* 3 nút trong panel */}
+                            <div className="px-6 pb-6">
+                                <div className="flex justify-center gap-8">
+                                    {/* Loa ngoài - Chuyển đổi loa trong/ngoài (riêng biệt) */}
+                                    <button
+                                        onClick={handleToggleAudioOutput}
+                                        className="flex flex-col items-center"
+                                    >
+                                        <div
+                                            className={`w-12 h-12 rounded-full flex items-center justify-center border transition-colors mb-2
+                     ${audioOutput === 'speaker'
+                                                    ? 'bg-gray-500/80 border-blue-400/80'
+                                                    : 'bg-white/20 hover:bg-white/30 backdrop-blur border-white/30'
+                                                }`
+                                            }
+                                        >
+                                            <Volume2 className="w-6 h-6 text-white" />
+                                        </div>
+                                        <span className="text-xs text-white/90 font-medium">Loa ngoài</span>
+                                    </button>
+
+                                    {/* Thêm nhóm */}
+                                    <button
+                                        onClick={handleAddGroup}
+                                        className="flex flex-col items-center"
+                                    >
+                                        <div className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur flex items-center justify-center border border-white/30 transition-colors mb-2">
+                                            <UserPlus className="w-6 h-6 text-white" />
+                                        </div>
+                                        <span className="text-xs text-white/90 font-medium">Thêm nhóm</span>
+                                    </button>
+
+                                    {/* Tắt tiếng - Sử dụng handleToggleSpeaker */}
+                                    <button
+                                        onClick={handleToggleSpeaker}
+                                        className="flex flex-col items-center"
+                                    >
+                                        <div className={`w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur flex items-center justify-center border border-white/30 transition-colors mb-2 ${isSpeakerOn
+                                            ? 'bg-gray-500/40 border-gray-400/30'
+                                            : 'bg-red-500/60 border-red-400/50'
+                                            }`}>
+                                            {isSpeakerOn
+                                                ? <Volume2 className="w-6 h-6 text-white" />
+                                                : <VolumeX className="w-6 h-6 text-white" />
+                                            }
+                                        </div>
+                                        <span className="text-xs text-white/90 font-medium">Tắt tiếng</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        // Khi đóng: chỉ hiển thị nút mũi tên
+                        <div className="flex justify-center">
+                            <button
+                                onClick={() => setToolsOpen((o) => !o)}
+                                className="w-8 h-8 flex items-center justify-center"
+                                aria-label="Open tools"
+                            >
+                                <ChevronUp className="w-5 h-5 text-black" />
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
