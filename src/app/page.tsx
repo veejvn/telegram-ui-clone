@@ -1,228 +1,36 @@
 "use client";
-import { useEffect } from "react";
-import { useAuthStore } from "@/stores/useAuthStore";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "@/constants/routes";
-import { clearMatrixAuthCookies } from "@/utils/clearAuthCookies";
-import { callService } from "@/services/callService";
-import LoadingSpinner from "@/components/common/LoadingSpinner";
+import { ArrowRightIcon } from "@heroicons/react/24/outline";
+import { HiArrowRightEndOnRectangle } from "react-icons/hi2";
 
 export default function Home() {
-  const login = useAuthStore((state) => state.login);
   const router = useRouter();
-  const MATRIX_BASE_URL =
-    process.env.NEXT_PUBLIC_MATRIX_BASE_URL || "https://matrix.teknix.dev";
-
-  useEffect(() => {
-    const handleAuth = async () => {
-      try {
-        // Kiểm tra có login token hoặc access token trong URL không
-        const urlParams = new URLSearchParams(window.location.search);
-        let loginToken = urlParams.get("loginToken");
-        const hash = window.location.hash;
-        const hasAccessTokenInHash = hash.includes("access_token");
-
-        if (!loginToken) {
-          const ssoTokenRes = await fetch("/chat/api/get-sso-token", {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            credentials: "include",
-          });
-          if (ssoTokenRes.ok) {
-            const data = await ssoTokenRes.json();
-            if (data.ssoToken) {
-              loginToken = data.ssoToken;
-            }
-          }
-        }
-
-        //console.log(loginToken);
-        // ✅ ƯU TIÊN XỬ LÝ SSO LOGIN TOKEN TRƯỚC
-        if (loginToken) {
-          try {
-            const response = await fetch(
-              `${MATRIX_BASE_URL}/_matrix/client/r0/login`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  type: "m.login.token",
-                  token: loginToken,
-                }),
-              }
-            );
-
-            const data = await response.json();
-            //console.log(data)
-
-            if (
-              response.ok &&
-              data.access_token &&
-              data.user_id &&
-              data.device_id
-            ) {
-              // Clear any existing auth first
-              clearMatrixAuthCookies();
-
-              const res = await fetch("/chat/api/set-cookie", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  token: data.access_token,
-                  userId: data.user_id,
-                  deviceId: data.device_id,
-                }),
-                credentials: "include", // 👈 đảm bảo cookie được gửi kèm trong các request sau
-              });
-
-              // ✅ Update useAuthStore với credentials mới
-              login(data.access_token, data.user_id, data.device_id);
-
-              // ✅ Reinitialize callService với credentials mới
-              callService.reinitialize("");
-
-              // Clean URL and redirect
-              window.history.replaceState({}, "", "/");
-              router.replace(ROUTES.CHAT);
-              return;
-            } else {
-              const res = await fetch("/chat/api/session", {
-                method: "GET",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                credentials: "include",
-              });
-
-              if (!res.ok) {
-                //console.error("Session API error:", errorData);
-                window.location.href = "/chat/login";
-                return;
-              }
-
-              const { accessToken } = await res.json();
-
-              if (accessToken) {
-                router.push(ROUTES.CHAT);
-              } else {
-                router.push(ROUTES.LOGIN);
-              }
-              return;
-            }
-          } catch (error) {
-            router.push(ROUTES.LOGIN);
-            return;
-          }
-        }
-
-        // Check for access token in URL fragment
-        if (hasAccessTokenInHash) {
-          const params = new URLSearchParams(hash.substring(1));
-          const accessToken = params.get("access_token");
-          const userId = params.get("user_id");
-          const deviceId = params.get("device_id");
-
-          if (accessToken && userId) {
-            // Clear any existing auth first
-            clearMatrixAuthCookies();
-
-            const res = await fetch("/chat/api/set-cookie", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                token: accessToken,
-                userId: userId,
-                deviceId: deviceId,
-              }),
-              credentials: "include", // 👈 đảm bảo cookie được gửi kèm trong các request sau
-            });
-
-            // ✅ Update useAuthStore với credentials mới
-            login(accessToken, userId, deviceId || "");
-
-            // ✅ Reinitialize callService với credentials mới
-            callService.reinitialize("");
-
-            // Clean URL and redirect
-            window.history.replaceState({}, "", "/");
-            router.replace("/chat");
-            return;
-          }
-        }
-
-        // ✅ CHỈ CHECK EXISTING TOKEN NẾU KHÔNG CÓ SSO TOKEN
-        const res = await fetch("/chat/api/session", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-        });
-        if (!res.ok) {
-          window.location.href = "/chat/login";
-          return;
-        }
-        const { accessToken, userId, deviceId } = await res.json();
-
-        // const existingToken = getCookie("matrix_token");
-        // const existingUserId = getCookie("matrix_user_id");
-
-        // ✅ THÊM CHECK ĐỂ TRÁNH RACE CONDITION SAU LOGOUT
-        // Nếu không có cả token và user ID thì chắc chắn đã logout
-        if (!accessToken && !userId && !deviceId) {
-          router.push(ROUTES.LOGIN);
-          return;
-        }
-
-        // Chỉ check session validity nếu có đủ thông tin
-        try {
-          const whoAmIResponse = await fetch(
-            `${MATRIX_BASE_URL}/_matrix/client/v3/account/whoami`,
-            {
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-                "Content-Type": "application/json",
-              },
-            }
-          );
-
-          if (whoAmIResponse.ok) {
-            // ✅ Đảm bảo callService có client nếu session hợp lệ
-            callService.reinitialize("");
-            router.push(ROUTES.CHAT);
-            return;
-          } else {
-            clearMatrixAuthCookies();
-            router.push(ROUTES.LOGIN);
-            return;
-          }
-        } catch (error) {
-          clearMatrixAuthCookies();
-          router.push(ROUTES.LOGIN);
-          return;
-        }
-      } catch (error) {
-        router.push(ROUTES.LOGIN);
-      }
-    };
-
-    handleAuth();
-  }, [router]);
 
   return (
-    // <div className="flex items-center justify-center min-h-screen">
-    //   <div className="text-center">
-    //     <div className="animate-pulse">Đang kiểm tra xác thực...</div>
-    //   </div>
-    // </div>
-    <div className="flex items-center justify-center min-h-screen">
-      <LoadingSpinner />
+    <div className="flex items-center justify-center min-h-screen px-2">
+      <div className="bg-white/30 rounded-[32px] px-8 py-12 w-full max-w-xl min-h-[500px] flex flex-col justify-center items-center border border-[#83838366] drop-shadow-[0_8px_32px_rgba(0,0,0,0.10)] backdrop-blur-[12px]">
+        <HiArrowRightEndOnRectangle className="w-12 h-12 text-[#121212] mb-6" />
+        <h1 className="text-2xl font-semibold text-[#121212] mb-1 leading-[140%] tracking-[0%]">Welcome to Ting tong</h1>
+        <p className="text-gray-500 text-center mb-8 text-base">
+          New Generation Teknix Account. Safe, Fast and Conveniently Integrated.
+        </p>
+        <div className="flex w-full gap-3 mt-4">
+          <button
+            className="flex-1 py-3 rounded-[30px] border border-gray-200 bg-white text-gray-700 font-medium text-base shadow-[inset_-2px_-2px_4px_rgba(255,255,255,0.7),inset_2px_2px_4px_rgba(0,0,0,0.1),0_4px_8px_rgba(0,0,0,0.1)] hover:shadow-[inset_-1px_-1px_2px_rgba(255,255,255,0.7),inset_1px_1px_2px_rgba(0,0,0,0.1),0_2px_4px_rgba(0,0,0,0.1)] transition-all duration-200"
+            onClick={() => router.push(ROUTES.LOGIN)}
+          >
+            Log in
+          </button>
+          <button
+            className="flex-1 py-3 rounded-[30px] bg-blue-500 text-white font-medium text-base shadow-[inset_-2px_-2px_4px_rgba(255,255,255,0.2),inset_2px_2px_4px_rgba(0,0,0,0.2),0_4px_8px_rgba(0,0,0,0.2)] hover:shadow-[inset_-1px_-1px_2px_rgba(255,255,255,0.2),inset_1px_1px_2px_rgba(0,0,0,0.2),0_2px_4px_rgba(0,0,0,0.2)] hover:bg-blue-600 transition-all duration-200 flex items-center justify-center gap-2"
+            onClick={() => router.push(ROUTES.CHAT)}
+          >
+            Get started
+            <ArrowRightIcon className="w-5 h-5 ml-1" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
