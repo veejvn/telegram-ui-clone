@@ -2,42 +2,35 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import SearchBar from "@/components/layouts/SearchBar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from "next/link";
 import { ChatList } from "@/components/chat/ChatList";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import * as sdk from "@/lib/matrix-sdk";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
-import ChatEditButton from "@/components/chat/ChatEditButton";
 import ChatActionBar from "@/components/chat/ChatActionBar";
 import DeleteChatModal from "@/components/chat/DeleteChatModal";
-import { getUserRooms } from "@/services/chatService";
 import {
   Bell,
   ChevronLeft,
-  CircleFadingPlus,
   Ellipsis,
   Loader2,
-  Search,
   ShoppingCart,
-  Sparkles,
-  SquarePen,
-  UserCheck,
   X,
 } from "lucide-react";
 import useSortedRooms from "@/hooks/useSortedRooms";
 import useListenRoomInvites from "@/hooks/useListenRoomInvites";
 import { getLS, removeLS } from "@/tools/localStorage.tool";
-import { useSearchParams } from "next/navigation";
-import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
 import { useRoomStore } from "@/stores/useRoomStore";
 import { searchMatrixUsers } from "@/services/matrixUserSearch";
 import ContactService from "@/services/contactService";
 import { getDetailedStatus } from "@/utils/chat/presencesHelpers";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/contexts/ToastProvider";
+// Import our extracted search components
+import SearchBar from "@/components/search/SearchBar";
+import FullScreenSearch from "@/components/search/FullScreenSearch";
 
 export default function ChatsPage() {
   const { refreshRooms, loading } = useSortedRooms();
@@ -48,10 +41,9 @@ export default function ChatsPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   useListenRoomInvites();
   const router = useRouter();
-  const { showToast } = useToast(); // Tìm kiếm states
+  const { showToast } = useToast();
 
-  const [isFocused, setIsFocused] = useState(false);
-  const [searchValue, setSearchValue] = useState("");
+  // Search states
   const [searchTerm, setSearchTerm] = useState("");
   const [isFullScreenSearch, setIsFullScreenSearch] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -59,22 +51,21 @@ export default function ChatsPage() {
   const [messageResults, setMessageResults] = useState<any[]>([]);
   const [recentSearches, setRecentSearches] = useState<any[]>([]);
   const [contacts, setContacts] = useState<any[]>([]);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const searchBarRef = useRef<HTMLDivElement>(null);
   const [isSearching, setIsSearching] = useState(false);
-  const [searchBarState, setSearchBarState] = useState("collapsed");
   const [searchQuery, setSearchQuery] = useState("");
-  const [expandedSearchActive, setExpandedSearchActive] = useState(false);
   const userIdChatBot =
-    process.env.NEXT_PUBLIC_USER_ID_BOT || "@bot:matrix.teknix.dev"; // Chức năng chọn phòng
+    process.env.NEXT_PUBLIC_USER_ID_BOT || "@bot:matrix.teknix.dev";
+
+  // Room selection handling
   const handleSelectRoom = (roomId: string) => {
     setSelectedRooms((prev) =>
       prev.includes(roomId)
         ? prev.filter((id) => id !== roomId)
         : [...prev, roomId]
     );
-  }; // Chức năng đánh dấu đã đọc tất cả
+  };
 
+  // Mark all as read functionality
   const handleReadAll = async () => {
     if (!client || selectedRooms.length < 2) return;
 
@@ -126,46 +117,7 @@ export default function ChatsPage() {
     setIsEditMode(false);
     setShowDeleteModal(false);
   };
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        searchBarRef.current &&
-        !searchBarRef.current.contains(event.target as Node) &&
-        searchBarState === "expanded"
-      ) {
-        setSearchBarState("collapsed");
-        setSearchQuery("");
-      }
-    };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [searchBarState]);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent | TouchEvent) {
-      if (
-        searchBarRef.current &&
-        !searchBarRef.current.contains(event.target as Node) &&
-        searchBarState === "expanded"
-      ) {
-        setSearchBarState("collapsed");
-        setSearchQuery("");
-        setExpandedSearchActive(false);
-      }
-    }
-
-    // Use both mousedown and touchend for better mobile support
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("touchend", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("touchend", handleClickOutside);
-    };
-  }, [searchBarState]);
   const handleDeleteBoth = async () => {
     if (!client) return;
 
@@ -190,9 +142,8 @@ export default function ChatsPage() {
     setSelectedRooms([]);
   };
 
-  const headerStyle = getHeaderStyleWithStatusBar();
+  // Handle back navigation to main app
   const backUrl = getLS("backUrl");
-  const fromMainApp = getLS("fromMainApp");
   const MAIN_APP_ORIGIN =
     typeof window !== "undefined" ? window.location.origin : "";
 
@@ -212,10 +163,7 @@ export default function ChatsPage() {
     }
   };
 
-  const hide = getLS("hide") || [];
-  const hideArray = typeof hide === "string" ? hide.split(",") : hide;
-  const options = Array.isArray(hideArray) ? hideArray : []; // Các hàm utility cho tìm kiếm
-
+  // Utility functions for search
   const getMxcAvatarUrl = (url: string | null) => {
     if (!url || !client) return null;
 
@@ -227,11 +175,12 @@ export default function ChatsPage() {
       }
       return null;
     } catch (error) {
-      console.error(`Lỗi xử lý avatar URL:`, error);
+      console.error(`Error processing avatar URL:`, error);
       return null;
     }
-  }; // Tải danh sách liên hệ
+  };
 
+  // Load contacts
   useEffect(() => {
     const loadContacts = async () => {
       if (!client) return;
@@ -267,7 +216,7 @@ export default function ChatsPage() {
                 );
               }
             } catch (error) {
-              console.error("Lỗi khi lấy avatar URL:", error);
+              console.error("Error getting avatar URL:", error);
             }
 
             let processedAvatarUrl = null;
@@ -275,7 +224,7 @@ export default function ChatsPage() {
               try {
                 processedAvatarUrl = getMxcAvatarUrl(avatarUrl);
               } catch (error) {
-                console.error("Lỗi khi chuyển đổi avatar URL:", error);
+                console.error("Error converting avatar URL:", error);
               }
             }
 
@@ -303,7 +252,7 @@ export default function ChatsPage() {
                 }
               }
             } catch (error) {
-              console.error("Lỗi khi lấy thông tin presence:", error);
+              console.error("Error getting presence info:", error);
             }
 
             return {
@@ -320,12 +269,14 @@ export default function ChatsPage() {
 
         setContacts(contactsList);
       } catch (err) {
-        console.error("Lỗi khi tải danh sách liên hệ:", err);
+        console.error("Error loading contacts:", err);
       }
     };
 
     loadContacts();
-  }, [client]); // Tải recent searches từ localStorage
+  }, [client, userIdChatBot]);
+
+  // Load recent searches from localStorage
   useEffect(() => {
     try {
       const saved = localStorage.getItem("recentSearches");
@@ -345,7 +296,7 @@ export default function ChatsPage() {
                 processed_avatar_url: avatarUrl || null,
               };
             } catch (error) {
-              console.error("Lỗi khi xử lý URL:", error);
+              console.error("Error processing URL:", error);
               return item;
             }
           }
@@ -357,16 +308,18 @@ export default function ChatsPage() {
     } catch (err) {
       console.error("Failed to load recent searches:", err);
     }
-  }, [client]); // Xử lý tìm kiếm
+  }, [client]);
 
+  // Search processing effect
   useEffect(() => {
     if (searchTerm.length > 0 && client && isFullScreenSearch) {
       setSearchLoading(true);
       setIsSearching(true);
 
       const processedUserIds = new Set();
-      let combinedResults: any[] = []; // Tìm trong danh sách contacts và recent searches
+      let combinedResults: any[] = [];
 
+      // Search in contacts and recent searches
       const localResults = [...contacts, ...recentSearches].filter(
         (contact) => {
           const displayName = (contact.display_name || "").toLowerCase();
@@ -385,8 +338,9 @@ export default function ChatsPage() {
           processedUserIds.add(user.user_id);
           combinedResults.push(user);
         }
-      }); // Tìm trong phòng chat
+      });
 
+      // Search in chat rooms
       if (client) {
         const rooms = client.getRooms() || [];
 
@@ -432,7 +386,7 @@ export default function ChatsPage() {
                   );
                 }
               } catch (error) {
-                console.error("Lỗi khi lấy avatar URL:", error);
+                console.error("Error getting avatar URL:", error);
               }
 
               let processedAvatarUrl = null;
@@ -440,7 +394,7 @@ export default function ChatsPage() {
                 try {
                   processedAvatarUrl = getMxcAvatarUrl(avatarUrl);
                 } catch (error) {
-                  console.error("Lỗi khi xử lý avatar URL:", error);
+                  console.error("Error processing avatar URL:", error);
                 }
               }
 
@@ -468,7 +422,7 @@ export default function ChatsPage() {
                   }
                 }
               } catch (error) {
-                console.error("Lỗi khi lấy thông tin presence:", error);
+                console.error("Error getting presence info:", error);
               }
 
               combinedResults.push({
@@ -487,18 +441,20 @@ export default function ChatsPage() {
       }
 
       const timeoutId = setTimeout(() => {
-        // Tìm kiếm thông qua API Matrix
+        // Search through Matrix API
         searchMatrixUsers(client, searchTerm)
           .then((apiResults) => {
             const filteredApiResults = apiResults.filter(
               (user) => user.user_id !== userIdChatBot
-            ); // Xử lý avatar URL và presence info
+            );
+
+            // Process avatar URLs and presence info
             const processedApiResults = apiResults.map((user) => {
               if (user.avatar_url && !user.processed_avatar_url) {
                 try {
                   user.processed_avatar_url = getMxcAvatarUrl(user.avatar_url);
                 } catch (error) {
-                  console.error("Lỗi xử lý avatar từ API:", error);
+                  console.error("Error processing API avatar:", error);
                 }
               }
 
@@ -524,20 +480,22 @@ export default function ChatsPage() {
                     }
                   }
                 } catch (error) {
-                  console.error("Lỗi khi lấy thông tin presence:", error);
+                  console.error("Error getting presence info:", error);
                 }
               }
 
               return user;
-            }); // Kết hợp kết quả và loại bỏ trùng lặp
+            });
 
+            // Combine results and remove duplicates
             processedApiResults.forEach((user) => {
               if (!processedUserIds.has(user.user_id)) {
                 processedUserIds.add(user.user_id);
                 combinedResults.push(user);
               }
-            }); // Loại bỏ trùng lặp bằng Set
+            });
 
+            // Remove duplicates using Map
             const uniqueResults = Array.from(
               new Map(
                 combinedResults.map((item) => [item.user_id, item])
@@ -548,8 +506,9 @@ export default function ChatsPage() {
             setSearchLoading(false);
           })
           .catch((err) => {
-            console.error("Lỗi tìm kiếm API:", err); // Loại bỏ trùng lặp
+            console.error("API search error:", err);
 
+            // Remove duplicates
             const uniqueResults = Array.from(
               new Map(
                 combinedResults.map((item) => [item.user_id, item])
@@ -557,8 +516,9 @@ export default function ChatsPage() {
             );
             setSearchResults(uniqueResults);
             setSearchLoading(false);
-          }); // Tìm tin nhắn
+          });
 
+        // Search messages
         client
           .searchMessageText({ query: searchTerm })
           .then((res) => {
@@ -582,8 +542,16 @@ export default function ChatsPage() {
       setSearchLoading(false);
       setIsSearching(false);
     }
-  }, [searchTerm, client, isFullScreenSearch, contacts, recentSearches]); // Các hàm xử lý
+  }, [
+    searchTerm,
+    client,
+    isFullScreenSearch,
+    contacts,
+    recentSearches,
+    userIdChatBot,
+  ]);
 
+  // User interaction handlers
   const normalizeUserIdInput = (raw: string, client: sdk.MatrixClient) => {
     if (!raw) return raw;
     let id = raw.trim();
@@ -609,13 +577,14 @@ export default function ChatsPage() {
         closeFullScreenSearch();
       }
     } catch (error: any) {
-      console.error("Lỗi khi tạo phòng:", error.message);
+      console.error("Error creating room:", error.message);
     }
   };
 
   const handleUserClick = async (user: any) => {
-    if (!client || user.user_id === userIdChatBot) return; // Thêm vào recent searches
+    if (!client || user.user_id === userIdChatBot) return;
 
+    // Add to recent searches
     const newRecent = [...recentSearches];
     const existingIndex = newRecent.findIndex(
       (r) => r.user_id === user.user_id
@@ -628,7 +597,7 @@ export default function ChatsPage() {
       try {
         avatarUrl = getMxcAvatarUrl(user.avatar_url);
       } catch (error) {
-        console.error("Lỗi chuyển đổi mxc URL:", error);
+        console.error("Error converting mxc URL:", error);
       }
     }
 
@@ -655,7 +624,7 @@ export default function ChatsPage() {
         }
       }
     } catch (error) {
-      console.error("Lỗi khi lấy thông tin presence:", error);
+      console.error("Error getting presence info:", error);
     }
 
     const userToSave = {
@@ -713,7 +682,7 @@ export default function ChatsPage() {
         avatarUrl = getMxcAvatarUrl(user.avatar_url);
         user.processed_avatar_url = avatarUrl;
       } catch (error) {
-        console.error("Lỗi khi xử lý avatar trong renderAvatar:", error);
+        console.error("Error processing avatar in renderAvatar:", error);
       }
     }
 
@@ -725,7 +694,7 @@ export default function ChatsPage() {
             alt="avatar"
             className="w-12 h-12 rounded-full object-cover"
             onError={(e) => {
-              console.error("Lỗi tải avatar:", avatarUrl);
+              console.error("Error loading avatar:", avatarUrl);
               e.currentTarget.style.display = "none";
               const parent = e.currentTarget.parentElement;
               if (parent) {
@@ -764,27 +733,10 @@ export default function ChatsPage() {
     );
   };
 
-  const openFullScreenSearch = () => {
-    setIsFullScreenSearch(true);
-    setSearchTerm("");
-    if (searchInputRef.current) {
-      setTimeout(() => {
-        searchInputRef.current?.focus();
-      }, 100);
-    }
-  };
-
   const closeFullScreenSearch = () => {
     setIsFullScreenSearch(false);
     setSearchTerm("");
     setSearchQuery("");
-    setSearchBarState("collapsed");
-    setExpandedSearchActive(false);
-
-    // Reset focus
-    if (searchInputRef.current) {
-      searchInputRef.current.blur();
-    }
   };
 
   const renderContactItem = (contact: any) => {
@@ -799,7 +751,7 @@ export default function ChatsPage() {
         avatarUrl = getMxcAvatarUrl(contact.avatar_url);
         contact.processed_avatar_url = avatarUrl;
       } catch (error) {
-        console.error("Lỗi khi xử lý avatar trong renderContactItem:", error);
+        console.error("Error processing avatar in renderContactItem:", error);
       }
     }
 
@@ -823,7 +775,7 @@ export default function ChatsPage() {
               alt={contact.display_name}
               className="w-14 h-14 rounded-full object-cover"
               onError={(e) => {
-                console.error("Lỗi tải avatar:", avatarUrl);
+                console.error("Error loading avatar:", avatarUrl);
                 e.currentTarget.style.display = "none";
                 const parent = e.currentTarget.parentElement;
                 if (parent) {
@@ -860,7 +812,7 @@ export default function ChatsPage() {
 
   return (
     <div className="flex flex-col h-screen space-y-2 bg-gradient-to-b from-cyan-700/30 via-cyan-300/15 to-yellow-600/25">
-      {/* HEADER */}
+      {/* Header */}
       <div className="shrink-0 p-3.5">
         <div className="flex justify-between items-center border-b border-gray-200/30 pb-3">
           {isEditMode ? (
@@ -897,8 +849,8 @@ export default function ChatsPage() {
             </>
           )}
         </div>
-        {/* Only show Service section when not in edit mode */}
 
+        {/* Service buttons */}
         <div className="flex items-center space-x-2 pt-3">
           <div className="flex items-center gap-2 bg-blue-600 py-3 px-4.5 text-white rounded-2xl outline">
             <svg
@@ -939,7 +891,8 @@ export default function ChatsPage() {
           </div>
         </div>
       </div>
-      {/* ChatList scroll được */}
+
+      {/* Chat list */}
       <ScrollArea className="flex-1 min-h-0 m-0">
         {loading ? (
           <div className="flex flex-1 flex-col justify-center items-center min-h-[calc(100vh-112px)] pb-8">
@@ -999,576 +952,43 @@ export default function ChatsPage() {
           </div>
         )}
       </ScrollArea>
+
+      {/* Gradient overlay at bottom */}
       <div className="fixed -bottom-3 left-0 w-full z-5 pointer-events-none">
         <div className="w-full h-36 bg-gradient-to-b from-transparent via-white/20 to-gray-400/30" />
       </div>
-      {/* Search bar */}
-      <div className="fixed bottom-10 left-0 w-full z-10 flex justify-center pointer-events-none">
-        <div
-          ref={searchBarRef}
-          className={`
-      group flex items-center rounded-full
-      transition-all duration-300 ease-in-out
-      pointer-events-auto
-      ${
-        searchBarState === "collapsed"
-          ? "bg-white py-1.5 px-2.5 w-[120px]"
-          : "bg-[#fce0f0] py-2 px-3 w-[90vw] max-w-md"
-      }
-    `}
-          style={{
-            marginBottom: "env(safe-area-inset-bottom, 12px)",
-            boxShadow:
-              searchBarState === "expanded"
-                ? "0 0 0 1px #9370DB, 0 0 10px 1px rgba(147, 112, 219, 0.5)"
-                : "0 1px 5px rgba(0,0,0,0.06)",
-            transform: `scale(${searchBarState === "expanded" ? "1.05" : "1"}) 
-       translateY(${searchBarState === "expanded" ? "-5px" : "0"})`,
-            transition: "all 0.3s ease-out",
-          }}
-          onClick={() => {
-            if (searchBarState === "collapsed") {
-              setSearchBarState("expanded");
-              setExpandedSearchActive(true);
 
-              // Short delay to ensure smooth animation on mobile
-              setTimeout(() => {
-                setIsFullScreenSearch(true);
-              }, 250);
-            }
-          }}
-        >
-          {/* Sparkles icon - consistent in both expanded and fullscreen states */}
-          {searchBarState !== "collapsed" && (
-            <div className="w-9 h-9 rounded-full bg-[#6b46c1] flex items-center justify-center mr-2 my-0 transition-all duration-300">
-              <Sparkles className="w-5 h-5 text-white transition-all duration-300" />
-            </div>
-          )}
+      {/* Search bar component */}
+      <SearchBar
+        onSearchFocus={() => setIsFullScreenSearch(true)}
+        onQueryChange={setSearchQuery}
+        searchQuery={searchQuery}
+      />
 
-          <input
-            ref={searchInputRef}
-            type="text"
-            className={`
-        outline-none bg-transparent transition-all duration-300 text-gray-800 text-sm
-        ${
-          searchBarState === "collapsed"
-            ? "w-[80px] text-center px-0"
-            : "w-full text-base text-left"
-        }
-      `}
-            placeholder={
-              searchBarState === "collapsed" ? "Tìm kiếm" : "Tìm kiếm"
-            }
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setSearchTerm(e.target.value);
-            }}
-            onFocus={() => {
-              if (searchBarState === "collapsed") {
-                setSearchBarState("expanded");
-                setExpandedSearchActive(true);
-
-                // Use the same delay for consistency
-                setTimeout(() => {
-                  setIsFullScreenSearch(true);
-                }, 250);
-              }
-            }}
-            readOnly={searchBarState === "collapsed"}
-          />
-
-          {/* Right search icon in collapsed state */}
-          {searchBarState === "collapsed" && (
-            <Search size={16} className="text-gray-500 min-w-[16px] ml-0.5" />
-          )}
-
-          {/* X button only shown in expanded state */}
-          {searchBarState === "expanded" && !isFullScreenSearch && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setSearchBarState("collapsed");
-                setSearchQuery("");
-                setExpandedSearchActive(false);
-                if (searchInputRef.current) {
-                  searchInputRef.current.blur();
-                }
-              }}
-              className="p-1 ml-1 text-[#9370DB]"
-              aria-label="Close search"
-            >
-              <X size={16} />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Mobile-optimized animation and keyboard handling styles */}
-      <style jsx global>{`
-        /* Animation styles */
-        @keyframes slideUp {
-          0% {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .fullscreen-search-enter {
-          animation: slideUp 0.3s ease-out forwards;
-          will-change: transform, opacity;
-          transform-origin: center bottom;
-          backface-visibility: hidden;
-          -webkit-backface-visibility: hidden;
-        }
-
-        /* Keyboard visibility fixes */
-        @media screen and (max-height: 500px) {
-          /* When keyboard is visible (viewport height decreases) */
-          .search-bottom-bar {
-            position: fixed !important;
-            bottom: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            background-color: rgba(247, 242, 234, 0.95) !important;
-            z-index: 9999 !important;
-            border-top: 1px solid #a7cfe8;
-            padding-bottom: env(safe-area-inset-bottom, 8px) !important;
-          }
-
-          /* Add padding to content so nothing is hidden under the search bar */
-          .fullscreen-search-enter .overflow-y-auto {
-            padding-bottom: 80px !important;
-          }
-        }
-
-        /* iOS specific fixes */
-        @supports (-webkit-touch-callout: none) {
-          .search-bottom-bar {
-            position: fixed !important;
-            bottom: 0 !important;
-            z-index: 9999 !important;
-          }
-        }
-      `}</style>
-
-      {/* Full screen search interface with keyboard handling */}
+      {/* Full screen search component */}
       {isFullScreenSearch && (
-        <div
-          className="fixed inset-0 z-50 flex flex-col fullscreen-search-enter"
-          style={{
-            backgroundImage:
-              "linear-gradient(to bottom, #c7e2f0, #c5cfd6, #d6d3cf, #e4d6c6, #f4e4ca)",
-          }}
-        >
-          {/* Search header - fixed at top */}
-          <div className="flex items-center justify-between p-3 flex-shrink-0 bg-[#c7e2f0] sticky top-0 z-10">
-            <div className="text-2xl font-medium px-4 text-black">Search</div>
-            <button
-              onClick={() => {
-                setIsFullScreenSearch(false);
-                setSearchTerm("");
-                setSearchQuery("");
-                setSearchBarState("collapsed");
-                setExpandedSearchActive(false);
-              }}
-              className="w-10 h-10 rounded-full bg-[#e2edf3] flex items-center justify-center text-black"
-              aria-label="Close search"
-            >
-              <X size={20} />
-            </button>
-          </div>
-
-          {/* Content area - scrollable */}
-          <div className="flex-1 overflow-y-auto pb-24">
-            {/* Your search content here */}
-            {!(
-              searchTerm.length > 0 &&
-              !searchLoading &&
-              searchResults.length === 0 &&
-              messageResults.length === 0
-            ) && (
-              <div className="px-4 py-2 text-sm text-gray-600 border-t border-b border-[#a7cfe8] flex-shrink-0">
-                Contact and chat
-              </div>
-            )}
-            {/* Rest of your search content */}
-          </div>
-
-          {/* Search bar - always visible above keyboard */}
-          <div className="px-4 py-3 border-t border-[#a7cfe8] bg-[#e4d6c6] search-bottom-bar">
-            <div
-              className="flex items-center rounded-full overflow-hidden px-2 bg-[#fce0f0]"
-              style={{
-                boxShadow:
-                  "0 0 0 1px #9370DB, 0 0 10px 1px rgba(147, 112, 219, 0.5)",
-              }}
-            >
-              {/* Sparkles icon */}
-              <div className="w-9 h-9 rounded-full bg-[#6b46c1] flex items-center justify-center mr-2 my-1">
-                <Sparkles className="w-5 h-5 text-white" />
-              </div>
-
-              {/* Text input field */}
-              <input
-                autoFocus
-                type="text"
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setSearchQuery(e.target.value);
-                }}
-                placeholder="Tìm kiếm"
-                className="flex-1 h-10 px-1 border-none focus:outline-none bg-transparent text-gray-800 text-base"
-              />
-
-              {/* Search icon */}
-              <div className="flex items-center justify-center w-9 h-9 rounded-full">
-                <Search className="w-5 h-5 text-[#9370DB]" />
-              </div>
-
-              {/* Clear button when there's text */}
-              {searchTerm && (
-                <button
-                  onClick={() => {
-                    setSearchTerm("");
-                    setSearchQuery("");
-                  }}
-                  className="p-2 text-[#9370DB]"
-                >
-                  <X size={16} />
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
+        <FullScreenSearch
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          onClose={closeFullScreenSearch}
+          searchLoading={searchLoading}
+          searchResults={searchResults}
+          messageResults={messageResults}
+          contacts={contacts}
+          recentSearches={recentSearches}
+          handleUserClick={handleUserClick}
+          clearHistory={clearHistory}
+          renderAvatar={renderAvatar}
+          renderContactItem={renderContactItem}
+          getMxcAvatarUrl={getMxcAvatarUrl}
+          clientUserId={client?.getUserId() ?? undefined}
+          userIdChatBot={userIdChatBot}
+        />
       )}
 
-      {/* Add transition styles for the fullscreen search */}
-      <style jsx global>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .fullscreen-search-enter {
-          animation: fadeIn 1s ease-out forwards;
-        }
-      `}</style>
-
-      {/* Full screen search interface */}
-      {isFullScreenSearch && (
-        <div
-          className="fixed inset-0 z-50 flex flex-col fullscreen-search-enter"
-          style={{
-            backgroundImage:
-              "linear-gradient(to bottom, #c7e2f0, #c5cfd6, #d6d3cf, #e4d6c6, #f4e4ca)",
-          }}
-        >
-          {/* Search header */}
-          <div className="flex items-center justify-between p-3 flex-shrink-0">
-            <div className="text-2xl font-medium px-4 text-black">Search</div>
-            <button
-              onClick={closeFullScreenSearch}
-              className="w-10 h-10 rounded-full bg-[#e2edf3] flex items-center justify-center text-black"
-              aria-label="Close search"
-            >
-              <X size={20} />
-            </button>
-          </div>
-          {/* Contact and chat section header */}
-          {!(
-            searchTerm.length > 0 &&
-            !searchLoading &&
-            searchResults.length === 0 &&
-            messageResults.length === 0
-          ) && (
-            <div className="px-4 py-2 text-sm text-gray-600 border-t border-b border-[#a7cfe8] flex-shrink-0">
-              Contact and chat
-            </div>
-          )}
-          {/* Search content with scroll */}
-          <div className="flex-1 overflow-y-auto">
-            {searchTerm.length > 0 ? (
-              <div className="flex flex-col">
-                {searchLoading ? (
-                  <div className="text-center p-8">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#6ab3e2] mb-4 mx-auto"></div>
-                    <div className="text-gray-600">Đang tìm kiếm...</div>
-                  </div>
-                ) : searchResults.filter(
-                    (user) =>
-                      user.user_id !== client?.getUserId() &&
-                      user.user_id !== userIdChatBot
-                  ).length === 0 && messageResults.length === 0 ? (
-                  // Thay đổi điều kiện để kiểm tra sau khi lọc, không phải trước khi lọc
-                  <div className="text-center p-8">
-                    <div className="bg-[#8ac2ee] w-16 h-16 rounded-md mx-auto mb-4 flex items-center justify-center">
-                      <X size={32} className="text-[#4193cf]" />
-                    </div>
-                    <div className="text-black text-xl font-medium mb-2">
-                      No results
-                    </div>
-                    <div className="text-gray-600">
-                      No results found for
-                      <span className="font-medium">{" " + searchTerm}</span>.
-                      Please try a different search.
-                    </div>
-                  </div>
-                ) : (
-                  <div className="pb-4">
-                    {searchResults
-                      .filter(
-                        (user) =>
-                          user.user_id !== client?.getUserId() &&
-                          user.user_id !== userIdChatBot
-                      )
-                      .map((user) => {
-                        let onlineStatus = "offline";
-                        let isOnline = user.isOnline || false;
-
-                        if (user.lastSeen) {
-                          isOnline =
-                            Date.now() - new Date(user.lastSeen).getTime() <
-                            2 * 60 * 1000;
-
-                          onlineStatus = getDetailedStatus(user.lastSeen);
-                        }
-
-                        return (
-                          <div
-                            key={user.user_id}
-                            className="flex items-center px-4 py-3 border-b border-[#a7cfe8]"
-                            onClick={() => handleUserClick(user)}
-                          >
-                            <div className="w-12 h-12 mr-3 relative">
-                              {renderAvatar(user)}
-                            </div>
-                            <div>
-                              <div>
-                                <div className="font-medium text-black">
-                                  {user.display_name ||
-                                    user.user_id ||
-                                    "Người dùng"}
-                                </div>
-                                <div className="text-sm text-blue-500">
-                                  {isOnline ? "online" : onlineStatus}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div>
-                {/* Hiển thị liên hệ theo hàng ngang */}
-                {contacts.length > 0 && (
-                  <div className="flex overflow-x-auto px-4 py-2 space-x-4 no-scrollbar">
-                    {contacts
-                      .slice(0, 10)
-                      .map((contact) => renderContactItem(contact))}
-                  </div>
-                )}
-                {/* Recent section */}
-                <div className="flex justify-between items-center px-4 py-2 border-t border-b border-[#a7cfe8] mt-2 bg-[#d4e5f0]">
-                  <span className="text-sm text-gray-500">Recent</span>
-                  <button
-                    className="text-sm text-red-500"
-                    onClick={clearHistory}
-                  >
-                    Clear history
-                  </button>
-                </div>
-                {/* Hiển thị danh sách recent searches */}
-                {recentSearches.length > 0 ? (
-                  <div className="pb-4">
-                    {recentSearches.map((item) => {
-                      let avatarUrl = item.processed_avatar_url;
-                      if (!avatarUrl && item.avatar_url && client) {
-                        try {
-                          avatarUrl = getMxcAvatarUrl(item.avatar_url);
-                          item.processed_avatar_url = avatarUrl;
-                        } catch (error) {
-                          console.error("Lỗi khi xử lý avatar URL:", error);
-                        }
-                      }
-
-                      let statusText = "Recent search";
-                      if (item.isOnline) {
-                        statusText = "online";
-                      } else if (item.lastSeen) {
-                        statusText = getDetailedStatus(item.lastSeen);
-                      }
-
-                      return (
-                        <div
-                          key={item.user_id}
-                          className="flex items-center px-4 py-3 border-b border-[#a7cfe8] cursor-pointer"
-                          onClick={() => handleUserClick(item)}
-                        >
-                          <div className="w-12 h-12 mr-3">
-                            {avatarUrl ? (
-                              <img
-                                src={avatarUrl}
-                                alt={item.display_name || "User"}
-                                className="w-12 h-12 rounded-full object-cover"
-                                onError={(e) => {
-                                  console.error("Lỗi tải avatar:", avatarUrl);
-                                  e.currentTarget.style.display = "none";
-                                  const parent = e.currentTarget.parentElement;
-                                  if (parent) {
-                                    const fallbackAvatar =
-                                      document.createElement("div");
-                                    fallbackAvatar.className =
-                                      "w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center";
-                                    fallbackAvatar.innerHTML = `<span class="text-orange-800 font-medium">${(
-                                      item.display_name || "U"
-                                    )
-                                      .charAt(0)
-                                      .toUpperCase()}</span>`;
-                                    parent.appendChild(fallbackAvatar);
-                                  }
-                                }}
-                              />
-                            ) : (
-                              <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
-                                <span className="text-orange-800 font-medium">
-                                  {(item.display_name || item.user_id || "?")
-                                    .charAt(0)
-                                    .toUpperCase()}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                          <div>
-                            <div className="font-medium text-black">
-                              {item.display_name ||
-                                item.user_id ||
-                                "Unknown User"}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {statusText}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="pb-4">
-                    {/* Demo data khi không có recent searches */}
-                    <div className="flex items-center px-4 py-3 border-b border-[#a7cfe8] cursor-pointer">
-                      <div className="w-12 h-12 bg-gray-300 rounded-full mr-3 flex items-center justify-center overflow-hidden">
-                        <div className="flex flex-wrap w-full h-full">
-                          <div className="w-1/2 h-1/2 bg-yellow-200"></div>
-                          <div className="w-1/2 h-1/2 bg-blue-200"></div>
-                          <div className="w-1/2 h-1/2 bg-green-200"></div>
-                          <div className="w-1/2 h-1/2 bg-red-200"></div>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="font-medium text-black">
-                          Workspace group
-                        </div>
-                        <div className="text-sm text-gray-500">Group</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center px-4 py-3 border-b border-[#a7cfe8] cursor-pointer">
-                      <div className="w-12 h-12 bg-blue-500 rounded-md mr-3 flex items-center justify-center text-white font-bold">
-                        DOC
-                      </div>
-                      <div>
-                        <div className="font-medium text-black">
-                          Papercoin.docs
-                        </div>
-                        <div className="text-sm text-gray-500">File</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center px-4 py-3 border-b border-[#a7cfe8] cursor-pointer">
-                      <div className="w-12 h-12 bg-gray-800 rounded-md mr-3 flex items-center justify-center overflow-hidden">
-                        <div className="text-xs text-white font-bold">BDS</div>
-                      </div>
-                      <div>
-                        <div className="font-medium text-black">BDS.Land</div>
-                        <div className="text-sm text-blue-500">
-                          https://website.com.vn
-                        </div>
-                        <div className="text-xs text-gray-500">Link</div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-          {/* Search input at bottom */}
-          <div className="px-4 py-3 border-t border-[#a7cfe8] flex-shrink-0">
-            {/* Thanh tìm kiếm với hiệu ứng hào quang */}
-            <div
-              className="relative flex items-center rounded-full overflow-hidden px-2 bg-[#fce0f0]"
-              style={{
-                boxShadow:
-                  "0 0 0 1px #9370DB, 0 0 10px 1px rgba(147, 112, 219, 0.5)",
-              }}
-            >
-              {/* Biểu tượng tròn bên trái */}
-              <div className="w-9 h-9 rounded-full bg-[#6b46c1] flex items-center justify-center mr-2 my-1">
-                <Sparkles className="w-5 h-5 text-white" />
-              </div>
-
-              {/* Text input field */}
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Tìm kiếm"
-                className="flex-1 h-10 px-1 border-none focus:outline-none bg-transparent text-gray-800"
-              />
-
-              {/* Right search icon */}
-              <div className="flex items-center justify-center w-9 h-9 rounded-full">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className="w-5 h-5 text-[#9370DB]"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10.5 3.75a6.75 6.75 0 100 13.5 6.75 6.75 0 000-13.5zM2.25 10.5a8.25 8.25 0 1114.59 5.28l4.69 4.69a.75.75 0 11-1.06 1.06l-4.69-4.69A8.25 8.25 0 012.25 10.5z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-
-              {/* Clear button (only shown when there's text) */}
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm("")}
-                  className="p-2 text-[#9370DB]"
-                >
-                  <X size={16} />
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-      {/* Action bar cố định */}
+      {/* Action bar for edit mode */}
       {isEditMode && (
         <ChatActionBar
           selectedCount={selectedRooms.length}
@@ -1577,7 +997,8 @@ export default function ChatsPage() {
           onDelete={handleDelete}
         />
       )}
-      {/* Modal cố định */}
+
+      {/* Delete modal */}
       <DeleteChatModal
         open={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
