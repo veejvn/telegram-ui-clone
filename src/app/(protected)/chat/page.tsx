@@ -897,7 +897,6 @@ export default function ChatsPage() {
             </>
           )}
         </div>
-
         {/* Only show Service section when not in edit mode */}
 
         <div className="flex items-center space-x-2 pt-3">
@@ -1024,18 +1023,18 @@ export default function ChatsPage() {
                 ? "0 0 0 1px #9370DB, 0 0 10px 1px rgba(147, 112, 219, 0.5)"
                 : "0 1px 5px rgba(0,0,0,0.06)",
             transform: `scale(${searchBarState === "expanded" ? "1.05" : "1"}) 
-         translateY(${searchBarState === "expanded" ? "-5px" : "0"})`,
-            transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
+       translateY(${searchBarState === "expanded" ? "-5px" : "0"})`,
+            transition: "all 0.3s ease-out",
           }}
           onClick={() => {
             if (searchBarState === "collapsed") {
               setSearchBarState("expanded");
               setExpandedSearchActive(true);
 
-              // Short delay to make the expansion visible before going fullscreen
+              // Short delay to ensure smooth animation on mobile
               setTimeout(() => {
                 setIsFullScreenSearch(true);
-              }, 200);
+              }, 250);
             }
           }}
         >
@@ -1070,10 +1069,10 @@ export default function ChatsPage() {
                 setSearchBarState("expanded");
                 setExpandedSearchActive(true);
 
-                // Short delay to make the expansion visible before going fullscreen
+                // Use the same delay for consistency
                 setTimeout(() => {
                   setIsFullScreenSearch(true);
-                }, 200);
+                }, 250);
               }
             }}
             readOnly={searchBarState === "collapsed"}
@@ -1105,27 +1104,59 @@ export default function ChatsPage() {
         </div>
       </div>
 
-      {/* Add animation for fullscreen appearance */}
+      {/* Mobile-optimized animation and keyboard handling styles */}
       <style jsx global>{`
-        @keyframes fadeIn {
-          from {
+        /* Animation styles */
+        @keyframes slideUp {
+          0% {
             opacity: 0;
+            transform: translateY(20px);
           }
-          to {
+          100% {
             opacity: 1;
+            transform: translateY(0);
           }
         }
 
         .fullscreen-search-enter {
-          animation: fadeIn 1.5s ease-out forwards;
+          animation: slideUp 0.3s ease-out forwards;
+          will-change: transform, opacity;
+          transform-origin: center bottom;
+          backface-visibility: hidden;
+          -webkit-backface-visibility: hidden;
         }
 
-        .search-bar-persistent {
-          transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+        /* Keyboard visibility fixes */
+        @media screen and (max-height: 500px) {
+          /* When keyboard is visible (viewport height decreases) */
+          .search-bottom-bar {
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            background-color: rgba(247, 242, 234, 0.95) !important;
+            z-index: 9999 !important;
+            border-top: 1px solid #a7cfe8;
+            padding-bottom: env(safe-area-inset-bottom, 8px) !important;
+          }
+
+          /* Add padding to content so nothing is hidden under the search bar */
+          .fullscreen-search-enter .overflow-y-auto {
+            padding-bottom: 80px !important;
+          }
+        }
+
+        /* iOS specific fixes */
+        @supports (-webkit-touch-callout: none) {
+          .search-bottom-bar {
+            position: fixed !important;
+            bottom: 0 !important;
+            z-index: 9999 !important;
+          }
         }
       `}</style>
 
-      {/* Full screen search interface */}
+      {/* Full screen search interface with keyboard handling */}
       {isFullScreenSearch && (
         <div
           className="fixed inset-0 z-50 flex flex-col fullscreen-search-enter"
@@ -1134,8 +1165,8 @@ export default function ChatsPage() {
               "linear-gradient(to bottom, #c7e2f0, #c5cfd6, #d6d3cf, #e4d6c6, #f4e4ca)",
           }}
         >
-          {/* Search header */}
-          <div className="flex items-center justify-between p-3 flex-shrink-0">
+          {/* Search header - fixed at top */}
+          <div className="flex items-center justify-between p-3 flex-shrink-0 bg-[#c7e2f0] sticky top-0 z-10">
             <div className="text-2xl font-medium px-4 text-black">Search</div>
             <button
               onClick={() => {
@@ -1152,13 +1183,24 @@ export default function ChatsPage() {
             </button>
           </div>
 
-          {/* Content area */}
-          <div className="flex-1 overflow-y-auto">
-            {/* Your search results content here */}
+          {/* Content area - scrollable */}
+          <div className="flex-1 overflow-y-auto pb-24">
+            {/* Your search content here */}
+            {!(
+              searchTerm.length > 0 &&
+              !searchLoading &&
+              searchResults.length === 0 &&
+              messageResults.length === 0
+            ) && (
+              <div className="px-4 py-2 text-sm text-gray-600 border-t border-b border-[#a7cfe8] flex-shrink-0">
+                Contact and chat
+              </div>
+            )}
+            {/* Rest of your search content */}
           </div>
 
-          {/* IMPORTANT: Use the exact same search bar styling at the bottom for continuity */}
-          <div className="px-4 py-3 border-t border-[#a7cfe8] flex-shrink-0">
+          {/* Search bar - always visible above keyboard */}
+          <div className="px-4 py-3 border-t border-[#a7cfe8] bg-[#e4d6c6] search-bottom-bar">
             <div
               className="flex items-center rounded-full overflow-hidden px-2 bg-[#fce0f0]"
               style={{
@@ -1166,12 +1208,12 @@ export default function ChatsPage() {
                   "0 0 0 1px #9370DB, 0 0 10px 1px rgba(147, 112, 219, 0.5)",
               }}
             >
-              {/* Sparkles icon - identical to the expanded state */}
+              {/* Sparkles icon */}
               <div className="w-9 h-9 rounded-full bg-[#6b46c1] flex items-center justify-center mr-2 my-1">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
 
-              {/* Text input field - with the same styling */}
+              {/* Text input field */}
               <input
                 autoFocus
                 type="text"
@@ -1180,11 +1222,11 @@ export default function ChatsPage() {
                   setSearchTerm(e.target.value);
                   setSearchQuery(e.target.value);
                 }}
-                placeholder="Tìm kiếm mọi thứ bằng AI"
+                placeholder="Tìm kiếm"
                 className="flex-1 h-10 px-1 border-none focus:outline-none bg-transparent text-gray-800 text-base"
               />
 
-              {/* Search icon on the right */}
+              {/* Search icon */}
               <div className="flex items-center justify-center w-9 h-9 rounded-full">
                 <Search className="w-5 h-5 text-[#9370DB]" />
               </div>
