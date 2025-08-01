@@ -19,7 +19,7 @@ interface Member {
   name?: string;
   avatarUrl?: string;
   isOnline?: boolean;
-  lastSeen?: number; // epoch ms
+  lastSeen?: number;
 }
 
 // Hàm nhóm theo chữ cái đầu
@@ -27,21 +27,27 @@ function groupContacts(
   contacts: any[],
   client: any,
   botId: string
-): Record<string, { room: any; other: Member }[]> {
-  const map: Record<string, { room: any; other: Member }[]> = {};
+): Record<string, { room: any; other: Member; avatarUrl: string }[]> {
+  const map: Record<string, { room: any; other: Member; avatarUrl: string }[]> = {};
   contacts.forEach((room) => {
     const other: Member | undefined = client
       ? room.getJoinedMembers().find((m: Member) => m.userId !== client.getUserId())
       : undefined;
     if (!other || other.userId === botId) return;
+
+    // Convert mxc://... thành http link cho Next/Image
+    const avatarUrl = other.avatarUrl
+      ? client.mxcUrlToHttp(other.avatarUrl, 96, 96, "scale", true)
+      : "";
+
     const firstLetter = (other.name?.[0] || other.userId?.[1] || "?").toUpperCase();
     if (!map[firstLetter]) map[firstLetter] = [];
-    map[firstLetter].push({ room, other });
+    map[firstLetter].push({ room, other, avatarUrl });
   });
   return map;
 }
 
-// Hàm hiển thị trạng thái online/offline đẹp trai
+// Hiển thị trạng thái online/offline
 function formatLastSeen(isOnline?: boolean, lastSeen?: number) {
   if (isOnline) return <span className="text-[#47C269] font-medium">Online</span>;
   if (!lastSeen) return <span className="text-[#A0A0A0]">Offline</span>;
@@ -50,22 +56,22 @@ function formatLastSeen(isOnline?: boolean, lastSeen?: number) {
   const diffMs = now - lastSeen;
   const diffSec = Math.floor(diffMs / 1000);
 
-  if (diffSec < 60) return <span className="text-[#A0A0A0]">Vừa mới online</span>;
+  if (diffSec < 60) return <span className="text-[#A0A0A0]">Online only</span>;
   if (diffSec < 3600)
     return (
       <span className="text-[#A0A0A0]">
-        Đã online {Math.floor(diffSec / 60)} phút trước
+        Online  {Math.floor(diffSec / 60)} minutes ago
       </span>
     );
   if (diffSec < 86400)
     return (
       <span className="text-[#A0A0A0]">
-        Đã online {Math.floor(diffSec / 3600)} giờ trước
+        Online {Math.floor(diffSec / 3600)} hours ago
       </span>
     );
   return (
     <span className="text-[#A0A0A0]">
-      Đã online {Math.floor(diffSec / 86400)} ngày trước
+      Online {Math.floor(diffSec / 86400)} days ago
     </span>
   );
 }
@@ -77,6 +83,7 @@ const ContactPage = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [showNewContact, setShowNewContact] = useState(false);
+  const [showFilter, setShowFilter] = useState(false); // <--- NEW STATE!
   const userIdChatBot =
     process.env.NEXT_PUBLIC_USER_ID_BOT || "@bot:matrix.teknix.dev";
 
@@ -94,7 +101,6 @@ const ContactPage = () => {
           ? room.getJoinedMembers().find((m: Member) => m.userId !== client.getUserId())
           : undefined;
         if (other) {
-          // Nếu là offline, gán lastSeen random trong 3 giờ qua
           if (!other.isOnline) {
             other.lastSeen = Date.now() - Math.floor(Math.random() * 3 * 60 * 60 * 1000);
           } else {
@@ -124,7 +130,7 @@ const ContactPage = () => {
   const hide = getLS("hide") || [];
   const options = Array.isArray(hide) ? hide : [];
 
-  // === SORT CONTACTS THEO sortBy ===
+  // SORT CONTACTS
   const sortedContacts = [...contacts].sort((a, b) => {
     const otherA: Member | undefined = client
       ? a.getJoinedMembers().find((m: Member) => m.userId !== client.getUserId())
@@ -133,19 +139,15 @@ const ContactPage = () => {
       ? b.getJoinedMembers().find((m: Member) => m.userId !== client.getUserId())
       : undefined;
 
-    // Nếu sort by Name
     if (sortBy === "name") {
       const nameA = (otherA?.name || otherA?.userId || "").toLowerCase();
       const nameB = (otherB?.name || otherB?.userId || "").toLowerCase();
       return nameA.localeCompare(nameB, undefined, { sensitivity: "base" });
     }
 
-    // Nếu sort by Last Seen
     if (sortBy === "lastSeen") {
-      // Sắp xếp online trước, sau đó là lastSeen mới nhất
       if (otherA?.isOnline && !otherB?.isOnline) return -1;
       if (!otherA?.isOnline && otherB?.isOnline) return 1;
-      // Cùng trạng thái, so lastSeen
       const aSeen = otherA?.lastSeen ?? 0;
       const bSeen = otherB?.lastSeen ?? 0;
       return bSeen - aSeen;
@@ -154,7 +156,7 @@ const ContactPage = () => {
     return 0;
   });
 
-  // --- Search Bar State/Logic (Floating Style) ---
+  // Search Bar State/Logic (Floating Style)
   const [isFocused, setIsFocused] = useState(false);
   const [searchValue, setSearchValue] = useState("");
 
@@ -169,7 +171,7 @@ const ContactPage = () => {
       <div
         style={{
           height: "env(safe-area-inset-top, 32px)",
-          minHeight: "100px",
+          minHeight: "50px",
           background: "transparent",
         }}
       />
@@ -179,7 +181,7 @@ const ContactPage = () => {
           My Contacts
         </h1>
         <div className="flex gap-3">
-          {/* Nút + bo tròn, border, nền #D8EBFF, icon màu đen */}
+          {/* Nút + */}
           <button
             className="w-12 h-12 flex items-center justify-center rounded-full border border-[#e0e0e0] bg-[#D8EBFF] transition-all"
             onClick={() => setShowNewContact(true)}
@@ -188,11 +190,14 @@ const ContactPage = () => {
               boxSizing: "border-box",
             }}
           >
-            <Plus size={24} className="text-black" strokeWidth={3} />
+            <svg width="32" height="32" viewBox="0 0 36 36" fill="none">
+              <rect x="17" y="8" width="1" height="20" rx="1" fill="#222" />
+              <rect x="8" y="17" width="20" height="1" rx="1" fill="#222" />
+            </svg>
           </button>
 
-          {/* Nút filter (3 gạch) bo tròn, nền #D8EBFF, icon màu đen */}
-          <Popover>
+          {/* Filter */}
+          <Popover open={showFilter} onOpenChange={setShowFilter}>
             <PopoverTrigger asChild>
               <button
                 className="w-12 h-12 flex items-center justify-center rounded-full border border-[#e0e0e0] bg-[#D8EBFF] transition-all"
@@ -202,11 +207,13 @@ const ContactPage = () => {
                   boxSizing: "border-box",
                 }}
               >
-                {/* SVG icon ba gạch màu đen */}
-                <svg width="28" height="28" viewBox="0 0 44 44" fill="none">
-                  <rect x="12" y="15" width="20" height="2.2" rx="1.1" fill="#222" />
-                  <rect x="15" y="20" width="14" height="2.2" rx="1.1" fill="#222" />
-                  <rect x="18" y="25" width="8" height="2.2" rx="1.1" fill="#222" />
+                <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+                  {/* Gạch trên cùng */}
+                  <rect x="8" y="10" width="24" height="1" rx="1" fill="#222" />
+                  {/* Gạch giữa */}
+                  <rect x="12" y="17" width="16" height="1" rx="1" fill="#222" />
+                  {/* Gạch dưới cùng */}
+                  <rect x="15" y="24" width="10" height="1" rx="1" fill="#222" />
                 </svg>
               </button>
             </PopoverTrigger>
@@ -234,7 +241,7 @@ const ContactPage = () => {
                   minHeight: 27,
                   borderRadius: 12,
                 }}
-                onClick={() => setSortBy("name")}
+                onClick={() => { setSortBy("name"); setShowFilter(false); }}
               >
                 <span>by Name</span>
                 {sortBy === "name" && (
@@ -264,7 +271,7 @@ const ContactPage = () => {
                   minHeight: 27,
                   borderRadius: 12,
                 }}
-                onClick={() => setSortBy("lastSeen")}
+                onClick={() => { setSortBy("lastSeen"); setShowFilter(false); }}
               >
                 <span>by Last Active</span>
                 {sortBy === "lastSeen" && (
@@ -294,7 +301,10 @@ const ContactPage = () => {
       </div>
 
       {/* DANH SÁCH CONTACTS */}
-      <div className="px-2 pb-10 pt-1 w-full max-w-lg mx-auto">
+      <div
+        className={`px-2 pb-10 pt-1 w-full max-w-lg mx-auto transition-all duration-200 ${showFilter ? "filter blur-sm pointer-events-none select-none" : ""
+          }`}
+      >
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24">
             <div className="rounded-full w-20 h-20 bg-gray-200 animate-pulse mb-6" />
@@ -331,7 +341,6 @@ const ContactPage = () => {
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([letter, items]) => (
               <div key={letter}>
-                {/* Group label với màu nền riêng, kéo dài full width */}
                 <div
                   className="w-full px-5 py-2"
                   style={{
@@ -344,16 +353,16 @@ const ContactPage = () => {
                 >
                   {letter}
                 </div>
-                {items.map(({ room, other }) => (
+                {items.map(({ room, other, avatarUrl }) => (
                   <div
                     key={room.roomId}
                     className="flex items-center gap-3 px-2 py-3 rounded-xl hover:bg-white/50 transition-all select-none"
                   >
                     {/* Avatar logic */}
                     <div className="relative">
-                      {other.avatarUrl ? (
+                      {avatarUrl ? (
                         <Image
-                          src={other.avatarUrl}
+                          src={avatarUrl}
                           alt="avatar"
                           width={44}
                           height={44}
@@ -395,7 +404,7 @@ const ContactPage = () => {
         onClose={() => setShowNewContact(false)}
       />
 
-      {/* SEARCH BAR FLOATING (cuối màn hình) */}
+      {/* SEARCH BAR FLOATING */}
       {!options.includes("search") && (
         <div className="fixed bottom-10 left-0 w-full z-10 flex justify-center pointer-events-none">
           <label
