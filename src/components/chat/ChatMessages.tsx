@@ -288,8 +288,8 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
         >
           {Object.entries(groupedFiltered).map(([dateLabel, msgs]) => (
             <div key={dateLabel}>
-              <div className="text-center text-sm my-1.5">
-                <p className="bg-gray-900/15 rounded-full backdrop-blur-2xl text-white inline-block py-1 px-2 select-none">
+              <div className="text-center text-[10px] leading-[140%] tracking-normal my-1.5 font-normal">
+                <p className="rounded-full backdrop-blur-2xl text-[#6B7271] inline-block py-1 px-2 select-none align-middle">
                   {dateLabel}
                 </p>
               </div>

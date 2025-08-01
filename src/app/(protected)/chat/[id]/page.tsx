@@ -16,6 +16,7 @@ import styles from "./page.module.css";
 import { sendReadReceipt } from "@/services/chatService";
 import { useUserStore } from "@/stores/useUserStore";
 import { useIgnoreStore } from "@/stores/useIgnoreStore";
+import { useSelectionStore } from "@/stores/useSelectionStore";
 import clsx from "clsx";
 import { createPortal } from "react-dom";
 
@@ -28,6 +29,7 @@ const ChatPage = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const user = useUserStore.getState().user;
   const client = useMatrixClient();
+  const { isSelectionMode } = useSelectionStore();
   const homeserver =
     user && user.homeserver
       ? user.homeserver.replace(/^https?:\/\//, "").replace(/\/$/, "")
@@ -352,9 +354,13 @@ const ChatPage = () => {
               )}
             >
               {/* Header */}
-              <div className={clsx("shrink-0 z-10", styles.chatHeader)}>
-                <ChatHeader room={room} />
-              </div>
+              {!isSelectionMode ? (
+                <div className={clsx("shrink-0 z-10", styles.chatHeader)}>
+                  <ChatHeader room={room} />
+                </div>
+              ) : (
+                <div className="shrink-0 h-[50px] bg-transparent"></div>
+              )}
 
               {/* Chat content scrollable */}
               <div
@@ -385,10 +391,12 @@ const ChatPage = () => {
                     Unblock
                   </button>
                 </div>
-              ) : (
+              ) : !isSelectionMode ? (
                 <div className={clsx("shrink-0 z-10", styles.chatFooter)}>
                   <ChatComposer roomId={roomId} />
                 </div>
+              ) : (
+                <div className="shrink-0 h-20 bg-transparent"></div>
               )}
             </div>
           </ChatLayout>,
@@ -409,9 +417,13 @@ const ChatPage = () => {
             )}
           >
             {/* Header */}
-            <div className={clsx("shrink-0 z-10", styles.chatHeader)}>
-              <ChatHeader room={room} />
-            </div>
+            {!isSelectionMode ? (
+              <div className={clsx("shrink-0 z-10", styles.chatHeader)}>
+                <ChatHeader room={room} />
+              </div>
+            ) : (
+              <div className="shrink-0 h-12 bg-transparent"></div>
+            )}
 
             {/* Chat content scrollable */}
             <div
@@ -442,10 +454,12 @@ const ChatPage = () => {
                   Unblock
                 </button>
               </div>
-            ) : (
+            ) : !isSelectionMode ? (
               <div className={clsx("shrink-0 z-10", styles.chatFooter)}>
                 <ChatComposer roomId={roomId} />
               </div>
+            ) : (
+              <div className="shrink-0 h-20 bg-transparent"></div>
             )}
           </div>
         </ChatLayout>

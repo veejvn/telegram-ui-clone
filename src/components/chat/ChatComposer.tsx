@@ -6,6 +6,7 @@ import {
   Eclipse,
   Mic,
   Paperclip,
+  Plus,
   Search,
   Smile,
   StopCircle,
@@ -810,61 +811,210 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   }, []);
 
   return (
-    <div className="bg-[#e0ece6] dark:bg-[#1b1a1f]">
-      {forwardMessages.length > 0 && <ForwardMsgPreview />}
-      {isRecording && (
-        <div className="px-4 py-2">
-          <div className="w-full h-2 bg-gray-300 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-red-500"
-              style={{ width: `${Math.min((recordTime / 60) * 100, 100)}%` }}
-            />
-          </div>
-          <div className="text-sm text-gray-600 mt-1">{recordTime}s</div>
-        </div>
-      )}
+    // <div className="bg-[#e0ece6] dark:bg-[#1b1a1f]">
+    //   {forwardMessages.length > 0 && <ForwardMsgPreview />}
+    //   {isRecording && (
+    //     <div className="px-4 py-2">
+    //       <div className="w-full h-2 bg-gray-300 rounded-full overflow-hidden">
+    //         <div
+    //           className="h-full bg-red-500"
+    //           style={{ width: `${Math.min((recordTime / 60) * 100, 100)}%` }}
+    //         />
+    //       </div>
+    //       <div className="text-sm text-gray-600 mt-1">{recordTime}s</div>
+    //     </div>
+    //   )}
 
+    //   <div
+    //     className={`relative flex justify-between items-center px-2 py-2 lg:py-3 transition-all duration-300 ${
+    //       isKeyboardOpen ? "pb-2" : "pb-10"
+    //     }`}
+    //   >
+    //     <Paperclip
+    //       // onClick={() => inputRef.current?.click()}
+    //       onClick={() => setOpen(true)}
+    //       className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
+    //       size={25}
+    //     />
+    //     <div
+    //       className={`p-1 mx-1.5 relative ${
+    //         isMultiLine ? "rounded-2xl" : "rounded-full"
+    //       } flex items-center justify-between w-full bg-white dark:bg-black`}
+    //     >
+    //       <textarea
+    //         ref={textareaRef}
+    //         value={text}
+    //         onChange={onInputChange}
+    //         onKeyDown={handleKeyDown}
+    //         placeholder="Message"
+    //         rows={1}
+    //         className="flex-1 h-auto resize-none bg-transparent outline-none px-3 max-h-[6rem] overflow-y-auto text-md text-black dark:text-white scrollbar-thin"
+    //       />
+    //       {text.trim() ? (
+    //         <Smile
+    //           onClick={() => setShowEmojiPicker((prev) => !prev)}
+    //           className="px-0.5 text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
+    //           size={24}
+    //         />
+    //       ) : (
+    //         <Eclipse
+    //           onClick={() => setShowStickers((prev) => !prev)}
+    //           className="px-0.5 text-[#858585] cursor-default"
+    //           size={24}
+    //         />
+    //       )}
+
+    //       {showEmojiPicker && (
+    //         <div className="absolute bottom-12 right-2 z-50">
+    //           <EmojiPicker
+    //             width={300}
+    //             height={350}
+    //             onEmojiClick={handleEmojiClick}
+    //             searchDisabled={true}
+    //             previewConfig={{ showPreview: false }}
+    //             theme={
+    //               theme.theme === "dark" ? EmojiTheme.DARK : EmojiTheme.LIGHT
+    //             }
+    //           />
+    //         </div>
+    //       )}
+    //       <StickerPicker
+    //         isOpen={showStickers}
+    //         onClose={() => setShowStickers(false)}
+    //         onStickerSelect={handleStickerSelect}
+    //         onEmojiSelect={handleIconSelect}
+    //       />
+    //     </div>
+
+    //     <div className="absolute bottom-14 left-0 z-50 pb-6">
+    //       <TypingIndicator roomId={roomId} />
+    //     </div>
+
+    //     {text.trim() || forwardMessages.length > 0 ? (
+    //       <svg
+    //         xmlns="http://www.w3.org/2000/svg"
+    //         viewBox="2 2 20 20"
+    //         fill="currentColor"
+    //         className="size-8 cursor-pointer hover:scale-110 duration-300 transition-all ease-in-out border-0"
+    //         onClick={handleSend}
+    //       >
+    //         <path
+    //           fillRule="evenodd"
+    //           d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm.53 5.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 1 0 1.06 1.06l1.72-1.72v5.69a.75.75 0 0 0 1.5 0v-5.69l1.72 1.72a.75.75 0 1 0 1.06-1.06l-3-3Z"
+    //           clipRule="evenodd"
+    //           className="text-blue-600"
+    //         />
+    //       </svg>
+    //     ) : (
+    //       /* nút mic nhấn giữ để ghi, thả để gửi */
+    //       <Mic
+    //         size={30}
+    //         className={`text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all duration-700 ${
+    //           isRecording ? "text-red-500 scale-125" : ""
+    //         }`}
+    //         onMouseDown={(e) => {
+    //           e.preventDefault(); // tránh double-trigger
+    //           startRecording();
+    //         }}
+    //         onMouseUp={(e) => {
+    //           e.preventDefault();
+    //           stopRecording();
+    //         }}
+    //         onMouseLeave={(e) => {
+    //           e.preventDefault();
+    //           if (isRecording) stopRecording();
+    //         }}
+    //         onTouchStart={() => {
+    //           startRecording();
+    //         }}
+    //         onTouchEnd={() => {
+    //           stopRecording();
+    //         }}
+    //       />
+    //     )}
+    //   </div>
+    // </div>
+
+    <div className="flex mx-3 pb-8">
+      {/* Nút Plus ngoài cùng bên trái */}
       <div
-        className={`relative flex justify-between items-center px-2 py-2 lg:py-3 transition-all duration-300 ${
-          isKeyboardOpen ? "pb-2" : "pb-10"
-        }`}
+        className="w-12 h-12 flex items-center justify-center rounded-full shadow-sm
+  border-white cursor-pointer bg-gradient-to-br from-slate-100/70 
+  via-gray-400/10 to-slate-50/30 backdrop-blur-xs bg-white/30
+  hover:scale-105 duration-300 transition-all ease-in-out mr-2"
+        onClick={() => setOpen(true)}
       >
-        <Paperclip
-          // onClick={() => inputRef.current?.click()}
-          onClick={() => setOpen(true)}
-          className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
-          size={25}
+        <Plus className="w-6 h-6" />
+        {/* Input file ẩn để chọn ảnh */}
+        <input
+          ref={imageInputRef}
+          type="file"
+          accept="image/*,video/*"
+          multiple
+          className="hidden"
+          onChange={handleImagesAndVideos}
+          aria-label="file"
         />
-        <div
-          className={`p-1 mx-1.5 relative ${
-            isMultiLine ? "rounded-2xl" : "rounded-full"
-          } flex items-center justify-between w-full bg-white dark:bg-black`}
-        >
-          <textarea
-            ref={textareaRef}
-            value={text}
-            onChange={onInputChange}
-            onKeyDown={handleKeyDown}
-            placeholder="Message"
-            rows={1}
-            className="flex-1 h-auto resize-none bg-transparent outline-none px-3 max-h-[6rem] overflow-y-auto text-md text-black dark:text-white scrollbar-thin"
-          />
-          {text.trim() ? (
-            <Smile
-              onClick={() => setShowEmojiPicker((prev) => !prev)}
-              className="px-0.5 text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
-              size={24}
-            />
-          ) : (
-            <Eclipse
-              onClick={() => setShowStickers((prev) => !prev)}
-              className="px-0.5 text-[#858585] cursor-default"
-              size={24}
-            />
-          )}
+      </div>
 
-          {showEmojiPicker && (
-            <div className="absolute bottom-12 right-2 z-50">
+      {/* Khung nhập chat */}
+      <div
+        className="flex flex-1 items-center px-3 h-12 rounded-3xl bg-white/80 border border-white shadow-sm"
+        style={{ minWidth: 0 }} // Đảm bảo không bị overflow ngang
+      >
+        {/* Icon micro bên trái */}
+        <Mic
+          className="w-5 h-5 text-gray-400 mr-2 cursor-pointer flex-shrink-0"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            startRecording();
+          }}
+          onMouseUp={(e) => {
+            e.preventDefault();
+            stopRecording();
+          }}
+          onMouseLeave={(e) => {
+            e.preventDefault();
+            if (isRecording) stopRecording();
+          }}
+          onTouchStart={() => startRecording()}
+          onTouchEnd={() => stopRecording()}
+        />
+        {/* Input nhập tin nhắn */}
+        <textarea
+          ref={textareaRef}
+          value={text}
+          onChange={onInputChange}
+          onKeyDown={handleKeyDown}
+          placeholder="Enter message"
+          className="flex-1 h-full bg-transparent outline-none text-[12px] text-gray-700 placeholder-gray-400
+        placeholder:italic placeholder:font-light px-2 resize-none mt-5"
+        />
+        {/* Icon smile bên phải */}
+        <Smile
+          className="w-5 h-5 text-gray-400 ml-2 cursor-pointer flex-shrink-0"
+          onClick={() => setShowEmojiPicker((prev) => !prev)}
+        />
+        {/* Icon gửi (nếu có text) */}
+        {text.trim() && (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="2 2 20 20"
+            fill="currentColor"
+            className="ml-2 w-6 h-6 cursor-pointer hover:scale-110 duration-300 transition-all ease-in-out flex-shrink-0
+            animate-in slide-in-from-right-20"
+            onClick={handleSend}
+          >
+            <path
+              fillRule="evenodd"
+              d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm.53 5.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 1 0 1.06 1.06l1.72-1.72v5.69a.75.75 0 0 0 1.5 0v-5.69l1.72 1.72a.75.75 0 1 0 1.06-1.06l-3-3Z"
+              clipRule="evenodd"
+              className="text-blue-600"
+            />
+          </svg>
+        )}
+        {showEmojiPicker && (
+            <div className="absolute bottom-22 right-2 z-50">
               <EmojiPicker
                 width={300}
                 height={350}
@@ -877,60 +1027,6 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               />
             </div>
           )}
-          <StickerPicker
-            isOpen={showStickers}
-            onClose={() => setShowStickers(false)}
-            onStickerSelect={handleStickerSelect}
-            onEmojiSelect={handleIconSelect}
-          />
-        </div>
-
-        <div className="absolute bottom-14 left-0 z-50 pb-6">
-          <TypingIndicator roomId={roomId} />
-        </div>
-
-        {text.trim() || forwardMessages.length > 0 ? (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="2 2 20 20"
-            fill="currentColor"
-            className="size-8 cursor-pointer hover:scale-110 duration-300 transition-all ease-in-out border-0"
-            onClick={handleSend}
-          >
-            <path
-              fillRule="evenodd"
-              d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm.53 5.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 1 0 1.06 1.06l1.72-1.72v5.69a.75.75 0 0 0 1.5 0v-5.69l1.72 1.72a.75.75 0 1 0 1.06-1.06l-3-3Z"
-              clipRule="evenodd"
-              className="text-blue-600"
-            />
-          </svg>
-        ) : (
-          /* nút mic nhấn giữ để ghi, thả để gửi */
-          <Mic
-            size={30}
-            className={`text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all duration-700 ${
-              isRecording ? "text-red-500 scale-125" : ""
-            }`}
-            onMouseDown={(e) => {
-              e.preventDefault(); // tránh double-trigger
-              startRecording();
-            }}
-            onMouseUp={(e) => {
-              e.preventDefault();
-              stopRecording();
-            }}
-            onMouseLeave={(e) => {
-              e.preventDefault();
-              if (isRecording) stopRecording();
-            }}
-            onTouchStart={() => {
-              startRecording();
-            }}
-            onTouchEnd={() => {
-              stopRecording();
-            }}
-          />
-        )}
       </div>
       <AnimatePresence>
         {open && (
@@ -939,7 +1035,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-black rounded-t-2xl shadow-2xl pb-10"
+            className="fixed bottom-0 left-0 right-0 z-50 bg-[#FFFFFF4D] dark:bg-[#FFFFFF4D] backdrop-blur-[48px] rounded-t-2xl shadow-2xl pb-10"
             ref={sheetRef}
           >
             {/* Header */}

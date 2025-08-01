@@ -6,7 +6,6 @@ import * as sdk from "matrix-js-sdk";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { getUserInfoInPrivateRoom } from "@/services/chatService";
 import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
-
 export default function InfoPage() {
   const params = useParams();
   const router = useRouter();
@@ -24,7 +23,7 @@ export default function InfoPage() {
   // Handle edit button click
   const handleEditButtonClick = () => {
     // Your edit function here
-    console.log("Edit button clicked");
+    router.push(`/chat/${roomId}/info/edit`);
   };
 
   useEffect(() => {

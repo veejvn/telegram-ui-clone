@@ -38,7 +38,7 @@ const BottomActionBar: React.FC<BottomActionBarProps> = ({
   return (
     <div
       className={cn(
-        "fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-[200]",
+        "fixed bottom-0 left-0 right-0 bg-[#FFFFFF4D] shadow-custom-deep backdrop-blur-[48px] p-4 h-[90px] z-[200] rounded-t-3xl",
         "transform transition-transform duration-300 ease-out",
         isSelectionMode ? "translate-y-0" : "translate-y-full"
       )}
@@ -49,15 +49,15 @@ const BottomActionBar: React.FC<BottomActionBarProps> = ({
           onClick={handleDelete}
           disabled={!hasSelectedMessages}
           className={cn(
-            "flex items-center gap-2 px-6 py-3 rounded-full transition-colors",
+            "flex items-center gap-2 px-4 py-2 rounded-full transition-colors",
             hasSelectedMessages
-              ? "bg-red-500 text-white hover:bg-red-600"
+              ? "bg-white text-red-500 active:bg-white/80"
               : "bg-gray-300 text-gray-500 cursor-not-allowed"
           )}
         >
-          <Trash2 size={18} />
-          <span className="font-medium">
-            Delete ({selectedMessages.length})
+          <Trash2 size={16} />
+          <span className="font-medium text-sm">
+            Delete({selectedMessages.length})
           </span>
         </button>
 
@@ -66,14 +66,14 @@ const BottomActionBar: React.FC<BottomActionBarProps> = ({
           onClick={handleForward}
           disabled={!hasSelectedMessages}
           className={cn(
-            "flex items-center gap-2 px-6 py-3 rounded-full transition-colors",
+            "flex items-center gap-2 px-4 py-2 rounded-full transition-colors",
             hasSelectedMessages
-              ? "bg-blue-500 text-white hover:bg-blue-600"
+              ? "bg-white text-blue-500"
               : "bg-gray-300 text-gray-500 cursor-not-allowed"
           )}
         >
-          <span className="font-medium">Forward</span>
-          <Forward size={18} />
+          <span className="font-medium text-sm">Forward</span>
+          <Forward size={16} />
         </button>
       </div>
     </div>

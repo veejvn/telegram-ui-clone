@@ -1,3 +1,4 @@
+/*chatlist.tsx*/
 "use client";
 
 import { Separator } from "@/components/ui/ChatSeparator";
@@ -12,7 +13,7 @@ import {
   Type as SwipeableListType,
 } from "react-swipeable-list";
 import "react-swipeable-list/dist/styles.css";
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   MessageCircle,
   Pin,
@@ -20,6 +21,8 @@ import {
   VolumeX,
   Trash2,
   Archive,
+  MoreHorizontal,
+  CheckCircle,
 } from "lucide-react";
 import { ScrollArea } from "../ui/scroll-area";
 
@@ -45,6 +48,13 @@ export const ChatList = ({
   const [mutedRooms, setMutedRooms] = useState<string[]>([]);
   const [deleteRoomId, setDeleteRoomId] = useState<string | null>(null);
   const [deleteRoomName, setDeleteRoomName] = useState<string | null>(null);
+  const [showContextMenu, setShowContextMenu] = useState(false);
+  const [contextMenuPosition, setContextMenuPosition] = useState({
+    x: 0,
+    y: 0,
+  });
+  const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
+  const longPressTimerRef = useRef<number | null>(null);
 
   const handleMute = (roomId: string) => {
     setMutedRooms((prev) => {
@@ -61,6 +71,66 @@ export const ChatList = ({
     });
     onMute?.(roomId);
   };
+
+  const handleLongPress = (
+    roomId: string,
+    event: React.MouseEvent | React.TouchEvent
+  ) => {
+    const clientX =
+      "touches" in event ? event.touches[0].clientX : event.clientX;
+    const clientY =
+      "touches" in event ? event.touches[0].clientY : event.clientY;
+
+    setActiveRoomId(roomId);
+    setContextMenuPosition({ x: clientX, y: clientY });
+    setShowContextMenu(true);
+  };
+
+  const startLongPress = (
+    roomId: string,
+    event: React.MouseEvent | React.TouchEvent
+  ) => {
+    longPressTimerRef.current = setTimeout(() => {
+      handleLongPress(roomId, event);
+    }, 500); // 500ms for better user experience (2s might feel too long)
+  };
+
+  const endLongPress = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const handleContextMenuAction = (action: string) => {
+    if (!activeRoomId) return;
+
+    switch (action) {
+      case "mark-read": // Handle mark as read
+        break;
+      case "pin": // Handle pin
+        break;
+      case "mute":
+        handleMute(activeRoomId);
+        break;
+      case "delete":
+        setDeleteRoomId(activeRoomId);
+        setDeleteRoomName(
+          rooms.find((r) => r.roomId === activeRoomId)?.name || ""
+        );
+        break;
+    }
+    setShowContextMenu(false);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (showContextMenu) setShowContextMenu(false);
+    };
+
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [showContextMenu]);
 
   React.useEffect(() => {
     const muted: string[] = [];
@@ -83,62 +153,30 @@ export const ChatList = ({
           {rooms
             .filter((room) => !!room && !!room.roomId)
             .map((room: sdk.Room, idx) => {
-              // Leading actions: Unread, Pin
-              const leadingActions = (
-                <LeadingActions>
-                  <SwipeAction
-                    onClick={() => {
-                      /* handle unread */
-                    }}
-                  >
-                    <div className="bg-[#2196f3] w-[80px] h-full flex items-center justify-center text-center">
-                      <div className="flex flex-col items-center justify-center h-full w-full">
-                        <MessageCircle className="w-6 h-6 text-white mb-1" />
-                        <span className="text-sm font-medium text-white">
-                          Unread
-                        </span>
-                      </div>
-                    </div>
-                  </SwipeAction>
-                  <SwipeAction
-                    onClick={() => {
-                      /* handle pin */
-                    }}
-                  >
-                    <div className="bg-[#00c853] w-[80px] h-full flex items-center justify-center text-center">
-                      <div className="flex flex-col items-center justify-center h-full w-full">
-                        <Pin className="w-6 h-6 text-white mb-1" />
-                        <span className="text-sm font-medium text-white">
-                          Pin
-                        </span>
-                      </div>
-                    </div>
-                  </SwipeAction>
-                </LeadingActions>
-              );
+              // Trailing actions: More, Delete, Archive
+              const containerStyle =
+                "h-full flex items-center px-[2px] justify-between w-[280px]"; // Tăng chiều rộng container
+              const actionButtonStyle =
+                "w-[70px] h-[64px] flex flex-col items-center justify-center bg-[#FAF9EE] rounded-[16px] shadow-sm mx-[2px]";
+              const iconClass = "w-[20px] h-[20px]";
+              const labelClass =
+                "text-[11px] font-medium mt-[6px] whitespace-nowrap overflow-hidden";
 
-              // Trailing actions: Mute/Unmute, Delete, Archive
               const trailingActions = (
-                <>
-                  <SwipeAction onClick={() => handleMute(room.roomId)}>
-                    <div className="bg-[#ffcc00] w-[80px] h-full flex flex-col items-center justify-center text-center">
-                      <div className="flex flex-col items-center justify-center h-full w-full">
-                        {mutedRooms.includes(room.roomId) ? (
-                          <>
-                            <Volume2 className="w-6 h-6 text-white mb-1" />
-                            <span className="text-sm font-medium text-white">
-                              Unmute
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <VolumeX className="w-6 h-6 text-white mb-1" />
-                            <span className="text-sm font-medium text-white">
-                              Mute
-                            </span>
-                          </>
-                        )}
-                      </div>
+                <div className={containerStyle}>
+                  <SwipeAction
+                    onClick={() => {
+                      setShowContextMenu(true);
+                      setActiveRoomId(room.roomId);
+                    }}
+                  >
+                    <div className={actionButtonStyle}>
+                      <MoreHorizontal
+                        className={`${iconClass} text-gray-700`}
+                      />
+                      <span className={`${labelClass} text-gray-700`}>
+                        More
+                      </span>
                     </div>
                   </SwipeAction>
                   <SwipeAction
@@ -147,33 +185,37 @@ export const ChatList = ({
                       setDeleteRoomName(room.name);
                     }}
                   >
-                    <div className="bg-[#ff4d4f] w-[80px] h-full flex flex-col items-center justify-center text-center">
-                      <Trash2 className="w-6 h-6 text-white mb-1" />
-                      <span className="text-sm font-medium text-white">
+                    <div className={actionButtonStyle}>
+                      <Trash2 className={`${iconClass} text-red-500`} />
+                      <span className={`${labelClass} text-red-500`}>
                         Delete
                       </span>
                     </div>
                   </SwipeAction>
                   <SwipeAction onClick={() => onArchive?.(room.roomId)}>
-                    <div className="bg-[#7a8a99] w-[80px] h-full flex flex-col items-center justify-center text-center">
-                      <Archive className="w-6 h-6 text-white mb-1" />
-                      <span className="text-sm font-medium text-white">
+                    <div className={actionButtonStyle}>
+                      <Archive className={`${iconClass} text-blue-500`} />
+                      <span className={`${labelClass} text-blue-500`}>
                         Archive
                       </span>
                     </div>
                   </SwipeAction>
-                </>
-              );
+                </div>
+              ); // If you want to use leading actions, uncomment and define leadingActions above. // Otherwise, remove the prop to fix the error.
 
               return (
                 <SwipeableListItem
                   key={room.roomId}
-                  leadingActions={leadingActions}
                   trailingActions={trailingActions}
-                  //onSwipeStart={() => console.log("Swipe start")}
-                  //onSwipeEnd={() => console.log("Swipe end")}
                 >
-                  <div className="w-full hover:bg-white/30 rounded-l-lg active:bg-zinc-300 dark:hover:bg-zinc-700 dark:active:bg-zinc-700">
+                  <div
+                    className="w-full hover:bg-white/30 rounded-l-lg active:bg-zinc-300 dark:hover:bg-zinc-700 dark:active:bg-zinc-700"
+                    onMouseDown={(e) => startLongPress(room.roomId, e)}
+                    onMouseUp={endLongPress}
+                    onMouseLeave={endLongPress}
+                    onTouchStart={(e) => startLongPress(room.roomId, e)}
+                    onTouchEnd={endLongPress}
+                  >
                     {isEditMode ? (
                       <ChatListItem
                         room={room}
@@ -183,17 +225,18 @@ export const ChatList = ({
                         isMuted={mutedRooms.includes(room.roomId)}
                       />
                     ) : (
-                      <Link href={`/chat/${room.roomId}`}>
+                      <Link
+                        href={`/chat/${room.roomId}`}
+                        onClick={endLongPress}
+                      >
                         <div className="block w-full cursor-pointer">
                           <ChatListItem
                             room={room}
                             isMuted={mutedRooms.includes(room.roomId)}
-                          />{" "}
-                          {/* THÊM Ở ĐÂY */}
+                          />
                         </div>
                       </Link>
                     )}
-
                     {rooms.length - 1 !== idx ? (
                       <Separator className="w-[calc(100%-72px)] ml-[72px] text-white bg-white shadow-sm" />
                     ) : (
@@ -204,6 +247,55 @@ export const ChatList = ({
               );
             })}
         </SwipeableList>
+        {showContextMenu && (
+          <div
+            className="fixed z-50 bg-white dark:bg-zinc-800 rounded-lg shadow-lg overflow-hidden"
+            style={{
+              top: Math.min(contextMenuPosition.y, window.innerHeight - 200),
+              left: Math.min(contextMenuPosition.x, window.innerWidth - 180),
+              width: "180px",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="w-full py-3 px-4 text-left flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-zinc-700"
+              onClick={() => handleContextMenuAction("mark-read")}
+            >
+              <CheckCircle className="w-5 h-5 text-blue-500" />
+              <span>Mark as read</span>
+            </button>
+            <button
+              className="w-full py-3 px-4 text-left flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-zinc-700"
+              onClick={() => handleContextMenuAction("pin")}
+            >
+              <Pin className="w-5 h-5 text-blue-500" />
+              <span>Pin</span>
+            </button>
+            <button
+              className="w-full py-3 px-4 text-left flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-zinc-700"
+              onClick={() => handleContextMenuAction("mute")}
+            >
+              {mutedRooms.includes(activeRoomId || "") ? (
+                <>
+                  <Volume2 className="w-5 h-5 text-blue-500" />
+                  <span>Unmute</span>
+                </>
+              ) : (
+                <>
+                  <VolumeX className="w-5 h-5 text-blue-500" />
+                  <span>Mute</span>
+                </>
+              )}
+            </button>
+            <button
+              className="w-full py-3 px-4 text-left flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-zinc-700 text-red-500"
+              onClick={() => handleContextMenuAction("delete")}
+            >
+              <Trash2 className="w-5 h-5" />
+              <span>Delete</span>
+            </button>
+          </div>
+        )}
         {deleteRoomId && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
             <div className="bg-white dark:bg-zinc-800 w-full max-w-md rounded-lg p-6">
