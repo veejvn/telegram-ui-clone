@@ -33,6 +33,7 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
   //console.log("Message: " + msg.text + ", isDeleted: " + msg.isDeleted);
   const theme = useTheme();
   const [open, setOpen] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(false);
   const [transformOffset, setTransformOffset] = useState(0);
   const client = useMatrixClient();
   const router = useRouter();
@@ -42,6 +43,14 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
   const updateMessage = useChatStore.getState().updateMessage;
   const isDeleted = msg.isDeleted || msg.text === "Tin nhắn đã thu hồi";
   const { activeMenuMessageId, setActiveMenuMessageId } = useMessageMenu();
+
+  // Touch tracking để phát hiện scroll
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(
+    null
+  );
+  const isScrollingRef = useRef(false);
+  const preventReactionClick = useRef(false);
+  const menuOpenTimeRef = useRef<number>(0);
 
   // Selection store
   const {
@@ -53,23 +62,10 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
 
   const isSelected = isMessageSelected(msg.eventId);
 
-  // Debug effect
-  // useEffect(() => {
-  //   console.log("TextMessage state changed:", {
-  //     open,
-  //     isDeleted,
-  //     msgId: msg.eventId,
-  //   });
-  // }, [open, isDeleted, msg.eventId]);
-
-  // Check if any menu is open and if this is the active one
-  // const isAnyMenuOpen = activeMenuMessageId !== null;
-  // const isThisMenuOpen = activeMenuMessageId === msg.eventId;
-
   // Mock reactions data - in real app this would come from msg.reactions
   const reactions = [
     { emoji: "❤️", count: 2, userReacted: false },
-    { emoji: "👍", count: 1, userReacted: true },
+    { emoji: "👍", count: 1, userReacted: false },
     { emoji: "😊", count: 3, userReacted: false },
     { emoji: "😢", count: 1, userReacted: false },
     { emoji: "😡", count: 1, userReacted: false },
@@ -83,7 +79,7 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
   );
 
   const timeClass = clsx(
-    "flex text-[#444444] items-center justify-end gap-1 text-[10px] mt-1 select-none pb-2"
+    "flex text-[#444444] items-center justify-end gap-1 text-[10px] select-none pb-2"
     // isSender
     //   ? "text-[#444444] dark:text-white"
     //   : "text-gray-400 dark:text-gray-400"
@@ -129,12 +125,29 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
   };
 
   const handleReactionClick = (emoji: string) => {
+    // Kiểm tra timestamp - nếu menu vừa mở trong 700ms qua thì bỏ qua
+    const timeSinceMenuOpen = Date.now() - menuOpenTimeRef.current;
+    if (timeSinceMenuOpen < 700) {
+      console.log(
+        "Reaction click prevented - menu opened too recently:",
+        timeSinceMenuOpen + "ms"
+      );
+      return;
+    }
+
+    // Ngăn click nếu vừa mới mở menu
+    if (preventReactionClick.current) {
+      console.log("Reaction click prevented - too soon after menu open");
+      return;
+    }
+
     // Handle reaction click - toggle user's reaction
     console.log(`Reaction clicked: ${emoji}`);
     console.log("handleReactionClick called!"); // Additional debug
     // Đóng sự kiện click vào reaction
     if (open) {
       setOpen(false);
+      setShowOverlay(false); // Ẩn overlay khi click reaction
       setActiveMenuMessageId(null); // Clear active message
       setTransformOffset(0); // Reset vị trí tin nhắn
     }
@@ -148,9 +161,14 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
     // Nếu đã ở selection mode thì không làm gì (click sẽ handle)
     if (isSelectionMode) return;
 
+    // Nếu đang scroll thì không kích hoạt hold
+    if (isScrollingRef.current) return;
+
     holdTimeout.current = window.setTimeout(() => {
-      // Enter selection mode với tin nhắn này
-      enterSelectionMode(msg.eventId);
+      // Double check không đang scroll trước khi enter selection mode
+      if (!isScrollingRef.current) {
+        enterSelectionMode(msg.eventId);
+      }
     }, 500); // Giảm thời gian từ 1000ms xuống 500ms
   };
 
@@ -166,15 +184,80 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
     // Nếu tin nhắn đã bị xóa thì không làm gì
     if (isDeleted) return;
 
+    // Nếu đang scroll thì không xử lý click
+    if (isScrollingRef.current) return;
+
     // Nếu đang ở selection mode thì toggle selection
     if (isSelectionMode) {
       toggleMessage(msg.eventId);
       return;
     }
 
+    // Ngăn reaction click ngay lập tức và trong thời gian dài hơn
+    preventReactionClick.current = true;
+    setTimeout(() => {
+      preventReactionClick.current = false;
+    }, 600); // Tăng từ 400ms lên 600ms
+
+    // Hiển thị overlay ngay lập tức khi click
+    setShowOverlay(true);
+
     // Nếu không ở selection mode thì hiện reactions + dropdown menu
     allowOpenRef.current = true;
     calculateOptimalPosition();
+  };
+
+  // Xử lý touch events để phát hiện scroll
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (isDeleted) return;
+
+    const touch = e.touches[0];
+    touchStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+      time: Date.now(),
+    };
+    isScrollingRef.current = false;
+
+    // Bắt đầu hold timer
+    handleHoldStart();
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (isDeleted || !touchStartRef.current) return;
+
+    const touch = e.touches[0];
+    const deltaX = Math.abs(touch.clientX - touchStartRef.current.x);
+    const deltaY = Math.abs(touch.clientY - touchStartRef.current.y);
+
+    // Nếu di chuyển nhiều hơn 10px (đặc biệt là theo chiều dọc) thì coi như đang scroll
+    if (deltaY > 10 || deltaX > 10) {
+      isScrollingRef.current = true;
+      handleHoldEnd(); // Cancel hold timer
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (isDeleted) return;
+
+    handleHoldEnd();
+
+    // Nếu không scroll và touch time ngắn thì coi như click
+    if (!isScrollingRef.current && touchStartRef.current) {
+      const touchTime = Date.now() - touchStartRef.current.time;
+      if (touchTime < 300) {
+        // Touch ngắn hơn 300ms = click
+        setTimeout(() => {
+          handleClick();
+        }, 50); // Delay nhỏ để đảm bảo scroll detection hoàn tất
+      }
+    }
+
+    touchStartRef.current = null;
+    // Reset scroll flag sau một khoảng thời gian ngắn
+    setTimeout(() => {
+      isScrollingRef.current = false;
+    }, 100);
   };
 
   const calculateOptimalPosition = () => {
@@ -214,12 +297,19 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
       setTransformOffset(0);
     }
 
-    // Mở menu sau khi đã set transform
+    // Mở menu sau khi đã set transform và đảm bảo prevention đã được thiết lập
     setTimeout(() => {
       allowOpenRef.current = true;
       setOpen(true);
       setActiveMenuMessageId(msg.eventId);
-    }, 100);
+      // Ghi nhận thời gian mở menu
+      menuOpenTimeRef.current = Date.now();
+      // Đảm bảo prevention vẫn hoạt động
+      preventReactionClick.current = true;
+      setTimeout(() => {
+        preventReactionClick.current = false;
+      }, 500); // Thêm 500ms nữa sau khi menu mở
+    }, 200); // Tăng delay từ 150ms lên 200ms
   };
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -233,23 +323,27 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
       }
     } else {
       setOpen(false);
+      setShowOverlay(false); // Ẩn overlay khi menu đóng
       setActiveMenuMessageId(null);
       setTransformOffset(0);
       allowOpenRef.current = false;
+      // Reset prevention flag và timestamp khi đóng menu
+      preventReactionClick.current = false;
+      menuOpenTimeRef.current = 0;
     }
   };
 
   return (
     <>
       {/* Overlay khi menu mở - chỉ hiện khi không ở selection mode */}
-      {open && !isDeleted && !isSelectionMode && (
-        <div className="fixed inset-0 bg-white opacity-90 z-[100]" />
+      {showOverlay && !isDeleted && !isSelectionMode && (
+        <div className="fixed inset-0 bg-[#FFFFFF3D] backdrop-blur-[50px] z-[100]" />
       )}
 
       <div
         className={clsx(
           "flex flex-col relative transition-transform duration-300 ease-out",
-          open && !isSelectionMode ? "z-[110]" : "z-auto",
+          (showOverlay || open) && !isSelectionMode ? "z-[110]" : "z-auto",
           // Transition cho selection
           isSelectionMode && "transition-all duration-200"
         )}
@@ -265,26 +359,30 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
           <DropdownMenuTrigger asChild>
             <div
               onClick={handleClick}
-              onTouchStart={isDeleted ? undefined : handleHoldStart}
-              onTouchEnd={isDeleted ? undefined : handleHoldEnd}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
               onMouseDown={isDeleted ? undefined : handleHoldStart}
               onMouseUp={isDeleted ? undefined : handleHoldEnd}
               onMouseLeave={isDeleted ? undefined : handleHoldEnd}
               className={clsx(
                 "flex flex-col relative transition-opacity duration-200 cursor-pointer",
-                open && !isSelectionMode && "z-[115]"
+                (showOverlay || open) && !isSelectionMode && "z-[115]"
               )}
             >
               {/* Reactions - chỉ hiển thị khi không ở selection mode */}
               {open && !isDeleted && !isSelectionMode && (
                 <div
-                  className="flex gap-1 mb-2 justify-center relative z-[120]"
+                  className={clsx(
+                    "absolute top-[-45px] transform -translate-x-1/2 flex gap-1 justify-center z-[120]",
+                    !isSender ? "left-23" : "-right-23"
+                  )}
                   onClick={(e) => {
                     e.stopPropagation();
                     console.log("Reaction container clicked!");
                   }}
                 >
-                  <div className="flex gap-1 bg-white rounded-full px-3 py-2 shadow-md border border-gray-200">
+                  <div className="flex bg-[#FFFFFF4D] justify-between rounded-full w-[192px] px-3 py-2 shadow-md border border-gray-200">
                     {reactions.map((reaction, index) => (
                       <button
                         key={index}
@@ -292,29 +390,34 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
                         onMouseDown={(e) => {
                           console.log("Reaction mouseDown!");
                           e.stopPropagation();
+                          e.preventDefault();
                         }}
                         onTouchStart={(e) => {
                           console.log("Reaction touchStart!");
                           e.stopPropagation();
+                          e.preventDefault();
+                        }}
+                        onPointerDown={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
                         }}
                         onClick={(e) => {
                           console.log("Reaction BUTTON clicked!");
                           e.stopPropagation();
                           e.preventDefault();
-                          handleReactionClick(reaction.emoji);
+
+                          // Thêm delay nhỏ để đảm bảo không click ngay lập tức
+                          setTimeout(() => {
+                            handleReactionClick(reaction.emoji);
+                          }, 50);
                         }}
-                        className={`flex items-center gap-1 px-2 py-1 text-xs cursor-pointer transition-all hover:scale-105 border-0 bg-transparent ${
+                        className={`flex items-center text-xs cursor-pointer transition-all hover:scale-105 border-0 bg-transparent ${
                           reaction.userReacted
                             ? "bg-blue-100 rounded-full"
                             : "hover:bg-gray-100 rounded-full"
                         }`}
                       >
                         <span className="text-sm">{reaction.emoji}</span>
-                        {reaction.count > 0 && (
-                          <span className="text-xs text-gray-600">
-                            {reaction.count}
-                          </span>
-                        )}
                       </button>
                     ))}
                   </div>
@@ -385,7 +488,7 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
           </DropdownMenuTrigger>
           {!isDeleted && !isSelectionMode && (
             <DropdownMenuContent
-              className="mx-2 min-w-[200px] rounded-3xl relative z-[120]"
+              className="mx-2 w-[192px] h-[261px] rounded-3xl relative z-[120]"
               side="bottom"
               align="center"
               sideOffset={10}

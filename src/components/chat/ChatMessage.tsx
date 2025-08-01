@@ -130,10 +130,10 @@ const ChatMessage = ({ msg, roomId }: { msg: Message; roomId: string }) => {
         >
           <div
             className={clsx(
-              "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
+              "size-[13px] rounded-full border-2 flex items-center justify-center transition-all",
               isSelected
-                ? "bg-blue-500 border-blue-500"
-                : "border-gray-300 bg-white"
+                ? "bg-[#026AE0] border-[#026AE0]"
+                : "border-[#6B7271] border-[0.5px]"
             )}
           >
             {isSelected && <Check className="w-4 h-4 text-white" />}
