@@ -31,7 +31,7 @@ import { useToast } from "@/contexts/ToastProvider";
 // Import our extracted search components
 import SearchBar from "@/components/search/SearchBar";
 import FullScreenSearch from "@/components/search/FullScreenSearch";
-
+import NavigationMenu from "@/components/layouts/NavigationMenu";
 export default function ChatsPage() {
   const { refreshRooms, loading } = useSortedRooms();
   const rooms = useRoomStore((state) => state.rooms);
@@ -987,7 +987,7 @@ export default function ChatsPage() {
           userIdChatBot={userIdChatBot}
         />
       )}
-
+      <NavigationMenu className="z-[100]" />
       {/* Action bar for edit mode */}
       {isEditMode && (
         <ChatActionBar
