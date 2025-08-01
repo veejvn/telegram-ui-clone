@@ -129,6 +129,7 @@ export default function CallContainer({
             <VideoCall
                 contactName={contactName}
                 callState={state}
+                contactAvatar={avatarUrl}        // ← truyền avatarUrl vào đây
                 callDuration={callDuration}
                 onEndCall={() => {
                     hangup();

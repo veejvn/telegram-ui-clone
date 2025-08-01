@@ -26,6 +26,7 @@ interface VideoCallProps {
   callState?: string;
   callDuration?: number;
   onEndCall: () => void;
+  contactAvatar?: string;
 }
 
 export function VideoCall({
@@ -33,6 +34,7 @@ export function VideoCall({
   callState,
   callDuration,
   onEndCall,
+  contactAvatar,
 }: VideoCallProps) {
   const {
     localStream,
@@ -245,6 +247,9 @@ export function VideoCall({
 
   const isRinging = ["ringing", "connecting", "incoming"].includes(state);
 
+  // Check if we should show remote avatar (when no remote stream or during ringing states)
+  const shouldShowRemoteAvatar = !remoteStream || isRinging;
+
   // Nếu đang hiển thị thông báo call ended
   if (showEndNotification) {
     return (
@@ -307,6 +312,25 @@ export function VideoCall({
               }}
             />
 
+            {/* Avatar cho remote video khi ở trên và không có stream hoặc đang ringing */}
+            {!isLocalOnTop && shouldShowRemoteAvatar && (
+              <div
+                className="absolute inset-0 flex items-center justify-center"
+                style={contactAvatar ? {
+                  backgroundImage: `url(${contactAvatar})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                } : {
+                  background: "linear-gradient(160deg, #6fb0d2 0%, #a3e4a0 100%)"
+                }}
+              >
+                {!contactAvatar && (
+                  <div className="w-24 h-24 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
+                    <User className="w-12 h-12 text-white" />
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Icon camera off nếu cần */}
             {(!cameraOn && isLocalOnTop) && (
@@ -333,6 +357,27 @@ export function VideoCall({
                 transform: !isLocalOnTop ? "scaleX(-1)" : "none"
               }}
             />
+
+            {/* Avatar cho remote video khi ở dưới và không có stream hoặc đang ringing */}
+            {isLocalOnTop && shouldShowRemoteAvatar && (
+              <div
+                className="absolute inset-0 flex items-center justify-center"
+                style={contactAvatar ? {
+                  backgroundImage: `url(${contactAvatar})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                } : {
+                  background: "linear-gradient(160deg, #6fb0d2 0%, #a3e4a0 100%)"
+                }}
+              >
+                {!contactAvatar && (
+                  <div className="w-24 h-24 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
+                    <User className="w-12 h-12 text-white" />
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Icon camera off nếu cần */}
             {(!cameraOn && !isLocalOnTop) && (
               <div className="absolute inset-0 flex items-center justify-center bg-gray-800">

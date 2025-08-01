@@ -378,8 +378,8 @@ export function VoiceCall({
                                     >
                                         <div
                                             className={`w-12 h-12 rounded-full flex items-center justify-center border transition-colors mb-2
-                     ${audioOutput === 'speaker'
-                                                    ? 'bg-gray-500/80 border-blue-400/80'
+                    ${audioOutput === 'speaker'
+                                                    ? 'bg-gray-500/80 border-white/30'
                                                     : 'bg-white/20 hover:bg-white/30 backdrop-blur border-white/30'
                                                 }`
                                             }

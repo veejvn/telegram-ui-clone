@@ -31,7 +31,7 @@ export default function IncomingCall({
     const dynamicBgStyle: React.CSSProperties = callerAvatarUrl
         ? {
             backgroundImage: `
-          linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)),
+          linear-gradient(rgba(255,255,255,0.6), rgba(255,255,255,0.5)),
           url(${callerAvatarUrl})
         `,
             backgroundSize: 'cover',
@@ -50,6 +50,7 @@ export default function IncomingCall({
                 paddingBottom: 'env(safe-area-inset-bottom)',
             }}
         >
+
             {/* Phần header: tên và type */}
             <div className="relative z-10 mt-8 flex flex-col items-center space-y-1">
                 <span className="text-white/80 text-sm uppercase">
@@ -61,7 +62,7 @@ export default function IncomingCall({
             </div>
 
             {/* Nút từ chối và chấp nhận */}
-            <div className="relative z-10 mb-12 flex items-center space-x-12">
+            <div className="relative z-10 mb-12 flex items-center space-x-20">
                 <button
                     onClick={onReject}
                     aria-label="Reject call"
@@ -80,7 +81,7 @@ export default function IncomingCall({
                     {callType === 'video' ? (
                         <Video size={24} color="white" />
                     ) : (
-                        <Phone size={24} color="white" />
+                        <Phone size={24} color="white" className="rotate-[135deg]" />
                     )}
                 </button>
             </div>
