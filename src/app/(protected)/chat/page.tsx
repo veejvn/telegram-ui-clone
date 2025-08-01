@@ -1034,7 +1034,7 @@ export default function ChatsPage() {
               // Short delay to ensure smooth animation on mobile
               setTimeout(() => {
                 setIsFullScreenSearch(true);
-              }, 250);
+              }, 2000);
             }
           }}
         >
