@@ -933,170 +933,16 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     //       />
     //     )}
     //   </div>
-    //   <AnimatePresence>
-    //     {open && (
-    //       <motion.div
-    //         initial={{ y: "100%" }}
-    //         animate={{ y: 0 }}
-    //         exit={{ y: "100%" }}
-    //         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-    //         className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-black rounded-t-2xl shadow-2xl pb-10"
-    //         ref={sheetRef}
-    //       >
-    //         {/* Header */}
-    //         <div className="flex items-center justify-between w-full p-2 px-4 font-medium text-gray-600 capitalize">
-    //           <Button
-    //             variant={"link"}
-    //             className="text-blue-500"
-    //             onClick={() => setOpen(false)}
-    //           >
-    //             Close
-    //           </Button>
-    //           {tab}
-    //           {renderIcon(tab)}
-    //         </div>
-
-    //         {/* Content */}
-    //         <div className="p-2 h-[400px]">
-    //           {tab === "gallery" && (
-    //             <div className="flex justify-center items-center h-full">
-    //               <button
-    //                 onClick={() => imageInputRef.current?.click()}
-    //                 className="p-2 bg-blue-500 text-white rounded-md"
-    //               >
-    //                 Chọn ảnh hoặc video
-    //               </button>
-    //               <input
-    //                 ref={imageInputRef}
-    //                 type="file"
-    //                 accept="image/*,video/*"
-    //                 multiple
-    //                 onChange={handleImagesAndVideos}
-    //                 className="hidden"
-    //                 aria-label="file"
-    //               />
-    //             </div>
-    //           )}
-    //           {tab === "file" && (
-    //             <div className="flex justify-center items-center h-full">
-    //               <button
-    //                 onClick={() => fileInputRef.current?.click()}
-    //                 className="p-2 bg-blue-500 text-white rounded-md"
-    //               >
-    //                 Chọn file
-    //               </button>
-    //               <input
-    //                 ref={fileInputRef}
-    //                 type="file"
-    //                 onChange={handleSendFile}
-    //                 multiple
-    //                 className="hidden"
-    //                 aria-label="file"
-    //               />
-    //             </div>
-    //           )}
-    //           {tab === "gift" && (
-    //             <div className="text-sm text-gray-500">
-    //               Danh sách quà tặng...
-    //             </div>
-    //           )}
-    //           {tab === "location" && (
-    //             <div className="text-sm text-gray-500">
-    //               <LocationMap onSend={handleSendLocation} />
-    //             </div>
-    //           )}
-    //           {tab === "reply" && (
-    //             <div className="text-sm text-gray-500">
-    //               Chọn tin nhắn để trả lời...
-    //             </div>
-    //           )}
-    //           {tab === "checklist" && (
-    //             <div className="text-sm text-gray-500">Thêm checklist...</div>
-    //           )}
-    //         </div>
-
-    //         {/* Tabs */}
-    //         <div className="flex justify-around border-t border-gray-200 px-4 py-2 text-xs text-center text-gray-600">
-    //           <TabButton
-    //             icon={
-    //               <GrGallery
-    //                 className={`w-5 h-5 mb-1 ${
-    //                   tab === "gallery" ? "text-blue-500" : ""
-    //                 }`}
-    //               />
-    //             }
-    //             label="Gallery"
-    //             onClick={() => setTab("gallery")}
-    //           />
-    //           {/* <TabButton
-    //             icon={
-    //               <Gift
-    //                 className={`w-5 h-5 mb-1 ${
-    //                   tab === "gift" ? "text-blue-500" : ""
-    //                 }`}
-    //               />
-    //             }
-    //             label="Gift"
-    //             onClick={() => setTab("gift")}
-    //           /> */}
-    //           <TabButton
-    //             icon={
-    //               <FaFile
-    //                 className={`w-5 h-5 mb-1 ${
-    //                   tab === "file" ? "text-blue-500" : ""
-    //                 }`}
-    //               />
-    //             }
-    //             label="File"
-    //             onClick={() => setTab("file")}
-    //           />
-    //           <TabButton
-    //             icon={
-    //               <MdLocationOn
-    //                 className={`w-5 h-5 mb-1 ${
-    //                   tab === "location" ? "text-blue-500" : ""
-    //                 }`}
-    //               />
-    //             }
-    //             label="Location"
-    //             onClick={() => setTab("location")}
-    //           />
-    //           {/* <TabButton
-    //             icon={
-    //               <Reply
-    //                 className={`w-5 h-5 mb-1 ${
-    //                   tab === "reply" ? "text-blue-500" : ""
-    //                 }`}
-    //               />
-    //             }
-    //             label="Reply"
-    //             onClick={() => setTab("reply")}
-    //           /> */}
-    //           {/* <TabButton
-    //             icon={
-    //               <Check
-    //                 className={`w-5 h-5 mb-1 ${
-    //                   tab === "checklist" ? "text-blue-500" : ""
-    //                 }`}
-    //               />
-    //             }
-    //             label="Checklist"
-    //             onClick={() => setTab("checklist")}
-    //           /> */}
-    //         </div>
-    //       </motion.div>
-    //     )}
-    //   </AnimatePresence>
     // </div>
 
-    <div className="flex mx-3 pb-3">
+    <div className="flex mx-3 pb-8">
       {/* Nút Plus ngoài cùng bên trái */}
       <div
         className="w-12 h-12 flex items-center justify-center rounded-full shadow-sm
   border-white cursor-pointer bg-gradient-to-br from-slate-100/70 
   via-gray-400/10 to-slate-50/30 backdrop-blur-xs bg-white/30
   hover:scale-105 duration-300 transition-all ease-in-out mr-2"
-        onClick={() => imageInputRef.current?.click()}
+        onClick={() => setOpen(true)}
       >
         <Plus className="w-6 h-6" />
         {/* Input file ẩn để chọn ảnh */}
@@ -1107,6 +953,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
           multiple
           className="hidden"
           onChange={handleImagesAndVideos}
+          aria-label="file"
         />
       </div>
 
@@ -1134,15 +981,14 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
           onTouchEnd={() => stopRecording()}
         />
         {/* Input nhập tin nhắn */}
-        <input
-          type="text"
+        <textarea
+          ref={textareaRef}
           value={text}
           onChange={onInputChange}
           onKeyDown={handleKeyDown}
           placeholder="Enter message"
-          className="flex-1 h-full bg-transparent outline-none text-base text-gray-700 placeholder-gray-400
-        placeholder:italic placeholder:font-light px-2"
-          style={{ minWidth: 0 }}
+          className="flex-1 h-full bg-transparent outline-none text-[12px] text-gray-700 placeholder-gray-400
+        placeholder:italic placeholder:font-light px-2 resize-none mt-5"
         />
         {/* Icon smile bên phải */}
         <Smile
@@ -1167,7 +1013,175 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             />
           </svg>
         )}
+        {showEmojiPicker && (
+            <div className="absolute bottom-22 right-2 z-50">
+              <EmojiPicker
+                width={300}
+                height={350}
+                onEmojiClick={handleEmojiClick}
+                searchDisabled={true}
+                previewConfig={{ showPreview: false }}
+                theme={
+                  theme.theme === "dark" ? EmojiTheme.DARK : EmojiTheme.LIGHT
+                }
+              />
+            </div>
+          )}
       </div>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="fixed bottom-0 left-0 right-0 z-50 bg-[#FFFFFF4D] dark:bg-[#FFFFFF4D] backdrop-blur-[48px] rounded-t-2xl shadow-2xl pb-10"
+            ref={sheetRef}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between w-full p-2 px-4 font-medium text-gray-600 capitalize">
+              <Button
+                variant={"link"}
+                className="text-blue-500"
+                onClick={() => setOpen(false)}
+              >
+                Close
+              </Button>
+              {tab}
+              {renderIcon(tab)}
+            </div>
+
+            {/* Content */}
+            <div className="p-2 h-[400px]">
+              {tab === "gallery" && (
+                <div className="flex justify-center items-center h-full">
+                  <button
+                    onClick={() => imageInputRef.current?.click()}
+                    className="p-2 bg-blue-500 text-white rounded-md"
+                  >
+                    Chọn ảnh hoặc video
+                  </button>
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    accept="image/*,video/*"
+                    multiple
+                    onChange={handleImagesAndVideos}
+                    className="hidden"
+                    aria-label="file"
+                  />
+                </div>
+              )}
+              {tab === "file" && (
+                <div className="flex justify-center items-center h-full">
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-2 bg-blue-500 text-white rounded-md"
+                  >
+                    Chọn file
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    onChange={handleSendFile}
+                    multiple
+                    className="hidden"
+                    aria-label="file"
+                  />
+                </div>
+              )}
+              {tab === "gift" && (
+                <div className="text-sm text-gray-500">
+                  Danh sách quà tặng...
+                </div>
+              )}
+              {tab === "location" && (
+                <div className="text-sm text-gray-500">
+                  <LocationMap onSend={handleSendLocation} />
+                </div>
+              )}
+              {tab === "reply" && (
+                <div className="text-sm text-gray-500">
+                  Chọn tin nhắn để trả lời...
+                </div>
+              )}
+              {tab === "checklist" && (
+                <div className="text-sm text-gray-500">Thêm checklist...</div>
+              )}
+            </div>
+
+            {/* Tabs */}
+            <div className="flex justify-around border-t border-gray-200 px-4 py-2 text-xs text-center text-gray-600">
+              <TabButton
+                icon={
+                  <GrGallery
+                    className={`w-5 h-5 mb-1 ${
+                      tab === "gallery" ? "text-blue-500" : ""
+                    }`}
+                  />
+                }
+                label="Gallery"
+                onClick={() => setTab("gallery")}
+              />
+              {/* <TabButton
+                icon={
+                  <Gift
+                    className={`w-5 h-5 mb-1 ${
+                      tab === "gift" ? "text-blue-500" : ""
+                    }`}
+                  />
+                }
+                label="Gift"
+                onClick={() => setTab("gift")}
+              /> */}
+              <TabButton
+                icon={
+                  <FaFile
+                    className={`w-5 h-5 mb-1 ${
+                      tab === "file" ? "text-blue-500" : ""
+                    }`}
+                  />
+                }
+                label="File"
+                onClick={() => setTab("file")}
+              />
+              <TabButton
+                icon={
+                  <MdLocationOn
+                    className={`w-5 h-5 mb-1 ${
+                      tab === "location" ? "text-blue-500" : ""
+                    }`}
+                  />
+                }
+                label="Location"
+                onClick={() => setTab("location")}
+              />
+              {/* <TabButton
+                icon={
+                  <Reply
+                    className={`w-5 h-5 mb-1 ${
+                      tab === "reply" ? "text-blue-500" : ""
+                    }`}
+                  />
+                }
+                label="Reply"
+                onClick={() => setTab("reply")}
+              /> */}
+              {/* <TabButton
+                icon={
+                  <Check
+                    className={`w-5 h-5 mb-1 ${
+                      tab === "checklist" ? "text-blue-500" : ""
+                    }`}
+                  />
+                }
+                label="Checklist"
+                onClick={() => setTab("checklist")}
+              /> */}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

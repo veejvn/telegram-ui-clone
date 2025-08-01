@@ -20,6 +20,7 @@ import { useForwardStore } from "@/stores/useForwardStore";
 import { getDetailedStatus } from "@/utils/chat/presencesHelpers";
 import { useRouter } from "next/navigation";
 import { useUserPresence } from "@/hooks/useUserPrecense";
+import { callService } from "@/services/callService";
 
 const ChatHeader = ({ room }: { room: sdk.Room }) => {
   const client = useMatrixClient();
@@ -98,6 +99,42 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
     }
   };
 
+  const handleStartCall = async (type: "voice" | "video") => {
+    if(!user || !client) return;
+    const roomId = await ensureRoomExists();
+    if (!roomId) return;
+
+    await callService.placeCall(roomId, type);
+    router.push(
+      `/call/${type}?calleeId=${encodeURIComponent(
+        roomId
+      )}&contact=${encodeURIComponent(user.displayName ?? user.userId)}`
+    );
+  };
+
+  const ensureRoomExists = async (): Promise<string | null> => {
+    if (!client || !user) return null;
+    const existingRoom = client
+      ?.getRooms()
+      .find(
+        (room: sdk.Room) =>
+          room.getJoinedMemberCount() === 2 &&
+          room.getJoinedMembers().some((m) => m.userId === user.userId)
+      );
+    if (existingRoom) return existingRoom.roomId;
+
+    try {
+      const res = await client?.createRoom({
+        invite: [user.userId],
+        is_direct: true,
+      });
+      return res?.room_id || null;
+    } catch (err) {
+      console.error("Failed to create room:", err);
+      return null;
+    }
+  };
+
   return (
     // <>
     //   <div
@@ -160,7 +197,7 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
     //   </div>
     // </>
 
-    <div className="flex items-center justify-between p-2">
+    <div className="flex items-center justify-between h-[50px] p-2">
       {/* Left: Back button */}
       <div className="w-[80px] flex justify-start">
         {backToMain ? (
@@ -203,14 +240,14 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
         bg-gradient-to-br from-slate-100/70 via-gray-400/10 to-slate-50/30 backdrop-blur-xs 
         shadow-xs hover:scale-105 duration-300 transition-all ease-in-out"
         >
-          <Video size={20} />
+          <Video size={20} onClick={() => handleStartCall("video")}/>
         </div>
         <div
           className="flex items-center justify-center rounded-full p-1.5 border border-white cursor-pointer 
         bg-gradient-to-br from-slate-100/70 via-gray-400/10 to-slate-50/30 backdrop-blur-xs 
         shadow-xs hover:scale-105 duration-300 transition-all ease-in-out"
         >
-          <PhoneOutgoing size={15} />
+          <PhoneOutgoing size={15} onClick={()=> handleStartCall("voice")}/>
         </div>
       </div>
     </div>
