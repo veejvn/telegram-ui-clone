@@ -16,25 +16,29 @@ const SelectionHeader: React.FC = () => {
   return (
     <div
       className={cn(
-        "fixed top-0 left-0 right-0 bg-white border-b border-gray-200 p-4 z-[200]",
+        "fixed top-0 left-0 right-0 px-4 py-3 z-[200]",
+        "backdrop-blur-3xl",
         "transform transition-transform duration-300 ease-out",
         isSelectionMode ? "translate-y-0" : "-translate-y-full"
       )}
     >
       <div className="flex items-center justify-between max-w-md mx-auto">
+        {/* Back Button */}
+        <div className="size-9"></div>
+
         {/* Selection Count */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={exitSelectionMode}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-            aria-label="Exit selection mode"
-          >
-            <X size={20} className="text-gray-600" />
-          </button>
-          <span className="text-lg font-medium text-gray-900">
-            {selectedMessages.length} selected
-          </span>
-        </div>
+        <span className="text-[16px] font-semibold tracking-normal leading-[140%] text-[#121212]">
+          {selectedMessages.length} selected
+        </span>
+
+        {/* Close Button */}
+        <button
+          onClick={exitSelectionMode}
+          className="p-2 hover:bg-blue-200 rounded-full border transition-colors"
+          aria-label="Close selection"
+        >
+          <X size={20} className="text-gray-700" />
+        </button>
       </div>
     </div>
   );
