@@ -120,7 +120,8 @@ export default function ContactEditPage() {
                                 another photo that only you can see.
                             </p>
                         </div>
-                        <ChevronRight className="h-5 w-5 text-gray-400" />
+                        <ChevronRight className="h-5 w-5 text-gray-400 self-center flex-shrink-0" />
+
                     </div>
 
                     <div className="h-px bg-gray-200 mx-4" />
@@ -136,7 +137,8 @@ export default function ContactEditPage() {
                                 another photo that only you can see.
                             </p>
                         </div>
-                        <ChevronRight className="h-5 w-5 text-gray-400" />
+                        <ChevronRight className="h-5 w-5 text-gray-400 self-center flex-shrink-0" />
+
                     </div>
                 </div>
 
