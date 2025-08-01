@@ -2,38 +2,41 @@
 
 import React from "react";
 
-export const CallIcon = () => (
+export const CallIcon = ({ className = "" }: { className?: string }) => (
   <svg
     width="18px"
     height="18px"
     viewBox="0 0 24 24"
-    fill="#155dfc"
+    fill="white"
     stroke="#155dfc"
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
-    className="group-hover:scale-110 duration-500 transition-all ease-in-out group-hover:opacity-70"
+    className={`group-hover:scale-110 duration-500 transition-all ease-in-out group-hover:opacity-70 ${className}`}
   >
-    <path d="M22 16.92V21a2 2 0 0 1-2.18 2A19.72 19.72 0 0 1 3 5.18 2 2 0 0 1 5 3h4.09a1 1 0 0 1 1 .75l1.13 4.52a1 1 0 0 1-.29 1L9.91 11.09a16 16 0 0 0 6 6l1.82-1.82a1 1 0 0 1 1-.29l4.52 1.13a1 1 0 0 1 .75 1z"/>
+    <path d="M22 16.92V21a2 2 0 0 1-2.18 2A19.72 19.72 0 0 1 3 5.18 2 2 0 0 1 5 3h4.09a1 1 0 0 1 1 .75l1.13 4.52a1 1 0 0 1-.29 1L9.91 11.09a16 16 0 0 0 6 6l1.82-1.82a1 1 0 0 1 1-.29l4.52 1.13a1 1 0 0 1 .75 1z" />
   </svg>
 );
 
-export const VideoIcon = () => (
+export const VideoIcon = ({ className = "" }: { className?: string }) => (
   <svg
     width="24px"
     height="24px"
     viewBox="0 0 1024 1024"
     xmlns="http://www.w3.org/2000/svg"
-    fill="#000000"
-    className="group-hover:scale-110 duration-500 transition-all ease-in-out group-hover:opacity-70"
+    className={`group-hover:scale-110 duration-500 transition-all ease-in-out group-hover:opacity-70 ${className}`}
   >
     <path
       d="M170.666667 256h469.333333c46.933333 0 85.333333 38.4 85.333333 85.333333v341.333334c0 46.933333-38.4 85.333333-85.333333 85.333333H170.666667c-46.933333 0-85.333333-38.4-85.333334-85.333333V341.333333c0-46.933333 38.4-85.333333 85.333334-85.333333z"
-      fill="#155dfc"
+      fill="white"
+      stroke="#155dfc"
+      strokeWidth="80" // tăng nhiều hơn
     />
     <path
       d="M938.666667 746.666667l-213.333334-128V405.333333l213.333334-128z"
-      fill="#155dfc"
+      fill="white"
+      stroke="#155dfc"
+      strokeWidth="80"
     />
   </svg>
 );
