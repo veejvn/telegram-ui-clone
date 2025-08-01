@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Plus, Filter } from "lucide-react";
-import SearchBar from "@/components/layouts/SearchBar";
+import { Plus, Search } from "lucide-react";
 import NewContactModal from "@/components/contact/NewContactModal";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { getLS } from "@/tools/localStorage.tool";
@@ -20,6 +19,7 @@ interface Member {
   name?: string;
   avatarUrl?: string;
   isOnline?: boolean;
+  lastSeen?: number; // epoch ms
 }
 
 // Hàm nhóm theo chữ cái đầu
@@ -41,6 +41,35 @@ function groupContacts(
   return map;
 }
 
+// Hàm hiển thị trạng thái online/offline đẹp trai
+function formatLastSeen(isOnline?: boolean, lastSeen?: number) {
+  if (isOnline) return <span className="text-[#47C269] font-medium">Online</span>;
+  if (!lastSeen) return <span className="text-[#A0A0A0]">Offline</span>;
+
+  const now = Date.now();
+  const diffMs = now - lastSeen;
+  const diffSec = Math.floor(diffMs / 1000);
+
+  if (diffSec < 60) return <span className="text-[#A0A0A0]">Vừa mới online</span>;
+  if (diffSec < 3600)
+    return (
+      <span className="text-[#A0A0A0]">
+        Đã online {Math.floor(diffSec / 60)} phút trước
+      </span>
+    );
+  if (diffSec < 86400)
+    return (
+      <span className="text-[#A0A0A0]">
+        Đã online {Math.floor(diffSec / 3600)} giờ trước
+      </span>
+    );
+  return (
+    <span className="text-[#A0A0A0]">
+      Đã online {Math.floor(diffSec / 86400)} ngày trước
+    </span>
+  );
+}
+
 const ContactPage = () => {
   const [sortBy, setSortBy] = useState<"lastSeen" | "name">("name");
   const [contacts, setContacts] = useState<any[]>([]);
@@ -58,6 +87,22 @@ const ContactPage = () => {
       const rooms = await (
         await import("@/services/contactService")
       ).default.getDirectMessageRooms(client);
+
+      // Thêm field lastSeen mock cho demo
+      rooms.forEach((room: any) => {
+        const other: Member | undefined = client
+          ? room.getJoinedMembers().find((m: Member) => m.userId !== client.getUserId())
+          : undefined;
+        if (other) {
+          // Nếu là offline, gán lastSeen random trong 3 giờ qua
+          if (!other.isOnline) {
+            other.lastSeen = Date.now() - Math.floor(Math.random() * 3 * 60 * 60 * 1000);
+          } else {
+            other.lastSeen = Date.now();
+          }
+        }
+      });
+
       setContacts(rooms);
       setTimeout(() => {
         setLoading(false);
@@ -97,15 +142,21 @@ const ContactPage = () => {
 
     // Nếu sort by Last Seen
     if (sortBy === "lastSeen") {
+      // Sắp xếp online trước, sau đó là lastSeen mới nhất
       if (otherA?.isOnline && !otherB?.isOnline) return -1;
       if (!otherA?.isOnline && otherB?.isOnline) return 1;
-      const nameA = (otherA?.name || otherA?.userId || "").toLowerCase();
-      const nameB = (otherB?.name || otherB?.userId || "").toLowerCase();
-      return nameA.localeCompare(nameB, undefined, { sensitivity: "base" });
+      // Cùng trạng thái, so lastSeen
+      const aSeen = otherA?.lastSeen ?? 0;
+      const bSeen = otherB?.lastSeen ?? 0;
+      return bSeen - aSeen;
     }
 
     return 0;
   });
+
+  // --- Search Bar State/Logic (Floating Style) ---
+  const [isFocused, setIsFocused] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
 
   return (
     <div
@@ -128,64 +179,121 @@ const ContactPage = () => {
           My Contacts
         </h1>
         <div className="flex gap-3">
+          {/* Nút + bo tròn, border, nền #D8EBFF, icon màu đen */}
           <button
-            className="rounded-full bg-[#D8EBFF]/70 hover:bg-[#D8EBFF] shadow-none p-2 flex items-center justify-center border border-[#e0e0e0]"
+            className="w-12 h-12 flex items-center justify-center rounded-full border border-[#e0e0e0] bg-[#D8EBFF] transition-all"
             onClick={() => setShowNewContact(true)}
             aria-label="Add"
+            style={{
+              boxSizing: "border-box",
+            }}
           >
-            <Plus size={20} className="text-black" />
+            <Plus size={24} className="text-black" strokeWidth={3} />
           </button>
+
+          {/* Nút filter (3 gạch) bo tròn, nền #D8EBFF, icon màu đen */}
           <Popover>
             <PopoverTrigger asChild>
               <button
-                className="rounded-full bg-[#D8EBFF]/70 hover:bg-[#D8EBFF] shadow-none p-2 flex items-center justify-center border border-[#e0e0e0]"
+                className="w-12 h-12 flex items-center justify-center rounded-full border border-[#e0e0e0] bg-[#D8EBFF] transition-all"
                 aria-label="Filter"
                 type="button"
+                style={{
+                  boxSizing: "border-box",
+                }}
               >
-                <Filter size={20} className="text-black" />
+                {/* SVG icon ba gạch màu đen */}
+                <svg width="28" height="28" viewBox="0 0 44 44" fill="none">
+                  <rect x="12" y="15" width="20" height="2.2" rx="1.1" fill="#222" />
+                  <rect x="15" y="20" width="14" height="2.2" rx="1.1" fill="#222" />
+                  <rect x="18" y="25" width="8" height="2.2" rx="1.1" fill="#222" />
+                </svg>
               </button>
             </PopoverTrigger>
             <PopoverContent
               side="bottom"
               align="end"
-              className="p-0 w-44 rounded-2xl border-0 shadow-lg bg-white"
+              className="p-0"
               style={{
-                boxShadow: "0 4px 32px 0 rgba(80,120,180,0.10)",
+                width: 192,
+                minHeight: 78,
+                borderRadius: 20,
+                background: "#fff",
+                boxShadow: "0px 4px 24px 0px rgba(44, 68, 115, 0.10)",
+                paddingTop: 12,
+                paddingBottom: 12,
+                border: "none",
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
               }}
             >
-              <div className="flex flex-col divide-y divide-gray-100">
-                <button
-                  className="flex items-center justify-between w-full text-left px-4 py-3 text-[16px] rounded-t-2xl focus:bg-gray-50"
-                  onClick={() => setSortBy("name")}
-                >
-                  <span>by Name</span>
-                  {sortBy === "name" && (
-                    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border-2 border-blue-500 bg-blue-500">
-                      <span className="w-2 h-2 bg-white rounded-full block" />
-                    </span>
-                  )}
-                </button>
-                <button
-                  className="flex items-center justify-between w-full text-left px-4 py-3 text-[16px] rounded-b-2xl focus:bg-gray-50"
-                  onClick={() => setSortBy("lastSeen")}
-                >
-                  <span>by Last Active</span>
-                  {sortBy === "lastSeen" && (
-                    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border-2 border-blue-500 bg-blue-500">
-                      <span className="w-2 h-2 bg-white rounded-full block" />
-                    </span>
-                  )}
-                </button>
-              </div>
+              <button
+                className="flex items-center justify-between w-full text-left px-4 py-0 text-[16px] font-normal bg-transparent outline-none focus:bg-gray-100"
+                style={{
+                  minHeight: 27,
+                  borderRadius: 12,
+                }}
+                onClick={() => setSortBy("name")}
+              >
+                <span>by Name</span>
+                {sortBy === "name" && (
+                  <span
+                    className="inline-flex items-center justify-center"
+                    style={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: "50%",
+                      background: "#1976ed",
+                      marginLeft: 10,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
+                      <circle cx="10" cy="10" r="10" fill="#1976ed" />
+                      <path d="M6 10.5L9 13.5L14 7.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                )}
+              </button>
+              <button
+                className="flex items-center justify-between w-full text-left px-4 py-0 text-[16px] font-normal bg-transparent outline-none focus:bg-gray-100"
+                style={{
+                  minHeight: 27,
+                  borderRadius: 12,
+                }}
+                onClick={() => setSortBy("lastSeen")}
+              >
+                <span>by Last Active</span>
+                {sortBy === "lastSeen" && (
+                  <span
+                    className="inline-flex items-center justify-center"
+                    style={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: "50%",
+                      background: "#1976ed",
+                      marginLeft: 10,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
+                      <circle cx="10" cy="10" r="10" fill="#1976ed" />
+                      <path d="M6 10.5L9 13.5L14 7.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                )}
+              </button>
             </PopoverContent>
           </Popover>
         </div>
       </div>
-      {/* SEARCHBAR */}
-      <div className="px-5 pt-2 pb-1">
-        {!options.includes("search") && <SearchBar />}
-      </div>
-      {/* CONTACTS */}
+
+      {/* DANH SÁCH CONTACTS */}
       <div className="px-2 pb-10 pt-1 w-full max-w-lg mx-auto">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24">
@@ -227,7 +335,7 @@ const ContactPage = () => {
                 <div
                   className="w-full px-5 py-2"
                   style={{
-                    background: "rgba(220, 235, 252, 0.92)", // Xanh nhạt kéo dài đúng ý bạn
+                    background: "#EDECEA",
                     fontWeight: 600,
                     fontSize: 15,
                     letterSpacing: 2,
@@ -241,7 +349,7 @@ const ContactPage = () => {
                     key={room.roomId}
                     className="flex items-center gap-3 px-2 py-3 rounded-xl hover:bg-white/50 transition-all select-none"
                   >
-                    {/* Avatar */}
+                    {/* Avatar logic */}
                     <div className="relative">
                       {other.avatarUrl ? (
                         <Image
@@ -249,7 +357,7 @@ const ContactPage = () => {
                           alt="avatar"
                           width={44}
                           height={44}
-                          className="rounded-full"
+                          className="rounded-full object-cover"
                         />
                       ) : (
                         <div className="rounded-full w-11 h-11 bg-[#f5f5f5] flex items-center justify-center text-xl font-bold text-[#888]">
@@ -259,9 +367,9 @@ const ContactPage = () => {
                         </div>
                       )}
                       {/* Online indicator */}
-                      {other.isOnline ? (
+                      {other.isOnline && (
                         <span className="absolute bottom-1 right-1 w-3 h-3 rounded-full border-2 border-white bg-[#47C269]" />
-                      ) : null}
+                      )}
                     </div>
                     {/* Info */}
                     <div className="flex-1 min-w-0">
@@ -269,15 +377,7 @@ const ContactPage = () => {
                         {other?.name || other?.userId}
                       </div>
                       <div className="text-xs mt-0.5">
-                        {other.isOnline ? (
-                          <span className="text-[#47C269] font-medium">
-                            Online
-                          </span>
-                        ) : (
-                          <span className="text-[#A0A0A0]">
-                            Online 2 hours ago
-                          </span>
-                        )}
+                        {formatLastSeen(other.isOnline, other.lastSeen)}
                       </div>
                     </div>
                   </div>
@@ -286,6 +386,7 @@ const ContactPage = () => {
             ))
         )}
       </div>
+
       {/* MODAL */}
       <NewContactModal
         open={showNewContact}
@@ -293,6 +394,44 @@ const ContactPage = () => {
         onAddContact={handleAddContact}
         onClose={() => setShowNewContact(false)}
       />
+
+      {/* SEARCH BAR FLOATING (cuối màn hình) */}
+      {!options.includes("search") && (
+        <div className="fixed bottom-10 left-0 w-full z-10 flex justify-center pointer-events-none">
+          <label
+            className={`
+              group flex items-center rounded-full
+              transition-all duration-300
+              shadow-lg
+              backdrop-blur-md
+              pointer-events-auto
+              ${isFocused || searchValue
+                ? "bg-white/50 px-5 py-2 w-[90vw] max-w-md"
+                : "bg-white px-3 py-1 w-30"
+              }
+            `}
+            style={{ marginBottom: "env(safe-area-inset-bottom, 12px)" }}
+          >
+            <input
+              type="text"
+              className={`
+                outline-none bg-transparent w-full
+                transition-all duration-300
+              `}
+              placeholder={
+                isFocused || searchValue
+                  ? "Tìm kiếm mọi thứ bằng AI"
+                  : "Tìm kiếm"
+              }
+              value={searchValue}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              onChange={(e) => setSearchValue(e.target.value)}
+            />
+            <Search size={20} className="text-zinc-700" />
+          </label>
+        </div>
+      )}
     </div>
   );
 };
