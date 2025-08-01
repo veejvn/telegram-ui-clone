@@ -28,6 +28,7 @@
     "@radix-ui/react-toast": "^1.2.14",
     "@react-google-maps/api": "^2.20.7",
     "autoprefixer": "^10.4.21",
+    "boxicons": "^2.1.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
