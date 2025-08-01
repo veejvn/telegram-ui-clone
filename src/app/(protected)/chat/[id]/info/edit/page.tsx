@@ -150,7 +150,8 @@ export default function ContactEditPage() {
                             This will remove the contact from your list.
                         </p>
                     </div>
-                    <ChevronRight className="h-5 w-5 text-gray-400 mt-1 flex-shrink-0" />
+                    <ChevronRight className="h-5 w-5 text-gray-400 self-center flex-shrink-0" />
+
                 </div>
             </div>
         </div>
