@@ -118,8 +118,8 @@ export default function MuteButton({ onMuteUntil, roomId }: MuteButtonProps) {
           }}
         >
           {isMuted ? <BellMutedIcon /> : <MuteIcon />}
-          <p className="text-xs text-[#155dfc]">
-            {isMuted ? "unmute" : "mute"}
+          <p className="text-xs text-[#155dfc] font-semibold">
+            {isMuted ? "Unmute" : "Mute"}
           </p>
         </div>
 
