@@ -89,7 +89,6 @@ export const ERROR_MESSAGES: ErrorMessages = {
         INVALID_INPUT: 'Invalid input data',
     }
 };
-
 export type ErrorMessageKey = keyof ErrorMessages;
 export type ErrorMessageCategory = keyof ErrorMessages;
-export type ErrorMessageValue = ErrorMessages[ErrorMessageCategory][keyof ErrorMessages[ErrorMessageCategory]]; 
+export type ErrorMessageValue = ErrorMessages[ErrorMessageCategory][keyof ErrorMessages[ErrorMessageCategory]];
