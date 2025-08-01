@@ -110,7 +110,7 @@ export default function OtpVerificationPage() {
 
     return (
         <div className="flex items-center justify-center min-h-screen px-2">
-            <div className="bg-white/30 rounded-[32px] min-h-[220px] px-6 py-8 border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.10)] backdrop-blur-[16px] flex flex-col justify-center items-center w-full max-w-md">
+            <div className="bg-white/30 rounded-[32px] min-h-[220px] mx-2 px-6 py-8 border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.10)] backdrop-blur-[16px] flex flex-col justify-center items-center w-full max-w-md">
                 {/* Header */}
                 <div className="w-full text-center mb-8">
                     <p className="text-lg text-gray-900 mb-4 font-bold font-sans">Log in</p>
@@ -138,6 +138,7 @@ export default function OtpVerificationPage() {
                                     onKeyDown={(e) => handleKeyDown(e, index, 'otp')}
                                     className="w-12 h-12 text-center border-b-2 border-gray-300 bg-transparent text-2xl font-bold text-gray-900 font-sans focus:border-blue-500 focus:outline-none"
                                     maxLength={1}
+                                    aria-label={`OTP digit ${index + 1}`}
                                 />
                             ))}
                         </div>
@@ -148,7 +149,7 @@ export default function OtpVerificationPage() {
                             ) : (
                                 <>
                                     <span className="text-sm text-gray-500 font-sans">Didn't get a code? </span>
-                                    <button type="button" className="text-sm text-blue-600 hover:underline font-sans">
+                                    <button type="button" className="text-[11px] text-blue-600 underline underline-offset-2 font-sans">
                                         Resend OTP
                                     </button>
                                 </>
@@ -174,6 +175,7 @@ export default function OtpVerificationPage() {
                                     onKeyDown={(e) => handleKeyDown(e, index, 'authenticator')}
                                     className="w-12 h-12 text-center border-b-2 border-gray-300 bg-transparent text-2xl font-bold text-gray-900 font-sans focus:border-blue-500 focus:outline-none"
                                     maxLength={1}
+                                    aria-label={`Authenticator OTP digit ${index + 1}`}
                                 />
                             ))}
                         </div>
@@ -184,7 +186,7 @@ export default function OtpVerificationPage() {
                             ) : (
                                 <>
                                     <span className="text-sm text-gray-500 font-sans">Didn't get a code? </span>
-                                    <button type="button" className="text-sm text-blue-600 hover:underline font-sans">
+                                    <button type="button" className="text-[11px] text-blue-600 underline underline-offset-2 font-sans">
                                         Resend OTP
                                     </button>
                                 </>

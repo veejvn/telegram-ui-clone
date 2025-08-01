@@ -12,6 +12,7 @@ import loginSchema from "@/validations/loginSchema";
 import { ErrorMessage, Field, Form, SubmitButton } from "@/components/Form";
 import type { LoginFormData } from "@/types/auth";
 import { BiQrScan } from "react-icons/bi";
+import { Button } from "@/components/ui/button";
 
 export default function LoginPage() {
   const login = useAuthStore((state) => state.login);
@@ -19,7 +20,7 @@ export default function LoginPage() {
   const { accessToken, userId, deviceId } = useAuthStore();
 
   // UI states
-  const [selectedTab, setSelectedTab] = useState("Biometrics");
+  const [selectedTab, setSelectedTab] = useState("Password");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -93,7 +94,7 @@ export default function LoginPage() {
         error?.message?.includes("Invalid username/password")
       ) {
         errorMessage = ERROR_MESSAGES.AUTH.INVALID_CREDENTIALS;
-        setLoginAttempts(prev => prev + 1);
+        setLoginAttempts((prev) => prev + 1);
       } else if (error?.errcode === "M_USER_DEACTIVATED") {
         errorMessage = ERROR_MESSAGES.AUTH.UNAUTHORIZED;
       } else if (error?.errcode === "M_LIMIT_EXCEEDED") {
@@ -117,17 +118,22 @@ export default function LoginPage() {
     switch (selectedTab) {
       case "Password":
         return (
-          <form className="w-full flex flex-col gap-4" onSubmit={(e) => {
-            e.preventDefault();
-            const formData = new FormData(e.currentTarget);
-            const data = {
-              username: formData.get('username') as string,
-              password: formData.get('password') as string
-            };
-            handleSubmit(data);
-          }}>
+          <form
+            className="w-full flex flex-col gap-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const data = {
+                username: formData.get("username") as string,
+                password: formData.get("password") as string,
+              };
+              handleSubmit(data);
+            }}
+          >
             <div>
-              <label className="block text-sm font-semibold text-[#121212] mb-1">Username</label>
+              <label className="block text-sm font-semibold text-[#121212] mb-1">
+                Username
+              </label>
               <input
                 name="username"
                 type="text"
@@ -138,7 +144,9 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-[#121212] mb-1">Password</label>
+              <label className="block text-sm font-semibold text-[#121212] mb-1">
+                Password
+              </label>
               <div className="relative">
                 <input
                   name="password"
@@ -153,10 +161,11 @@ export default function LoginPage() {
                   onClick={() => setShowPassword((v) => !v)}
                   disabled={isLoading || isLocked}
                 >
-                  {showPassword
-                    ? <EyeIcon className="w-5 h-5 text-gray-400" />
-                    : <EyeSlashIcon className="w-5 h-5 text-gray-400" />
-                  }
+                  {showPassword ? (
+                    <EyeIcon className="w-5 h-5 text-gray-400" />
+                  ) : (
+                    <EyeSlashIcon className="w-5 h-5 text-gray-400" />
+                  )}
                 </button>
               </div>
             </div>
@@ -173,11 +182,9 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => {
-                  console.log('Forgot Password clicked');
-                  console.log('ROUTES.FORGOT_PASSWORD:', ROUTES.FORGOT_PASSWORD);
                   router.push(ROUTES.FORGOT_PASSWORD);
                 }}
-                className="text-sm text-[#026AE0] hover:underline"
+                className="text-[11px] text-[#026AE0] underline underline-offset-2"
                 disabled={isLoading || isLocked}
               >
                 Forgot Password?
@@ -185,18 +192,21 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="text-red-500 text-sm font-medium">
-                {error}
-              </div>
+              <div className="text-red-500 text-sm font-medium">{error}</div>
             )}
 
             <button
               type="submit"
               disabled={isLoading || isLocked}
-              className={`w-full bg-blue-600 text-white py-3 rounded-full font-medium hover:bg-blue-700 transition text-base ${isLoading || isLocked ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
+              className={`w-full bg-blue-600 text-white py-3 rounded-full font-medium hover:bg-blue-700 transition text-base ${
+                isLoading || isLocked ? "opacity-50 cursor-not-allowed" : ""
+              }`}
             >
-              {isLoading ? 'Signing in...' : isLocked ? 'Account Locked' : 'Continue'}
+              {isLoading
+                ? "Signing in..."
+                : isLocked
+                ? "Account Locked"
+                : "Continue"}
             </button>
 
             {/* Social Login Buttons */}
@@ -204,18 +214,21 @@ export default function LoginPage() {
               <button
                 type="button"
                 className="w-[48px] h-[48px] rounded-full bg-[#808080]/30 flex items-center justify-center shadow-md"
+                aria-label="Login with Apple"
               >
                 <FaApple className="w-6 h-6 text-[#FFFFFF]" />
               </button>
               <button
                 type="button"
                 className="w-[48px] h-[48px] rounded-full bg-[#808080]/30 flex items-center justify-center shadow-md"
+                aria-label="Login with Google"
               >
                 <FaGoogle className="w-6 h-6 text-[#FFFFFF]" />
               </button>
               <button
                 type="button"
                 className="w-[48px] h-[48px] rounded-full bg-[#808080]/30 flex items-center justify-center shadow-md"
+                aria-label="Login with Telegram"
               >
                 <FaTelegramPlane className="w-6 h-6 text-[#FFFFFF]" />
               </button>
@@ -228,23 +241,73 @@ export default function LoginPage() {
           <div className="w-full flex flex-col items-center">
             {/* Face ID Icon */}
             <div className="w-24 h-24 flex items-center justify-center mb-6">
-              <svg className={`w-16 h-16 ${biometricError ? 'text-red-500' : 'text-black'}`} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg
+                className={`w-16 h-16 ${
+                  biometricError ? "text-red-500" : "text-black"
+                }`}
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
                 {/* Corner brackets with rounded corners */}
                 <path d="M2 2h6v2H4v4H2V2z" fill="currentColor" rx="4" ry="4" />
-                <path d="M22 2h-6v2h4v4h2V2z" fill="currentColor" rx="4" ry="4" />
-                <path d="M2 16h2v4h4v2H2v-6z" fill="currentColor" rx="4" ry="4" />
-                <path d="M22 16h-2v4h-4v2h6v-6z" fill="currentColor" rx="4" ry="4" />
+                <path
+                  d="M22 2h-6v2h4v4h2V2z"
+                  fill="currentColor"
+                  rx="4"
+                  ry="4"
+                />
+                <path
+                  d="M2 16h2v4h4v2H2v-6z"
+                  fill="currentColor"
+                  rx="4"
+                  ry="4"
+                />
+                <path
+                  d="M22 16h-2v4h-4v2h6v-6z"
+                  fill="currentColor"
+                  rx="4"
+                  ry="4"
+                />
 
                 {/* Face features */}
                 {/* Eyes - vertical lines */}
-                <line x1="8" y1="9" x2="8" y2="11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                <line x1="16" y1="9" x2="16" y2="11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <line
+                  x1="8"
+                  y1="9"
+                  x2="8"
+                  y2="11"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+                <line
+                  x1="16"
+                  y1="9"
+                  x2="16"
+                  y2="11"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
 
                 {/* Nose - curved line */}
-                <path d="M12 10 Q14 12 12 14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />
+                <path
+                  d="M12 10 Q14 12 12 14"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  fill="none"
+                  strokeLinecap="round"
+                />
 
                 {/* Mouth - smile */}
-                <path d="M8 16 Q12 18 16 16" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />
+                <path
+                  d="M8 16 Q12 18 16 16"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  fill="none"
+                  strokeLinecap="round"
+                />
               </svg>
             </div>
 
@@ -257,14 +320,19 @@ export default function LoginPage() {
 
             {/* Instructions */}
             <p className="text-sm text-gray-600 text-center mb-6">
-              Authenticate securely by scanning the QR code with your trusted device.
+              Authenticate securely by scanning the QR code with your trusted
+              device.
             </p>
 
             {/* Test Buttons */}
             <div className="flex gap-2 mt-4">
               <button
                 type="button"
-                onClick={() => setBiometricError("Please remove your mask and any other objects in front of you.")}
+                onClick={() =>
+                  setBiometricError(
+                    "Please remove your mask and any other objects in front of you."
+                  )
+                }
                 className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm"
               >
                 Test Error
@@ -280,7 +348,7 @@ export default function LoginPage() {
           </div>
         );
 
-      case "QR Bank":
+      case "QR Code":
         return (
           <div className="w-full">
             <div className="bg-gray-100 rounded-lg p-6 flex items-center gap-4">
@@ -292,7 +360,8 @@ export default function LoginPage() {
               {/* Description */}
               <div className="flex-1">
                 <p className="text-sm text-gray-600 leading-relaxed">
-                  Authenticate securely by scanning the QR code with your trusted device.
+                  Authenticate securely by scanning the QR code with your
+                  trusted device.
                 </p>
               </div>
             </div>
@@ -324,26 +393,30 @@ export default function LoginPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen px-2">
-      <div className="bg-white/30 rounded-[32px] min-h-[540px] px-6 py-8 shadow-lg backdrop-blur-[16px] flex flex-col items-center w-full max-w-md">
+      <div className="bg-white/30 rounded-[32px] min-h-[540px] mx-2 px-6 py-8 shadow-lg backdrop-blur-[100px] flex flex-col items-center w-full max-w-md border border-white">
         {/* Header */}
         <div className="w-full text-center mb-6">
           <p className="text-sm text-gray-900 mb-1 font-bold">Log in</p>
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Welcome Back!</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">
+            Welcome Back!
+          </h1>
           <p className="text-sm text-gray-600">
-            New Generation Teknix Account: Safe, Fast and Conveniently Integrated.
+            New Generation Teknix Account: Safe, Fast and Conveniently
+            Integrated.
           </p>
         </div>
 
         {/* Tabs */}
         <div className="flex w-full bg-[#808080]/30 rounded-full p-2 mb-6 shadow-md">
-          {["Password", "Biometrics", "QR Bank", "Seedphrase"].map((method) => (
+          {["Password", "Biometrics", "QR Code", "Seedphrase"].map((method) => (
             <button
               key={method}
-              className={`flex-1 py-3 text-sm font-medium rounded-full transition
-                   ${selectedTab === method
-                  ? "bg-white/60 shadow-lg text-[#121212] font-semibold"
-                  : "text-[#6B7271]"
-                }`}
+              className={`flex-1 py-3 text-xs font-medium rounded-full transition
+                   ${
+                     selectedTab === method
+                       ? "bg-white/60 shadow-lg text-[#121212] font-semibold"
+                       : "text-[#6B7271]"
+                   }`}
               onClick={() => setSelectedTab(method)}
             >
               {method}
@@ -352,9 +425,7 @@ export default function LoginPage() {
         </div>
 
         {/* Tab Content */}
-        <div className="w-full">
-          {renderTabContent()}
-        </div>
+        <div className="w-full">{renderTabContent()}</div>
       </div>
     </div>
   );
