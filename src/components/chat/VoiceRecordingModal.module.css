@@ -1,0 +1,55 @@
+.progressBar {
+  height: 4px;
+  background-color: #026ae0;
+  border-radius: 9999px;
+  transition: transform 200ms ease-in-out;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  transform-origin: left;
+}
+
+.progressContainer {
+  width: 100%;
+  height: 4px;
+  background-color: #d1d5db;
+  border-radius: 9999px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Progress width classes */
+.progress0 {
+  transform: scaleX(0);
+}
+.progress10 {
+  transform: scaleX(0.1);
+}
+.progress20 {
+  transform: scaleX(0.2);
+}
+.progress30 {
+  transform: scaleX(0.3);
+}
+.progress40 {
+  transform: scaleX(0.4);
+}
+.progress50 {
+  transform: scaleX(0.5);
+}
+.progress60 {
+  transform: scaleX(0.6);
+}
+.progress70 {
+  transform: scaleX(0.7);
+}
+.progress80 {
+  transform: scaleX(0.8);
+}
+.progress90 {
+  transform: scaleX(0.9);
+}
+.progress100 {
+  transform: scaleX(1);
+}
