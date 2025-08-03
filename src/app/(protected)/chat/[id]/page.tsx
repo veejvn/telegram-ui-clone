@@ -359,7 +359,7 @@ const ChatPage = () => {
                   <ChatHeader room={room} />
                 </div>
               ) : (
-                <div className="shrink-0 h-12 bg-transparent"></div>
+                <div className="shrink-0 h-[50px] bg-transparent"></div>
               )}
 
               {/* Chat content scrollable */}

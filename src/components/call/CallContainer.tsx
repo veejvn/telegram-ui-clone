@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import useCallStore from '@/stores/useCallStore';
 import useCallHistoryStore, { CallStatus } from '@/stores/useCallHistoryStore';
+import { useMatrixClient } from '@/contexts/MatrixClientProvider';
+
 import { VoiceCall } from './VoiceCall';
 import { VideoCall } from './VideoCall';
 
@@ -25,12 +27,33 @@ export default function CallContainer({
         callEndedReason,
         upgradeToVideo,   // <-- Lấy luôn từ store
     } = useCallStore();
+    const [currentType, setCurrentType] = useState<'voice' | 'video'>(type);
 
     const addHistory = useCallHistoryStore((s) => s.addCall);
     const router = useRouter();
+    const client = useMatrixClient();                    // ← import Matrix client
+
     const params = useSearchParams();
     const contactName = params.get('contact') ?? roomId;
-
+    // 1) State và effect để tính avatarUrl
+    const [avatarUrl, setAvatarUrl] = useState<string>('');
+    useEffect(() => {
+        if (!client || !roomId) return;
+        const room = client.getRoom(roomId);
+        if (!room) return;
+        // Nếu 1‑1 chat, lấy member khác
+        const other = room.getMembers().find(m => m.userId !== client.getUserId());
+        const url =
+            other?.getAvatarUrl(
+                process.env.NEXT_PUBLIC_MATRIX_BASE_URL!,
+                128, 128,
+                'crop',
+                false,
+                true,   // allowDirectServerLookup
+                false   // allowCached
+            ) ?? '';
+        setAvatarUrl(url);
+    }, [client, roomId]);
     // Tránh add lịch sử 2 lần cho 1 call
     const [historyAdded, setHistoryAdded] = useState(false);
 
@@ -88,19 +111,16 @@ export default function CallContainer({
         return (
             <VoiceCall
                 contactName={contactName}
+                contactAvatar={avatarUrl}        // ← truyền avatarUrl vào đây
                 callState={state}
                 callDuration={callDuration}
+                onUpgrade={() => {
+                    upgradeToVideo();
+                    setCurrentType('video');
+                }}
                 onEndCall={() => {
                     hangup();
                     onTerminate();
-                }}
-                onSwitchToVideo={async () => {
-                    // Chỉ gọi upgradeToVideo, không hangup/reset!
-                    await upgradeToVideo();
-                    // Chuyển sang layout video call
-                    router.replace(
-                        `/call/video?calleeId=${encodeURIComponent(roomId)}&contact=${encodeURIComponent(contactName)}`
-                    );
                 }}
             />
         );
@@ -109,6 +129,7 @@ export default function CallContainer({
             <VideoCall
                 contactName={contactName}
                 callState={state}
+                contactAvatar={avatarUrl}        // ← truyền avatarUrl vào đây
                 callDuration={callDuration}
                 onEndCall={() => {
                     hangup();

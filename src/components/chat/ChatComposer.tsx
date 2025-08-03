@@ -6,6 +6,7 @@ import {
   Eclipse,
   Mic,
   Paperclip,
+  Plus,
   Search,
   Smile,
   StopCircle,
@@ -43,12 +44,16 @@ import { FaFile } from "react-icons/fa6";
 import { MdLocationOn } from "react-icons/md";
 import { FileInfo, ImageInfo } from "@/types/chat";
 import StickerPicker from "@/components/common/StickerPicker";
+import styles from "./page.module.css";
+import clsx from "clsx";
+import VoiceRecordingModal from "@/components/chat/VoiceRecordingModal";
 
 const ChatComposer = ({ roomId }: { roomId: string }) => {
   const [text, setText] = useState("");
   const [isMultiLine, setIsMultiLine] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showStickers, setShowStickers] = useState(false);
+  const [showModalVoiceRecord, setShowModalVoiceRecord] = useState(false);
 
   const typingTimeoutRef = useRef<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -66,218 +71,15 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     "gallery" | "gift" | "file" | "location" | "reply" | "checklist"
   >("gallery");
   const sheetRef = useRef<HTMLDivElement>(null);
+  const voiceModalRef = useRef<HTMLDivElement>(null);
 
   const LocationMap = dynamic(() => import("@/components/common/LocationMap"), {
     ssr: false,
   });
 
-  const MIN_RECORD_TIME = 1; // giây
-  const MIN_PRESS_TIME_MS = 300;
-
-  const [isRecording, setIsRecording] = useState(false);
-  const [recorder, setRecorder] = useState<MediaRecorder | null>(null);
-  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
-  const [audioChunks, setAudioChunks] = useState<BlobPart[]>([]);
-  const [recordTime, setRecordTime] = useState(0);
-
-  const recordIntervalRef = useRef<number | null>(null);
-  const recordStartRef = useRef<number | null>(null);
-  const recorderRef = useRef<MediaRecorder | null>(null);
-  const startRecordingPromiseRef = useRef<Promise<void> | null>(null);
-  const pressStartRef = useRef<number | null>(null);
-  const recordDurationRef = useRef<number>(0);
-  const shouldCancelRecordingRef = useRef<boolean>(false);
-
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
 
   useTyping(roomId);
-  // Bắt đầu ghi âm
-  const startRecording = async () => {
-    if (isRecording) return;
-
-    pressStartRef.current = Date.now();
-    recordDurationRef.current = 0;
-    setIsRecording(true);
-    setRecordTime(0);
-    recordStartRef.current = Date.now();
-    shouldCancelRecordingRef.current = false;
-
-    const promise = (async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-        });
-        if (shouldCancelRecordingRef.current) {
-          stream.getTracks().forEach((track) => track.stop());
-          setIsRecording(false);
-          return;
-        }
-
-        setMediaStream(stream);
-        // 1️⃣ Chọn mimeType hỗ trợ trên trình duyệt
-        const supported = [
-          "audio/webm;codecs=opus",
-          "audio/mp4",
-          "audio/aac",
-          "audio/mpeg",
-        ];
-        const mimeType = supported.find((t) =>
-          MediaRecorder.isTypeSupported?.(t)
-        );
-        if (!mimeType) {
-          console.warn("Recording không được hỗ trợ trên trình duyệt này");
-          setIsRecording(false);
-          return;
-        }
-
-        // 2️⃣ Khởi tạo MediaRecorder với mimeType
-        const mediaRecorder = new MediaRecorder(stream, { mimeType });
-        recorderRef.current = mediaRecorder;
-        setRecorder(mediaRecorder);
-
-        const chunks: BlobPart[] = [];
-        mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
-        setAudioChunks(chunks);
-
-        mediaRecorder.onstop = async () => {
-          const duration = recordDurationRef.current || 0;
-          if (chunks.length === 0 || duration < MIN_RECORD_TIME) {
-            console.warn("Ghi âm quá ngắn, không gửi");
-            setAudioChunks([]);
-            setRecordTime(0);
-            return;
-          }
-
-          // Tạo blob với đúng mimeType và extension
-          const blob = new Blob(chunks, { type: mimeType });
-          const ext = mimeType.includes("mp4")
-            ? ".mp4"
-            : mimeType.includes("mpeg")
-            ? ".mp3"
-            : ".webm";
-          const file = new File([blob], `voice_${Date.now()}${ext}`, {
-            type: blob.type,
-          });
-
-          if (client) {
-            const localId = "local_" + Date.now();
-            const now = new Date();
-            const userId = client.getUserId();
-
-            addMessage(roomId, {
-              eventId: localId,
-              sender: userId ?? undefined,
-              senderDisplayName: userId ?? undefined,
-              text: file.name,
-              audioUrl: null,
-              audioDuration: duration,
-              time: now.toLocaleString(),
-              timestamp: now.getTime(),
-              status: "sent",
-              type: "audio",
-            });
-
-            const { httpUrl } = await sendVoiceMessage(
-              client,
-              roomId,
-              file,
-              duration
-            );
-
-            updateMessage(roomId, localId, { audioUrl: httpUrl });
-
-            setAudioChunks([]);
-            setRecordTime(0);
-            recordDurationRef.current = 0;
-            recordStartRef.current = null;
-          }
-        };
-
-        mediaRecorder.start();
-
-        recordIntervalRef.current = window.setInterval(() => {
-          if (recordStartRef.current) {
-            const duration = Math.round(
-              (Date.now() - recordStartRef.current) / 1000
-            );
-            recordDurationRef.current = duration;
-            setRecordTime(duration);
-          }
-        }, 200);
-
-        if (shouldCancelRecordingRef.current) {
-          console.warn("Bị huỷ khi vừa bắt đầu, stop ngay.");
-          await stopRecording();
-        }
-      } catch (err) {
-        console.error("Không thể truy cập micro:", err);
-        setIsRecording(false);
-      }
-    })();
-
-    startRecordingPromiseRef.current = promise;
-    await promise;
-  };
-
-  const stopRecording = async () => {
-    const pressDuration = pressStartRef.current
-      ? Date.now() - pressStartRef.current
-      : 0;
-    pressStartRef.current = null;
-
-    if (pressDuration < MIN_PRESS_TIME_MS) {
-      console.warn("Người dùng nhấn quá nhanh, huỷ ghi âm");
-      shouldCancelRecordingRef.current = true;
-
-      setIsRecording(false);
-      clearRecordingInterval();
-      recordDurationRef.current = 0;
-
-      if (startRecordingPromiseRef.current) {
-        await startRecordingPromiseRef.current;
-      }
-
-      await forceStop();
-      return;
-    }
-
-    shouldCancelRecordingRef.current = false;
-
-    if (startRecordingPromiseRef.current) {
-      await startRecordingPromiseRef.current;
-    }
-
-    setIsRecording(false);
-    clearRecordingInterval();
-
-    const duration = recordStartRef.current
-      ? Math.round((Date.now() - recordStartRef.current) / 1000)
-      : 0;
-    recordDurationRef.current = duration;
-    recordStartRef.current = null;
-
-    await forceStop();
-  };
-
-  const clearRecordingInterval = () => {
-    if (recordIntervalRef.current) {
-      clearInterval(recordIntervalRef.current);
-      recordIntervalRef.current = null;
-    }
-  };
-
-  const forceStop = async () => {
-    const activeRecorder = recorderRef.current;
-    if (activeRecorder && activeRecorder.state === "recording") {
-      activeRecorder.stop();
-    }
-    recorderRef.current = null;
-
-    if (mediaStream) {
-      mediaStream.getTracks().forEach((track) => track.stop());
-      setMediaStream(null);
-    }
-  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -560,6 +362,12 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
       if (sheetRef.current && !sheetRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
+      if (
+        voiceModalRef.current &&
+        !voiceModalRef.current.contains(e.target as Node)
+      ) {
+        setShowModalVoiceRecord(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -704,6 +512,12 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     }
   };
 
+  const handleCloseVoiceRecordingModal = () => {
+    setShowModalVoiceRecord(false);
+    // Reset any state related to voice recording if needed
+    // For example, reset recording time or clear any temporary data
+  };
+
   // Detect keyboard open with improved Safari iOS support
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -810,91 +624,184 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   }, []);
 
   return (
-    <div className="bg-[#e0ece6] dark:bg-[#1b1a1f]">
-      {forwardMessages.length > 0 && <ForwardMsgPreview />}
-      {isRecording && (
-        <div className="px-4 py-2">
-          <div className="w-full h-2 bg-gray-300 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-red-500"
-              style={{ width: `${Math.min((recordTime / 60) * 100, 100)}%` }}
-            />
-          </div>
-          <div className="text-sm text-gray-600 mt-1">{recordTime}s</div>
-        </div>
-      )}
+    // <div className="bg-[#e0ece6] dark:bg-[#1b1a1f]">
+    //   {forwardMessages.length > 0 && <ForwardMsgPreview />}
+    //   {isRecording && (
+    //     <div className="px-4 py-2">
+    //       <div className="w-full h-2 bg-gray-300 rounded-full overflow-hidden">
+    //         <div
+    //           className="h-full bg-red-500"
+    //           style={{ width: `${Math.min((recordTime / 60) * 100, 100)}%` }}
+    //         />
+    //       </div>
+    //       <div className="text-sm text-gray-600 mt-1">{recordTime}s</div>
+    //     </div>
+    //   )}
 
+    //   <div
+    //     className={`relative flex justify-between items-center px-2 py-2 lg:py-3 transition-all duration-300 ${
+    //       isKeyboardOpen ? "pb-2" : "pb-10"
+    //     }`}
+    //   >
+    //     <Paperclip
+    //       // onClick={() => inputRef.current?.click()}
+    //       onClick={() => setOpen(true)}
+    //       className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
+    //       size={25}
+    //     />
+    //     <div
+    //       className={`p-1 mx-1.5 relative ${
+    //         isMultiLine ? "rounded-2xl" : "rounded-full"
+    //       } flex items-center justify-between w-full bg-white dark:bg-black`}
+    //     >
+    //       <textarea
+    //         ref={textareaRef}
+    //         value={text}
+    //         onChange={onInputChange}
+    //         onKeyDown={handleKeyDown}
+    //         placeholder="Message"
+    //         rows={1}
+    //         className="flex-1 h-auto resize-none bg-transparent outline-none px-3 max-h-[6rem] overflow-y-auto text-md text-black dark:text-white scrollbar-thin"
+    //       />
+    //       {text.trim() ? (
+    //         <Smile
+    //           onClick={() => setShowEmojiPicker((prev) => !prev)}
+    //           className="px-0.5 text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
+    //           size={24}
+    //         />
+    //       ) : (
+    //         <Eclipse
+    //           onClick={() => setShowStickers((prev) => !prev)}
+    //           className="px-0.5 text-[#858585] cursor-default"
+    //           size={24}
+    //         />
+    //       )}
+
+    //       {showEmojiPicker && (
+    //         <div className="absolute bottom-12 right-2 z-50">
+    //           <EmojiPicker
+    //             width={300}
+    //             height={350}
+    //             onEmojiClick={handleEmojiClick}
+    //             searchDisabled={true}
+    //             previewConfig={{ showPreview: false }}
+    //             theme={
+    //               theme.theme === "dark" ? EmojiTheme.DARK : EmojiTheme.LIGHT
+    //             }
+    //           />
+    //         </div>
+    //       )}
+    //       <StickerPicker
+    //         isOpen={showStickers}
+    //         onClose={() => setShowStickers(false)}
+    //         onStickerSelect={handleStickerSelect}
+    //         onEmojiSelect={handleIconSelect}
+    //       />
+    //     </div>
+
+    //     <div className="absolute bottom-14 left-0 z-50 pb-6">
+    //       <TypingIndicator roomId={roomId} />
+    //     </div>
+
+    //     {text.trim() || forwardMessages.length > 0 ? (
+    //       <svg
+    //         xmlns="http://www.w3.org/2000/svg"
+    //         viewBox="2 2 20 20"
+    //         fill="currentColor"
+    //         className="size-8 cursor-pointer hover:scale-110 duration-300 transition-all ease-in-out border-0"
+    //         onClick={handleSend}
+    //       >
+    //         <path
+    //           fillRule="evenodd"
+    //           d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm.53 5.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 1 0 1.06 1.06l1.72-1.72v5.69a.75.75 0 0 0 1.5 0v-5.69l1.72 1.72a.75.75 0 1 0 1.06-1.06l-3-3Z"
+    //           clipRule="evenodd"
+    //           className="text-blue-600"
+    //         />
+    //       </svg>
+    //     ) : (
+    //       /* nút mic nhấn giữ để ghi, thả để gửi */
+    //       <Mic
+    //         size={30}
+    //         className={`text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all duration-700 ${
+    //           isRecording ? "text-red-500 scale-125" : ""
+    //         }`}
+    //         onMouseDown={(e) => {
+    //           e.preventDefault(); // tránh double-trigger
+    //           startRecording();
+    //         }}
+    //         onMouseUp={(e) => {
+    //           e.preventDefault();
+    //           stopRecording();
+    //         }}
+    //         onMouseLeave={(e) => {
+    //           e.preventDefault();
+    //           if (isRecording) stopRecording();
+    //         }}
+    //         onTouchStart={() => {
+    //           startRecording();
+    //         }}
+    //         onTouchEnd={() => {
+    //           stopRecording();
+    //         }}
+    //       />
+    //     )}
+    //   </div>
+    // </div>
+
+    <div className="flex mx-3 pb-8">
+      {/* Nút Plus ngoài cùng bên trái */}
       <div
-        className={`relative flex justify-between items-center px-2 py-2 lg:py-3 transition-all duration-300 ${
-          isKeyboardOpen ? "pb-2" : "pb-10"
-        }`}
+        className="w-12 h-12 flex items-center justify-center rounded-full shadow-sm
+  border-white cursor-pointer bg-gradient-to-br from-slate-100/70 
+  via-gray-400/10 to-slate-50/30 backdrop-blur-xs bg-white/30
+  hover:scale-105 duration-300 transition-all ease-in-out mr-2"
+        onClick={() => setOpen(true)}
       >
-        <Paperclip
-          // onClick={() => inputRef.current?.click()}
-          onClick={() => setOpen(true)}
-          className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
-          size={25}
+        <Plus className="w-6 h-6" />
+        {/* Input file ẩn để chọn ảnh */}
+        <input
+          ref={imageInputRef}
+          type="file"
+          accept="image/*,video/*"
+          multiple
+          className="hidden"
+          onChange={handleImagesAndVideos}
+          aria-label="file"
         />
-        <div
-          className={`p-1 mx-1.5 relative ${
-            isMultiLine ? "rounded-2xl" : "rounded-full"
-          } flex items-center justify-between w-full bg-white dark:bg-black`}
-        >
-          <textarea
-            ref={textareaRef}
-            value={text}
-            onChange={onInputChange}
-            onKeyDown={handleKeyDown}
-            placeholder="Message"
-            rows={1}
-            className="flex-1 h-auto resize-none bg-transparent outline-none px-3 max-h-[6rem] overflow-y-auto text-md text-black dark:text-white scrollbar-thin"
-          />
-          {text.trim() ? (
-            <Smile
-              onClick={() => setShowEmojiPicker((prev) => !prev)}
-              className="px-0.5 text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
-              size={24}
-            />
-          ) : (
-            <Eclipse
-              onClick={() => setShowStickers((prev) => !prev)}
-              className="px-0.5 text-[#858585] cursor-default"
-              size={24}
-            />
-          )}
+      </div>
 
-          {showEmojiPicker && (
-            <div className="absolute bottom-12 right-2 z-50">
-              <EmojiPicker
-                width={300}
-                height={350}
-                onEmojiClick={handleEmojiClick}
-                searchDisabled={true}
-                previewConfig={{ showPreview: false }}
-                theme={
-                  theme.theme === "dark" ? EmojiTheme.DARK : EmojiTheme.LIGHT
-                }
-              />
-            </div>
-          )}
-          <StickerPicker
-            isOpen={showStickers}
-            onClose={() => setShowStickers(false)}
-            onStickerSelect={handleStickerSelect}
-            onEmojiSelect={handleIconSelect}
-          />
-        </div>
-
-        <div className="absolute bottom-14 left-0 z-50 pb-6">
-          <TypingIndicator roomId={roomId} />
-        </div>
-
-        {text.trim() || forwardMessages.length > 0 ? (
+      {/* Khung nhập chat */}
+      <div className="flex flex-1 items-center px-3 h-12 rounded-3xl bg-white/80 border border-white shadow-sm min-w-0">
+        {/* Icon micro bên trái */}
+        <Mic
+          className="w-5 h-5 text-gray-400 mr-2 cursor-pointer flex-shrink-0"
+          onClick={() => {
+            setShowModalVoiceRecord(true);
+          }}
+        />
+        {/* Input nhập tin nhắn */}
+        <textarea
+          ref={textareaRef}
+          value={text}
+          onChange={onInputChange}
+          onKeyDown={handleKeyDown}
+          placeholder="Enter message"
+          className="flex-1 h-full bg-transparent outline-none text-[12px] text-gray-700 placeholder-gray-400
+        placeholder:italic placeholder:font-light px-2 resize-none mt-5"
+        />
+        {/* Icon smile bên phải */}
+        <Smile
+          className="w-5 h-5 text-gray-400 ml-2 cursor-pointer flex-shrink-0"
+          onClick={() => setShowEmojiPicker((prev) => !prev)}
+        />
+        {/* Icon gửi (nếu có text) */}
+        {text.trim() && (
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="2 2 20 20"
             fill="currentColor"
-            className="size-8 cursor-pointer hover:scale-110 duration-300 transition-all ease-in-out border-0"
+            className="ml-2 w-6 h-6 cursor-pointer hover:scale-110 duration-300 transition-all ease-in-out flex-shrink-0
+            animate-in slide-in-from-right-20"
             onClick={handleSend}
           >
             <path
@@ -904,34 +811,33 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
               className="text-blue-600"
             />
           </svg>
-        ) : (
-          /* nút mic nhấn giữ để ghi, thả để gửi */
-          <Mic
-            size={30}
-            className={`text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all duration-700 ${
-              isRecording ? "text-red-500 scale-125" : ""
-            }`}
-            onMouseDown={(e) => {
-              e.preventDefault(); // tránh double-trigger
-              startRecording();
-            }}
-            onMouseUp={(e) => {
-              e.preventDefault();
-              stopRecording();
-            }}
-            onMouseLeave={(e) => {
-              e.preventDefault();
-              if (isRecording) stopRecording();
-            }}
-            onTouchStart={() => {
-              startRecording();
-            }}
-            onTouchEnd={() => {
-              stopRecording();
-            }}
-          />
+        )}
+
+        {showEmojiPicker && (
+          <div className="absolute bottom-22 right-2 z-50">
+            <EmojiPicker
+              width={300}
+              height={350}
+              onEmojiClick={handleEmojiClick}
+              searchDisabled={true}
+              previewConfig={{ showPreview: false }}
+              theme={
+                theme.theme === "dark" ? EmojiTheme.DARK : EmojiTheme.LIGHT
+              }
+            />
+          </div>
         )}
       </div>
+
+      {/* Voice Recording Modal */}
+      <VoiceRecordingModal
+        isOpen={showModalVoiceRecord}
+        client={client}
+        roomId={roomId}
+        onClose={handleCloseVoiceRecordingModal}
+        voiceModalRef={voiceModalRef}
+      />
+
       <AnimatePresence>
         {open && (
           <motion.div
@@ -939,7 +845,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-black rounded-t-2xl shadow-2xl pb-10"
+            className="fixed bottom-0 left-0 right-0 z-50 bg-[#FFFFFF4D] dark:bg-[#FFFFFF4D] backdrop-blur-[48px] rounded-t-2xl shadow-2xl pb-10"
             ref={sheetRef}
           >
             {/* Header */}

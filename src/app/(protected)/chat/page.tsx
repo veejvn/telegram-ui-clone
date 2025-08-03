@@ -1,7 +1,7 @@
+/*src/app/(protected)/chat/page.tsx*/
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import SearchBar from "@/components/layouts/SearchBar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from "next/link";
 import { ChatList } from "@/components/chat/ChatList";
@@ -9,29 +9,30 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import * as sdk from "@/lib/matrix-sdk";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
-import ChatEditButton from "@/components/chat/ChatEditButton";
 import ChatActionBar from "@/components/chat/ChatActionBar";
 import DeleteChatModal from "@/components/chat/DeleteChatModal";
-import { getUserRooms } from "@/services/chatService";
 import {
   Bell,
   ChevronLeft,
-  CircleFadingPlus,
   Ellipsis,
   Loader2,
-  Search,
   ShoppingCart,
-  SquarePen,
+  X,
 } from "lucide-react";
 import useSortedRooms from "@/hooks/useSortedRooms";
 import useListenRoomInvites from "@/hooks/useListenRoomInvites";
 import { getLS, removeLS } from "@/tools/localStorage.tool";
-import { useSearchParams } from "next/navigation";
-import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
 import { useRoomStore } from "@/stores/useRoomStore";
-
+import { searchMatrixUsers } from "@/services/matrixUserSearch";
+import ContactService from "@/services/contactService";
+import { getDetailedStatus } from "@/utils/chat/presencesHelpers";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/contexts/ToastProvider";
+// Import our extracted search components
+import SearchBar from "@/components/search/SearchBar";
+import FullScreenSearch from "@/components/search/FullScreenSearch";
+import NavigationMenu from "@/components/layouts/NavigationMenu";
 export default function ChatsPage() {
-  // const [rooms, setRooms] = useState<sdk.Room[]>([]);
   const { refreshRooms, loading } = useSortedRooms();
   const rooms = useRoomStore((state) => state.rooms);
   const client = useMatrixClient();
@@ -39,21 +40,23 @@ export default function ChatsPage() {
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   useListenRoomInvites();
-  // useEffect(() => {
-  //   if (!client) return;
-  //   getUserRooms(client)
-  //     .then((res) => {
-  //       if (res.success && res.rooms) {
-  //         setRooms(res.rooms);
-  //       } else {
-  //         console.error("Failed to fetch user rooms or rooms are undefined.");
-  //       }
-  //     })
-  //     .catch((error) => {
-  //       console.error("An error occurred while fetching user rooms:", error);
-  //     });
-  // }, [client]);
+  const router = useRouter();
+  const { showToast } = useToast();
 
+  // Search states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isFullScreenSearch, setIsFullScreenSearch] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [messageResults, setMessageResults] = useState<any[]>([]);
+  const [recentSearches, setRecentSearches] = useState<any[]>([]);
+  const [contacts, setContacts] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const userIdChatBot =
+    process.env.NEXT_PUBLIC_USER_ID_BOT || "@bot:matrix.teknix.dev";
+
+  // Room selection handling
   const handleSelectRoom = (roomId: string) => {
     setSelectedRooms((prev) =>
       prev.includes(roomId)
@@ -62,6 +65,7 @@ export default function ChatsPage() {
     );
   };
 
+  // Mark all as read functionality
   const handleReadAll = async () => {
     if (!client || selectedRooms.length < 2) return;
 
@@ -97,21 +101,6 @@ export default function ChatsPage() {
   const handleDelete = () => {
     setShowDeleteModal(true);
   };
-
-  // const refreshRooms = () => {
-  //   if (!client) return;
-  //   getUserRooms(client)
-  //     .then((res) => {
-  //       if (res.success && res.rooms) {
-  //         setRooms(res.rooms);
-  //       } else {
-  //         console.error("Failed to fetch user rooms or rooms are undefined.");
-  //       }
-  //     })
-  //     .catch((error) => {
-  //       console.error("An error occurred while fetching user rooms:", error);
-  //     });
-  // };
 
   const handleDeleteMine = async () => {
     if (!client) return;
@@ -153,14 +142,8 @@ export default function ChatsPage() {
     setSelectedRooms([]);
   };
 
-  const headerStyle = getHeaderStyleWithStatusBar();
-
-  // const [showBackButton, setShowBackButton] = useState(false);
-
+  // Handle back navigation to main app
   const backUrl = getLS("backUrl");
-
-  const fromMainApp = getLS("fromMainApp");
-
   const MAIN_APP_ORIGIN =
     typeof window !== "undefined" ? window.location.origin : "";
 
@@ -180,97 +163,695 @@ export default function ChatsPage() {
     }
   };
 
-  // const searchParams = useSearchParams();
-  // const hideFromQuery = searchParams.get("hide");
-  const hide = getLS("hide") || [];
-  const hideArray = typeof hide === "string" ? hide.split(",") : hide;
-  const options = Array.isArray(hideArray) ? hideArray : [];
-  //console.log(options)
+  // Utility functions for search
+  const getMxcAvatarUrl = (url: string | null) => {
+    if (!url || !client) return null;
 
-  const [isFocused, setIsFocused] = useState(false);
-  const [searchValue, setSearchValue] = useState("");
+    try {
+      if (url.startsWith("mxc://")) {
+        return client.mxcUrlToHttp(url, 60, 60, "crop");
+      } else if (url.startsWith("http")) {
+        return url;
+      }
+      return null;
+    } catch (error) {
+      console.error(`Error processing avatar URL:`, error);
+      return null;
+    }
+  };
+
+  // Load contacts
+  useEffect(() => {
+    const loadContacts = async () => {
+      if (!client) return;
+
+      try {
+        const directRooms = await ContactService.getDirectMessageRooms(client);
+
+        const contactsList = directRooms
+          .map((room) => {
+            const otherMembers = room
+              .getJoinedMembers()
+              .filter(
+                (member) =>
+                  member.userId !== client.getUserId() &&
+                  member.userId !== userIdChatBot
+              );
+
+            if (otherMembers.length === 0) return null;
+
+            const otherUser = otherMembers[0];
+
+            let avatarUrl = null;
+            try {
+              if (otherUser.getAvatarUrl) {
+                avatarUrl = otherUser.getAvatarUrl(
+                  client.getHomeserverUrl(),
+                  60,
+                  60,
+                  "crop",
+                  false,
+                  false,
+                  false
+                );
+              }
+            } catch (error) {
+              console.error("Error getting avatar URL:", error);
+            }
+
+            let processedAvatarUrl = null;
+            if (avatarUrl) {
+              try {
+                processedAvatarUrl = getMxcAvatarUrl(avatarUrl);
+              } catch (error) {
+                console.error("Error converting avatar URL:", error);
+              }
+            }
+
+            let lastSeen = null;
+            let isOnline = false;
+
+            try {
+              const presence = client.getUser(otherUser.userId)?.presence;
+              if (presence) {
+                if (presence === "online") {
+                  isOnline = true;
+                  lastSeen = new Date();
+                } else if (
+                  typeof presence === "object" &&
+                  presence !== null &&
+                  "lastActiveAgo" in presence &&
+                  typeof (presence as { lastActiveAgo?: number })
+                    .lastActiveAgo === "number"
+                ) {
+                  const lastActive =
+                    Date.now() -
+                    (presence as { lastActiveAgo: number }).lastActiveAgo;
+                  lastSeen = new Date(lastActive);
+                  isOnline = Date.now() - lastActive < 2 * 60 * 1000;
+                }
+              }
+            } catch (error) {
+              console.error("Error getting presence info:", error);
+            }
+
+            return {
+              user_id: otherUser.userId,
+              display_name: otherUser.name || otherUser.userId,
+              avatar_url: avatarUrl,
+              processed_avatar_url: processedAvatarUrl,
+              room_id: room.roomId,
+              isOnline: isOnline,
+              lastSeen: lastSeen,
+            };
+          })
+          .filter(Boolean);
+
+        setContacts(contactsList);
+      } catch (err) {
+        console.error("Error loading contacts:", err);
+      }
+    };
+
+    loadContacts();
+  }, [client, userIdChatBot]);
+
+  // Load recent searches from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("recentSearches");
+      if (saved) {
+        const parsedSearches = JSON.parse(saved);
+
+        const processedSearches = parsedSearches.map((item: any) => {
+          if (
+            item.avatar_url &&
+            (!item.processed_avatar_url || item.processed_avatar_url === "") &&
+            client
+          ) {
+            try {
+              const avatarUrl = getMxcAvatarUrl(item.avatar_url);
+              return {
+                ...item,
+                processed_avatar_url: avatarUrl || null,
+              };
+            } catch (error) {
+              console.error("Error processing URL:", error);
+              return item;
+            }
+          }
+          return item;
+        });
+
+        setRecentSearches(processedSearches);
+      }
+    } catch (err) {
+      console.error("Failed to load recent searches:", err);
+    }
+  }, [client]);
+
+  // Search processing effect
+  useEffect(() => {
+    if (searchTerm.length > 0 && client && isFullScreenSearch) {
+      setSearchLoading(true);
+      setIsSearching(true);
+
+      const processedUserIds = new Set();
+      let combinedResults: any[] = [];
+
+      // Search in contacts and recent searches
+      const localResults = [...contacts, ...recentSearches].filter(
+        (contact) => {
+          const displayName = (contact.display_name || "").toLowerCase();
+          const userId = (contact.user_id || "").toLowerCase();
+          const term = searchTerm.toLowerCase();
+
+          return (
+            userId !== userIdChatBot.toLowerCase() &&
+            (displayName.includes(term) || userId.includes(term))
+          );
+        }
+      );
+
+      localResults.forEach((user) => {
+        if (!processedUserIds.has(user.user_id)) {
+          processedUserIds.add(user.user_id);
+          combinedResults.push(user);
+        }
+      });
+
+      // Search in chat rooms
+      if (client) {
+        const rooms = client.getRooms() || [];
+
+        for (const room of rooms) {
+          const isDirectRoom =
+            client.getAccountData("m.direct" as keyof sdk.AccountDataEvents) &&
+            Object.values(
+              client
+                .getAccountData("m.direct" as keyof sdk.AccountDataEvents)
+                ?.getContent() || {}
+            ).some(
+              (roomIds: any) =>
+                Array.isArray(roomIds) && roomIds.includes(room.roomId)
+            );
+          if (!isDirectRoom) continue;
+
+          const members = room
+            .getJoinedMembers()
+            .filter((member) => member.userId !== client.getUserId());
+
+          for (const member of members) {
+            const memberName = (member.name || "").toLowerCase();
+            const memberId = member.userId.toLowerCase();
+            const term = searchTerm.toLowerCase();
+
+            if (
+              (memberName.includes(term) || memberId.includes(term)) &&
+              !processedUserIds.has(member.userId)
+            ) {
+              processedUserIds.add(member.userId);
+
+              let avatarUrl = null;
+              try {
+                if (member.getAvatarUrl) {
+                  avatarUrl = member.getAvatarUrl(
+                    client.getHomeserverUrl(),
+                    60,
+                    60,
+                    "crop",
+                    false,
+                    false,
+                    false
+                  );
+                }
+              } catch (error) {
+                console.error("Error getting avatar URL:", error);
+              }
+
+              let processedAvatarUrl = null;
+              if (avatarUrl) {
+                try {
+                  processedAvatarUrl = getMxcAvatarUrl(avatarUrl);
+                } catch (error) {
+                  console.error("Error processing avatar URL:", error);
+                }
+              }
+
+              let lastSeen = null;
+              let isOnline = false;
+
+              try {
+                const presence = client.getUser(member.userId)?.presence;
+                if (presence) {
+                  if (presence === "online") {
+                    isOnline = true;
+                    lastSeen = new Date();
+                  } else if (
+                    typeof presence === "object" &&
+                    presence !== null &&
+                    "lastActiveAgo" in presence &&
+                    typeof (presence as { lastActiveAgo?: number })
+                      .lastActiveAgo === "number"
+                  ) {
+                    const lastActive =
+                      Date.now() -
+                      (presence as { lastActiveAgo: number }).lastActiveAgo;
+                    lastSeen = new Date(lastActive);
+                    isOnline = Date.now() - lastActive < 2 * 60 * 1000;
+                  }
+                }
+              } catch (error) {
+                console.error("Error getting presence info:", error);
+              }
+
+              combinedResults.push({
+                user_id: member.userId,
+                display_name: member.name || member.userId,
+                avatar_url: avatarUrl || "",
+                processed_avatar_url: processedAvatarUrl,
+                room_id: room.roomId,
+                isOnline: isOnline,
+                lastSeen: lastSeen,
+              });
+              break;
+            }
+          }
+        }
+      }
+
+      const timeoutId = setTimeout(() => {
+        // Search through Matrix API
+        searchMatrixUsers(client, searchTerm)
+          .then((apiResults) => {
+            const filteredApiResults = apiResults.filter(
+              (user) => user.user_id !== userIdChatBot
+            );
+
+            // Process avatar URLs and presence info
+            const processedApiResults = apiResults.map((user) => {
+              if (user.avatar_url && !user.processed_avatar_url) {
+                try {
+                  user.processed_avatar_url = getMxcAvatarUrl(user.avatar_url);
+                } catch (error) {
+                  console.error("Error processing API avatar:", error);
+                }
+              }
+
+              if (client) {
+                try {
+                  const presence = client.getUser(user.user_id)?.presence;
+                  if (presence) {
+                    if (presence === "online") {
+                      user.isOnline = true;
+                      user.lastSeen = new Date();
+                    } else if (
+                      typeof presence === "object" &&
+                      presence !== null &&
+                      "lastActiveAgo" in presence &&
+                      typeof (presence as { lastActiveAgo?: number })
+                        .lastActiveAgo === "number"
+                    ) {
+                      const lastActive =
+                        Date.now() -
+                        (presence as { lastActiveAgo: number }).lastActiveAgo;
+                      user.lastSeen = new Date(lastActive);
+                      user.isOnline = Date.now() - lastActive < 2 * 60 * 1000;
+                    }
+                  }
+                } catch (error) {
+                  console.error("Error getting presence info:", error);
+                }
+              }
+
+              return user;
+            });
+
+            // Combine results and remove duplicates
+            processedApiResults.forEach((user) => {
+              if (!processedUserIds.has(user.user_id)) {
+                processedUserIds.add(user.user_id);
+                combinedResults.push(user);
+              }
+            });
+
+            // Remove duplicates using Map
+            const uniqueResults = Array.from(
+              new Map(
+                combinedResults.map((item) => [item.user_id, item])
+              ).values()
+            );
+
+            setSearchResults(uniqueResults);
+            setSearchLoading(false);
+          })
+          .catch((err) => {
+            console.error("API search error:", err);
+
+            // Remove duplicates
+            const uniqueResults = Array.from(
+              new Map(
+                combinedResults.map((item) => [item.user_id, item])
+              ).values()
+            );
+            setSearchResults(uniqueResults);
+            setSearchLoading(false);
+          });
+
+        // Search messages
+        client
+          .searchMessageText({ query: searchTerm })
+          .then((res) => {
+            const rawResults =
+              res?.search_categories?.room_events?.results || [];
+            const filteredMessages = rawResults.filter((msg: any) => {
+              const content = msg?.result?.content?.body || "";
+              return content.toLowerCase().includes(searchTerm.toLowerCase());
+            });
+            setMessageResults(filteredMessages);
+          })
+          .catch(() => {
+            setMessageResults([]);
+          });
+      }, 300);
+
+      return () => clearTimeout(timeoutId);
+    } else {
+      setSearchResults([]);
+      setMessageResults([]);
+      setSearchLoading(false);
+      setIsSearching(false);
+    }
+  }, [
+    searchTerm,
+    client,
+    isFullScreenSearch,
+    contacts,
+    recentSearches,
+    userIdChatBot,
+  ]);
+
+  // User interaction handlers
+  const normalizeUserIdInput = (raw: string, client: sdk.MatrixClient) => {
+    if (!raw) return raw;
+    let id = raw.trim();
+    if (!id.startsWith("@")) id = "@" + id;
+
+    if (!id.includes(":")) {
+      const domain = client
+        .getHomeserverUrl()
+        .replace(/^https?:\/\//, "")
+        .replace(/\/$/, "");
+      id += `:${domain}`;
+    }
+
+    return id;
+  };
+
+  const handleAddContact = async (client: sdk.MatrixClient, rawId: string) => {
+    const userId = normalizeUserIdInput(rawId, client);
+    try {
+      const room = await ContactService.addContact(client, userId);
+      if (room) {
+        router.push(`/chat/${room.roomId}`);
+        closeFullScreenSearch();
+      }
+    } catch (error: any) {
+      console.error("Error creating room:", error.message);
+    }
+  };
+
+  const handleUserClick = async (user: any) => {
+    if (!client || user.user_id === userIdChatBot) return;
+
+    // Add to recent searches
+    const newRecent = [...recentSearches];
+    const existingIndex = newRecent.findIndex(
+      (r) => r.user_id === user.user_id
+    );
+
+    let avatarUrl = null;
+    if (user.processed_avatar_url && user.processed_avatar_url !== "") {
+      avatarUrl = user.processed_avatar_url;
+    } else if (user.avatar_url && user.avatar_url !== "") {
+      try {
+        avatarUrl = getMxcAvatarUrl(user.avatar_url);
+      } catch (error) {
+        console.error("Error converting mxc URL:", error);
+      }
+    }
+
+    let lastSeen = user.lastSeen;
+    let isOnline = user.isOnline;
+
+    try {
+      const presence = client.getUser(user.user_id)?.presence;
+      if (presence) {
+        if (presence === "online") {
+          isOnline = true;
+          lastSeen = new Date();
+        } else if (
+          typeof presence === "object" &&
+          presence !== null &&
+          "lastActiveAgo" in presence &&
+          typeof (presence as { lastActiveAgo?: number }).lastActiveAgo ===
+            "number"
+        ) {
+          const lastActive =
+            Date.now() - (presence as { lastActiveAgo: number }).lastActiveAgo;
+          lastSeen = new Date(lastActive);
+          isOnline = Date.now() - lastActive < 2 * 60 * 1000;
+        }
+      }
+    } catch (error) {
+      console.error("Error getting presence info:", error);
+    }
+
+    const userToSave = {
+      ...user,
+      processed_avatar_url: avatarUrl,
+      isOnline: isOnline,
+      lastSeen: lastSeen,
+    };
+
+    if (existingIndex >= 0) {
+      newRecent.splice(existingIndex, 1);
+    }
+
+    newRecent.unshift(userToSave);
+    const updatedRecent = newRecent.slice(0, 5);
+    setRecentSearches(updatedRecent);
+
+    try {
+      localStorage.setItem("recentSearches", JSON.stringify(updatedRecent));
+    } catch (err) {
+      console.error("Failed to save recent searches:", err);
+    }
+
+    const isFriend = client
+      ?.getRooms()
+      .some((room) =>
+        room.getJoinedMembers().some((member) => member.userId === user.user_id)
+      );
+
+    if (isFriend) {
+      const room = client
+        .getRooms()
+        .find((r) =>
+          r.getJoinedMembers().some((m) => m.userId === user.user_id)
+        );
+      if (room) {
+        router.push(`/chat/${room.roomId}`);
+        closeFullScreenSearch();
+      }
+    } else {
+      await handleAddContact(client, user.user_id);
+    }
+  };
+
+  const clearHistory = () => {
+    setRecentSearches([]);
+    localStorage.removeItem("recentSearches");
+  };
+
+  const renderAvatar = (user: any) => {
+    let avatarUrl = user.processed_avatar_url;
+
+    if (!avatarUrl && user.avatar_url) {
+      try {
+        avatarUrl = getMxcAvatarUrl(user.avatar_url);
+        user.processed_avatar_url = avatarUrl;
+      } catch (error) {
+        console.error("Error processing avatar in renderAvatar:", error);
+      }
+    }
+
+    if (avatarUrl) {
+      return (
+        <div className="relative w-full h-full">
+          <img
+            src={avatarUrl}
+            alt="avatar"
+            className="w-12 h-12 rounded-full object-cover"
+            onError={(e) => {
+              console.error("Error loading avatar:", avatarUrl);
+              e.currentTarget.style.display = "none";
+              const parent = e.currentTarget.parentElement;
+              if (parent) {
+                const fallbackAvatar = document.createElement("div");
+                fallbackAvatar.className =
+                  "w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center font-bold text-orange-800 text-lg";
+                fallbackAvatar.innerText = (
+                  user.display_name ||
+                  user.user_id ||
+                  "?"
+                )
+                  .charAt(0)
+                  .toUpperCase();
+                parent.appendChild(fallbackAvatar);
+              }
+            }}
+          />
+          {user.isOnline && (
+            <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+          )}
+        </div>
+      );
+    }
+
+    const firstChar = (user.display_name || user.user_id || "?")
+      .charAt(0)
+      .toUpperCase();
+
+    return (
+      <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center font-bold text-orange-800 text-lg relative">
+        {firstChar}
+        {user.isOnline && (
+          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+        )}
+      </div>
+    );
+  };
+
+  const closeFullScreenSearch = () => {
+    setIsFullScreenSearch(false);
+    setSearchTerm("");
+    setSearchQuery("");
+  };
+
+  const renderContactItem = (contact: any) => {
+    const name = contact.display_name?.split(" ")[0] || "User";
+    const shortenedName =
+      name.length > 10 ? name.substring(0, 7) + "..." : name;
+
+    let avatarUrl = contact.processed_avatar_url;
+
+    if (!avatarUrl && contact.avatar_url) {
+      try {
+        avatarUrl = getMxcAvatarUrl(contact.avatar_url);
+        contact.processed_avatar_url = avatarUrl;
+      } catch (error) {
+        console.error("Error processing avatar in renderContactItem:", error);
+      }
+    }
+
+    let statusText = "offline";
+    if (contact.isOnline) {
+      statusText = "online";
+    } else if (contact.lastSeen) {
+      statusText = getDetailedStatus(contact.lastSeen);
+    }
+
+    return (
+      <div
+        key={contact.user_id}
+        className="flex flex-col items-center cursor-pointer"
+        onClick={() => handleUserClick(contact)}
+      >
+        <div className="relative">
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt={contact.display_name}
+              className="w-14 h-14 rounded-full object-cover"
+              onError={(e) => {
+                console.error("Error loading avatar:", avatarUrl);
+                e.currentTarget.style.display = "none";
+                const parent = e.currentTarget.parentElement;
+                if (parent) {
+                  const fallbackAvatar = document.createElement("div");
+                  fallbackAvatar.className =
+                    "w-14 h-14 rounded-full bg-orange-100 flex items-center justify-center";
+                  fallbackAvatar.innerHTML = `<span class="text-orange-800 font-medium text-xl">${(
+                    contact.display_name || "U"
+                  )
+                    .charAt(0)
+                    .toUpperCase()}</span>`;
+                  parent.appendChild(fallbackAvatar);
+                }
+              }}
+            />
+          ) : (
+            <div className="w-14 h-14 rounded-full bg-orange-100 flex items-center justify-center">
+              <span className="text-orange-800 font-medium text-xl">
+                {(contact.display_name || "U").charAt(0).toUpperCase()}
+              </span>
+            </div>
+          )}
+          {contact.isOnline && (
+            <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+          )}
+        </div>
+        <div className="mt-1 text-xs text-center text-gray-600 max-w-[60px] truncate">
+          {shortenedName}
+          <span className="block text-xs text-blue-500 mt-1">{statusText}</span>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="flex flex-col h-screen space-y-2 bg-gradient-to-b from-cyan-700/30 via-cyan-300/15 to-yellow-600/25">
-      {/*
-      <div
-        style={headerStyle}
-        className="sticky bg-white bg-white dark:bg-[#1a1a1a] top-0 z-10"
-      >
-        <div className="grid grid-cols-3 items-center px-4 py-4">
-          <div className="flex items-center">
-            {fromMainApp && (
+      {/* Header */}
+      <div className="shrink-0 p-3.5">
+        <div className="flex justify-between items-center border-b border-gray-200/30 pb-3">
+          {isEditMode ? (
+            <>
+              <p className="font-bold text-2xl">Message</p>
               <button
-                className="text-blue-500 font-medium w-10 cursor-pointer"
-                onClick={handleBack}
-                title="Back"
-                aria-label="Back"
+                className="text-blue-500 font-medium"
+                onClick={handleDone}
               >
-                <ChevronLeft />
+                Done
               </button>
-            )}
-            {!fromMainApp && (
-              <ChatEditButton
-                isEditMode={isEditMode}
-                onEdit={() => setIsEditMode(true)}
-                onDone={handleDone}
-              />
-            )}
-          </div>
-
-          <h1 className="text-center text-lg">Chats</h1>
-
-          <div className="flex gap-3 justify-end items-center">
-            {fromMainApp && (
-              <ChatEditButton
-                isEditMode={isEditMode}
-                onEdit={() => setIsEditMode(true)}
-                onDone={handleDone}
-              />
-            )}
-            {!fromMainApp && (
-              <>
-                <div
-                  className="text-blue-500 cursor-pointer
-            hover:scale-105 duration-500 transition-all ease-in-out
-            hover:opacity-50"
+            </>
+          ) : (
+            <>
+              <p className="font-bold text-2xl">Message</p>
+              <div className="flex items-center gap-2">
+                <button
+                  className="h-10 px-4 text-sm font-medium border border-white rounded-full cursor-pointer bg-gradient-to-br from-slate-100/50 via-gray-400/10 to-slate-50/15 backdrop-blur-xs shadow-xs hover:scale-105 duration-300 transition-all ease-in-out"
+                  onClick={() => {
+                    setIsEditMode(true);
+                    setSelectedRooms([]);
+                  }}
                 >
-                  <CircleFadingPlus className="rotate-y-180" />
-                </div>
-                <div
-                  className="text-blue-500 cursor-pointer
-            hover:scale-105 duration-500 transition-all ease-in-out
-            hover:opacity-50"
+                  Edit
+                </button>
+                <button
+                  className="h-10 w-10 flex items-center justify-center border border-white rounded-full cursor-pointer bg-gradient-to-br from-slate-100/50 via-gray-400/10 to-slate-50/15 backdrop-blur-xs shadow-xs hover:scale-105 duration-300 transition-all ease-in-out"
+                  aria-label="More options"
+                  title="More options"
                 >
-                  <Link href={"/chat/newMessage"}>
-                    <SquarePen />
-                  </Link>
-                </div>
-              </>
-            )}
-          </div>
+                  <Ellipsis className="w-5 h-5" />
+                </button>
+              </div>
+            </>
+          )}
         </div>
-        {!options.includes("search") && <SearchBar />}
-      </div>
-      */}
 
-      {/* HEADER */}
-      <div className="shrink-0 space-y-4 p-3.5">
-        <div className="flex justify-between items-center">
-          <p className="font-bold text-2xl">Message</p>
-          <div className="flex items-center gap-2">
-            <button className="h-10 px-4 text-sm font-medium border border-white rounded-full cursor-pointer bg-gradient-to-br from-slate-100/50 via-gray-400/10 to-slate-50/15 backdrop-blur-xs shadow-xs hover:scale-105 duration-300 transition-all ease-in-out">
-              Edit
-            </button>
-            <button className="h-10 w-10 flex items-center justify-center border border-white rounded-full cursor-pointer bg-gradient-to-br from-slate-100/50 via-gray-400/10 to-slate-50/15 backdrop-blur-xs shadow-xs hover:scale-105 duration-300 transition-all ease-in-out" 
-              aria-label="More options" title="More options"
-            >
-              <Ellipsis className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-        {/* Service */}
-        <div className="flex items-center space-x-2">
+        {/* Service buttons */}
+        <div className="flex items-center space-x-2 pt-3">
           <div className="flex items-center gap-2 bg-blue-600 py-3 px-4.5 text-white rounded-2xl outline">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -311,7 +892,7 @@ export default function ChatsPage() {
         </div>
       </div>
 
-      {/* ChatList scroll được */}
+      {/* Chat list */}
       <ScrollArea className="flex-1 min-h-0 m-0">
         {loading ? (
           <div className="flex flex-1 flex-col justify-center items-center min-h-[calc(100vh-112px)] pb-8">
@@ -372,46 +953,42 @@ export default function ChatsPage() {
         )}
       </ScrollArea>
 
-      <div className="fixed -bottom-3 left-0 w-full z-5  pointer-events-none">
-        <div className="w-full h-36  bg-gradient-to-b from-transparent via-white/20 to-gray-400/30" />
+      {/* Gradient overlay at bottom */}
+      <div className="fixed -bottom-3 left-0 w-full z-5 pointer-events-none">
+        <div className="w-full h-36 bg-gradient-to-b from-transparent via-white/20 to-gray-400/30" />
       </div>
 
-      {/* Search bar */}
-      <div className="fixed bottom-10 left-0 w-full z-10 flex justify-center pointer-events-none">
-        <label
-          className={`
-            group flex items-center rounded-full
-            transition-all duration-300
-            shadow-lg
-            backdrop-blur-md
-            pointer-events-auto
-            ${
-              isFocused || searchValue
-                ? "bg-white/50 px-5 py-2 w-[90vw] max-w-md"
-                : "bg-white px-3 py-1 w-30"
-            }
-          `}
-          style={{ marginBottom: "env(safe-area-inset-bottom, 12px)" }}
-        >
-          <input
-            type="text"
-            className={`
-              outline-none bg-transparent w-full
-              transition-all duration-300
-            `}
-            placeholder={
-              isFocused || searchValue ? "Tìm kiếm mọi thứ bằng AI" : "Tìm kiếm"
-            }
-            value={searchValue}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-            onChange={(e) => setSearchValue(e.target.value)}
-          />
-          <Search size={20} className="text-zinc-700" />
-        </label>
-      </div>
+      {/* Search bar component */}
+      <SearchBar
+        onSearchFocus={() => setIsFullScreenSearch(true)}
+        onQueryChange={setSearchQuery}
+        searchQuery={searchQuery}
+      />
 
-      {/* Action bar cố định */}
+      {/* Full screen search component */}
+      {isFullScreenSearch && (
+        <FullScreenSearch
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          onClose={closeFullScreenSearch}
+          searchLoading={searchLoading}
+          searchResults={searchResults}
+          messageResults={messageResults}
+          contacts={contacts}
+          recentSearches={recentSearches}
+          handleUserClick={handleUserClick}
+          clearHistory={clearHistory}
+          renderAvatar={renderAvatar}
+          renderContactItem={renderContactItem}
+          getMxcAvatarUrl={getMxcAvatarUrl}
+          clientUserId={client?.getUserId() ?? undefined}
+          userIdChatBot={userIdChatBot}
+        />
+      )}
+      <NavigationMenu className="z-[100]" />
+      {/* Action bar for edit mode */}
       {isEditMode && (
         <ChatActionBar
           selectedCount={selectedRooms.length}
@@ -420,7 +997,8 @@ export default function ChatsPage() {
           onDelete={handleDelete}
         />
       )}
-      {/* Modal cố định */}
+
+      {/* Delete modal */}
       <DeleteChatModal
         open={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}

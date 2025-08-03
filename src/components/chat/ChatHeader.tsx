@@ -5,7 +5,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/ChatAvatar";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, PhoneOutgoing, Video } from "lucide-react";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import * as sdk from "matrix-js-sdk";
@@ -13,22 +13,26 @@ import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { getUserInfoInPrivateRoom } from "@/services/chatService";
 import { getRoomInfo } from "@/utils/chat/RoomHelpers";
 import { useAuthStore } from "@/stores/useAuthStore";
-// import { usePresenceContext } from "@/contexts/PresenceProvider";
 import { getLS, removeLS } from "@/tools/localStorage.tool";
 import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
 import { useForwardStore } from "@/stores/useForwardStore";
 import { getDetailedStatus } from "@/utils/chat/presencesHelpers";
 import { useRouter } from "next/navigation";
 import { useUserPresence } from "@/hooks/useUserPrecense";
+import useCallStore from "@/stores/useCallStore";
+
+interface Contact {
+  id: string;
+  name: string;
+  lastSeen: string;
+  roomId: string;
+}
 
 const ChatHeader = ({ room }: { room: sdk.Room }) => {
   const client = useMatrixClient();
-  // const { getLastSeen } = usePresenceContext() || {};
   const currentUserId = useAuthStore.getState().userId;
-
   const { roomId, type, otherUserId } = getRoomInfo(room, currentUserId);
   const clearMessages = useForwardStore((state) => state.clearMessages);
-
   const [user, setUser] = useState<sdk.User | undefined>(undefined);
   const router = useRouter();
 
@@ -82,6 +86,7 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
   const MAIN_APP_ORIGIN =
     typeof window !== "undefined" ? window.location.origin : "";
   const backUrl = getLS("backUrl");
+
   const handleBack = () => {
     if (backUrl) {
       removeLS("backUrl");
@@ -98,67 +103,110 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
     }
   };
 
+  // Create contact object like in NewCallPage
+  const createContactFromUser = (): Contact | null => {
+    if (!user || !room) return null;
+
+    return {
+      id: user.userId,
+      name: user.displayName || user.userId || room.name,
+      lastSeen: isActuallyOnline ? "online" : getDetailedStatus(lastSeen) || "recently",
+      roomId: room.roomId,
+    };
+  };
+
+  // Follow NewCallPage pattern - handle start call exactly the same way
+  const handleStartCall = async (callType: 'voice' | 'video') => {
+    if (!user || !room) return;
+
+    const contact = createContactFromUser();
+    if (!contact) return;
+
+    try {
+      // 🟢 Reset call state trước khi gọi - exactly like NewCallPage
+      useCallStore.getState().reset();
+
+      // Navigate exactly like NewCallPage
+      router.push(
+        `/call/${callType}?calleeId=${encodeURIComponent(contact.roomId)}&contact=${encodeURIComponent(contact.name)}`
+      );
+    } catch (error) {
+      console.error("Failed to start call:", error);
+    }
+  };
+
+  const currentContact = createContactFromUser();
+
   return (
-    <>
-      <div
-        style={headerStyle}
-        className="flex items-center justify-between bg-gray-100 dark:bg-[#1b1a1f] py-1 px-2"
-      >
-        {/* Left: Back */}
-        <div className="w-[80px] flex justify-start mt-2">
-          {backToMain ? (
-            <button
-              className="flex flex-row text-blue-500 font-medium cursor-pointer"
-              onClick={handleBack}
-              title="Back"
-              aria-label="Back"
-            >
-              <ChevronLeft />
-              <span>Back</span>
-            </button>
-          ) : (
-            <Link
-              href={"/chat"}
-              className="flex text-blue-600 cursor-pointer hover:opacity-70"
-              onClick={() => {
-                setTimeout(() => {
-                  clearMessages();
-                }, 300);
-              }}
-            >
-              <ChevronLeft />
-              <p>Back</p>
-            </Link>
-          )}
-        </div>
-
-        {/* Center: Room Info */}
-        <div className="flex-1 text-center truncate mt-1">
-          <h1 className="font-semibold text-base -mb-2">{room.name}</h1>
-          <p className="text-sm text-muted-foreground mt-1 truncate">
-            {isActuallyOnline ? "online" : getDetailedStatus(lastSeen)}
-          </p>
-        </div>
-
-        {/* Right: Avatar */}
-        <div className="w-[80px] flex justify-end mt-1">
-          <Link href={`${room.roomId}/info`}>
-            <Avatar className="h-9 w-9">
-              {avatarUrl ? (
-                <AvatarImage src={avatarUrl} alt="avatar" />
-              ) : (
-                <>
-                  <AvatarImage src="" alt="Unknow" />
-                  <AvatarFallback className="bg-purple-400 text-white text-xl font-bold">
-                    {room.name.slice(0, 1)}
-                  </AvatarFallback>
-                </>
-              )}
-            </Avatar>
+    <div className="flex items-center justify-between h-[50px] p-2">
+      {/* Left: Back button */}
+      <div className="w-[80px] flex justify-start">
+        {backToMain ? (
+          <button
+            className="flex items-center justify-center font-medium cursor-pointer bg-white/60 rounded-full p-1.5 border border-white
+          bg-gradient-to-br from-slate-100/50 via-gray-400/10 to-slate-50/15 
+          backdrop-blur-xs shadow-xs hover:scale-105 duration-300 transition-all ease-in-out"
+            onClick={handleBack}
+            title="Back"
+            aria-label="Back"
+          >
+            <ChevronLeft size={20} />
+          </button>
+        ) : (
+          <Link
+            href={"/chat"}
+            className="flex items-center justify-center cursor-pointer hover:opacity-70 bg-white/60 rounded-full p-1 border border-white
+          bg-gradient-to-br from-slate-100/50 via-gray-400/10 to-slate-50/15 
+          backdrop-blur-xs shadow-xs hover:scale-105 duration-300 transition-all ease-in-out"
+            onClick={() => {
+              setTimeout(() => {
+                clearMessages();
+              }, 300);
+            }}
+          >
+            <ChevronLeft size={20} />
           </Link>
-        </div>
+        )}
       </div>
-    </>
+
+      {/* Center: Room name */}
+      <div className="flex-1 text-center truncate">
+        <Link href={`${room.roomId}/info`}>
+          <h1 className="font-semibold">{room.name}</h1>
+        </Link>
+      </div>
+
+      {/* Right: Call/Video buttons */}
+      <div className="w-[80px] flex items-center gap-2 justify-end">
+        {/* Video Call Button */}
+        <button
+          className="flex items-center justify-center rounded-full p-1 border border-white cursor-pointer 
+        bg-gradient-to-br from-slate-100/70 via-gray-400/10 to-slate-50/30 backdrop-blur-xs 
+        shadow-xs hover:scale-105 duration-300 transition-all ease-in-out
+        disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+          onClick={() => handleStartCall("video")}
+          disabled={!user || !client || !currentContact}
+          title="Video Call"
+          aria-label="Start video call"
+        >
+          <Video size={20} />
+        </button>
+
+        {/* Voice Call Button */}
+        <button
+          className="flex items-center justify-center rounded-full p-1.5 border border-white cursor-pointer 
+        bg-gradient-to-br from-slate-100/70 via-gray-400/10 to-slate-50/30 backdrop-blur-xs 
+        shadow-xs hover:scale-105 duration-300 transition-all ease-in-out
+        disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+          onClick={() => handleStartCall("voice")}
+          disabled={!user || !client || !currentContact}
+          title="Voice Call"
+          aria-label="Start voice call"
+        >
+          <PhoneOutgoing size={15} />
+        </button>
+      </div>
+    </div>
   );
 };
 
