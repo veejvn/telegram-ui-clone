@@ -173,9 +173,6 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
       <div className="flex-1 text-center truncate">
         <Link href={`${room.roomId}/info`}>
           <h1 className="font-semibold">{room.name}</h1>
-          <p className="text-xs text-muted-foreground truncate">
-            {isActuallyOnline ? "online" : getDetailedStatus(lastSeen)}
-          </p>
         </Link>
       </div>
 
