@@ -11,8 +11,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Telegram UI",
-  description: "A simple Telegram UI clone built with Next.js and Tailwind CSS",
+  title: "Ting Tong Chat",
+  description: "A modern chat application",
 };
 
 export const viewport: Viewport = {

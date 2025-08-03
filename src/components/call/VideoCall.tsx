@@ -168,6 +168,8 @@ export function VideoCall({
 
   const handleEnd = () => {
     hangup();
+    onEndCall(); // ← thêm dòng này để đóng UI ngay thay vì chờ 10s
+
   };
 
   const handleCloseEndNotification = () => {
