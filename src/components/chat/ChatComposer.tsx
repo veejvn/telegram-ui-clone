@@ -44,12 +44,16 @@ import { FaFile } from "react-icons/fa6";
 import { MdLocationOn } from "react-icons/md";
 import { FileInfo, ImageInfo } from "@/types/chat";
 import StickerPicker from "@/components/common/StickerPicker";
+import styles from "./page.module.css";
+import clsx from "clsx";
+import VoiceRecordingModal from "@/components/chat/VoiceRecordingModal";
 
 const ChatComposer = ({ roomId }: { roomId: string }) => {
   const [text, setText] = useState("");
   const [isMultiLine, setIsMultiLine] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showStickers, setShowStickers] = useState(false);
+  const [showModalVoiceRecord, setShowModalVoiceRecord] = useState(false);
 
   const typingTimeoutRef = useRef<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -67,218 +71,15 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     "gallery" | "gift" | "file" | "location" | "reply" | "checklist"
   >("gallery");
   const sheetRef = useRef<HTMLDivElement>(null);
+  const voiceModalRef = useRef<HTMLDivElement>(null);
 
   const LocationMap = dynamic(() => import("@/components/common/LocationMap"), {
     ssr: false,
   });
 
-  const MIN_RECORD_TIME = 1; // giây
-  const MIN_PRESS_TIME_MS = 300;
-
-  const [isRecording, setIsRecording] = useState(false);
-  const [recorder, setRecorder] = useState<MediaRecorder | null>(null);
-  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
-  const [audioChunks, setAudioChunks] = useState<BlobPart[]>([]);
-  const [recordTime, setRecordTime] = useState(0);
-
-  const recordIntervalRef = useRef<number | null>(null);
-  const recordStartRef = useRef<number | null>(null);
-  const recorderRef = useRef<MediaRecorder | null>(null);
-  const startRecordingPromiseRef = useRef<Promise<void> | null>(null);
-  const pressStartRef = useRef<number | null>(null);
-  const recordDurationRef = useRef<number>(0);
-  const shouldCancelRecordingRef = useRef<boolean>(false);
-
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
 
   useTyping(roomId);
-  // Bắt đầu ghi âm
-  const startRecording = async () => {
-    if (isRecording) return;
-
-    pressStartRef.current = Date.now();
-    recordDurationRef.current = 0;
-    setIsRecording(true);
-    setRecordTime(0);
-    recordStartRef.current = Date.now();
-    shouldCancelRecordingRef.current = false;
-
-    const promise = (async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-        });
-        if (shouldCancelRecordingRef.current) {
-          stream.getTracks().forEach((track) => track.stop());
-          setIsRecording(false);
-          return;
-        }
-
-        setMediaStream(stream);
-        // 1️⃣ Chọn mimeType hỗ trợ trên trình duyệt
-        const supported = [
-          "audio/webm;codecs=opus",
-          "audio/mp4",
-          "audio/aac",
-          "audio/mpeg",
-        ];
-        const mimeType = supported.find((t) =>
-          MediaRecorder.isTypeSupported?.(t)
-        );
-        if (!mimeType) {
-          console.warn("Recording không được hỗ trợ trên trình duyệt này");
-          setIsRecording(false);
-          return;
-        }
-
-        // 2️⃣ Khởi tạo MediaRecorder với mimeType
-        const mediaRecorder = new MediaRecorder(stream, { mimeType });
-        recorderRef.current = mediaRecorder;
-        setRecorder(mediaRecorder);
-
-        const chunks: BlobPart[] = [];
-        mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
-        setAudioChunks(chunks);
-
-        mediaRecorder.onstop = async () => {
-          const duration = recordDurationRef.current || 0;
-          if (chunks.length === 0 || duration < MIN_RECORD_TIME) {
-            console.warn("Ghi âm quá ngắn, không gửi");
-            setAudioChunks([]);
-            setRecordTime(0);
-            return;
-          }
-
-          // Tạo blob với đúng mimeType và extension
-          const blob = new Blob(chunks, { type: mimeType });
-          const ext = mimeType.includes("mp4")
-            ? ".mp4"
-            : mimeType.includes("mpeg")
-            ? ".mp3"
-            : ".webm";
-          const file = new File([blob], `voice_${Date.now()}${ext}`, {
-            type: blob.type,
-          });
-
-          if (client) {
-            const localId = "local_" + Date.now();
-            const now = new Date();
-            const userId = client.getUserId();
-
-            addMessage(roomId, {
-              eventId: localId,
-              sender: userId ?? undefined,
-              senderDisplayName: userId ?? undefined,
-              text: file.name,
-              audioUrl: null,
-              audioDuration: duration,
-              time: now.toLocaleString(),
-              timestamp: now.getTime(),
-              status: "sent",
-              type: "audio",
-            });
-
-            const { httpUrl } = await sendVoiceMessage(
-              client,
-              roomId,
-              file,
-              duration
-            );
-
-            updateMessage(roomId, localId, { audioUrl: httpUrl });
-
-            setAudioChunks([]);
-            setRecordTime(0);
-            recordDurationRef.current = 0;
-            recordStartRef.current = null;
-          }
-        };
-
-        mediaRecorder.start();
-
-        recordIntervalRef.current = window.setInterval(() => {
-          if (recordStartRef.current) {
-            const duration = Math.round(
-              (Date.now() - recordStartRef.current) / 1000
-            );
-            recordDurationRef.current = duration;
-            setRecordTime(duration);
-          }
-        }, 200);
-
-        if (shouldCancelRecordingRef.current) {
-          console.warn("Bị huỷ khi vừa bắt đầu, stop ngay.");
-          await stopRecording();
-        }
-      } catch (err) {
-        console.error("Không thể truy cập micro:", err);
-        setIsRecording(false);
-      }
-    })();
-
-    startRecordingPromiseRef.current = promise;
-    await promise;
-  };
-
-  const stopRecording = async () => {
-    const pressDuration = pressStartRef.current
-      ? Date.now() - pressStartRef.current
-      : 0;
-    pressStartRef.current = null;
-
-    if (pressDuration < MIN_PRESS_TIME_MS) {
-      console.warn("Người dùng nhấn quá nhanh, huỷ ghi âm");
-      shouldCancelRecordingRef.current = true;
-
-      setIsRecording(false);
-      clearRecordingInterval();
-      recordDurationRef.current = 0;
-
-      if (startRecordingPromiseRef.current) {
-        await startRecordingPromiseRef.current;
-      }
-
-      await forceStop();
-      return;
-    }
-
-    shouldCancelRecordingRef.current = false;
-
-    if (startRecordingPromiseRef.current) {
-      await startRecordingPromiseRef.current;
-    }
-
-    setIsRecording(false);
-    clearRecordingInterval();
-
-    const duration = recordStartRef.current
-      ? Math.round((Date.now() - recordStartRef.current) / 1000)
-      : 0;
-    recordDurationRef.current = duration;
-    recordStartRef.current = null;
-
-    await forceStop();
-  };
-
-  const clearRecordingInterval = () => {
-    if (recordIntervalRef.current) {
-      clearInterval(recordIntervalRef.current);
-      recordIntervalRef.current = null;
-    }
-  };
-
-  const forceStop = async () => {
-    const activeRecorder = recorderRef.current;
-    if (activeRecorder && activeRecorder.state === "recording") {
-      activeRecorder.stop();
-    }
-    recorderRef.current = null;
-
-    if (mediaStream) {
-      mediaStream.getTracks().forEach((track) => track.stop());
-      setMediaStream(null);
-    }
-  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -561,6 +362,12 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
       if (sheetRef.current && !sheetRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
+      if (
+        voiceModalRef.current &&
+        !voiceModalRef.current.contains(e.target as Node)
+      ) {
+        setShowModalVoiceRecord(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -703,6 +510,12 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
         console.error("Failed to send file:", error);
       }
     }
+  };
+
+  const handleCloseVoiceRecordingModal = () => {
+    setShowModalVoiceRecord(false);
+    // Reset any state related to voice recording if needed
+    // For example, reset recording time or clear any temporary data
   };
 
   // Detect keyboard open with improved Safari iOS support
@@ -958,27 +771,13 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
       </div>
 
       {/* Khung nhập chat */}
-      <div
-        className="flex flex-1 items-center px-3 h-12 rounded-3xl bg-white/80 border border-white shadow-sm"
-        style={{ minWidth: 0 }} // Đảm bảo không bị overflow ngang
-      >
+      <div className="flex flex-1 items-center px-3 h-12 rounded-3xl bg-white/80 border border-white shadow-sm min-w-0">
         {/* Icon micro bên trái */}
         <Mic
           className="w-5 h-5 text-gray-400 mr-2 cursor-pointer flex-shrink-0"
-          onMouseDown={(e) => {
-            e.preventDefault();
-            startRecording();
+          onClick={() => {
+            setShowModalVoiceRecord(true);
           }}
-          onMouseUp={(e) => {
-            e.preventDefault();
-            stopRecording();
-          }}
-          onMouseLeave={(e) => {
-            e.preventDefault();
-            if (isRecording) stopRecording();
-          }}
-          onTouchStart={() => startRecording()}
-          onTouchEnd={() => stopRecording()}
         />
         {/* Input nhập tin nhắn */}
         <textarea
@@ -1013,21 +812,32 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             />
           </svg>
         )}
+
         {showEmojiPicker && (
-            <div className="absolute bottom-22 right-2 z-50">
-              <EmojiPicker
-                width={300}
-                height={350}
-                onEmojiClick={handleEmojiClick}
-                searchDisabled={true}
-                previewConfig={{ showPreview: false }}
-                theme={
-                  theme.theme === "dark" ? EmojiTheme.DARK : EmojiTheme.LIGHT
-                }
-              />
-            </div>
-          )}
+          <div className="absolute bottom-22 right-2 z-50">
+            <EmojiPicker
+              width={300}
+              height={350}
+              onEmojiClick={handleEmojiClick}
+              searchDisabled={true}
+              previewConfig={{ showPreview: false }}
+              theme={
+                theme.theme === "dark" ? EmojiTheme.DARK : EmojiTheme.LIGHT
+              }
+            />
+          </div>
+        )}
       </div>
+
+      {/* Voice Recording Modal */}
+      <VoiceRecordingModal
+        isOpen={showModalVoiceRecord}
+        client={client}
+        roomId={roomId}
+        onClose={handleCloseVoiceRecordingModal}
+        voiceModalRef={voiceModalRef}
+      />
+
       <AnimatePresence>
         {open && (
           <motion.div
