@@ -1,24 +1,19 @@
 "use client";
 import InfoBody from "@/components/chat/InfoBody";
-import PrivateInfoHeader from "@/components/chat/PrivateInfoHeader";
 import { useParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import * as sdk from "matrix-js-sdk";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { getUserInfoInPrivateRoom } from "@/services/chatService";
+import PrivateInfoHeader from "@/components/chat/PrivateInfoHeader";
+// import { getLS } from "@/tools/localStorage.tool";
+import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
 
 export default function InfoPage() {
   const params = useParams();
   const roomId = decodeURIComponent(params.id as string);
   const client = useMatrixClient();
   const [user, setUser] = useState<sdk.User | undefined>(undefined);
-  const [scrollPosition, setScrollPosition] = useState(0);
-  const maxHeaderHeight = 300; // Should match InfoBody's value
-
-  // Pass this to InfoBody to receive scroll updates
-  const handleScroll = (position: number) => {
-    setScrollPosition(position);
-  };
 
   useEffect(() => {
     if (!roomId || !client) return;
@@ -64,16 +59,18 @@ export default function InfoPage() {
     );
   }
 
-  return (
-    <div className="flex flex-col h-screen bg-gray-200 dark:bg-black w-full">
-      <PrivateInfoHeader />
+  // Override backgroundColor về đen nếu có
+  const headerStyleRaw = getHeaderStyleWithStatusBar();
+  const headerStyle = { ...headerStyleRaw };
 
-      <InfoBody
-        user={user!}
-        onScroll={handleScroll}
-        maxHeaderHeight={300}
-        hideAvatarHeader={true}
-      />
+  return (
+    <div className="min-h-screen w-full bg-gradient-to-b from-cyan-700/30 via-cyan-300/15 to-yellow-600/25">
+      <header style={headerStyle}>
+        <PrivateInfoHeader user={user} />
+      </header>
+      <div>
+        <InfoBody user={user} />
+      </div>
     </div>
   );
 }

@@ -53,21 +53,29 @@ export const MainMuteModal: React.FC<MainMuteModalProps> = ({
   };
   if (!open) return null;
   return (
-    <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center">
-      <div
-        className="bg-white w-full max-w-sm rounded-2xl p-4 pb-2 shadow-2xl border border-gray-100"
-        style={{ minWidth: 320 }}
-      >
-        <div className="divide-y">
+    <>
+      {/* Overlay */}
+      <div className="fixed inset-0 bg-black/0 z-40" onClick={onClose} />
+      {/* Modal menu */}
+      <div className="fixed right-0 top-[140px] z-50 flex justify-end w-full pointer-events-none">
+        <div
+          className="bg-white rounded-[20px] shadow-lg py-[8px] px-0 w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl 2xl:max-w-2xl flex flex-col gap-[2px] pointer-events-auto border border-gray-100"
+          style={{
+            borderRadius: "20px",
+            paddingTop: "8px",
+            paddingBottom: "8px",
+            background: "#fff",
+          }}
+        >
           <button
-            className="w-full flex justify-between items-center py-3 px-2 text-base text-black hover:bg-gray-100"
+            className="w-full flex justify-between items-center py-2 px-3 text-base text-black hover:bg-gray-100"
             onClick={() => onSelect("for")}
           >
             Mute for...
             <Bell className="text-lg" />
           </button>
           <button
-            className="w-full flex justify-between items-center py-3 px-2 text-base text-black hover:bg-gray-100"
+            className="w-full flex justify-between items-center py-2 px-3 text-base text-black hover:bg-gray-100"
             onClick={toggleSound}
           >
             {soundDisabled ? "Enable Sound" : "Disable Sound"}
@@ -77,47 +85,46 @@ export const MainMuteModal: React.FC<MainMuteModalProps> = ({
               <VolumeX className="text-lg" />
             )}
           </button>
-
           <button
-            className="w-full flex justify-between items-center py-3 px-2 text-base text-black hover:bg-gray-100"
+            className="w-full flex justify-between items-center py-2 px-3 text-base text-black hover:bg-gray-100"
             onClick={() => onSelect("customize")}
           >
             Customize
             <SlidersHorizontal className="text-lg" />
           </button>
           <button
-            className="w-full flex justify-between items-center py-3 px-2 text-base text-red-500 hover:bg-gray-100"
+            className="w-full flex justify-between items-center py-2 px-3 text-base text-red-500 hover:bg-gray-100"
             onClick={() => onSelect("forever")}
           >
             Mute Forever
             <BellOff className="text-lg text-red-500" />
           </button>
-        </div>
-        <button
-          className="w-full py-2 mt-2 text-center text-[#155dfc]"
-          onClick={onClose}
-        >
-          Cancel
-        </button>
+          <button
+            className="w-full py-2 mt-1 text-center text-[#155dfc]"
+            onClick={onClose}
+          >
+            Cancel
+          </button>
 
-        {showBannerDisable && (
-          <div className="fixed bottom-4 inset-x-0 flex justify-center z-50">
-            <div className="bg-gray-800 text-white px-4 py-2 rounded-full shadow-lg flex items-center space-x-2">
-              {bannerDisabled ? (
-                <BellOff className="w-5 h-5" />
-              ) : (
-                <Bell className="w-5 h-5" />
-              )}
-              <span>
-                {bannerDisabled
-                  ? "You will receive silent notifications."
-                  : "You will receive notifications with sound."}
-              </span>
+          {showBannerDisable && (
+            <div className="fixed bottom-4 inset-x-0 flex justify-center z-50">
+              <div className="bg-gray-800 text-white px-4 py-2 rounded-full shadow-lg flex items-center space-x-2">
+                {bannerDisabled ? (
+                  <BellOff className="w-5 h-5" />
+                ) : (
+                  <Bell className="w-5 h-5" />
+                )}
+                <span>
+                  {bannerDisabled
+                    ? "You will receive silent notifications."
+                    : "You will receive notifications with sound."}
+                </span>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
@@ -197,11 +204,14 @@ export const MuteUntilPicker: React.FC<MuteUntilPickerProps> = ({
   onClose,
   onSelect,
 }) => {
-  const scrollRefs = [
-    React.useRef<HTMLDivElement | null>(null),
-    React.useRef<HTMLDivElement | null>(null),
-    React.useRef<HTMLDivElement | null>(null),
-  ];
+  const scrollRefs = React.useMemo(
+    () => [
+      React.createRef<HTMLDivElement>(),
+      React.createRef<HTMLDivElement>(),
+      React.createRef<HTMLDivElement>(),
+    ],
+    []
+  );
 
   const [selectedIndex, setSelectedIndex] = React.useState<
     [number, number, number]
@@ -225,12 +235,15 @@ export const MuteUntilPicker: React.FC<MuteUntilPickerProps> = ({
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const minutes = Array.from({ length: 60 }, (_, i) => i);
 
-  const scrollToIndex = (col: number, index: number) => {
-    scrollRefs[col].current?.scrollTo({
-      top: index * 44,
-      behavior: "auto",
-    });
-  };
+  const scrollToIndex = React.useCallback(
+    (col: number, index: number) => {
+      scrollRefs[col].current?.scrollTo({
+        top: index * 44,
+        behavior: "auto",
+      });
+    },
+    [scrollRefs]
+  );
 
   const handleScroll = (col: number) => {
     if (!scrollRefs[col].current) return;
@@ -272,7 +285,7 @@ export const MuteUntilPicker: React.FC<MuteUntilPickerProps> = ({
         scrollToIndex(2, currentMinute);
       }, 10);
     }
-  }, [open, days]);
+  }, [open, days, scrollToIndex]);
 
   if (!open) return null;
 

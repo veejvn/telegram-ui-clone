@@ -99,7 +99,7 @@ export default function MuteButton({ onMuteUntil, roomId }: MuteButtonProps) {
     <>
       <div ref={containerRef} className="relative">
         <div
-         className="flex flex-col justify-end items-center group cursor-pointer"
+          className="flex flex-col justify-end items-center group cursor-pointer"
           onClick={() => {
             if (isMuted) {
               setIsMuted(false);
@@ -118,13 +118,13 @@ export default function MuteButton({ onMuteUntil, roomId }: MuteButtonProps) {
           }}
         >
           {isMuted ? <BellMutedIcon /> : <MuteIcon />}
-          <p className="text-xs text-[#155dfc]">
-            {isMuted ? "unmute" : "mute"}
+          <p className="text-xs text-[#026AE0]">
+            {isMuted ? "unmute" : "Mute"}
           </p>
         </div>
 
         {isOpen && !showSubmenu && (
-          <div className="absolute left-1/2 -translate-x-1/2 mt-2 z-50 w-52 bg-white dark:bg-[#202020] rounded-xl shadow-xl">
+          <div className="absolute right-0 mt-2 z-50 w-52 bg-white dark:bg-[#202020] rounded-xl shadow-xl">
             <ul className="flex flex-col text-sm text-gray-900 dark:text-gray-100">
               <li
                 className="flex items-center justify-between px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#3a3a3c] cursor-pointer"
