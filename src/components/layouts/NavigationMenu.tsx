@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { HomeIcon } from "@heroicons/react/24/outline";
+import { GoVideo } from "react-icons/go";
 
 // Utility function integrated directly in the component file
 function cn(...inputs: ClassValue[]) {
@@ -52,8 +54,8 @@ const NavigationMenu: React.FC<NavigationMenuProps> = ({
 
   // Define navigation items with icons, paths, and labels
   const navItems: NavItem[] = [
-    { icon: Home, path: "/chat", label: "Home" },
-    { icon: Calendar, path: "/video", label: "Video" },
+    { icon: HomeIcon, path: "/chat", label: "Home" },
+    { icon: GoVideo, path: "/video", label: "Video" },
     { icon: FileText, path: "/document", label: "Document" },
     { icon: MessageSquare, path: "/message", label: "Chat" },
     { icon: User, path: "/profile", label: "Profile" },
