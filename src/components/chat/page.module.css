@@ -1,0 +1,17 @@
+.plusButton {
+  background: linear-gradient(90deg, #ffba71 0%, #5b6cfc 49.04%, #ff6778 100%),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8));
+  border: 1px solid;
+  border-image-source: linear-gradient(
+    228.62deg,
+    #dddddd 5.27%,
+    rgba(227, 228, 228, 0.2) 33.4%,
+    rgba(227, 227, 227, 0.2) 55.91%,
+    #dadada 88.86%
+  );
+  border-image-slice: 1;
+  box-shadow: 1px 1.5px 4px 0px #0000001a inset;
+  box-shadow: 1px 1.5px 4px 0px #00000014 inset;
+  box-shadow: 0px -0.5px 1px 0px #ffffff40 inset;
+  box-shadow: 0px -0.5px 1px 0px #ffffff4d inset;
+}
