@@ -426,9 +426,8 @@ export default function InfoBody({
       >
         {/* Container chính bao gồm avatar và các nút bấm */}
         <div
-          className={`relative ${
-            scrollPosition > 0 ? "bg-white/90 dark:bg-black" : ""
-          }`}
+          className={`relative ${scrollPosition > 0 ? "bg-white/90 dark:bg-black" : ""
+            }`}
           style={{
             height: scrollPosition > 0 ? "280px" : "auto",
             transition: "height 0.3s cubic-bezier(0.25, 0.1, 0.25, 1.0)", // Thêm cubic-bezier cho animation mượt hơn
@@ -438,11 +437,10 @@ export default function InfoBody({
           {!hideAvatarHeader &&
             (avatarUrl ? (
               <div
-                className={`${
-                  scrollPosition > 0
+                className={`${scrollPosition > 0
                     ? "absolute left-1/2 transform -translate-x-1/2 top-10"
                     : "relative flex flex-col items-center"
-                } transition-all duration-300 ease-out z-10`}
+                  } transition-all duration-300 ease-out z-10`}
                 style={{
                   width: scrollPosition > 0 ? "110px" : "100%",
                   height: scrollPosition > 0 ? "110px" : `${maxHeaderHeight}px`,
@@ -477,9 +475,8 @@ export default function InfoBody({
               </div>
             ) : (
               <div
-                className={`${
-                  scrollPosition > 0 ? "relative" : "relative"
-                } bg-gray-200 dark:bg-black`}
+                className={`${scrollPosition > 0 ? "relative" : "relative"
+                  } bg-gray-200 dark:bg-black`}
                 style={{
                   width: "100%",
                   height: scrollPosition > 0 ? "280px" : `${maxHeaderHeight}px`,
@@ -487,25 +484,22 @@ export default function InfoBody({
               >
                 {/* Avatar mặc định - áp dụng style tương tự avatar có URL */}
                 <div
-                  className={`${
-                    scrollPosition > 0
+                  className={`${scrollPosition > 0
                       ? "absolute left-1/2 transform -translate-x-1/2 top-10"
                       : "flex flex-col items-center justify-center pt-6"
-                  } transition-all duration-300 ease-out z-10`}
+                    } transition-all duration-300 ease-out z-10`}
                 >
                   <div
-                    className={`${
-                      scrollPosition > 0 ? "h-28 w-28" : "h-28 w-28"
-                    } rounded-full bg-purple-400 text-white text-5xl font-bold flex items-center justify-center transition-all duration-300 ease-out`}
+                    className={`${scrollPosition > 0 ? "h-28 w-28" : "h-28 w-28"
+                      } rounded-full bg-purple-400 text-white text-5xl font-bold flex items-center justify-center transition-all duration-300 ease-out`}
                   >
                     {user.displayName?.slice(0, 1)}
                   </div>
 
                   {/* Tên và trạng thái - hiển thị giữa màn hình */}
                   <div
-                    className={`text-center mt-3 ${
-                      scrollPosition > 0 ? "hidden" : "block"
-                    }`}
+                    className={`text-center mt-3 ${scrollPosition > 0 ? "hidden" : "block"
+                      }`}
                   >
                     <p className="text-xl font-semibold text-black dark:text-white">
                       {user.displayName}
@@ -717,9 +711,8 @@ export default function InfoBody({
         {!hideAvatarHeader && (
           <div className="w-full px-4 bg-white dark:bg-black">
             <div
-              className={`w-full max-w-md mx-auto bg-white dark:bg-[#232329] px-4 py-2 text-start flex flex-col mb-2 ${
-                scrollPosition > 0 ? "rounded-none" : "mt-4"
-              } gap-2 shadow-sm border border-gray-200 dark:border-[#3a3b3d] rounded-xl`}
+              className={`w-full max-w-md mx-auto bg-white dark:bg-[#232329] px-4 py-2 text-start flex flex-col mb-2 ${scrollPosition > 0 ? "rounded-none" : "mt-4"
+                } gap-2 shadow-sm border border-gray-200 dark:border-[#3a3b3d] rounded-xl`}
             >
               <div>
                 <p className="text-sm text-zinc-500">mobile</p>
@@ -778,10 +771,10 @@ export default function InfoBody({
                   mediaMessages.length > 0
                     ? "media"
                     : linkMessages.length > 0
-                    ? "link"
-                    : voiceMessages.length > 0
-                    ? "voice"
-                    : "groups"
+                      ? "link"
+                      : voiceMessages.length > 0
+                        ? "voice"
+                        : "groups"
                 }
                 className="w-full h-full"
               >
@@ -891,7 +884,7 @@ export default function InfoBody({
                                     const target = e.target as HTMLAudioElement;
                                     const progress =
                                       (target.currentTime / target.duration) *
-                                        100 || 0;
+                                      100 || 0;
                                     const progressBar = document.getElementById(
                                       `progress-${msg.eventId}`
                                     );
@@ -921,8 +914,8 @@ export default function InfoBody({
                                           2,
                                           "0"
                                         )} / ${durationMin}:${durationSec
-                                        .toString()
-                                        .padStart(2, "0")}`;
+                                          .toString()
+                                          .padStart(2, "0")}`;
                                     }
                                   }}
                                 />
@@ -985,10 +978,10 @@ export default function InfoBody({
                                       0:00 /{" "}
                                       {msg.audioDuration
                                         ? `${Math.floor(
-                                            msg.audioDuration / 60
-                                          )}:${String(
-                                            Math.floor(msg.audioDuration % 60)
-                                          ).padStart(2, "0")}`
+                                          msg.audioDuration / 60
+                                        )}:${String(
+                                          Math.floor(msg.audioDuration % 60)
+                                        ).padStart(2, "0")}`
                                         : "0:00"}
                                     </p>
                                   </div>
