@@ -12,6 +12,7 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@/components/ui/popover";
+import { MatrixClient, Room } from "matrix-js-sdk";
 
 // Interface cho thành viên
 interface Member {
@@ -24,23 +25,48 @@ interface Member {
 
 // Hàm nhóm theo chữ cái đầu
 function groupContacts(
-  contacts: any[],
-  client: any,
+  contacts: Room[],
+  client: MatrixClient | null,
   botId: string
 ): Record<string, { room: any; other: Member; avatarUrl: string }[]> {
-  const map: Record<string, { room: any; other: Member; avatarUrl: string }[]> = {};
+  if (!client) return {};
+  const HOMESERVER_URL =
+    process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.teknix.dev";
+  const map: Record<
+    string,
+    { room: Room; other: Member; avatarUrl: string }[]
+  > = {};
   contacts.forEach((room) => {
-    const other: Member | undefined = client
-      ? room.getJoinedMembers().find((m: Member) => m.userId !== client.getUserId())
+    const otherMember = client
+      ? room.getJoinedMembers().find((m) => m.userId !== client.getUserId())
       : undefined;
-    if (!other || other.userId === botId) return;
+    if (!otherMember || otherMember.userId === botId) return;
 
-    // Convert mxc://... thành http link cho Next/Image
-    const avatarUrl = other.avatarUrl
-      ? client.mxcUrlToHttp(other.avatarUrl, 96, 96, "scale", true)
-      : "";
+    // Convert member thành interface Member và lấy avatar đúng cách
+    const other: Member = {
+      userId: otherMember.userId,
+      name: otherMember.name || otherMember.userId,
+      isOnline: false, // Sẽ được cập nhật sau
+      lastSeen: undefined,
+    };
 
-    const firstLetter = (other.name?.[0] || other.userId?.[1] || "?").toUpperCase();
+    // Lấy avatar URL từ RoomMember bằng phương thức getAvatarUrl
+    const avatarUrl =
+      otherMember.getAvatarUrl(
+        HOMESERVER_URL,
+        96,
+        96,
+        "crop",
+        false,
+        true,
+        false
+      ) || "";
+
+    const firstLetter = (
+      other.name?.[0] ||
+      other.userId?.[1] ||
+      "?"
+    ).toUpperCase();
     if (!map[firstLetter]) map[firstLetter] = [];
     map[firstLetter].push({ room, other, avatarUrl });
   });
@@ -49,7 +75,8 @@ function groupContacts(
 
 // Hiển thị trạng thái online/offline
 function formatLastSeen(isOnline?: boolean, lastSeen?: number) {
-  if (isOnline) return <span className="text-[#47C269] font-medium">Online</span>;
+  if (isOnline)
+    return <span className="text-[#47C269] font-medium">Online</span>;
   if (!lastSeen) return <span className="text-[#A0A0A0]">Offline</span>;
 
   const now = Date.now();
@@ -60,7 +87,7 @@ function formatLastSeen(isOnline?: boolean, lastSeen?: number) {
   if (diffSec < 3600)
     return (
       <span className="text-[#A0A0A0]">
-        Online  {Math.floor(diffSec / 60)} minutes ago
+        Online {Math.floor(diffSec / 60)} minutes ago
       </span>
     );
   if (diffSec < 86400)
@@ -78,7 +105,7 @@ function formatLastSeen(isOnline?: boolean, lastSeen?: number) {
 
 const ContactPage = () => {
   const [sortBy, setSortBy] = useState<"lastSeen" | "name">("name");
-  const [contacts, setContacts] = useState<any[]>([]);
+  const [contacts, setContacts] = useState<Room[]>([]);
   const client = useMatrixClient();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -98,11 +125,14 @@ const ContactPage = () => {
       // Thêm field lastSeen mock cho demo
       rooms.forEach((room: any) => {
         const other: Member | undefined = client
-          ? room.getJoinedMembers().find((m: Member) => m.userId !== client.getUserId())
+          ? room
+              .getJoinedMembers()
+              .find((m: Member) => m.userId !== client.getUserId())
           : undefined;
         if (other) {
           if (!other.isOnline) {
-            other.lastSeen = Date.now() - Math.floor(Math.random() * 3 * 60 * 60 * 1000);
+            other.lastSeen =
+              Date.now() - Math.floor(Math.random() * 3 * 60 * 60 * 1000);
           } else {
             other.lastSeen = Date.now();
           }
@@ -133,10 +163,14 @@ const ContactPage = () => {
   // SORT CONTACTS
   const sortedContacts = [...contacts].sort((a, b) => {
     const otherA: Member | undefined = client
-      ? a.getJoinedMembers().find((m: Member) => m.userId !== client.getUserId())
+      ? a
+          .getJoinedMembers()
+          .find((m: Member) => m.userId !== client.getUserId())
       : undefined;
     const otherB: Member | undefined = client
-      ? b.getJoinedMembers().find((m: Member) => m.userId !== client.getUserId())
+      ? b
+          .getJoinedMembers()
+          .find((m: Member) => m.userId !== client.getUserId())
       : undefined;
 
     if (sortBy === "name") {
@@ -161,18 +195,12 @@ const ContactPage = () => {
   const [searchValue, setSearchValue] = useState("");
 
   return (
-    <div
-      className="min-h-screen w-full"
-      style={{
-        background: "linear-gradient(180deg, #D8EBFF 0%, #FDE2CF 100%)",
-      }}
-    >
+    <div className="min-h-screen w-full">
       {/* STATUS BAR */}
       <div
+        className="min-h-[50px] bg-transparent"
         style={{
           height: "env(safe-area-inset-top, 32px)",
-          minHeight: "50px",
-          background: "transparent",
         }}
       />
       {/* HEADER */}
@@ -183,12 +211,9 @@ const ContactPage = () => {
         <div className="flex gap-3">
           {/* Nút + */}
           <button
-            className="w-12 h-12 flex items-center justify-center rounded-full border border-[#e0e0e0] bg-[#D8EBFF] transition-all"
+            className="w-12 h-12 flex items-center justify-center rounded-full border border-[#e0e0e0] bg-[#D8EBFF] transition-all box-border"
             onClick={() => setShowNewContact(true)}
             aria-label="Add"
-            style={{
-              boxSizing: "border-box",
-            }}
           >
             <svg width="32" height="32" viewBox="0 0 36 36" fill="none">
               <rect x="17" y="8" width="1" height="20" rx="1" fill="#222" />
@@ -200,97 +225,84 @@ const ContactPage = () => {
           <Popover open={showFilter} onOpenChange={setShowFilter}>
             <PopoverTrigger asChild>
               <button
-                className="w-12 h-12 flex items-center justify-center rounded-full border border-[#e0e0e0] bg-[#D8EBFF] transition-all"
+                className="w-12 h-12 flex items-center justify-center rounded-full border border-[#e0e0e0] bg-[#D8EBFF] transition-all box-border"
                 aria-label="Filter"
                 type="button"
-                style={{
-                  boxSizing: "border-box",
-                }}
               >
                 <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
                   {/* Gạch trên cùng */}
                   <rect x="8" y="10" width="24" height="1" rx="1" fill="#222" />
                   {/* Gạch giữa */}
-                  <rect x="12" y="17" width="16" height="1" rx="1" fill="#222" />
+                  <rect
+                    x="12"
+                    y="17"
+                    width="16"
+                    height="1"
+                    rx="1"
+                    fill="#222"
+                  />
                   {/* Gạch dưới cùng */}
-                  <rect x="15" y="24" width="10" height="1" rx="1" fill="#222" />
+                  <rect
+                    x="15"
+                    y="24"
+                    width="10"
+                    height="1"
+                    rx="1"
+                    fill="#222"
+                  />
                 </svg>
               </button>
             </PopoverTrigger>
             <PopoverContent
               side="bottom"
               align="end"
-              className="p-0"
+              className="p-0 w-48 min-h-[78px] rounded-[20px] bg-white border-none pt-3 pb-3 flex flex-col gap-2"
               style={{
-                width: 192,
-                minHeight: 78,
-                borderRadius: 20,
-                background: "#fff",
                 boxShadow: "0px 4px 24px 0px rgba(44, 68, 115, 0.10)",
-                paddingTop: 12,
-                paddingBottom: 12,
-                border: "none",
-                display: "flex",
-                flexDirection: "column",
-                gap: 8,
               }}
             >
               <button
-                className="flex items-center justify-between w-full text-left px-4 py-0 text-[16px] font-normal bg-transparent outline-none focus:bg-gray-100"
-                style={{
-                  minHeight: 27,
-                  borderRadius: 12,
+                className="flex items-center justify-between w-full text-left px-4 py-0 text-base font-normal bg-transparent outline-none focus:bg-gray-100 min-h-[27px] rounded-xl"
+                onClick={() => {
+                  setSortBy("name");
+                  setShowFilter(false);
                 }}
-                onClick={() => { setSortBy("name"); setShowFilter(false); }}
               >
                 <span>by Name</span>
                 {sortBy === "name" && (
-                  <span
-                    className="inline-flex items-center justify-center"
-                    style={{
-                      width: 20,
-                      height: 20,
-                      borderRadius: "50%",
-                      background: "#1976ed",
-                      marginLeft: 10,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#1976ed] ml-2.5">
                     <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
                       <circle cx="10" cy="10" r="10" fill="#1976ed" />
-                      <path d="M6 10.5L9 13.5L14 7.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path
+                        d="M6 10.5L9 13.5L14 7.5"
+                        stroke="white"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
                     </svg>
                   </span>
                 )}
               </button>
               <button
-                className="flex items-center justify-between w-full text-left px-4 py-0 text-[16px] font-normal bg-transparent outline-none focus:bg-gray-100"
-                style={{
-                  minHeight: 27,
-                  borderRadius: 12,
+                className="flex items-center justify-between w-full text-left px-4 py-0 text-base font-normal bg-transparent outline-none focus:bg-gray-100 min-h-[27px] rounded-xl"
+                onClick={() => {
+                  setSortBy("lastSeen");
+                  setShowFilter(false);
                 }}
-                onClick={() => { setSortBy("lastSeen"); setShowFilter(false); }}
               >
                 <span>by Last Active</span>
                 {sortBy === "lastSeen" && (
-                  <span
-                    className="inline-flex items-center justify-center"
-                    style={{
-                      width: 20,
-                      height: 20,
-                      borderRadius: "50%",
-                      background: "#1976ed",
-                      marginLeft: 10,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#1976ed] ml-2.5">
                     <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
                       <circle cx="10" cy="10" r="10" fill="#1976ed" />
-                      <path d="M6 10.5L9 13.5L14 7.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path
+                        d="M6 10.5L9 13.5L14 7.5"
+                        stroke="white"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
                     </svg>
                   </span>
                 )}
@@ -302,8 +314,9 @@ const ContactPage = () => {
 
       {/* DANH SÁCH CONTACTS */}
       <div
-        className={`px-2 pb-10 pt-1 w-full max-w-lg mx-auto transition-all duration-200 ${showFilter ? "filter blur-sm pointer-events-none select-none" : ""
-          }`}
+        className={`px-2 pb-10 pt-1 w-full max-w-lg mx-auto transition-all duration-200 ${
+          showFilter ? "filter blur-sm pointer-events-none select-none" : ""
+        }`}
       >
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24">
@@ -335,22 +348,11 @@ const ContactPage = () => {
             </button>
           </div>
         ) : (
-          Object.entries(
-            groupContacts(sortedContacts, client, userIdChatBot)
-          )
+          Object.entries(groupContacts(sortedContacts, client, userIdChatBot))
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([letter, items]) => (
               <div key={letter}>
-                <div
-                  className="w-full px-5 py-2"
-                  style={{
-                    background: "#EDECEA",
-                    fontWeight: 600,
-                    fontSize: 15,
-                    letterSpacing: 2,
-                    color: "#222f3e",
-                  }}
-                >
+                <div className="w-full px-5 py-2 bg-[#FFFFFF4D] font-semibold text-[15px] tracking-[2px] text-[#222f3e]">
                   {letter}
                 </div>
                 {items.map(({ room, other, avatarUrl }) => (
@@ -414,9 +416,10 @@ const ContactPage = () => {
               shadow-lg
               backdrop-blur-md
               pointer-events-auto
-              ${isFocused || searchValue
-                ? "bg-white/50 px-5 py-2 w-[90vw] max-w-md"
-                : "bg-white px-3 py-1 w-30"
+              ${
+                isFocused || searchValue
+                  ? "bg-white/50 px-5 py-2 w-[90vw] max-w-md"
+                  : "bg-white px-3 py-1 w-30"
               }
             `}
             style={{ marginBottom: "env(safe-area-inset-bottom, 12px)" }}

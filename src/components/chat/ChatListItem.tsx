@@ -34,7 +34,7 @@ export const ChatListItem = ({
   const client = useMatrixClient();
   const userId = client?.getUserId();
   const HOMESERVER_URL: string =
-    process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.org";
+    process.env.NEXT_PUBLIC_MATRIX_BASE_URL ?? "https://matrix.teknix.dev";
 
   // ⚡️ trigger render
   const [_, setRefresh] = useState(0);
