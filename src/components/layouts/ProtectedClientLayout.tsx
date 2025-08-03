@@ -7,7 +7,6 @@ import IncomingCallHandler from "@/components/call/IncomingCallHandler";
 import BottomNavigationWrapper from "@/components/layouts/BottomNavigationWrapper";
 import { InviteChatBot } from "@/components/common/InviteChatBot";
 import GetCookie from "@/components/auth/GetCookie";
-import NavigationMenu from "@/components/layouts/NavigationMenu";
 
 // Dynamic import client-only MatrixClientProvider
 const MatrixClientProvider = dynamic(
@@ -44,7 +43,6 @@ export default function ProtectedClientLayout({
           <main className="min-h-screen flex flex-col">
 
             {children}
-            <NavigationMenu className="z-[100]" />
           </main>
           <InviteChatBot />
           {/* <TokenExpirationToast /> */}

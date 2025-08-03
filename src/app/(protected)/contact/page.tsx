@@ -13,6 +13,7 @@ import {
   PopoverContent,
 } from "@/components/ui/popover";
 import { MatrixClient, Room } from "matrix-js-sdk";
+import NavigationMenu from "@/components/layouts/NavigationMenu";
 
 // Interface cho thành viên
 interface Member {
@@ -405,6 +406,8 @@ const ContactPage = () => {
         onAddContact={handleAddContact}
         onClose={() => setShowNewContact(false)}
       />
+
+      <NavigationMenu className="z-[100]" />
 
       {/* SEARCH BAR FLOATING */}
       {!options.includes("search") && (
