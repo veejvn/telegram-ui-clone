@@ -31,12 +31,19 @@ export type Message = {
   status: MessageStatus;
   type?: MessageType;
   isForward?: boolean;
+  isReply?: boolean;
   isStickerAnimation?: boolean;
   isDeleted?: boolean;
   location?: {
     latitude: number | null;
     longitude: number | null;
     description?: string;
+  };
+  replyTo?: {
+    eventId: string;
+    text: string;
+    sender: string;
+    senderDisplayName: string;
   };
 };
 

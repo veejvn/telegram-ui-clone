@@ -9,6 +9,7 @@ import { Message } from "@/stores/useChatStore";
 import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import ForwardTextMessage from "./message-type/ForwardTextMessage";
+import ReplyMessage from "./message-type/ReplyMessage";
 import { LocationMessage } from "@/components/chat/message-type/LocationMessage";
 import FileMessage from "@/components/chat/message-type/FileMessage";
 import VideoMessage from "@/components/chat/message-type/VideoMessage";
@@ -45,6 +46,28 @@ const ChatMessage = ({ msg, roomId }: { msg: Message; roomId: string }) => {
     }
   }, [highlightId, msg.eventId]);
 
+  // Add listener for manual highlight trigger (for reply jump)
+  useEffect(() => {
+    const handleManualHighlight = (event: CustomEvent) => {
+      if (event.detail.eventId === msg.eventId) {
+        setAnimate(true);
+        const timeout = setTimeout(() => setAnimate(false), 1000);
+        setTimeout(() => clearTimeout(timeout), 1000);
+      }
+    };
+
+    window.addEventListener(
+      "manualHighlight",
+      handleManualHighlight as EventListener
+    );
+    return () => {
+      window.removeEventListener(
+        "manualHighlight",
+        handleManualHighlight as EventListener
+      );
+    };
+  }, [msg.eventId]);
+
   const handleForwardMsg = () => {
     //  Nếu chưa có flag, thử parse JSON
     if ((type === "text" || type === "emoji") && typeof msg.text === "string") {
@@ -65,28 +88,63 @@ const ChatMessage = ({ msg, roomId }: { msg: Message; roomId: string }) => {
     return null;
   };
 
+  const handleReplyMsg = () => {
+    //  Kiểm tra reply message tương tự forward
+    if ((type === "text" || type === "emoji") && typeof msg.text === "string") {
+      try {
+        const parsed = JSON.parse(msg.text);
+        if (parsed.reply && parsed.text && parsed.replyTo) {
+          return {
+            text: parsed.text,
+            replyTo: parsed.replyTo,
+          };
+        }
+      } catch (e) {
+        return null;
+      }
+    }
+
+    return null;
+  };
+
   const forwardInfo = handleForwardMsg();
+  const replyInfo = handleReplyMsg();
 
   const renderContent = () => {
     switch (type) {
       case "text":
-        return forwardInfo ? (
-          <ForwardTextMessage
-            msg={msg}
-            isSender={isSender}
-            animate={animate}
-            forwardMessage={forwardInfo}
-          />
-        ) : (
-          <TextMessage
-            msg={msg}
-            isSender={isSender}
-            animate={animate}
-            roomId={roomId}
-          />
-        );
+        if (forwardInfo) {
+          return (
+            <ForwardTextMessage
+              msg={msg}
+              isSender={isSender}
+              animate={animate}
+              forwardMessage={forwardInfo}
+              roomId={roomId}
+            />
+          );
+        } else if (replyInfo) {
+          return (
+            <ReplyMessage
+              msg={msg}
+              isSender={isSender}
+              animate={animate}
+              replyInfo={replyInfo}
+              roomId={roomId}
+            />
+          );
+        } else {
+          return (
+            <TextMessage
+              msg={msg}
+              isSender={isSender}
+              animate={animate}
+              roomId={roomId}
+            />
+          );
+        }
       case "emoji":
-        return <EmojiMessage msg={msg} isSender={isSender} />;
+        return <EmojiMessage msg={msg} isSender={isSender} roomId={roomId} />;
       case "audio":
         return <AudioMessage msg={msg} isSender={isSender} />;
       case "image":
@@ -108,6 +166,7 @@ const ChatMessage = ({ msg, roomId }: { msg: Message; roomId: string }) => {
   return (
     <div
       ref={messageRef}
+      data-message-id={msg.eventId}
       className={clsx(
         "flex my-2",
         // Khi ở selection mode, luôn justify-start để checkbox ở bên trái

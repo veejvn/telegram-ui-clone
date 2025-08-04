@@ -17,6 +17,7 @@ import { groupMessagesByDate } from "@/utils/chat/groupMessagesByDate";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import { MessageMenuProvider } from "@/contexts/MessageMenuContext";
+import { usePinnedMessageSync } from "@/hooks/usePinnedMessageSync";
 
 type ChatMessagesProps = {
   roomId: string;
@@ -26,6 +27,7 @@ type ChatMessagesProps = {
 const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
   //console.log("Room Id in ChatMessages: " + roomId)
   useTimeline(roomId);
+  usePinnedMessageSync(roomId); // Sync pinned messages
   const client = useMatrixClient();
   const router = useRouter();
 
@@ -152,6 +154,36 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
       messagesEndRef.current.scrollIntoView({ behavior: "auto" });
     }
   }, [messages, highlightId]);
+
+  // Handle manual highlight events (for pinned messages and reply navigation)
+  useEffect(() => {
+    const handleManualHighlight = (event: CustomEvent) => {
+      const { eventId } = event.detail;
+      if (eventId) {
+        const targetElement = document.querySelector(
+          `[data-message-id="${eventId}"]`
+        );
+        if (targetElement) {
+          targetElement.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }
+      }
+    };
+
+    window.addEventListener(
+      "manualHighlight",
+      handleManualHighlight as EventListener
+    );
+
+    return () => {
+      window.removeEventListener(
+        "manualHighlight",
+        handleManualHighlight as EventListener
+      );
+    };
+  }, []);
 
   const filteredMessages = searchText.trim()
     ? messages.filter((msg) => {

@@ -27,6 +27,13 @@ import { useChatStore } from "@/stores/useChatStore";
 import { deleteMessage } from "@/services/chatService";
 import { useMessageMenu } from "@/contexts/MessageMenuContext";
 import { useSelectionStore } from "@/stores/useSelectionStore";
+import { useReplyStore } from "@/stores/useReplyStore";
+import { usePinStore } from "@/stores/usePinStore";
+import {
+  pinMessage,
+  unpinMessage,
+  isMessagePinned,
+} from "@/services/pinService";
 
 const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
   //console.log("TextMessage rendered for:", msg.eventId); // Debug log
@@ -60,7 +67,22 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
     enterSelectionMode,
   } = useSelectionStore();
 
+  // Reply store
+  const { setReplyMessage } = useReplyStore();
+
+  // Pin store
+  const {
+    pinMessage: pinToStore,
+    unpinMessage: unpinFromStore,
+    isMessagePinned: isPinnedInStore,
+  } = usePinStore();
+
   const isSelected = isMessageSelected(msg.eventId);
+
+  // Use reactive store subscription for pin status
+  const isPinned = usePinStore((state) =>
+    state.isMessagePinned(roomId || "", msg.eventId)
+  );
 
   // Mock reactions data - in real app this would come from msg.reactions
   const reactions = [
@@ -106,6 +128,26 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
         time: msg.time,
       });
     }, 1000);
+  };
+
+  const handleReply = () => {
+    if (!msg.text || !msg.sender || !msg.time) return;
+
+    // Đóng menu
+    setOpen(false);
+    setShowOverlay(false);
+    setActiveMenuMessageId(null);
+    setTransformOffset(0);
+
+    // Set reply message
+    setReplyMessage({
+      eventId: msg.eventId,
+      text: msg.text,
+      sender: msg.sender,
+      senderDisplayName: msg.senderDisplayName || msg.sender,
+      time: msg.time,
+      type: msg.type,
+    });
   };
 
   const handleDelete = async () => {
@@ -158,18 +200,26 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
     // Nếu tin nhắn đã bị xóa thì không làm gì
     if (isDeleted) return;
 
-    // Nếu đã ở selection mode thì không làm gì (click sẽ handle)
-    if (isSelectionMode) return;
-
     // Nếu đang scroll thì không kích hoạt hold
     if (isScrollingRef.current) return;
 
     holdTimeout.current = window.setTimeout(() => {
-      // Double check không đang scroll trước khi enter selection mode
+      // Double check không đang scroll trước khi hiện menu
       if (!isScrollingRef.current) {
-        enterSelectionMode(msg.eventId);
+        // Ngăn reaction click ngay lập tức
+        preventReactionClick.current = true;
+        setTimeout(() => {
+          preventReactionClick.current = false;
+        }, 600);
+
+        // Hiển thị overlay ngay lập tức
+        setShowOverlay(true);
+
+        // Hiện reactions + dropdown menu
+        allowOpenRef.current = true;
+        calculateOptimalPosition();
       }
-    }, 500); // Giảm thời gian từ 1000ms xuống 500ms
+    }, 500); // Hold trong 500ms để hiện menu
   };
 
   const handleHoldEnd = () => {
@@ -187,24 +237,8 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
     // Nếu đang scroll thì không xử lý click
     if (isScrollingRef.current) return;
 
-    // Nếu đang ở selection mode thì toggle selection
-    if (isSelectionMode) {
-      toggleMessage(msg.eventId);
-      return;
-    }
-
-    // Ngăn reaction click ngay lập tức và trong thời gian dài hơn
-    preventReactionClick.current = true;
-    setTimeout(() => {
-      preventReactionClick.current = false;
-    }, 600); // Tăng từ 400ms lên 600ms
-
-    // Hiển thị overlay ngay lập tức khi click
-    setShowOverlay(true);
-
-    // Nếu không ở selection mode thì hiện reactions + dropdown menu
-    allowOpenRef.current = true;
-    calculateOptimalPosition();
+    // Click không làm gì cả - menu chỉ mở qua hold gesture
+    // Selection mode chỉ hoạt động qua "Select" button trong menu
   };
 
   // Xử lý touch events để phát hiện scroll
@@ -330,6 +364,65 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
       // Reset prevention flag và timestamp khi đóng menu
       preventReactionClick.current = false;
       menuOpenTimeRef.current = 0;
+    }
+  };
+
+  const handleSelectionClick = () => {
+    if (isDeleted) return;
+
+    // Đóng menu và reset vị trí tin nhắn trước khi vào selection mode
+    setOpen(false);
+    setShowOverlay(false);
+    setActiveMenuMessageId(null);
+    setTransformOffset(0); // Reset vị trí tin nhắn về ban đầu
+
+    // Enter selection mode với message này
+    enterSelectionMode(msg.eventId);
+  };
+
+  const handlePin = async () => {
+    if (!client || !roomId || isDeleted) return;
+
+    try {
+      if (isPinned) {
+        // Unpin message
+        const result = await unpinMessage(client, roomId, msg.eventId);
+        if (result.success) {
+          unpinFromStore(roomId, msg.eventId);
+        } else {
+          console.error(result.error || "Failed to unpin message");
+          //toast.error(result.error || "Failed to unpin message");
+        }
+      } else {
+        // Pin message
+        const result = await pinMessage(client, roomId, msg.eventId);
+        if (result.success) {
+          // Add to local store
+          pinToStore(roomId, {
+            eventId: msg.eventId,
+            text: msg.text,
+            sender: msg.sender || "",
+            senderDisplayName: msg.senderDisplayName,
+            time: msg.time,
+            timestamp: msg.timestamp,
+            type: msg.type || "text",
+            roomId,
+            pinnedAt: Date.now(),
+          });
+        } else {
+          console.error(result.error || "Failed to pin message");
+          //toast.error(result.error || "Failed to pin message");
+        }
+      }
+
+      // Đóng menu sau khi pin/unpin
+      setOpen(false);
+      setShowOverlay(false);
+      setActiveMenuMessageId(null);
+      setTransformOffset(0);
+    } catch (error) {
+      console.error("Error handling pin:", error);
+      //toast.error("Failed to pin/unpin message");
     }
   };
 
@@ -494,7 +587,10 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
               sideOffset={10}
               alignOffset={0}
             >
-              <DropdownMenuItem className="flex justify-between items-center py-1">
+              <DropdownMenuItem
+                className="flex justify-between items-center py-1"
+                onClick={handleReply}
+              >
                 <span className="text-sm">Reply</span>
                 <Reply size={16} className="text-blue-500" />
               </DropdownMenuItem>
@@ -512,9 +608,15 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
                 <Edit size={16} className="text-blue-500" />
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="flex justify-between items-center py-1">
-                <span className="text-sm">Pin</span>
-                <Pin size={16} className="text-blue-500" />
+              <DropdownMenuItem
+                className="flex justify-between items-center py-1"
+                onClick={handlePin}
+              >
+                <span className="text-sm">{isPinned ? "Unpin" : "Pin"}</span>
+                <Pin
+                  size={16}
+                  className={isPinned ? "text-red-500" : "text-blue-500"}
+                />
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -533,7 +635,10 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
                 <Trash2 size={16} className="text-red-500" />
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="flex justify-between items-center py-1">
+              <DropdownMenuItem
+                className="flex justify-between items-center py-1"
+                onClick={handleSelectionClick}
+              >
                 <span className="text-sm">Select</span>
                 <CheckCircle size={16} className="text-blue-500" />
               </DropdownMenuItem>

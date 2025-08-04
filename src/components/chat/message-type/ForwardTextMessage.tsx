@@ -27,6 +27,13 @@ import {
   AvatarImage,
 } from "@/components/ui/ChatAvatar";
 import { linkify } from "@/utils/chat/linkify";
+import { usePinStore } from "@/stores/usePinStore";
+import {
+  pinMessage,
+  unpinMessage,
+  isMessagePinned,
+} from "@/services/pinService";
+import { Pin, Reply, Copy, Forward, Trash2 } from "lucide-react";
 
 type ForwardTextMessageProps = MessagePros & {
   forwardMessage: {
@@ -41,6 +48,7 @@ const ForwardTextMessage = ({
   isSender,
   animate,
   forwardMessage,
+  roomId,
 }: ForwardTextMessageProps) => {
   const theme = useTheme();
   const [open, setOpen] = useState(false);
@@ -52,6 +60,18 @@ const ForwardTextMessage = ({
   const holdTimeout = useRef<number | null>(null);
   const allowOpenRef = useRef(false);
   //console.log(avatarUrl);
+
+  // Pin store
+  const {
+    pinMessage: pinToStore,
+    unpinMessage: unpinFromStore,
+    isMessagePinned: isPinnedInStore,
+  } = usePinStore();
+
+  // Use reactive store subscription for pin status
+  const isPinned = usePinStore((state) =>
+    state.isMessagePinned(roomId || "", msg.eventId)
+  );
 
   useEffect(() => {
     if (!client || !originalSenderId) return;
@@ -103,6 +123,46 @@ const ForwardTextMessage = ({
         time: msg.time,
       });
     }, 1000);
+  };
+
+  const handlePin = async () => {
+    if (!client || !roomId) return;
+
+    try {
+      if (isPinned) {
+        // Unpin message
+        const result = await unpinMessage(client, roomId, msg.eventId);
+        if (result.success) {
+          unpinFromStore(roomId, msg.eventId);
+        } else {
+          toast.error(result.error || "Failed to unpin message");
+        }
+      } else {
+        // Pin message
+        const result = await pinMessage(client, roomId, msg.eventId);
+        if (result.success) {
+          // Add to local store
+          pinToStore(roomId, {
+            eventId: msg.eventId,
+            text: msg.text,
+            sender: msg.sender || "",
+            senderDisplayName: msg.senderDisplayName,
+            time: msg.time,
+            timestamp: msg.timestamp,
+            type: msg.type || "text",
+            roomId,
+            pinnedAt: Date.now(),
+          });
+        } else {
+          toast.error(result.error || "Failed to pin message");
+        }
+      }
+
+      setOpen(false);
+    } catch (error) {
+      console.error("Error handling pin:", error);
+      toast.error("Failed to pin/unpin message");
+    }
   };
 
   const handleHoldStart = () => {
@@ -185,7 +245,11 @@ const ForwardTextMessage = ({
                 </Avatar>
                 {originalSender}
               </p>
-              <p className={"whitespace-pre-wrap break-words leading-snug max-w-[70vw]"}>
+              <p
+                className={
+                  "whitespace-pre-wrap break-words leading-snug max-w-[70vw]"
+                }
+              >
                 {linkify(text)}
               </p>
               <div className={timeClass}>
@@ -223,6 +287,17 @@ const ForwardTextMessage = ({
         >
           <p>Forward</p>
           <ForwardIconSvg isDark={theme.resolvedTheme === "dark"} />
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="flex justify-between items-center"
+          onClick={handlePin}
+        >
+          <p>{isPinned ? "Unpin" : "Pin"}</p>
+          <Pin
+            size={16}
+            className={isPinned ? "text-red-500" : "text-blue-500"}
+          />
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem className="flex justify-between items-center">

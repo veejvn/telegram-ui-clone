@@ -1,36 +1,20 @@
 "use client";
-
-import React, { useRef, useState, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { clsx } from "clsx";
 import {
-  Play,
-  Pause,
-  CheckCheck,
   Check,
-  Reply,
+  CheckCheck,
   Copy,
   Edit,
   Pin,
   Forward,
   Trash2,
   CheckCircle,
+  Reply,
 } from "lucide-react";
-import { Message } from "@/stores/useChatStore";
+import { MessagePros } from "@/types/chat";
 import { formatMsgTime } from "@/utils/chat/formatMsgTime";
-import clsx from "clsx";
-import WaveSurfer from "wavesurfer.js";
 import { useTheme } from "next-themes";
-import { FaPause, FaPlay } from "react-icons/fa";
-import { cn } from "@/lib/utils";
-import { useMatrixClient } from "@/contexts/MatrixClientProvider";
-import { useRouter } from "next/navigation";
-import { useForwardStore } from "@/stores/useForwardStore";
-import { useChatStore } from "@/stores/useChatStore";
-import { useMessageMenu } from "@/contexts/MessageMenuContext";
-import { useSelectionStore } from "@/stores/useSelectionStore";
-import { useReplyStore } from "@/stores/useReplyStore";
-import { deleteMessage } from "@/services/chatService";
-import { copyToClipboard } from "@/utils/copyToClipboard";
-import { toast } from "sonner";
 import { BubbleTail } from "./BubbleTail";
 import {
   DropdownMenu,
@@ -39,35 +23,50 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { copyToClipboard } from "@/utils/copyToClipboard";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { useForwardStore } from "@/stores/useForwardStore";
+import { useReplyStore } from "@/stores/useReplyStore";
+import { useMatrixClient } from "@/contexts/MatrixClientProvider";
+import { useChatStore } from "@/stores/useChatStore";
+import { useMessageMenu } from "@/contexts/MessageMenuContext";
+import { useSelectionStore } from "@/stores/useSelectionStore";
+import { deleteMessage } from "@/services/chatService";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/ChatAvatar";
+import { linkify } from "@/utils/chat/linkify";
 
-interface Props {
-  msg: Message;
-  isSender?: boolean;
-  animate?: boolean;
-  roomId?: string;
-}
+type ReplyMessageProps = MessagePros & {
+  replyInfo: {
+    text: string;
+    replyTo: {
+      eventId: string;
+      text: string;
+      sender: string;
+      senderDisplayName: string;
+    };
+  };
+};
 
-const AudioMessage: React.FC<Props> = ({
+const ReplyMessage = ({
   msg,
-  isSender = false,
+  isSender,
   animate,
+  replyInfo,
   roomId,
-}) => {
-  if (!msg.audioUrl) return null;
-
-  const [playing, setPlaying] = useState(false);
-  const [remaining, setRemaining] = useState<number>(msg.audioDuration ?? 0);
-  const intervalRef = useRef<number | null>(null);
-  const { theme } = useTheme();
-  const isDarkMode = false; // Force light mode as requested
-
-  // Menu states - copied from TextMessage
+}: ReplyMessageProps & { roomId: string }) => {
+  const theme = useTheme();
   const [open, setOpen] = useState(false);
   const [showOverlay, setShowOverlay] = useState(false);
   const [transformOffset, setTransformOffset] = useState(0);
   const client = useMatrixClient();
   const router = useRouter();
-  const { addMessage } = useForwardStore.getState();
+  const { text, replyTo } = replyInfo;
+  const [avatarUrl, setAvatarUrl] = useState<string>("");
   const holdTimeout = useRef<number | null>(null);
   const allowOpenRef = useRef(false);
   const updateMessage = useChatStore.getState().updateMessage;
@@ -104,99 +103,31 @@ const AudioMessage: React.FC<Props> = ({
     { emoji: "😡", count: 1, userReacted: false },
   ];
 
-  // Sync remaining when msg.audioDuration changes
   useEffect(() => {
-    setRemaining(msg.audioDuration ?? 0);
-  }, [msg.audioDuration]);
+    if (!client || !replyTo.sender) return;
 
-  const startCountdown = () => {
-    if (intervalRef.current) return;
-    intervalRef.current = window.setInterval(() => {
-      setRemaining((r) => {
-        if (r <= 1) {
-          clearInterval(intervalRef.current!);
-          intervalRef.current = null;
-          return 0;
-        }
-        return r - 1;
-      });
-    }, 1000);
-  };
+    const user = client.getUser(replyTo.sender);
+    const mxcUrl = user?.avatarUrl;
 
-  const stopCountdown = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+    if (mxcUrl) {
+      const httpUrl = client.mxcUrlToHttp(mxcUrl, 96, 96, "crop") ?? "";
+      setAvatarUrl(httpUrl);
     }
-  };
+  }, [client, replyTo.sender]);
 
-  const togglePlay = () => {
-    if (!wavesurferRef.current) return;
+  const textClass = clsx(
+    "rounded-3xl px-4 py-1.5 text-[#181818] dark:text-[#181818] transition-all duration-200",
+    // Background colors
+    "bg-[#808080]/30 dark:bg-[#808080]",
+    animate && "flash-background"
+  );
 
-    if (playing) {
-      wavesurferRef.current.pause();
-      stopCountdown();
-    } else {
-      wavesurferRef.current.play();
-      startCountdown();
-    }
-    setPlaying((p) => !p);
-  };
+  const timeClass = clsx(
+    "flex text-[#444444] items-center justify-end gap-1 text-[10px] select-none pb-2"
+  );
 
-  const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
-  const ss = String(remaining % 60).padStart(2, "0");
-
-  const waveformRef = useRef<HTMLDivElement | null>(null);
-  const wavesurferRef = useRef<WaveSurfer | null>(null);
-
-  // Colors to match the design in the image
-  const waveColor = "#e5e6e6"; // Light gray for inactive bars
-  const progressColor = "#007aff"; // Blue for active/progress bars
-
-  useEffect(() => {
-    if (waveformRef.current && !wavesurferRef.current) {
-      wavesurferRef.current = WaveSurfer.create({
-        container: waveformRef.current,
-        waveColor: waveColor,
-        progressColor: progressColor,
-        height: 24,
-        barWidth: 3,
-        responsive: true,
-        interact: false,
-        cursorWidth: 0,
-      });
-
-      wavesurferRef.current.load(msg.audioUrl ?? "");
-
-      // Add event listeners
-      wavesurferRef.current.on("finish", () => {
-        setPlaying(false);
-        stopCountdown();
-        setRemaining(msg.audioDuration ?? 0);
-      });
-
-      wavesurferRef.current.on("pause", () => {
-        setPlaying(false);
-        stopCountdown();
-      });
-
-      wavesurferRef.current.on("play", () => {
-        setPlaying(true);
-        startCountdown();
-      });
-    }
-
-    return () => {
-      if (wavesurferRef.current) {
-        wavesurferRef.current.destroy();
-        wavesurferRef.current = null;
-      }
-    };
-  }, [msg.audioUrl]);
-
-  // Handler functions from TextMessage
   const handleCopy = async (text: string) => {
-    const success = await copyToClipboard(text || "Audio message");
+    const success = await copyToClipboard(text);
     if (success) {
       toast.success("Copied to clipboard!");
     } else {
@@ -205,21 +136,22 @@ const AudioMessage: React.FC<Props> = ({
   };
 
   const handleForward = async () => {
-    if (!msg.sender || !msg.time || !client) return;
+    if (!msg.text || !msg.sender || !msg.time || !client) return;
     router.push("/chat/forward");
 
     setTimeout(() => {
+      const { addMessage } = useForwardStore.getState();
       addMessage({
-        text: "Audio message",
+        text: text,
         senderId: msg.sender,
-        sender: msg.senderDisplayName!,
+        sender: msg.senderDisplayName ?? msg.sender ?? "",
         time: msg.time,
       });
     }, 1000);
   };
 
   const handleReply = () => {
-    if (!msg.sender || !msg.time) return;
+    if (!msg.text || !msg.sender || !msg.time) return;
 
     // Đóng menu
     setOpen(false);
@@ -230,7 +162,7 @@ const AudioMessage: React.FC<Props> = ({
     // Set reply message
     setReplyMessage({
       eventId: msg.eventId,
-      text: "Audio message",
+      text: text,
       sender: msg.sender,
       senderDisplayName: msg.senderDisplayName || msg.sender,
       time: msg.time,
@@ -249,6 +181,31 @@ const AudioMessage: React.FC<Props> = ({
     } catch (error) {
       console.log(error);
     }
+  };
+
+  const handleJumpToMessage = () => {
+    // Jump to the original replied message
+    router.push(`/chat/${roomId}?highlight=${replyTo.eventId}`);
+
+    // Force scroll and highlight after navigation, even if URL doesn't change
+    setTimeout(() => {
+      const targetElement = document.querySelector(
+        `[data-message-id="${replyTo.eventId}"]`
+      );
+      if (targetElement) {
+        targetElement.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+
+        // Trigger manual highlight animation
+        window.dispatchEvent(
+          new CustomEvent("manualHighlight", {
+            detail: { eventId: replyTo.eventId },
+          })
+        );
+      }
+    }, 100);
   };
 
   const handleReactionClick = (emoji: string) => {
@@ -270,13 +227,15 @@ const AudioMessage: React.FC<Props> = ({
 
     // Handle reaction click - toggle user's reaction
     console.log(`Reaction clicked: ${emoji}`);
+    console.log("handleReactionClick called!"); // Additional debug
     // Đóng sự kiện click vào reaction
     if (open) {
       setOpen(false);
-      setShowOverlay(false);
-      setActiveMenuMessageId(null);
-      setTransformOffset(0);
+      setShowOverlay(false); // Ẩn overlay khi click reaction
+      setActiveMenuMessageId(null); // Clear active message
+      setTransformOffset(0); // Reset vị trí tin nhắn
     }
+    // In real app, this would call an API to add/remove reaction
   };
 
   const handleHoldStart = () => {
@@ -321,6 +280,7 @@ const AudioMessage: React.FC<Props> = ({
     if (isScrollingRef.current) return;
 
     // Click không làm gì cả - menu chỉ mở qua hold gesture
+    // Selection mode chỉ hoạt động qua "Select" button trong menu
   };
 
   // Xử lý touch events để phát hiện scroll
@@ -503,7 +463,7 @@ const AudioMessage: React.FC<Props> = ({
               {open && !isDeleted && !isSelectionMode && (
                 <div
                   className={clsx(
-                    "absolute top-[-50px] transform -translate-x-1/2 flex gap-1 justify-center z-[120]",
+                    "absolute top-[-45px] transform -translate-x-1/2 flex gap-1 justify-center z-[120]",
                     !isSender ? "left-23" : "-right-23"
                   )}
                   onClick={(e) => {
@@ -527,15 +487,18 @@ const AudioMessage: React.FC<Props> = ({
                           e.preventDefault();
                         }}
                         onPointerDown={(e) => {
-                          console.log("Reaction pointerDown!");
                           e.stopPropagation();
                           e.preventDefault();
                         }}
                         onClick={(e) => {
-                          console.log("Reaction onClick!");
+                          console.log("Reaction BUTTON clicked!");
                           e.stopPropagation();
                           e.preventDefault();
-                          handleReactionClick(reaction.emoji);
+
+                          // Thêm delay nhỏ để đảm bảo không click ngay lập tức
+                          setTimeout(() => {
+                            handleReactionClick(reaction.emoji);
+                          }, 50);
                         }}
                         className={`flex items-center text-xs cursor-pointer transition-all hover:scale-105 border-0 bg-transparent ${
                           reaction.userReacted
@@ -543,7 +506,7 @@ const AudioMessage: React.FC<Props> = ({
                             : "hover:bg-gray-100 rounded-full"
                         }`}
                       >
-                        <span className="text-lg">{reaction.emoji}</span>
+                        <span className="text-sm">{reaction.emoji}</span>
                       </button>
                     ))}
                   </div>
@@ -576,47 +539,40 @@ const AudioMessage: React.FC<Props> = ({
 
                   {/* 🡐 Tail cho tin nhận */}
                   {!isSender && (
-                    <div className="text-[#808080]/30 absolute left-[-7.6px] w-[16px] rotate-[-6deg]">
+                    <div className="text-[#808080]/30 absolute bottom-1 left-[-7px] w-[16px]">
                       <BubbleTail isSender={false} fillColor="currentColor" />
                     </div>
                   )}
 
-                  {/* 💬 Nội dung tin nhắn audio */}
+                  {/* 💬 Nội dung tin nhắn */}
                   <div className="flex flex-col">
                     <div
-                      className={clsx(
-                        "bg-[#808080]/30 dark:bg-[#808080] rounded-2xl p-3 w-45 max-w-xs flex flex-col select-none transition-all duration-200",
-                        animate && "flash-background"
-                      )}
+                      className={clsx(textClass, "max-w-[75vw] break-words")}
                     >
-                      {/* Audio player */}
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={togglePlay}
-                          className="rounded-full bg-[#000088] flex justify-center items-center w-10 h-10 text-white hover:bg-blue-600 transition-colors"
-                        >
-                          {playing ? (
-                            <FaPause size={14} />
-                          ) : (
-                            <FaPlay size={14} className="ml-0.5" />
-                          )}
-                        </button>
-
-                        <div className="flex-1">
-                          <div ref={waveformRef} className="w-full mb-1" />
-                          <div className="flex items-center">
-                            <span className="text-[10px] text-[#6B7271]">
-                              {mm}:{ss}
-                            </span>
-                          </div>
+                      {/* Reply to section */}
+                      <div
+                        className="border-l-4 border-blue-500 pl-3 mb-2 py-1 bg-black/5 dark:bg-white/5 rounded cursor-pointer"
+                        onClick={handleJumpToMessage}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
+                            {replyTo.senderDisplayName}
+                          </span>
                         </div>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
+                          {replyTo.text}
+                        </p>
                       </div>
 
-                      {/* Time at bottom */}
-                      <div className="flex justify-end mt-1">
-                        <div className="flex items-center gap-1 text-[10px] text-[#6B7271]">
-                          <span>{formatMsgTime(msg.time)}</span>
-                        </div>
+                      {/* Current message text */}
+                      <p className="text-sm leading-relaxed break-words">
+                        <span
+                          dangerouslySetInnerHTML={{ __html: linkify(text) }}
+                        />
+                      </p>
+
+                      <div className={timeClass}>
+                        <span>{formatMsgTime(msg.time)}</span>
                       </div>
                     </div>
                   </div>
@@ -625,7 +581,7 @@ const AudioMessage: React.FC<Props> = ({
                   {isSender && (
                     <div
                       className={clsx(
-                        "text-[#808080]/30 absolute bottom-[-2px] right-[-10px] w-[16px] rotate-[10deg]"
+                        "text-[#808080]/30 absolute bottom-1 right-[-10px] w-[16px]"
                       )}
                     >
                       <BubbleTail isSender={true} fillColor="currentColor" />
@@ -653,7 +609,7 @@ const AudioMessage: React.FC<Props> = ({
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="flex justify-between items-center py-1"
-                onClick={() => handleCopy("Audio message")}
+                onClick={() => handleCopy(text)}
               >
                 <span className="text-sm">Copy</span>
                 <Copy size={16} className="text-blue-500" />
@@ -700,4 +656,4 @@ const AudioMessage: React.FC<Props> = ({
   );
 };
 
-export default AudioMessage;
+export default ReplyMessage;

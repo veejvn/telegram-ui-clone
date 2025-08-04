@@ -20,6 +20,7 @@ import { getDetailedStatus } from "@/utils/chat/presencesHelpers";
 import { useRouter } from "next/navigation";
 import { useUserPresence } from "@/hooks/useUserPrecense";
 import useCallStore from "@/stores/useCallStore";
+import PinnedMessageBanner from "./PinnedMessageBanner";
 
 interface Contact {
   id: string;
@@ -110,13 +111,15 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
     return {
       id: user.userId,
       name: user.displayName || user.userId || room.name,
-      lastSeen: isActuallyOnline ? "online" : getDetailedStatus(lastSeen) || "recently",
+      lastSeen: isActuallyOnline
+        ? "online"
+        : getDetailedStatus(lastSeen) || "recently",
       roomId: room.roomId,
     };
   };
 
   // Follow NewCallPage pattern - handle start call exactly the same way
-  const handleStartCall = async (callType: 'voice' | 'video') => {
+  const handleStartCall = async (callType: "voice" | "video") => {
     if (!user || !room) return;
 
     const contact = createContactFromUser();
@@ -128,7 +131,9 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
 
       // Navigate exactly like NewCallPage
       router.push(
-        `/call/${callType}?calleeId=${encodeURIComponent(contact.roomId)}&contact=${encodeURIComponent(contact.name)}`
+        `/call/${callType}?calleeId=${encodeURIComponent(
+          contact.roomId
+        )}&contact=${encodeURIComponent(contact.name)}`
       );
     } catch (error) {
       console.error("Failed to start call:", error);
@@ -138,75 +143,80 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
   const currentContact = createContactFromUser();
 
   return (
-    <div className="flex items-center justify-between h-[50px] p-2">
-      {/* Left: Back button */}
-      <div className="w-[80px] flex justify-start">
-        {backToMain ? (
-          <button
-            className="flex items-center justify-center font-medium cursor-pointer bg-white/60 rounded-full p-1.5 border border-white
+    <>
+      <div className="flex items-center justify-between h-[50px] p-2">
+        {/* Left: Back button */}
+        <div className="w-[80px] flex justify-start">
+          {backToMain ? (
+            <button
+              className="flex items-center justify-center font-medium cursor-pointer bg-white/60 rounded-full p-1.5 border border-white
           bg-gradient-to-br from-slate-100/50 via-gray-400/10 to-slate-50/15 
           backdrop-blur-xs shadow-xs hover:scale-105 duration-300 transition-all ease-in-out"
-            onClick={handleBack}
-            title="Back"
-            aria-label="Back"
-          >
-            <ChevronLeft size={20} />
-          </button>
-        ) : (
-          <Link
-            href={"/chat"}
-            className="flex items-center justify-center cursor-pointer hover:opacity-70 bg-white/60 rounded-full p-1 border border-white
+              onClick={handleBack}
+              title="Back"
+              aria-label="Back"
+            >
+              <ChevronLeft size={20} />
+            </button>
+          ) : (
+            <Link
+              href={"/chat"}
+              className="flex items-center justify-center cursor-pointer hover:opacity-70 bg-white/60 rounded-full p-1 border border-white
           bg-gradient-to-br from-slate-100/50 via-gray-400/10 to-slate-50/15 
           backdrop-blur-xs shadow-xs hover:scale-105 duration-300 transition-all ease-in-out"
-            onClick={() => {
-              setTimeout(() => {
-                clearMessages();
-              }, 300);
-            }}
-          >
-            <ChevronLeft size={20} />
+              onClick={() => {
+                setTimeout(() => {
+                  clearMessages();
+                }, 300);
+              }}
+            >
+              <ChevronLeft size={20} />
+            </Link>
+          )}
+        </div>
+
+        {/* Center: Room name */}
+        <div className="flex-1 text-center truncate select-none">
+          <Link href={`${room.roomId}/info`}>
+            <h1 className="font-semibold">{room.name}</h1>
           </Link>
-        )}
-      </div>
+        </div>
 
-      {/* Center: Room name */}
-      <div className="flex-1 text-center truncate">
-        <Link href={`${room.roomId}/info`}>
-          <h1 className="font-semibold">{room.name}</h1>
-        </Link>
-      </div>
-
-      {/* Right: Call/Video buttons */}
-      <div className="w-[80px] flex items-center gap-2 justify-end">
-        {/* Video Call Button */}
-        <button
-          className="flex items-center justify-center rounded-full p-1 border border-white cursor-pointer 
+        {/* Right: Call/Video buttons */}
+        <div className="w-[80px] flex items-center gap-2 justify-end">
+          {/* Video Call Button */}
+          <button
+            className="flex items-center justify-center rounded-full p-1 border border-white cursor-pointer 
         bg-gradient-to-br from-slate-100/70 via-gray-400/10 to-slate-50/30 backdrop-blur-xs 
         shadow-xs hover:scale-105 duration-300 transition-all ease-in-out
         disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-          onClick={() => handleStartCall("video")}
-          disabled={!user || !client || !currentContact}
-          title="Video Call"
-          aria-label="Start video call"
-        >
-          <Video size={20} />
-        </button>
+            onClick={() => handleStartCall("video")}
+            disabled={!user || !client || !currentContact}
+            title="Video Call"
+            aria-label="Start video call"
+          >
+            <Video size={20} />
+          </button>
 
-        {/* Voice Call Button */}
-        <button
-          className="flex items-center justify-center rounded-full p-1.5 border border-white cursor-pointer 
+          {/* Voice Call Button */}
+          <button
+            className="flex items-center justify-center rounded-full p-1.5 border border-white cursor-pointer 
         bg-gradient-to-br from-slate-100/70 via-gray-400/10 to-slate-50/30 backdrop-blur-xs 
         shadow-xs hover:scale-105 duration-300 transition-all ease-in-out
         disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-          onClick={() => handleStartCall("voice")}
-          disabled={!user || !client || !currentContact}
-          title="Voice Call"
-          aria-label="Start voice call"
-        >
-          <PhoneOutgoing size={15} />
-        </button>
+            onClick={() => handleStartCall("voice")}
+            disabled={!user || !client || !currentContact}
+            title="Voice Call"
+            aria-label="Start voice call"
+          >
+            <PhoneOutgoing size={15} />
+          </button>
+        </div>
       </div>
-    </div>
+
+      {/* Pinned Message Banner */}
+      <PinnedMessageBanner roomId={roomId} />
+    </>
   );
 };
 

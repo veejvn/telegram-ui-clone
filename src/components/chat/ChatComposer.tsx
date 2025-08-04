@@ -10,7 +10,15 @@ import {
   Search,
   Smile,
   StopCircle,
+  X,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   getImageDimensions,
   sendFileMessage,
@@ -29,8 +37,10 @@ import TypingIndicator from "./TypingIndicator";
 import useTyping from "@/hooks/useTyping";
 import EmojiPicker, { Theme as EmojiTheme } from "emoji-picker-react";
 import ForwardMsgPreview from "./ForwardMsgPreview";
+import ReplyPreview from "./ReplyPreview";
 import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
 import { useForwardStore } from "@/stores/useForwardStore";
+import { useReplyStore } from "@/stores/useReplyStore";
 import { Gift, Reply, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -40,7 +50,8 @@ import {
   Metadata,
 } from "@/utils/chat/send-message/getVideoMetadata";
 import { GrGallery } from "react-icons/gr";
-import { FaFile } from "react-icons/fa6";
+import { IoFolderOutline } from "react-icons/io5";
+import { CiLocationOn } from "react-icons/ci";
 import { MdLocationOn } from "react-icons/md";
 import { FileInfo, ImageInfo } from "@/types/chat";
 import StickerPicker from "@/components/common/StickerPicker";
@@ -66,10 +77,10 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   const addMessage = useChatStore((state) => state.addMessage);
   const updateMessage = useChatStore((state) => state.updateMessage);
   const { messages: forwardMessages, clearMessages } = useForwardStore();
+  const { replyMessage, clearReply } = useReplyStore();
   const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState<
-    "gallery" | "gift" | "file" | "location" | "reply" | "checklist"
-  >("gallery");
+  const [tab, setTab] = useState<"Photo" | "File" | "Location">("Photo");
+  const [selectOpen, setSelectOpen] = useState(false);
   const sheetRef = useRef<HTMLDivElement>(null);
   const voiceModalRef = useRef<HTMLDivElement>(null);
 
@@ -101,17 +112,38 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     //  1. Gửi message thường trước nếu có nội dung
     if (trimmed) {
       const localId = "local_" + Date.now();
-      //console.log("Local Id: "  + localId)
-      addMessage(roomId, {
+      let messageBody = trimmed;
+      let messageType = isOnlyEmojis(trimmed) ? "emoji" : "text";
+
+      // Nếu có reply, tạo reply body tương tự forward
+      if (replyMessage) {
+        messageBody = JSON.stringify({
+          reply: true,
+          text: trimmed,
+          replyTo: {
+            eventId: replyMessage.eventId,
+            text: replyMessage.text,
+            sender: replyMessage.sender,
+            senderDisplayName: replyMessage.senderDisplayName,
+          },
+        });
+        messageType = "text"; // reply message luôn là text type
+      }
+
+      // Tạo message object
+      const messageData: any = {
         eventId: localId,
         sender: userId ?? undefined,
         senderDisplayName: userId ?? undefined,
-        text: trimmed,
+        text: messageBody,
         time: now.toLocaleString(),
         timestamp: now.getTime(),
         status: "sent",
-        type: isOnlyEmojis(trimmed) ? "emoji" : "text",
-      });
+        type: messageType,
+        isReply: !!replyMessage, // thêm flag để dễ identify
+      };
+
+      addMessage(roomId, messageData);
 
       setText("");
       textareaRef.current?.focus();
@@ -119,8 +151,13 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
       setIsTyping(false);
       sendTypingEvent(client, roomId, false);
 
+      // Clear reply after sending
+      if (replyMessage) {
+        clearReply();
+      }
+
       setTimeout(() => {
-        sendMessage(roomId, trimmed, client)
+        sendMessage(roomId, messageBody, client)
           .then((res) => {
             if (!res.success) console.log("Send Failed!");
           })
@@ -359,19 +396,39 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (sheetRef.current && !sheetRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+
+      // Don't close modal if Select dropdown is open
+      if (selectOpen) {
+        return;
+      }
+
+      // Check if click is on Select dropdown content (which is in a portal)
+      const selectContent = document.querySelector(
+        "[data-radix-select-content]"
+      );
+      if (selectContent && selectContent.contains(target)) {
+        return; // Don't close modal if clicking on select dropdown
+      }
+
+      // Check if click is on Select trigger or value
+      const selectTrigger = document.querySelector(
+        "[data-radix-select-trigger]"
+      );
+      if (selectTrigger && selectTrigger.contains(target)) {
+        return; // Don't close modal if clicking on select trigger
+      }
+
+      if (sheetRef.current && !sheetRef.current.contains(target)) {
         setOpen(false);
       }
-      if (
-        voiceModalRef.current &&
-        !voiceModalRef.current.contains(e.target as Node)
-      ) {
+      if (voiceModalRef.current && !voiceModalRef.current.contains(target)) {
         setShowModalVoiceRecord(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [selectOpen]);
 
   const renderIcon = (tab: string) => {
     switch (tab) {
@@ -624,375 +681,423 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   }, []);
 
   return (
-    // <div className="bg-[#e0ece6] dark:bg-[#1b1a1f]">
-    //   {forwardMessages.length > 0 && <ForwardMsgPreview />}
-    //   {isRecording && (
-    //     <div className="px-4 py-2">
-    //       <div className="w-full h-2 bg-gray-300 rounded-full overflow-hidden">
-    //         <div
-    //           className="h-full bg-red-500"
-    //           style={{ width: `${Math.min((recordTime / 60) * 100, 100)}%` }}
-    //         />
-    //       </div>
-    //       <div className="text-sm text-gray-600 mt-1">{recordTime}s</div>
-    //     </div>
-    //   )}
+    <>
+      {/* Reply Preview */}
+      <ReplyPreview />
 
-    //   <div
-    //     className={`relative flex justify-between items-center px-2 py-2 lg:py-3 transition-all duration-300 ${
-    //       isKeyboardOpen ? "pb-2" : "pb-10"
-    //     }`}
-    //   >
-    //     <Paperclip
-    //       // onClick={() => inputRef.current?.click()}
-    //       onClick={() => setOpen(true)}
-    //       className="text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
-    //       size={25}
-    //     />
-    //     <div
-    //       className={`p-1 mx-1.5 relative ${
-    //         isMultiLine ? "rounded-2xl" : "rounded-full"
-    //       } flex items-center justify-between w-full bg-white dark:bg-black`}
-    //     >
-    //       <textarea
-    //         ref={textareaRef}
-    //         value={text}
-    //         onChange={onInputChange}
-    //         onKeyDown={handleKeyDown}
-    //         placeholder="Message"
-    //         rows={1}
-    //         className="flex-1 h-auto resize-none bg-transparent outline-none px-3 max-h-[6rem] overflow-y-auto text-md text-black dark:text-white scrollbar-thin"
-    //       />
-    //       {text.trim() ? (
-    //         <Smile
-    //           onClick={() => setShowEmojiPicker((prev) => !prev)}
-    //           className="px-0.5 text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all ease-in-out duration-700"
-    //           size={24}
-    //         />
-    //       ) : (
-    //         <Eclipse
-    //           onClick={() => setShowStickers((prev) => !prev)}
-    //           className="px-0.5 text-[#858585] cursor-default"
-    //           size={24}
-    //         />
-    //       )}
-
-    //       {showEmojiPicker && (
-    //         <div className="absolute bottom-12 right-2 z-50">
-    //           <EmojiPicker
-    //             width={300}
-    //             height={350}
-    //             onEmojiClick={handleEmojiClick}
-    //             searchDisabled={true}
-    //             previewConfig={{ showPreview: false }}
-    //             theme={
-    //               theme.theme === "dark" ? EmojiTheme.DARK : EmojiTheme.LIGHT
-    //             }
-    //           />
-    //         </div>
-    //       )}
-    //       <StickerPicker
-    //         isOpen={showStickers}
-    //         onClose={() => setShowStickers(false)}
-    //         onStickerSelect={handleStickerSelect}
-    //         onEmojiSelect={handleIconSelect}
-    //       />
-    //     </div>
-
-    //     <div className="absolute bottom-14 left-0 z-50 pb-6">
-    //       <TypingIndicator roomId={roomId} />
-    //     </div>
-
-    //     {text.trim() || forwardMessages.length > 0 ? (
-    //       <svg
-    //         xmlns="http://www.w3.org/2000/svg"
-    //         viewBox="2 2 20 20"
-    //         fill="currentColor"
-    //         className="size-8 cursor-pointer hover:scale-110 duration-300 transition-all ease-in-out border-0"
-    //         onClick={handleSend}
-    //       >
-    //         <path
-    //           fillRule="evenodd"
-    //           d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm.53 5.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 1 0 1.06 1.06l1.72-1.72v5.69a.75.75 0 0 0 1.5 0v-5.69l1.72 1.72a.75.75 0 1 0 1.06-1.06l-3-3Z"
-    //           clipRule="evenodd"
-    //           className="text-blue-600"
-    //         />
-    //       </svg>
-    //     ) : (
-    //       /* nút mic nhấn giữ để ghi, thả để gửi */
-    //       <Mic
-    //         size={30}
-    //         className={`text-[#858585] hover:scale-110 hover:text-zinc-300 cursor-pointer transition-all duration-700 ${
-    //           isRecording ? "text-red-500 scale-125" : ""
-    //         }`}
-    //         onMouseDown={(e) => {
-    //           e.preventDefault(); // tránh double-trigger
-    //           startRecording();
-    //         }}
-    //         onMouseUp={(e) => {
-    //           e.preventDefault();
-    //           stopRecording();
-    //         }}
-    //         onMouseLeave={(e) => {
-    //           e.preventDefault();
-    //           if (isRecording) stopRecording();
-    //         }}
-    //         onTouchStart={() => {
-    //           startRecording();
-    //         }}
-    //         onTouchEnd={() => {
-    //           stopRecording();
-    //         }}
-    //       />
-    //     )}
-    //   </div>
-    // </div>
-
-    <div className="flex mx-3 pb-8">
-      {/* Nút Plus ngoài cùng bên trái */}
-      <div
-        className="w-12 h-12 flex items-center justify-center rounded-full shadow-sm
+      <div className="flex mx-3 pb-8">
+        {/* Nút Plus ngoài cùng bên trái */}
+        <div
+          className="w-12 h-12 flex items-center justify-center rounded-full shadow-sm
   border-white cursor-pointer bg-gradient-to-br from-slate-100/70 
   via-gray-400/10 to-slate-50/30 backdrop-blur-xs bg-white/30
   hover:scale-105 duration-300 transition-all ease-in-out mr-2"
-        onClick={() => setOpen(true)}
-      >
-        <Plus className="w-6 h-6" />
-        {/* Input file ẩn để chọn ảnh */}
-        <input
-          ref={imageInputRef}
-          type="file"
-          accept="image/*,video/*"
-          multiple
-          className="hidden"
-          onChange={handleImagesAndVideos}
-          aria-label="file"
-        />
-      </div>
+          onClick={() => setOpen(true)}
+        >
+          <Plus className="w-6 h-6" />
+          {/* Input file ẩn để chọn ảnh */}
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*,video/*"
+            multiple
+            className="hidden"
+            onChange={handleImagesAndVideos}
+            aria-label="file"
+          />
+        </div>
 
-      {/* Khung nhập chat */}
-      <div className="flex flex-1 items-center px-3 h-12 rounded-3xl bg-white/80 border border-white shadow-sm min-w-0">
-        {/* Icon micro bên trái */}
-        <Mic
-          className="w-5 h-5 text-gray-400 mr-2 cursor-pointer flex-shrink-0"
-          onClick={() => {
-            setShowModalVoiceRecord(true);
-          }}
-        />
-        {/* Input nhập tin nhắn */}
-        <textarea
-          ref={textareaRef}
-          value={text}
-          onChange={onInputChange}
-          onKeyDown={handleKeyDown}
-          placeholder="Enter message"
-          className="flex-1 h-full bg-transparent outline-none text-[12px] text-gray-700 placeholder-gray-400
+        {/* Khung nhập chat */}
+        <div className="flex flex-1 items-center px-3 h-12 rounded-3xl bg-white/80 border border-white shadow-sm min-w-0">
+          {/* Icon micro bên trái */}
+          <Mic
+            className="w-5 h-5 text-gray-400 mr-2 cursor-pointer flex-shrink-0"
+            onClick={() => {
+              setShowModalVoiceRecord(true);
+            }}
+          />
+          {/* Input nhập tin nhắn */}
+          <textarea
+            ref={textareaRef}
+            value={text}
+            onChange={onInputChange}
+            onKeyDown={handleKeyDown}
+            placeholder="Enter message"
+            className="flex-1 h-full bg-transparent outline-none text-[12px] text-gray-700 placeholder-gray-400
         placeholder:italic placeholder:font-light px-2 resize-none mt-5"
-        />
-        {/* Icon smile bên phải */}
-        <Smile
-          className="w-5 h-5 text-gray-400 ml-2 cursor-pointer flex-shrink-0"
-          onClick={() => setShowEmojiPicker((prev) => !prev)}
-        />
-        {/* Icon gửi (nếu có text) */}
-        {text.trim() && (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="2 2 20 20"
-            fill="currentColor"
-            className="ml-2 w-6 h-6 cursor-pointer hover:scale-110 duration-300 transition-all ease-in-out flex-shrink-0
+          />
+          {/* Icon smile bên phải */}
+          <Smile
+            className="w-5 h-5 text-gray-400 ml-2 cursor-pointer flex-shrink-0"
+            onClick={() => setShowEmojiPicker((prev) => !prev)}
+          />
+          {/* Icon gửi (nếu có text) */}
+          {text.trim() && (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="2 2 20 20"
+              fill="currentColor"
+              className="ml-2 w-6 h-6 cursor-pointer hover:scale-110 duration-300 transition-all ease-in-out flex-shrink-0
             animate-in slide-in-from-right-20"
-            onClick={handleSend}
-          >
-            <path
-              fillRule="evenodd"
-              d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm.53 5.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 1 0 1.06 1.06l1.72-1.72v5.69a.75.75 0 0 0 1.5 0v-5.69l1.72 1.72a.75.75 0 1 0 1.06-1.06l-3-3Z"
-              clipRule="evenodd"
-              className="text-blue-600"
-            />
-          </svg>
-        )}
+              onClick={handleSend}
+            >
+              <path
+                fillRule="evenodd"
+                d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm.53 5.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 1 0 1.06 1.06l1.72-1.72v5.69a.75.75 0 0 0 1.5 0v-5.69l1.72 1.72a.75.75 0 1 0 1.06-1.06l-3-3Z"
+                clipRule="evenodd"
+                className="text-blue-600"
+              />
+            </svg>
+          )}
 
-        {showEmojiPicker && (
-          <div className="absolute bottom-22 right-2 z-50">
-            <EmojiPicker
-              width={300}
-              height={350}
-              onEmojiClick={handleEmojiClick}
-              searchDisabled={true}
-              previewConfig={{ showPreview: false }}
-              theme={
-                theme.theme === "dark" ? EmojiTheme.DARK : EmojiTheme.LIGHT
-              }
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Voice Recording Modal */}
-      <VoiceRecordingModal
-        isOpen={showModalVoiceRecord}
-        client={client}
-        roomId={roomId}
-        onClose={handleCloseVoiceRecordingModal}
-        voiceModalRef={voiceModalRef}
-      />
-
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed bottom-0 left-0 right-0 z-50 bg-[#FFFFFF4D] dark:bg-[#FFFFFF4D] backdrop-blur-[48px] rounded-t-2xl shadow-2xl pb-10"
-            ref={sheetRef}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between w-full p-2 px-4 font-medium text-gray-600 capitalize">
-              <Button
-                variant={"link"}
-                className="text-blue-500"
-                onClick={() => setOpen(false)}
-              >
-                Close
-              </Button>
-              {tab}
-              {renderIcon(tab)}
+          {showEmojiPicker && (
+            <div className="absolute bottom-22 right-2 z-50">
+              <EmojiPicker
+                width={300}
+                height={350}
+                onEmojiClick={handleEmojiClick}
+                searchDisabled={true}
+                previewConfig={{ showPreview: false }}
+                theme={
+                  theme.theme === "dark" ? EmojiTheme.DARK : EmojiTheme.LIGHT
+                }
+              />
             </div>
+          )}
+        </div>
 
-            {/* Content */}
-            <div className="p-2 h-[400px]">
-              {tab === "gallery" && (
-                <div className="flex justify-center items-center h-full">
-                  <button
-                    onClick={() => imageInputRef.current?.click()}
-                    className="p-2 bg-blue-500 text-white rounded-md"
-                  >
-                    Chọn ảnh hoặc video
-                  </button>
-                  <input
-                    ref={imageInputRef}
-                    type="file"
-                    accept="image/*,video/*"
-                    multiple
-                    onChange={handleImagesAndVideos}
-                    className="hidden"
-                    aria-label="file"
-                  />
-                </div>
-              )}
-              {tab === "file" && (
-                <div className="flex justify-center items-center h-full">
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="p-2 bg-blue-500 text-white rounded-md"
-                  >
-                    Chọn file
-                  </button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    onChange={handleSendFile}
-                    multiple
-                    className="hidden"
-                    aria-label="file"
-                  />
-                </div>
-              )}
-              {tab === "gift" && (
-                <div className="text-sm text-gray-500">
-                  Danh sách quà tặng...
-                </div>
-              )}
-              {tab === "location" && (
-                <div className="text-sm text-gray-500">
-                  <LocationMap onSend={handleSendLocation} />
-                </div>
-              )}
-              {tab === "reply" && (
-                <div className="text-sm text-gray-500">
-                  Chọn tin nhắn để trả lời...
-                </div>
-              )}
-              {tab === "checklist" && (
-                <div className="text-sm text-gray-500">Thêm checklist...</div>
-              )}
-            </div>
+        {/* Voice Recording Modal */}
+        <VoiceRecordingModal
+          isOpen={showModalVoiceRecord}
+          client={client}
+          roomId={roomId}
+          onClose={handleCloseVoiceRecordingModal}
+          voiceModalRef={voiceModalRef}
+        />
 
-            {/* Tabs */}
-            <div className="flex justify-around border-t border-gray-200 px-4 py-2 text-xs text-center text-gray-600">
+        {/* Send Options Model */}
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="fixed bottom-0 left-0 right-0 z-50 bg-[#FFFFFF4D] dark:bg-[#FFFFFF4D] backdrop-blur-[48px] rounded-t-[36px] shadow-2xl"
+              ref={sheetRef}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between w-full p-2 px-4 font-medium text-gray-600 capitalize">
+                <div onClick={(e) => e.stopPropagation()}>
+                  <Select
+                    value={tab.toLowerCase()}
+                    onValueChange={(value) => {
+                      if (value === "photo") setTab("Photo");
+                      else if (value === "file") setTab("File");
+                      else if (value === "location") setTab("Location");
+                    }}
+                    onOpenChange={setSelectOpen}
+                  >
+                    <SelectTrigger
+                      className="text-xs rounded-4xl bg-[#FFFFFF4D] border-none text-blue-500"
+                      data-radix-select-trigger
+                    >
+                      <SelectValue>{tab}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent
+                      className="w-[180px] rounded-3xl divide- [&_[data-radix-select-item-indicator]]:!hidden [&_span[data-radix-select-item-indicator]]:!hidden"
+                      data-radix-select-content
+                    >
+                      <SelectItem
+                        value="photo"
+                        className="flex items-center justify-between w-full cursor-pointer text-[12px]"
+                        style={{
+                          color: tab === "Photo" ? "#3b82f6" : "#374151",
+                          backgroundColor:
+                            tab === "Photo" ? "#eff6ff" : "transparent",
+                          fontWeight: tab === "Photo" ? "500" : "400",
+                        }}
+                      >
+                        <span className="flex-1">Photo</span>
+                        <GrGallery
+                          style={{
+                            color: tab === "Photo" ? "#3b82f6" : "#374151",
+                            flexShrink: 0,
+                          }}
+                        />
+                      </SelectItem>
+                      <SelectItem
+                        value="file"
+                        className="flex items-center justify-between w-full cursor-pointer text-[12px] [&_span[data-radix-select-item-indicator]]:!hidden"
+                        style={{
+                          color: tab === "File" ? "#3b82f6" : "#374151",
+                          backgroundColor:
+                            tab === "File" ? "#eff6ff" : "transparent",
+                          fontWeight: tab === "File" ? "500" : "400",
+                        }}
+                      >
+                        File
+                        <IoFolderOutline
+                          className={`w-5 h-5 mb-1 ${
+                            tab === "File" ? "text-blue-500" : ""
+                          }`}
+                        />
+                      </SelectItem>
+                      <SelectItem
+                        value="location"
+                        className="flex items-center justify-between w-full cursor-pointer text-[12px] [&_span[data-radix-select-item-indicator]]:!hidden"
+                        style={{
+                          color: tab === "Location" ? "#3b82f6" : "#374151",
+                          backgroundColor:
+                            tab === "Location" ? "#eff6ff" : "transparent",
+                          fontWeight: tab === "Location" ? "500" : "400",
+                        }}
+                      >
+                        Location
+                        <CiLocationOn
+                          className={`w-5 h-5 mb-1 ${
+                            tab === "Location" ? "text-blue-500" : ""
+                          }`}
+                        />
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  variant={"link"}
+                  className="size-8 bg-[#8080804D] rounded-full"
+                  onClick={() => setOpen(false)}
+                >
+                  <X className="w-5 h-5 text-white" />
+                </Button>
+              </div>
+
+              {/* Content */}
+              <div className="p-2 h-[500px]">
+                {tab === "Photo" && (
+                  <div className="flex justify-center items-center h-full">
+                    <button
+                      onClick={() => imageInputRef.current?.click()}
+                      className="p-2 bg-blue-500 text-white rounded-md"
+                    >
+                      Chọn ảnh hoặc video
+                    </button>
+                    <input
+                      ref={imageInputRef}
+                      type="file"
+                      accept="image/*,video/*"
+                      multiple
+                      onChange={handleImagesAndVideos}
+                      className="hidden"
+                      aria-label="file"
+                    />
+                  </div>
+                )}
+                {tab === "File" && (
+                  <div className="flex justify-center items-center h-full">
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="p-2 bg-blue-500 text-white rounded-md"
+                    >
+                      Chọn file
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      onChange={handleSendFile}
+                      multiple
+                      className="hidden"
+                      aria-label="file"
+                    />
+                  </div>
+                )}
+                {tab === "Location" && (
+                  <div className="h-full overflow-y-auto">
+                    <div className="mb-4">
+                      <div className="rounded-2xl overflow-hidden relative">
+                        <LocationMap onSend={handleSendLocation} />
+                      </div>
+                    </div>
+                    {/* <div className="space-y-3">
+                    <div className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl cursor-pointer transition-colors">
+                      <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                        <svg
+                          className="w-5 h-5 text-white"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
+                          <circle cx="12" cy="9" r="2.5" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-blue-500 font-semibold">
+                          Share my current location
+                        </div>
+                        <div className="text-gray-500 text-sm">
+                          Accurate to 10 metres
+                        </div>
+                      </div>
+                      <svg
+                        className="w-5 h-5 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </div>
+
+                    <div className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl cursor-pointer transition-colors">
+                      <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                        <svg
+                          className="w-5 h-5 text-white"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
+                          <circle cx="12" cy="9" r="2.5" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-green-600 font-semibold">
+                          Share my live location
+                        </div>
+                        <div className="text-gray-500 text-sm">
+                          Update in real time as you move
+                        </div>
+                      </div>
+                      <svg
+                        className="w-5 h-5 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </div>
+                  </div> */}
+
+                    {/* <div className="mt-6">
+                    <h3 className="text-gray-600 font-medium mb-3">
+                      Locations near you
+                    </h3>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl cursor-pointer transition-colors">
+                        <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
+                          <svg
+                            className="w-5 h-5 text-white"
+                            fill="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-800">
+                            LaLaLa Restaurant
+                          </div>
+                          <div className="text-gray-500 text-sm">
+                            2601 Avenue, Manhattan, New York, USA
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl cursor-pointer transition-colors">
+                        <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">
+                          <svg
+                            className="w-5 h-5 text-white"
+                            fill="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="M2,21V19H20V21H2M20,8V5L18,5V8H20M20,3A2,2 0 0,1 22,5V8A2,2 0 0,1 20,10H18V13A4,4 0 0,1 14,17H8A4,4 0 0,1 4,13V3H20M16,5H6V13A2,2 0 0,0 8,15H14A2,2 0 0,0 16,13V5Z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-800">
+                            LaLaLa Coffee
+                          </div>
+                          <div className="text-gray-500 text-sm">
+                            1258 2nd Avenue, Manhattan, New York, USA
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl cursor-pointer transition-colors">
+                        <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center">
+                          <svg
+                            className="w-5 h-5 text-white"
+                            fill="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="M19,7H16V6A4,4 0 0,0 12,2A4,4 0 0,0 8,6V7H5A1,1 0 0,0 4,8V19A3,3 0 0,0 7,22H17A3,3 0 0,0 20,19V8A1,1 0 0,0 19,7M10,6A2,2 0 0,1 12,4A2,2 0 0,1 14,6V7H10V6M18,19A1,1 0 0,1 17,20H7A1,1 0 0,1 6,19V9H8V10A1,1 0 0,0 9,11A1,1 0 0,0 10,10V9H14V10A1,1 0 0,0 15,11A1,1 0 0,0 16,10V9H18V19Z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-800">
+                            Rolland Market
+                          </div>
+                          <div className="text-gray-500 text-sm">
+                            1258 2nd Avenue, Manhattan, New York, USA
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div> */}
+                  </div>
+                )}
+              </div>
+
+              {/* Tabs */}
+              {/* <div className="flex justify-around border-t border-gray-200 px-4 py-2 text-xs text-center text-gray-600">
               <TabButton
                 icon={
                   <GrGallery
                     className={`w-5 h-5 mb-1 ${
-                      tab === "gallery" ? "text-blue-500" : ""
+                      tab === "Photo" ? "text-blue-500" : ""
                     }`}
                   />
                 }
                 label="Gallery"
-                onClick={() => setTab("gallery")}
+                onClick={() => setTab("Photo")}
               />
-              {/* <TabButton
-                icon={
-                  <Gift
-                    className={`w-5 h-5 mb-1 ${
-                      tab === "gift" ? "text-blue-500" : ""
-                    }`}
-                  />
-                }
-                label="Gift"
-                onClick={() => setTab("gift")}
-              /> */}
               <TabButton
                 icon={
                   <FaFile
                     className={`w-5 h-5 mb-1 ${
-                      tab === "file" ? "text-blue-500" : ""
+                      tab === "File" ? "text-blue-500" : ""
                     }`}
                   />
                 }
                 label="File"
-                onClick={() => setTab("file")}
+                onClick={() => setTab("File")}
               />
               <TabButton
                 icon={
                   <MdLocationOn
                     className={`w-5 h-5 mb-1 ${
-                      tab === "location" ? "text-blue-500" : ""
+                      tab === "Location" ? "text-blue-500" : ""
                     }`}
                   />
                 }
                 label="Location"
-                onClick={() => setTab("location")}
+                onClick={() => setTab("Location")}
               />
-              {/* <TabButton
-                icon={
-                  <Reply
-                    className={`w-5 h-5 mb-1 ${
-                      tab === "reply" ? "text-blue-500" : ""
-                    }`}
-                  />
-                }
-                label="Reply"
-                onClick={() => setTab("reply")}
-              /> */}
-              {/* <TabButton
-                icon={
-                  <Check
-                    className={`w-5 h-5 mb-1 ${
-                      tab === "checklist" ? "text-blue-500" : ""
-                    }`}
-                  />
-                }
-                label="Checklist"
-                onClick={() => setTab("checklist")}
-              /> */}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+            </div> */}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </>
   );
 };
 

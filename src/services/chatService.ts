@@ -157,6 +157,20 @@ export const getTimeline = async (
         let audioDuration: number | null = null;
         let isStickerAnimation: boolean = false;
         let type: MessageType = "text";
+        let isForward: boolean = false;
+        let isReply: boolean = false;
+
+        // Check if message is forward or reply by parsing JSON
+        try {
+          const parsedText = JSON.parse(text);
+          if (parsedText.forward && parsedText.text && parsedText.originalSender) {
+            isForward = true;
+          } else if (parsedText.reply && parsedText.text && parsedText.replyTo) {
+            isReply = true;
+          }
+        } catch (e) {
+          // Not JSON, continue with normal parsing
+        }
 
         if (content.msgtype === "m.image") {
           type = "image";
@@ -227,6 +241,8 @@ export const getTimeline = async (
           audioDuration,
           status,
           type,
+          isForward,
+          isReply,
           isStickerAnimation,
           isDeleted,
           location: {
