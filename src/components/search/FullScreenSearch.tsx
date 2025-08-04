@@ -44,19 +44,13 @@ const FullScreenSearch = ({
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex flex-col fullscreen-search-enter"
-      style={{
-        backgroundImage:
-          "linear-gradient(to bottom, #c7e2f0, #c5cfd6, #d6d3cf, #e4d6c6, #f4e4ca)",
-      }}
-    >
+    <div className="fixed inset-0 z-50 flex flex-col fullscreen-search-enter bg-gradient-to-b from-[#c2e3f5] to-[#fbe9cc]">
       {/* Search header */}
       <div className="flex items-center justify-between p-3 flex-shrink-0 bg-[#c7e2f0] sticky top-0 z-10">
         <div className="text-2xl font-medium px-4 text-black">Search</div>
         <button
           onClick={onClose}
-          className="w-10 h-10 rounded-full bg-[#e2edf3] flex items-center justify-center text-black"
+          className="h-10 w-10 flex items-center justify-center text-black/70 border border-white rounded-full cursor-pointer bg-gradient-to-br from-slate-100/50 via-gray-400/10 to-slate-50/15 backdrop-blur-xs shadow-xs hover:scale-105 duration-300 transition-all ease-in-out"
           aria-label="Close search"
         >
           <X size={20} />
@@ -64,14 +58,14 @@ const FullScreenSearch = ({
       </div>
 
       {/* Content area */}
-      <div className="flex-1 overflow-y-auto pb-24">
+      <div className="flex-1 overflow-y-auto pb-24 search-content-area">
         {!(
           searchTerm.length > 0 &&
           !searchLoading &&
           searchResults.length === 0 &&
           messageResults.length === 0
         ) && (
-          <div className="px-4 py-2 text-sm text-gray-600 border-t border-b border-[#a7cfe8] flex-shrink-0">
+          <div className="px-4 py-2 text-sm text-[#121212] border-t border-b border-[#a7cfe8] flex-shrink-0 bg-white/30 backdrop-blur-[2px]">
             Contact and chat
           </div>
         )}
@@ -89,15 +83,39 @@ const FullScreenSearch = ({
                   user.user_id !== userIdChatBot
               ).length === 0 && messageResults.length === 0 ? (
               <div className="text-center p-8">
-                <div className="bg-[#8ac2ee] w-16 h-16 rounded-md mx-auto mb-4 flex items-center justify-center">
-                  <X size={32} className="text-[#4193cf]" />
+                <div className="flex flex-col items-center justify-center h-full text-center">
+                  {/* Icon */}
+                  <div className="mb-4">
+                    <svg
+                      width="64"
+                      height="64"
+                      viewBox="0 0 49 48"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        opacity="0.4"
+                        d="M34.3652 2.5H14.6348C12.7299 2.49999 11.2088 2.49998 9.98027 2.60035C8.72024 2.7033 7.63648 2.91927 6.64108 3.42645C5.0417 4.24137 3.74137 5.5417 2.92645 7.14108C2.41927 8.13648 2.2033 9.22024 2.10035 10.4803C1.99998 11.7088 1.99999 13.2299 2 15.1348V24.8652C1.99999 26.7701 1.99998 28.2912 2.10035 29.5197C2.2033 30.7798 2.41927 31.8635 2.92645 32.8589C3.74137 34.4583 5.0417 35.7586 6.64108 36.5736C7.63648 37.0807 8.72024 37.2967 9.98027 37.3997C11.2088 37.5 12.7298 37.5 14.6346 37.5H34.3653C36.2701 37.5 37.7912 37.5 39.0197 37.3997C40.2798 37.2967 41.3635 37.0807 42.3589 36.5736C43.9583 35.7586 45.2586 34.4583 46.0736 32.8589C46.5807 31.8635 46.7967 30.7798 46.8997 29.5197C47 28.2912 47 26.7702 47 24.8654V15.1347C47 13.2299 47 11.7088 46.8997 10.4803C46.7967 9.22024 46.5807 8.13648 46.0736 7.14108C45.2586 5.5417 43.9583 4.24137 42.3589 3.42645C41.3635 2.91927 40.2798 2.7033 39.0197 2.60035C37.7912 2.49998 36.2701 2.49999 34.3652 2.5Z"
+                        fill="#4193cf"
+                      />
+                      <path
+                        d="M31.5607 27.0603C30.9749 27.6461 30.0251 27.6461 29.4393 27.0603L24.5001 22.121L19.5606 27.0605C18.9749 27.6463 18.0251 27.6463 17.4393 27.0605C16.8535 26.4747 16.8535 25.525 17.4393 24.9392L22.3788 19.9997L17.4393 15.0603C16.8536 14.4745 16.8536 13.5247 17.4393 12.939C18.0251 12.3532 18.9749 12.3532 19.5607 12.939L24.5001 17.8784L29.4393 12.9392C30.0251 12.3534 30.9749 12.3534 31.5606 12.9392C32.1464 13.525 32.1464 14.4747 31.5606 15.0605L26.6214 19.9997L31.5607 24.939C32.1464 25.5247 32.1464 26.4745 31.5607 27.0603Z"
+                        fill="#4193cf"
+                      />
+                      <path
+                        d="M30 37.4998H19V39.9998C19 41.3806 17.8807 42.4998 16.5 42.4998H15.5C14.6716 42.4998 14 43.1714 14 43.9998C14 44.8283 14.6716 45.4998 15.5 45.4998H33.5C34.3284 45.4998 35 44.8283 35 43.9998C35 43.1714 34.3284 42.4998 33.5 42.4998H32.5C31.1193 42.4998 30 41.3806 30 39.9998V37.4998Z"
+                        fill="#4193cf"
+                      />
+                    </svg>
+                  </div>
                 </div>
+
                 <div className="text-black text-xl font-medium mb-2">
                   No results
                 </div>
                 <div className="text-gray-600">
                   No results found for
-                  <span className="font-medium">{" " + searchTerm}</span>.
+                  <span className="font-medium">{` '${searchTerm}'`}</span>.
                   Please try a different search.
                 </div>
               </div>
@@ -156,9 +174,12 @@ const FullScreenSearch = ({
             )}
 
             {/* Recent searches */}
-            <div className="flex justify-between items-center px-4 py-2 border-t border-b border-[#a7cfe8] mt-2 bg-[#d4e5f0]">
-              <span className="text-sm text-gray-500">Recent</span>
-              <button className="text-sm text-red-500" onClick={clearHistory}>
+            <div className="flex justify-between items-center px-4 py-2 border-t border-b border-[#a7cfe8] mt-2 bg-white/30 backdrop-blur-[2px]">
+              <span className="text-sm text-[#121212] font-medium">Recent</span>
+              <button
+                className="text-sm text-red-500 font-medium"
+                onClick={clearHistory}
+              >
                 Clear history
               </button>
             </div>
@@ -193,58 +214,14 @@ const FullScreenSearch = ({
                 ))}
               </div>
             ) : (
-              <div className="pb-4">
-                {/* Demo data for empty recent searches */}
-                {/* Workspace group example */}
-                <div className="flex items-center px-4 py-3 border-b border-[#a7cfe8] cursor-pointer">
-                  <div className="w-12 h-12 bg-gray-300 rounded-full mr-3 flex items-center justify-center overflow-hidden">
-                    <div className="flex flex-wrap w-full h-full">
-                      <div className="w-1/2 h-1/2 bg-yellow-200"></div>
-                      <div className="w-1/2 h-1/2 bg-blue-200"></div>
-                      <div className="w-1/2 h-1/2 bg-green-200"></div>
-                      <div className="w-1/2 h-1/2 bg-red-200"></div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="font-medium text-black">
-                      Workspace group
-                    </div>
-                    <div className="text-sm text-gray-500">Group</div>
-                  </div>
-                </div>
-
-                {/* Document example */}
-                <div className="flex items-center px-4 py-3 border-b border-[#a7cfe8] cursor-pointer">
-                  <div className="w-12 h-12 bg-blue-500 rounded-md mr-3 flex items-center justify-center text-white font-bold">
-                    DOC
-                  </div>
-                  <div>
-                    <div className="font-medium text-black">Papercoin.docs</div>
-                    <div className="text-sm text-gray-500">File</div>
-                  </div>
-                </div>
-
-                {/* BDS example */}
-                <div className="flex items-center px-4 py-3 border-b border-[#a7cfe8] cursor-pointer">
-                  <div className="w-12 h-12 bg-gray-800 rounded-md mr-3 flex items-center justify-center overflow-hidden">
-                    <div className="text-xs text-white font-bold">BDS</div>
-                  </div>
-                  <div>
-                    <div className="font-medium text-black">BDS.Land</div>
-                    <div className="text-sm text-blue-500">
-                      https://website.com.vn
-                    </div>
-                    <div className="text-xs text-gray-500">Link</div>
-                  </div>
-                </div>
-              </div>
+              <div className="pb-4"></div>
             )}
           </div>
         )}
       </div>
 
-      {/* Search bar - always visible above keyboard */}
-      <div className="px-4 py-3 border-t border-[#a7cfe8] bg-[#e4d6c6] search-bottom-bar">
+      {/* Search bar - fixed at the bottom, won't move with keyboard */}
+      <div className="fixed bottom-0 left-0 right-0 px-4 py-3 border-t border-[#a7cfe8] bg-[#c2e3f5]/95 backdrop-blur-sm z-50 search-bar-container">
         <div
           className="flex items-center rounded-full overflow-hidden px-2 bg-[#fce0f0]"
           style={{
@@ -252,12 +229,12 @@ const FullScreenSearch = ({
               "0 0 0 1px #9370DB, 0 0 10px 1px rgba(147, 112, 219, 0.5)",
           }}
         >
-          {/* Sparkles icon */}
-          <div className="w-9 h-9 rounded-full bg-[#6b46c1] flex items-center justify-center mr-2 my-1">
+          {/* Sparkles icon with fixed dimensions */}
+          <div className="min-w-[36px] w-9 h-9 rounded-full bg-[#6b46c1] flex items-center justify-center mr-2 my-1 flex-shrink-0">
             <Sparkles className="w-5 h-5 text-white" />
           </div>
 
-          {/* Search input */}
+          {/* Search input*/}
           <input
             ref={searchInputRef}
             autoFocus
@@ -272,8 +249,8 @@ const FullScreenSearch = ({
           />
 
           {/* Search icon */}
-          <div className="flex items-center justify-center w-9 h-9 rounded-full">
-            <Search className="w-5 h-5 text-[#9370DB]" />
+          <div className="flex items-center justify-center w-9 h-9 rounded-full flex-shrink-0">
+            <Search className="w-5 h-5 text-[#121212]" />
           </div>
 
           {/* Clear button */}
@@ -283,7 +260,7 @@ const FullScreenSearch = ({
                 setSearchTerm("");
                 setSearchQuery("");
               }}
-              className="p-2 text-[#9370DB]"
+              className="p-2 text-[#121212] flex-shrink-0"
             >
               <X size={16} />
             </button>
@@ -291,31 +268,45 @@ const FullScreenSearch = ({
         </div>
       </div>
 
-      {/* Keyboard handling styles */}
+      {/* Improved keyboard handling styles */}
       <style jsx global>{`
-        /* Keyboard visibility fixes */
-        @media screen and (max-height: 500px) {
-          .search-bottom-bar {
-            position: fixed !important;
-            bottom: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            background-color: rgba(247, 242, 234, 0.95) !important;
-            z-index: 9999 !important;
-            border-top: 1px solid #a7cfe8;
-            padding-bottom: env(safe-area-inset-bottom, 8px) !important;
-          }
+        /* Base styles for all devices */
+        .fullscreen-search-enter {
+          height: 100%;
+          position: fixed;
+          overflow: hidden;
+        }
 
-          .fullscreen-search-enter .overflow-y-auto {
-            padding-bottom: 80px !important;
+        /* Fixed content area height accounting for search bar */
+        .search-content-area {
+          padding-bottom: 70px; /* Match search bar height */
+        }
+
+        /* Make sure the search bar stays at bottom and doesn't get squished */
+        .search-bar-container {
+          height: auto;
+          min-height: 64px;
+        }
+
+        /* Prevent keyboard from pushing content on iOS */
+        @supports (-webkit-touch-callout: none) {
+          .search-bar-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 9999;
           }
         }
 
-        @supports (-webkit-touch-callout: none) {
-          .search-bottom-bar {
-            position: fixed !important;
-            bottom: 0 !important;
-            z-index: 9999 !important;
+        /* Prevent keyboard from pushing content on Android */
+        @media screen and (max-height: 600px) {
+          .search-bar-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 9999;
           }
         }
       `}</style>
