@@ -63,6 +63,7 @@ const FullScreenSearch = ({
           currentHeight,
           heightDifference,
           isKeyboard: heightDifference > 150,
+          userAgent: navigator.userAgent,
         });
 
         // More precise keyboard detection
@@ -116,19 +117,56 @@ const FullScreenSearch = ({
     // Add class to body when keyboard is open for additional styling
     if (isKeyboardOpen) {
       document.body.classList.add("keyboard-open");
+      document.documentElement.classList.add("keyboard-open");
       // Set CSS custom property for keyboard height
       document.documentElement.style.setProperty(
         "--keyboard-height",
         `${keyboardHeight}px`
       );
+
+      // For Android Chrome, prevent the page from being pushed up
+      if (
+        navigator.userAgent.includes("Chrome") &&
+        navigator.userAgent.includes("Android")
+      ) {
+        document.documentElement.style.setProperty("overflow", "hidden");
+        document.documentElement.style.setProperty("position", "fixed");
+        document.documentElement.style.setProperty("width", "100%");
+        document.documentElement.style.setProperty("height", "100vh");
+        document.documentElement.style.setProperty("height", "100dvh");
+      }
     } else {
       document.body.classList.remove("keyboard-open");
+      document.documentElement.classList.remove("keyboard-open");
       document.documentElement.style.removeProperty("--keyboard-height");
+
+      // Reset styles for Android Chrome
+      if (
+        navigator.userAgent.includes("Chrome") &&
+        navigator.userAgent.includes("Android")
+      ) {
+        document.documentElement.style.removeProperty("overflow");
+        document.documentElement.style.removeProperty("position");
+        document.documentElement.style.removeProperty("width");
+        document.documentElement.style.removeProperty("height");
+      }
     }
 
     return () => {
       document.body.classList.remove("keyboard-open");
+      document.documentElement.classList.remove("keyboard-open");
       document.documentElement.style.removeProperty("--keyboard-height");
+
+      // Clean up Android Chrome styles
+      if (
+        navigator.userAgent.includes("Chrome") &&
+        navigator.userAgent.includes("Android")
+      ) {
+        document.documentElement.style.removeProperty("overflow");
+        document.documentElement.style.removeProperty("position");
+        document.documentElement.style.removeProperty("width");
+        document.documentElement.style.removeProperty("height");
+      }
     };
   }, [isKeyboardOpen, keyboardHeight]);
 
@@ -349,9 +387,27 @@ const FullScreenSearch = ({
                     window.visualViewport?.height || window.innerHeight;
                   const heightDifference =
                     initialViewportHeight - currentHeight;
+
+                  console.log("Focus event:", {
+                    initialHeight: initialViewportHeight,
+                    currentHeight,
+                    heightDifference,
+                    isAndroidChrome:
+                      navigator.userAgent.includes("Chrome") &&
+                      navigator.userAgent.includes("Android"),
+                  });
+
                   if (heightDifference > 150) {
                     setIsKeyboardOpen(true);
                     setKeyboardHeight(heightDifference);
+                  } else if (
+                    navigator.userAgent.includes("Chrome") &&
+                    navigator.userAgent.includes("Android")
+                  ) {
+                    // On Android Chrome, keyboard might not affect viewport immediately
+                    // Force keyboard state to true and adjust later
+                    setIsKeyboardOpen(true);
+                    setKeyboardHeight(250); // Approximate keyboard height
                   }
                 }, 300);
               }
