@@ -1,0 +1,157 @@
+/* Base styles for all devices */
+.fullscreenSearchEnter {
+  height: 100vh;
+  height: 100dvh; /* Dynamic viewport height for mobile */
+  position: fixed;
+  overflow: hidden;
+}
+
+/* Fixed content area height accounting for search bar */
+.searchContentArea {
+  padding-bottom: 70px; /* Match search bar height */
+  height: calc(100vh - 130px); /* Account for header and search bar */
+  height: calc(100dvh - 130px);
+}
+
+/* Search bar container - responsive to keyboard */
+.searchBarContainer {
+  height: auto;
+  min-height: 64px;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease-in-out;
+}
+
+/* Keyboard active states */
+.keyboardActive.fullscreenSearchEnter {
+  height: 100vh;
+  height: 100dvh;
+}
+
+.keyboardActive .searchContentArea {
+  padding-bottom: calc(120px + var(--keyboard-height, 0px));
+  max-height: calc(100vh - 180px - var(--keyboard-height, 0px));
+  max-height: calc(100dvh - 180px - var(--keyboard-height, 0px));
+}
+
+.searchBarContainer.keyboardActive {
+  bottom: calc(var(--keyboard-height, 0px) - 20px) !important;
+  transform: translateY(-20px);
+}
+
+/* Mobile specific styles */
+@media screen and (max-width: 768px) {
+  .searchBarContainer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+  }
+
+  /* Enhanced keyboard detection - use actual keyboard height */
+  .searchBarContainer.keyboardActive {
+    bottom: calc(var(--keyboard-height, 0px) - 30px);
+    transform: translateY(-10px);
+  }
+
+  /* Prevent input zoom on iOS */
+  .searchBarContainer input {
+    font-size: 16px;
+    transform-origin: left top;
+  }
+
+  /* When keyboard is active */
+  .keyboardActive .searchContentArea {
+    padding-bottom: calc(140px + var(--keyboard-height, 0px));
+    max-height: calc(60vh - var(--keyboard-height, 0px) / 2);
+  }
+}
+
+/* Enhanced iOS handling with fallback */
+@supports (-webkit-touch-callout: none) {
+  .searchBarContainer.keyboardActive {
+    /* Try to use CSS custom property first, then env(), then fallback */
+    bottom: calc(
+      var(--keyboard-height, env(keyboard-inset-height, 40px)) - 40px
+    );
+    transform: translateY(-20px);
+  }
+
+  .keyboardActive .searchContentArea {
+    max-height: calc(
+      100vh - 200px - var(--keyboard-height, env(keyboard-inset-height, 0px))
+    );
+    max-height: calc(
+      100dvh - 200px - var(--keyboard-height, env(keyboard-inset-height, 0px))
+    );
+  }
+}
+
+/* Enhanced Android specific handling */
+@media screen and (max-height: 600px) and (min-width: 300px) {
+  .searchBarContainer.keyboardActive {
+    bottom: calc(var(--keyboard-height, 25px) - 25px);
+    transform: translateY(-15px);
+  }
+} /* Smooth transitions */
+.fullscreenSearchEnter,
+.searchContentArea,
+.searchBarContainer {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Safe area handling for devices with notches */
+@media screen and (max-width: 768px) {
+  .fullscreenSearchEnter {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .searchBarContainer {
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Additional mobile optimizations */
+  .searchBarContainer.keyboardActive {
+    /* Ensure search bar is always above keyboard */
+    bottom: calc(var(--keyboard-height, 0px) - 10px);
+    min-height: 70px;
+    padding: 16px;
+  }
+}
+
+/* Landscape mode adjustments */
+@media screen and (max-width: 768px) and (orientation: landscape) {
+  .keyboardActive .searchContentArea {
+    max-height: calc(40vh - var(--keyboard-height, 0px) / 3);
+    padding-bottom: calc(100px + var(--keyboard-height, 0px));
+  }
+
+  .searchBarContainer.keyboardActive {
+    bottom: calc(var(--keyboard-height, 0px) - 15px);
+    transform: translateY(-10px);
+  }
+}
+
+/* Very small screens (older phones) */
+@media screen and (max-height: 500px) {
+  .keyboardActive .searchContentArea {
+    max-height: calc(30vh - var(--keyboard-height, 0px) / 4);
+  }
+
+  .searchBarContainer.keyboardActive {
+    bottom: calc(var(--keyboard-height, 0px) - 5px);
+    padding: 12px;
+  }
+} /* Global body class when keyboard is open */
+:global(body.keyboard-open) {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+}
+
+/* Styles for the search input container with purple border and shadow */
+.searchInputWrapper {
+  box-shadow: 0 0 0 1px #9370db, 0 0 10px 1px rgba(147, 112, 219, 0.5);
+}

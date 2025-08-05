@@ -1,6 +1,7 @@
-import { useRef } from "react";
+import { useRef, useEffect, useState } from "react";
 import { X, Search, Sparkles } from "lucide-react";
 import { getDetailedStatus } from "@/utils/chat/presencesHelpers";
+import styles from "./FullScreenSearch.module.css";
 
 interface FullScreenSearchProps {
   searchTerm: string;
@@ -42,9 +43,103 @@ const FullScreenSearch = ({
   userIdChatBot,
 }: FullScreenSearchProps) => {
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [initialViewportHeight, setInitialViewportHeight] = useState(0);
+
+  useEffect(() => {
+    // Store initial viewport height
+    const initialHeight = window.visualViewport?.height || window.innerHeight;
+    setInitialViewportHeight(initialHeight);
+
+    const handleViewportChange = () => {
+      if (window.visualViewport) {
+        const currentHeight = window.visualViewport.height;
+        const heightDifference = initialHeight - currentHeight;
+
+        // Debug log for testing on real device
+        console.log("Viewport change:", {
+          initialHeight,
+          currentHeight,
+          heightDifference,
+          isKeyboard: heightDifference > 150,
+        });
+
+        // More precise keyboard detection
+        const isKeyboardVisible = heightDifference > 150;
+        setIsKeyboardOpen(isKeyboardVisible);
+
+        // Calculate actual keyboard height
+        if (isKeyboardVisible) {
+          setKeyboardHeight(heightDifference);
+        } else {
+          setKeyboardHeight(0);
+        }
+      }
+    };
+
+    const handleResize = () => {
+      const currentHeight = window.innerHeight;
+      const heightDifference = initialHeight - currentHeight;
+
+      // Fallback for browsers without visualViewport
+      const isKeyboardVisible = heightDifference > 150;
+      setIsKeyboardOpen(isKeyboardVisible);
+
+      if (isKeyboardVisible) {
+        setKeyboardHeight(heightDifference);
+      } else {
+        setKeyboardHeight(0);
+      }
+    };
+
+    // Use visualViewport if available (better for mobile)
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", handleViewportChange);
+    } else {
+      window.addEventListener("resize", handleResize);
+    }
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener(
+          "resize",
+          handleViewportChange
+        );
+      } else {
+        window.removeEventListener("resize", handleResize);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    // Add class to body when keyboard is open for additional styling
+    if (isKeyboardOpen) {
+      document.body.classList.add("keyboard-open");
+      // Set CSS custom property for keyboard height
+      document.documentElement.style.setProperty(
+        "--keyboard-height",
+        `${keyboardHeight}px`
+      );
+    } else {
+      document.body.classList.remove("keyboard-open");
+      document.documentElement.style.removeProperty("--keyboard-height");
+    }
+
+    return () => {
+      document.body.classList.remove("keyboard-open");
+      document.documentElement.style.removeProperty("--keyboard-height");
+    };
+  }, [isKeyboardOpen, keyboardHeight]);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col fullscreen-search-enter bg-gradient-to-b from-[#c2e3f5] to-[#fbe9cc]">
+    <div
+      className={`fixed inset-0 z-50 flex flex-col ${
+        styles.fullscreenSearchEnter
+      } bg-gradient-to-b from-[#c2e3f5] to-[#fbe9cc] ${
+        isKeyboardOpen ? styles.keyboardActive : ""
+      }`}
+    >
       {/* Search header */}
       <div className="flex items-center justify-between p-3 flex-shrink-0 bg-[#c7e2f0] sticky top-0 z-10">
         <div className="text-2xl font-medium px-4 text-black">Search</div>
@@ -58,7 +153,9 @@ const FullScreenSearch = ({
       </div>
 
       {/* Content area */}
-      <div className="flex-1 overflow-y-auto pb-24 search-content-area">
+      <div
+        className={`flex-1 overflow-y-auto pb-24 ${styles.searchContentArea}`}
+      >
         {!(
           searchTerm.length > 0 &&
           !searchLoading &&
@@ -115,8 +212,8 @@ const FullScreenSearch = ({
                 </div>
                 <div className="text-gray-600">
                   No results found for
-                  <span className="text-black font-medium">{` '${searchTerm}'`}</span>.
-                  Please try a different search.
+                  <span className="text-black font-medium">{` '${searchTerm}'`}</span>
+                  . Please try a different search.
                 </div>
               </div>
             ) : (
@@ -221,13 +318,13 @@ const FullScreenSearch = ({
       </div>
 
       {/* Search bar - fixed at the bottom, won't move with keyboard */}
-      <div className="fixed bottom-0 left-0 right-0 px-4 py-3 backdrop-blur-sm z-50 search-bar-container">
+      <div
+        className={`fixed bottom-0 left-0 right-0 px-4 py-3 backdrop-blur-sm z-50 ${
+          styles.searchBarContainer
+        } ${isKeyboardOpen ? styles.keyboardActive : ""}`}
+      >
         <div
-          className="flex items-center rounded-full overflow-hidden px-2 bg-[#fce0f0]"
-          style={{
-            boxShadow:
-              "0 0 0 1px #9370DB, 0 0 10px 1px rgba(147, 112, 219, 0.5)",
-          }}
+          className={`flex items-center rounded-full overflow-hidden px-2 bg-[#fce0f0] ${styles.searchInputWrapper}`}
         >
           {/* Sparkles icon with fixed dimensions */}
           <div className="min-w-[36px] w-9 h-9 rounded-full bg-[#6b46c1] flex items-center justify-center mr-2 my-1 flex-shrink-0">
@@ -243,6 +340,30 @@ const FullScreenSearch = ({
             onChange={(e) => {
               setSearchTerm(e.target.value);
               setSearchQuery(e.target.value);
+            }}
+            onFocus={() => {
+              // For mobile devices, trigger manual keyboard detection
+              if ("ontouchstart" in window) {
+                setTimeout(() => {
+                  const currentHeight =
+                    window.visualViewport?.height || window.innerHeight;
+                  const heightDifference =
+                    initialViewportHeight - currentHeight;
+                  if (heightDifference > 150) {
+                    setIsKeyboardOpen(true);
+                    setKeyboardHeight(heightDifference);
+                  }
+                }, 300);
+              }
+            }}
+            onBlur={() => {
+              // Reset keyboard state when input loses focus
+              if ("ontouchstart" in window) {
+                setTimeout(() => {
+                  setIsKeyboardOpen(false);
+                  setKeyboardHeight(0);
+                }, 100);
+              }
             }}
             placeholder="Tìm kiếm"
             className="flex-1 h-10 px-1 border-none focus:outline-none bg-transparent text-gray-800 text-base"
@@ -269,48 +390,7 @@ const FullScreenSearch = ({
         </div>
       </div>
 
-      {/* Improved keyboard handling styles */}
-      <style jsx global>{`
-        /* Base styles for all devices */
-        .fullscreen-search-enter {
-          height: 100%;
-          position: fixed;
-          overflow: hidden;
-        }
-
-        /* Fixed content area height accounting for search bar */
-        .search-content-area {
-          padding-bottom: 70px; /* Match search bar height */
-        }
-
-        /* Make sure the search bar stays at bottom and doesn't get squished */
-        .search-bar-container {
-          height: auto;
-          min-height: 64px;
-        }
-
-        /* Prevent keyboard from pushing content on iOS */
-        @supports (-webkit-touch-callout: none) {
-          .search-bar-container {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            z-index: 9999;
-          }
-        }
-
-        /* Prevent keyboard from pushing content on Android */
-        @media screen and (max-height: 600px) {
-          .search-bar-container {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            z-index: 9999;
-          }
-        }
-      `}</style>
+      {/* Keyboard handling styles are now in FullScreenSearch.module.css */}
     </div>
   );
 };
