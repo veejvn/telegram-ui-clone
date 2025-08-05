@@ -56,7 +56,7 @@ export default function MuteDurationMenu({
 
   return (
     <>
-      <div className="absolute left-1/2 -translate-x-1/2 mt-2 z-50 w-52 bg-white dark:bg-[#202020] rounded-xl shadow-xl">
+      <div className="absolute right-0 mt-2 z-50 w-52 bg-white dark:bg-[#202020] rounded-xl shadow-xl">
         <ul className="flex flex-col text-sm text-gray-900 dark:text-gray-100">
           {/* Back */}
           <li

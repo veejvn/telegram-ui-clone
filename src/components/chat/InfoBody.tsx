@@ -2,19 +2,9 @@
 
 import React, { useState } from "react";
 import * as sdk from "matrix-js-sdk";
-// import {
-//   Popover,
-//   PopoverContent,
-//   PopoverTrigger,
-// } from "@/components/ui/popover";
-// import { Hand } from "lucide-react";
-// import { Button } from "@/components/ui/button";
-// import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tabs, TabsContent } from "@radix-ui/react-tabs";
 import Image from "next/image";
-// import { Card, CardContent } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
-import { callService } from "@/services/callService";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useChatStore } from "@/stores/useChatStore";
@@ -27,6 +17,7 @@ import {
   Mp4Icon,
   PdfIcon,
   AudioIcon,
+  AudioPauseIcon,
 } from "@/components/chat/icons/InfoIcons";
 import { getDetailedStatus } from "@/utils/chat/presencesHelpers";
 // import { usePresenceContext } from "@/contexts/PresenceProvider";
@@ -34,6 +25,7 @@ import MuteButton from "./mute/MuteButton";
 import { useUserPresence } from "@/hooks/useUserPrecense";
 // import LinkCard from "./LinkCard";
 import { useTimeline } from "@/hooks/useTimeline";
+import useCallStore from "@/stores/useCallStore";
 
 export default function InfoBody({ user }: { user: sdk.User }) {
   const client = useMatrixClient();
@@ -62,38 +54,68 @@ export default function InfoBody({ user }: { user: sdk.User }) {
   const isActuallyOnline =
     lastSeen !== null && Date.now() - lastSeen.getTime() < 30 * 1000;
 
-  const ensureRoomExists = async (): Promise<string | null> => {
-    const existingRoom = client
+  // const ensureRoomExists = async (): Promise<string | null> => {
+  //   const existingRoom = client
+  //     ?.getRooms()
+  //     .find(
+  //       (room: sdk.Room) =>
+  //         room.getJoinedMemberCount() === 2 &&
+  //         room.getJoinedMembers().some((m) => m.userId === user.userId)
+  //     );
+  //   if (existingRoom) return existingRoom.roomId;
+
+  //   try {
+  //     const res = await client?.createRoom({
+  //       invite: [user.userId],
+  //       is_direct: true,
+  //     });
+  //     return res?.room_id || null;
+  //   } catch (err) {
+  //     console.error("Failed to create room:", err);
+  //     return null;
+  //   }
+  // };
+
+  const createContactFromUser = (): {
+    id: string;
+    name: string;
+    lastSeen: string;
+    roomId: string;
+  } | null => {
+    if (!user || !client) return null;
+    // Tìm phòng direct với user này
+    const directRoom = client
       ?.getRooms()
       .find(
         (room: sdk.Room) =>
           room.getJoinedMemberCount() === 2 &&
           room.getJoinedMembers().some((m) => m.userId === user.userId)
       );
-    if (existingRoom) return existingRoom.roomId;
-
-    try {
-      const res = await client?.createRoom({
-        invite: [user.userId],
-        is_direct: true,
-      });
-      return res?.room_id || null;
-    } catch (err) {
-      console.error("Failed to create room:", err);
-      return null;
-    }
+    if (!directRoom) return null;
+    return {
+      id: user.userId,
+      name: user.displayName || user.userId || directRoom.name,
+      lastSeen: isActuallyOnline
+        ? "online"
+        : getDetailedStatus(lastSeen) || "recently",
+      roomId: directRoom.roomId,
+    };
   };
 
-  const handleStartCall = async (type: "voice" | "video") => {
-    const roomId = await ensureRoomExists();
-    if (!roomId) return;
+  const handleStartCall = async (callType: "voice" | "video") => {
+    const contact = createContactFromUser();
+    if (!contact) return;
 
-    await callService.placeCall(roomId, type);
-    router.push(
-      `/call/${type}?calleeId=${encodeURIComponent(
-        roomId
-      )}&contact=${encodeURIComponent(user.displayName ?? user.userId)}`
-    );
+    try {
+      useCallStore.getState().reset(); // Reset call state như ChatHeader
+      router.push(
+        `/call/${callType}?calleeId=${encodeURIComponent(
+          contact.roomId
+        )}&contact=${encodeURIComponent(contact.name)}`
+      );
+    } catch (error) {
+      console.error("Failed to start call:", error);
+    }
   };
   // 👉 LẤY TOÀN BỘ TIN NHẮN TỪ STORE
   const messagesByRoom = useChatStore((state) => state.messagesByRoom);
@@ -171,7 +193,55 @@ export default function InfoBody({ user }: { user: sdk.User }) {
   //   [key: string]: any;
   // };
 
-  const groupMessages: any[] = [];
+  const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
+
+  const mutualGroups =
+    client?.getRooms().filter((room: sdk.Room) => {
+      // Không phải direct, có hơn 2 thành viên
+      const isGroup =
+        !(
+          room.getMyMembership() === "join" && room.getJoinedMemberCount() === 2
+        ) && room.getJoinedMemberCount() > 2;
+      // User hiện tại và user đối phương đều trong phòng
+      const hasMe = room
+        .getJoinedMembers()
+        .some((m) => m.userId === client.getUserId());
+      const hasOther = room
+        .getJoinedMembers()
+        .some((m) => m.userId === user.userId);
+      return isGroup && hasMe && hasOther;
+    }) || [];
+
+  const groupMessages = mutualGroups.map((room) => {
+    // Use the correct arguments for getAvatarUrl
+    const baseUrl =
+      client?.getHomeserverUrl?.() ??
+      process.env.NEXT_PUBLIC_MATRIX_BASE_URL ??
+      "";
+    const avatarMxc = room.getAvatarUrl(baseUrl, 48, 48, "crop", true, false);
+    const avatarUrl = avatarMxc && client ? avatarMxc : "";
+    console.log(
+      "Group:",
+      room.name,
+      "Avatar MXC:",
+      avatarMxc,
+      "Avatar URL:",
+      avatarUrl
+    );
+    return {
+      eventId: room.roomId,
+      name: room.name || room.roomId,
+      avatarUrl,
+      memberCount: room.getJoinedMemberCount(),
+      joinDate: (() => {
+        const myUserId = client ? client.getUserId() ?? "" : "";
+        const me = room.getMember(myUserId);
+        return me?.membership === "join" && me?.events.member?.getTs()
+          ? new Date(me.events.member.getTs())
+          : null;
+      })(),
+    };
+  });
 
   const [activeTab, setActiveTab] = useState("media");
 
@@ -725,18 +795,26 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                                             a.pause();
                                         });
                                       audio.play();
+                                      setPlayingAudioId(msg.eventId);
                                     } else {
                                       audio.pause();
+                                      setPlayingAudioId(null);
                                     }
                                   }
                                 }}
                               >
-                                <AudioIcon />
+                                {playingAudioId === msg.eventId ? (
+                                  <AudioPauseIcon />
+                                ) : (
+                                  <AudioIcon />
+                                )}
                                 <audio
                                   id={`audio-${msg.eventId}`}
                                   src={msg.audioUrl || ""}
                                   preload="metadata"
                                   className="hidden"
+                                  onPlay={() => setPlayingAudioId(msg.eventId)}
+                                  onPause={() => setPlayingAudioId(null)}
                                   onTimeUpdate={(e) => {
                                     const target = e.target as HTMLAudioElement;
                                     const progress =
@@ -824,34 +902,6 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                       </div>
                     </TabsContent>
                   )}
-                  {/* {activeTab === "link" && (
-                    <TabsContent value="link">
-                      <div className="max-h-[420px] overflow-y-auto overscroll-contain">
-                        <Card className="w-full shadow-sm pt-3 pb-0 rounded-none">
-                          <CardContent className="px-2">
-                            <div className="space-y-4">
-                              {linkMessages.map((msg, index) => {
-                                if (!msg) return null;
-                                const match = msg.text.match(
-                                  /(https?:\/\/[^\s]+|\b(?:[a-z0-9-]+\.)+[a-z]{2,}(\/[^\s]*)?)/i
-                                );
-                                const rawUrl = match?.[0];
-                                const url = rawUrl?.startsWith("http")
-                                  ? rawUrl
-                                  : `https://${rawUrl}`;
-
-                                return url ? (
-                                  <div key={msg.eventId || index}>
-                                    <LinkCard url={url} title={msg.text} />
-                                  </div>
-                                ) : null;
-                              })}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    </TabsContent>
-                  )} */}
                   {activeTab === "link" && (
                     <TabsContent value="link">
                       <div className="max-h-[420px] overflow-y-auto overscroll-contain px-0">
@@ -875,8 +925,6 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                               }
                             };
                             const favicon = getFavicon(url);
-
-                            // Lấy tên domain và chuyển thành tên thương hiệu
                             function getBrandName(url: string) {
                               try {
                                 const u = new URL(url);
@@ -890,8 +938,6 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                               }
                             }
                             const brand = getBrandName(url);
-
-                            // Mô tả: lấy dòng thứ 2 hoặc fallback
                             const desc =
                               msg.text.split("\n")[1] ||
                               "Lorem ipsum dolor sit amet consectetur.";
@@ -962,21 +1008,58 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                   {activeTab === "groups" && (
                     <TabsContent value="groups">
                       <div className="max-h-[420px] overflow-y-auto overscroll-contain">
-                        <div className="space-y-4 p-2">
-                          {groupMessages.map((msg, idx) => (
-                            <div
-                              key={msg.eventId || idx}
-                              className="bg-gray-100 dark:bg-[#2c2c2e] p-4 rounded-lg"
-                            >
-                              <p className="text-sm font-medium dark:text-white">
-                                {msg.senderDisplayName || "Unknown"}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {new Date(msg.timestamp || 0).toLocaleString()}
-                              </p>
-                              <p className="mt-2">{msg.text}</p>
-                            </div>
-                          ))}
+                        <div className="space-y-2 px-2">
+                          {groupMessages.length === 0
+                            ? null
+                            : groupMessages.map((group, idx) => (
+                                <div
+                                  key={group.eventId || idx}
+                                  className="flex items-center gap-3 p-3 rounded-xl bg-transparent" // Xóa border, shadow, giữ bg-transparent
+                                >
+                                  {/* Avatar group */}
+                                  <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center bg-gray-200 flex-shrink-0">
+                                    {group.avatarUrl ? (
+                                      <Image
+                                        src={group.avatarUrl}
+                                        alt={group.name}
+                                        width={48}
+                                        height={48}
+                                        className="w-12 h-12 object-cover"
+                                        style={{ borderRadius: "9999px" }}
+                                      />
+                                    ) : (
+                                      <span className="text-lg font-bold text-white bg-blue-600 w-12 h-12 flex items-center justify-center rounded-full">
+                                        {group.name.charAt(0).toUpperCase()}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {/* Info */}
+                                  <div className="flex flex-col flex-1 min-w-0 text-left">
+                                    <span className="font-medium text-[16px] text-black dark:text-white truncate">
+                                      {group.name}
+                                    </span>
+                                    <div className="flex flex-row items-center justify-between">
+                                      <span className="text-xs text-[#6B7271]">
+                                        Joined{" "}
+                                        {group.joinDate
+                                          ? group.joinDate.toLocaleDateString(
+                                              "en-GB",
+                                              {
+                                                day: "2-digit",
+                                                month: "short",
+                                                year: "numeric",
+                                              }
+                                            )
+                                          : ""}
+                                      </span>
+                                      <span className="text-xs text-[#6B7271] min-w-[60px] ml-4">
+                                        {group.memberCount} member
+                                        {group.memberCount > 1 ? "s" : ""}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
                         </div>
                       </div>
                     </TabsContent>

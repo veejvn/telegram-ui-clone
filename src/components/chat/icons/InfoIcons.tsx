@@ -309,6 +309,20 @@ export const AudioIcon = () => (
   </svg>
 );
 
+export const AudioPauseIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="32"
+    height="33"
+    viewBox="0 0 32 33"
+    fill="none"
+  >
+    <rect y="0.5" width="32" height="32" rx="16" fill="#000088" />
+    <rect x="11" y="11" width="3" height="11" rx="1" fill="white" />
+    <rect x="18" y="11" width="3" height="11" rx="1" fill="white" />
+  </svg>
+);
+
 export const CloseIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -361,9 +375,9 @@ export const CloseIcon = () => (
         y2="28.0733"
         gradientUnits="userSpaceOnUse"
       >
-        <stop stop-color="#DDDDDD" />
-        <stop offset="0.336538" stopColor="#E3E4E4" stop-opacity="0.2" />
-        <stop offset="0.605769" stopColor="#E3E3E3" stop-opacity="0.2" />
+        <stop stopColor="#DDDDDD" />
+        <stop offset="0.336538" stopColor="#E3E4E4" stopOpacity="0.2" />
+        <stop offset="0.605769" stopColor="#E3E3E3" stopOpacity="0.2" />
         <stop offset="1" stopColor="#DADADA" />
       </linearGradient>
     </defs>
