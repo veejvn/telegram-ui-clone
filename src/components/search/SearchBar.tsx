@@ -127,23 +127,18 @@ const SearchBar = ({
 
       {/* Animation styles */}
       <style jsx global>{`
-        @keyframes slideUp {
+        @keyframes fadeIn {
           0% {
             opacity: 0;
-            transform: translateY(20px);
           }
           100% {
             opacity: 1;
-            transform: translateY(0);
           }
         }
 
         .fullscreen-search-enter {
-          animation: slideUp 0.3s ease-out forwards;
-          will-change: transform, opacity;
-          transform-origin: center bottom;
-          backface-visibility: hidden;
-          -webkit-backface-visibility: hidden;
+          animation: fadeIn 0.25s ease-out forwards;
+          will-change: opacity;
         }
 
         @media (prefers-reduced-motion: reduce) {
