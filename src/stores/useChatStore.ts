@@ -34,6 +34,7 @@ export type Message = {
   isReply?: boolean;
   isStickerAnimation?: boolean;
   isDeleted?: boolean;
+  isEdited?: boolean;
   location?: {
     latitude: number | null;
     longitude: number | null;

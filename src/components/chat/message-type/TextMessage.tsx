@@ -29,6 +29,7 @@ import { useMessageMenu } from "@/contexts/MessageMenuContext";
 import { useSelectionStore } from "@/stores/useSelectionStore";
 import { useReplyStore } from "@/stores/useReplyStore";
 import { usePinStore } from "@/stores/usePinStore";
+import { useEditStore } from "@/stores/useEditStore";
 import {
   pinMessage,
   unpinMessage,
@@ -76,6 +77,9 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
     unpinMessage: unpinFromStore,
     isMessagePinned: isPinnedInStore,
   } = usePinStore();
+
+  // Edit store
+  const { setEditMessage } = useEditStore();
 
   const isSelected = isMessageSelected(msg.eventId);
 
@@ -380,6 +384,23 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
     enterSelectionMode(msg.eventId);
   };
 
+  const handleEdit = () => {
+    if (!msg.text || !roomId || isDeleted) return;
+
+    // Đóng menu
+    setOpen(false);
+    setShowOverlay(false);
+    setActiveMenuMessageId(null);
+    setTransformOffset(0);
+
+    // Set edit message
+    setEditMessage({
+      eventId: msg.eventId,
+      text: msg.text,
+      roomId: roomId,
+    });
+  };
+
   const handlePin = async () => {
     if (!client || !roomId || isDeleted) return;
 
@@ -554,14 +575,22 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
                       className={clsx(textClass, "max-w-[75vw] break-words")}
                     >
                       <p
-                        className={
-                          "py-2 whitespace-pre-wrap break-words leading-snug select-none"
-                        }
+                        className={clsx(
+                          "py-2 whitespace-pre-wrap break-words leading-snug select-none",
+                          msg.isEdited && "text-gray-600 dark:text-gray-300"
+                        )}
                       >
                         {linkify(msg.text)}
                       </p>
 
-                      <div className={timeClass}>{formatMsgTime(msg.time)}</div>
+                      <div className={timeClass}>
+                        {msg.isEdited && (
+                          <span className="text-[10px] text-gray-500 ml-2">
+                            edited
+                          </span>
+                        )}
+                        {formatMsgTime(msg.time)}
+                      </div>
                     </div>
                   </div>
 
@@ -581,7 +610,7 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
           </DropdownMenuTrigger>
           {!isDeleted && !isSelectionMode && (
             <DropdownMenuContent
-              className="mx-2 w-[192px] h-[261px] rounded-3xl relative z-[120]"
+              className="mx-2 w-[192px] rounded-3xl relative z-[120]"
               side="bottom"
               align="center"
               sideOffset={10}
@@ -603,11 +632,19 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
                 <Copy size={16} className="text-blue-500" />
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="flex justify-between items-center py-1">
-                <span className="text-sm">Edit</span>
-                <Edit size={16} className="text-blue-500" />
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
+              {/* Chỉ hiển thị Edit cho tin nhắn của chính mình */}
+              {isSender && (
+                <>
+                  <DropdownMenuItem
+                    className="flex justify-between items-center py-1"
+                    onClick={handleEdit}
+                  >
+                    <span className="text-sm">Edit</span>
+                    <Edit size={16} className="text-blue-500" />
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
               <DropdownMenuItem
                 className="flex justify-between items-center py-1"
                 onClick={handlePin}

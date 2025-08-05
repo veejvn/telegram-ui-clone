@@ -120,9 +120,40 @@ export const getTimeline = async (
         .findIndex((e) => e.getId() === lastReadEventId);
     }
 
-    // ✅ Parse message
-    const parsedMessages: Message[] = messages
-      .filter((e) => e.getType() === "m.room.message")
+    // ✅ Parse message với xử lý edit events
+    // Đầu tiên, tách các edit events và message events
+    const messageEvents = messages.filter(
+      (e) => e.getType() === "m.room.message"
+    );
+
+    // Tạo map của edit events theo eventId gốc
+    const editEvents = new Map<string, any>();
+    messageEvents.forEach((event) => {
+      const content = event.getContent();
+      if (
+        content["m.relates_to"] &&
+        content["m.relates_to"].rel_type === "m.replace"
+      ) {
+        const originalEventId = content["m.relates_to"].event_id;
+        if (originalEventId) {
+          editEvents.set(originalEventId, event);
+        }
+      }
+    });
+
+    // Parse các message events thực sự (loại bỏ edit events)
+    const parsedMessages: Message[] = messageEvents
+      .filter((e) => {
+        // Filter out edit events (messages with m.relates_to and rel_type "m.replace")
+        const content = e.getContent();
+        if (
+          content["m.relates_to"] &&
+          content["m.relates_to"].rel_type === "m.replace"
+        ) {
+          return false; // This is an edit event, not a new message
+        }
+        return true;
+      })
       .map((event, idx) => {
         const content = event.getContent();
         const sender = event.getSender() ?? "Unknown";
@@ -134,6 +165,32 @@ export const getTimeline = async (
         const isDeleted = isRedacted;
 
         let text = isRedacted ? "Tin nhắn đã thu hồi" : content.body ?? "";
+        let isEdited = false;
+
+        // Check if this message has been edited
+        const editEvent = editEvents.get(eventId);
+        if (editEvent) {
+          // This message has been edited, use the edit content
+          const editContent = editEvent.getContent();
+          if (
+            editContent["m.new_content"] &&
+            editContent["m.new_content"].body
+          ) {
+            text = editContent["m.new_content"].body;
+            isEdited = true;
+          }
+        } else {
+          // Check if this is an original edit message (fallback)
+          if (content["m.new_content"]) {
+            // This is an edit, use the new content
+            text = content["m.new_content"].body || text;
+            isEdited = true;
+          } else if (content.body && content.body.startsWith("* ")) {
+            // Fallback: check if body starts with "* " (edit indicator)
+            text = content.body.substring(2); // Remove "* " prefix
+            isEdited = true;
+          }
+        }
 
         //console.log(eventId);
 
@@ -163,9 +220,17 @@ export const getTimeline = async (
         // Check if message is forward or reply by parsing JSON
         try {
           const parsedText = JSON.parse(text);
-          if (parsedText.forward && parsedText.text && parsedText.originalSender) {
+          if (
+            parsedText.forward &&
+            parsedText.text &&
+            parsedText.originalSender
+          ) {
             isForward = true;
-          } else if (parsedText.reply && parsedText.text && parsedText.replyTo) {
+          } else if (
+            parsedText.reply &&
+            parsedText.text &&
+            parsedText.replyTo
+          ) {
             isReply = true;
           }
         } catch (e) {
@@ -245,6 +310,7 @@ export const getTimeline = async (
           isReply,
           isStickerAnimation,
           isDeleted,
+          isEdited,
           location: {
             latitude,
             longitude,
@@ -684,6 +750,54 @@ export const sendSticker = async (
     return { success: true };
   } catch (error) {
     throw error;
+  }
+};
+
+export const editMessage = async (
+  client: sdk.MatrixClient,
+  roomId: string,
+  eventId: string,
+  newText: string
+): Promise<{ success: boolean; err?: any }> => {
+  if (!client) {
+    return {
+      success: false,
+      err: "User not authenticated or session invalid.",
+    };
+  }
+
+  if (!newText.trim()) {
+    return {
+      success: false,
+      err: "Message text cannot be empty.",
+    };
+  }
+
+  try {
+    // Tạo content cho tin nhắn đã chỉnh sửa
+    const editContent = {
+      msgtype: "m.text",
+      body: `* ${newText}`,
+      format: "org.matrix.custom.html",
+      formatted_body: `* ${newText}`,
+      "m.new_content": {
+        msgtype: "m.text",
+        body: newText,
+        format: "org.matrix.custom.html",
+        formatted_body: newText,
+      },
+      "m.relates_to": {
+        rel_type: "m.replace",
+        event_id: eventId,
+      },
+    };
+
+    await client.sendMessage(roomId, editContent as any);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error editing message:", error);
+    return { success: false, err: error };
   }
 };
 

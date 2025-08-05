@@ -22,7 +22,8 @@ const VideoMessage = ({ msg, isSender }: MessagePros) => {
 
   const maxW = 320;
   const maxH = 320;
-  let boxW = maxW, boxH = maxH;
+  let boxW = maxW,
+    boxH = maxH;
   if (width && height) {
     const ratio = width / height;
     if (ratio > 1) {

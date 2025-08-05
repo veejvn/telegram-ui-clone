@@ -61,7 +61,7 @@ export const useTimeline = (roomId: string) => {
         if (redactedEventId) {
           updateMessage(roomId, redactedEventId, {
             text: "Tin nhắn đã thu hồi",
-            isDeleted: true
+            isDeleted: true,
           });
           //console.log("Đã thu hồi tin nhắn:", redactedEventId);
         } else {
@@ -76,13 +76,27 @@ export const useTimeline = (roomId: string) => {
 
       if (typeEvent !== "m.room.message") return;
 
-      // const content = event.getContent();
-      // const userId = client.getUserId();
-      // const sender = event.getSender();
-      // const senderDisplayName = event.sender?.name ?? sender;
-      // const text = content.body;
-
       const content = event.getContent();
+
+      // ✅ Skip edit events - không hiển thị như tin nhắn mới
+      if (
+        content["m.relates_to"] &&
+        content["m.relates_to"].rel_type === "m.replace"
+      ) {
+        // Đây là edit event, cập nhật tin nhắn gốc thay vì tạo tin nhắn mới
+        const originalEventId = content["m.relates_to"].event_id;
+        if (
+          originalEventId &&
+          content["m.new_content"] &&
+          content["m.new_content"].body
+        ) {
+          updateMessage(roomId, originalEventId, {
+            text: content["m.new_content"].body,
+            isEdited: true,
+          });
+        }
+        return; // Không xử lý tiếp như tin nhắn mới
+      }
       const sender = event.getSender();
 
       const isRedacted = event.isRedacted();

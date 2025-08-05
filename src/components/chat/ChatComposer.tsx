@@ -38,9 +38,13 @@ import useTyping from "@/hooks/useTyping";
 import EmojiPicker, { Theme as EmojiTheme } from "emoji-picker-react";
 import ForwardMsgPreview from "./ForwardMsgPreview";
 import ReplyPreview from "./ReplyPreview";
+import EditMessageInput from "./EditMessageInput";
 import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
 import { useForwardStore } from "@/stores/useForwardStore";
 import { useReplyStore } from "@/stores/useReplyStore";
+import { useEditStore } from "@/stores/useEditStore";
+import { editMessage } from "@/services/chatService";
+import { toast } from "sonner";
 import { Gift, Reply, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -78,6 +82,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   const updateMessage = useChatStore((state) => state.updateMessage);
   const { messages: forwardMessages, clearMessages } = useForwardStore();
   const { replyMessage, clearReply } = useReplyStore();
+  const { editMessage: editMsg, clearEditMessage, isEditing } = useEditStore();
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"Photo" | "File" | "Location">("Photo");
   const [selectOpen, setSelectOpen] = useState(false);
@@ -92,14 +97,80 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
 
   useTyping(roomId);
 
+  // Handle edit message - set text khi có editMessage
+  useEffect(() => {
+    if (editMsg) {
+      setText(editMsg.text);
+      // Focus vào textarea
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          // Đặt cursor ở cuối text
+          const length = editMsg.text.length;
+          textareaRef.current.setSelectionRange(length, length);
+        }
+      }, 100);
+    }
+  }, [editMsg]);
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
-      if (textareaRef.current) {
-        textareaRef.current.value = "";
-      }
       e.preventDefault();
-      handleSend();
+
+      // Nếu đang edit thì save edit, ngược lại send message mới
+      if (isEditing && editMsg) {
+        handleEditSave();
+      } else {
+        // Chỉ clear textarea khi send tin nhắn mới
+        if (textareaRef.current) {
+          textareaRef.current.value = "";
+        }
+        handleSend();
+      }
+    } else if (e.key === "Escape" && isEditing) {
+      // Cancel edit khi nhấn Escape
+      e.preventDefault();
+      handleEditCancel();
     }
+  };
+
+  const handleEditSave = async () => {
+    if (!editMsg || !client || !text.trim()) return;
+
+    try {
+      const result = await editMessage(
+        client,
+        editMsg.roomId,
+        editMsg.eventId,
+        text.trim()
+      );
+
+      if (result.success) {
+        // Cập nhật tin nhắn trong store local
+        updateMessage(editMsg.roomId, editMsg.eventId, {
+          text: text.trim(),
+          isEdited: true,
+        });
+
+        // Clear edit state và text
+        clearEditMessage();
+        setText("");
+
+        // Clear textarea
+        if (textareaRef.current) {
+          textareaRef.current.value = "";
+        }
+      } else {
+        console.error("Failed to edit message:", result.err);
+      }
+    } catch (error) {
+      console.error("Error editing message:", error);
+    }
+  };
+
+  const handleEditCancel = () => {
+    clearEditMessage();
+    setText("");
   };
 
   const handleSend = () => {
@@ -685,27 +756,32 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
       {/* Reply Preview */}
       <ReplyPreview />
 
-      <div className="flex mx-3 pb-8">
+      {/* Edit Message Input */}
+      <EditMessageInput />
+
+      <div className={`flex pb-8 px-3 backdrop-blur-[24px] ${isEditing ? "bg-[#FFFFFF4D]" : ""}`}>
         {/* Nút Plus ngoài cùng bên trái */}
-        <div
-          className="w-12 h-12 flex items-center justify-center rounded-full shadow-sm
+        {!text.trim() && (
+          <div
+            className="w-12 h-12 flex items-center justify-center rounded-full shadow-sm
   border-white cursor-pointer bg-gradient-to-br from-slate-100/70 
   via-gray-400/10 to-slate-50/30 backdrop-blur-xs bg-white/30
   hover:scale-105 duration-300 transition-all ease-in-out mr-2"
-          onClick={() => setOpen(true)}
-        >
-          <Plus className="w-6 h-6" />
-          {/* Input file ẩn để chọn ảnh */}
-          <input
-            ref={imageInputRef}
-            type="file"
-            accept="image/*,video/*"
-            multiple
-            className="hidden"
-            onChange={handleImagesAndVideos}
-            aria-label="file"
-          />
-        </div>
+            onClick={() => setOpen(true)}
+          >
+            <Plus className="w-6 h-6" />
+            {/* Input file ẩn để chọn ảnh */}
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*,video/*"
+              multiple
+              className="hidden"
+              onChange={handleImagesAndVideos}
+              aria-label="file"
+            />
+          </div>
+        )}
 
         {/* Khung nhập chat */}
         <div className="flex flex-1 items-center px-3 h-12 rounded-3xl bg-white/80 border border-white shadow-sm min-w-0">
@@ -732,23 +808,6 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
             onClick={() => setShowEmojiPicker((prev) => !prev)}
           />
           {/* Icon gửi (nếu có text) */}
-          {text.trim() && (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="2 2 20 20"
-              fill="currentColor"
-              className="ml-2 w-6 h-6 cursor-pointer hover:scale-110 duration-300 transition-all ease-in-out flex-shrink-0
-            animate-in slide-in-from-right-20"
-              onClick={handleSend}
-            >
-              <path
-                fillRule="evenodd"
-                d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm.53 5.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 1 0 1.06 1.06l1.72-1.72v5.69a.75.75 0 0 0 1.5 0v-5.69l1.72 1.72a.75.75 0 1 0 1.06-1.06l-3-3Z"
-                clipRule="evenodd"
-                className="text-blue-600"
-              />
-            </svg>
-          )}
 
           {showEmojiPicker && (
             <div className="absolute bottom-22 right-2 z-50">
@@ -763,6 +822,25 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
                 }
               />
             </div>
+          )}
+        </div>
+        <div className="flex items-center">
+          {text.trim() && (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="2 2 20 20"
+              fill="currentColor"
+              className="ml-2 size-10 cursor-pointer hover:scale-110 duration-300 transition-all ease-in-out flex-shrink-0
+                  animate-in slide-in-from-right-20"
+              onClick={isEditing ? handleEditSave : handleSend}
+            >
+              <path
+                fillRule="evenodd"
+                d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm.53 5.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 1 0 1.06 1.06l1.72-1.72v5.69a.75.75 0 0 0 1.5 0v-5.69l1.72 1.72a.75.75 0 1 0 1.06-1.06l-3-3Z"
+                clipRule="evenodd"
+                className="text-blue-600"
+              />
+            </svg>
           )}
         </div>
 
