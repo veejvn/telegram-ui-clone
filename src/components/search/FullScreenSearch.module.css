@@ -19,8 +19,6 @@
   min-height: 64px;
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
-  background: rgba(255, 255, 255, 0.95);
-  border-top: 1px solid rgba(167, 207, 232, 0.3);
   transition: all 0.3s ease-in-out;
 }
 
@@ -39,8 +37,6 @@
 .searchBarContainer.keyboardActive {
   bottom: calc(var(--keyboard-height, 0px) - 20px) !important;
   transform: translateY(-20px);
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-  background: rgba(255, 255, 255, 0.98);
 }
 
 /* Mobile specific styles */
@@ -57,7 +53,6 @@
   .searchBarContainer.keyboardActive {
     bottom: calc(var(--keyboard-height, 0px) - 30px);
     transform: translateY(-10px);
-    background: rgba(255, 255, 255, 0.98);
   }
 
   /* Prevent input zoom on iOS */
