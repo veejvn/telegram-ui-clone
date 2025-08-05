@@ -15,13 +15,16 @@ export default function ContactEditPage() {
     const [inputName, setInputName] = React.useState("");
     const [lastName, setLastName] = React.useState("");
     const CUSTOM_NAME_EVENT = "dev.custom_name";
+    const CUSTOM_AVATAR_EVENT = "dev.custom_avatar";
+    const [customAvatarUrl, setCustomAvatarUrl] = React.useState<string | null>(null);
+    const [selectedAvatarFile, setSelectedAvatarFile] = React.useState<File | null>(null);
+    
 
-    // Khi gõ input
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setInputName(e.target.value);
     };
 
-    // Khi bấm Done thì lưu lại
+
     const handleSaveCustomName = async () => {
         if (!user?.userId || !client) return;
 
@@ -34,30 +37,61 @@ export default function ContactEditPage() {
                 [user.userId]: inputName,
             };
 
-            // Cập nhật custom name
+
             await client.setAccountData(CUSTOM_NAME_EVENT as any, updatedData as any);
 
-            // Đợi một chút để đảm bảo client sync lại dữ liệu mới
-            await new Promise((resolve) => setTimeout(resolve, 300)); // đợi 300ms
 
-            // Đọc lại account data để đảm bảo đã được lưu đúng
+            await new Promise((resolve) => setTimeout(resolve, 300));
+
+
             const confirmedEvent = client.getAccountData(CUSTOM_NAME_EVENT as any);
             const confirmedData = confirmedEvent?.getContent<Record<string, string>>();
             const confirmedName = confirmedData?.[user.userId];
 
             if (confirmedName === inputName) {
-                setLastName(confirmedName); // cập nhật lại state
-                router.replace(`/chat/${roomId}/info`); // điều hướng
+                setLastName(confirmedName);
+                router.replace(`/chat/${roomId}/info`);
             } else {
-                console.warn("Tên vừa lưu chưa được đồng bộ, thử lại sau.");
+                console.warn("The name hasn't been synced yet. Please try again later.");
             }
         } catch (error) {
             console.error("Failed to save custom name:", error);
         }
     };
 
+    const handleSaveCustomAvatar = async () => {
+        if (!client || !user?.userId || !selectedAvatarFile) return;
 
+        try {
+            const res = await client.uploadContent(selectedAvatarFile, {
+                name: selectedAvatarFile.name,
+                type: selectedAvatarFile.type,
+            });
 
+            const mxcUrl = typeof res === "string" ? res : res?.content_uri;
+
+            if (mxcUrl) {
+                const event = client.getAccountData(CUSTOM_AVATAR_EVENT as any);
+                const existingData = event?.getContent<Record<string, string>>() || {};
+
+                const updatedData = {
+                    ...existingData,
+                    [user.userId]: mxcUrl,
+                };
+
+                await client.setAccountData(CUSTOM_AVATAR_EVENT as any, updatedData as any);
+            }
+        } catch (error) {
+            console.error("Failed to save custom avatar:", error);
+        }
+    };
+    const handleDone = async () => {
+        await Promise.all([
+            handleSaveCustomAvatar(),
+            handleSaveCustomName()
+        ]);
+        router.replace(`/chat/${roomId}/info`);
+    };
     const [user, setUser] = React.useState<sdk.User | undefined>(undefined);
     const [avatarUrl, setAvatarUrl] = React.useState<string | null>(null);
     const handleRemoveContact = async () => {
@@ -73,7 +107,7 @@ export default function ContactEditPage() {
     };
 
 
-    // Fetch user info & avatar
+
     React.useEffect(() => {
         if (!roomId || !client) return;
 
@@ -95,7 +129,7 @@ export default function ContactEditPage() {
                 console.error("Error:", res.err);
             });
     }, [roomId, client]);
-    // 2. Load custom name khi user đã có
+
     React.useEffect(() => {
         if (!client || !user?.userId) return;
 
@@ -110,12 +144,31 @@ export default function ContactEditPage() {
             }
         };
 
-        fetchCustomName(); // 👈 gọi async function để đảm bảo lấy đúng dữ liệu
+        fetchCustomName();
     }, [client, user]);
 
+    
+
     React.useEffect(() => {
-        setInputName(lastName ?? "");
-    }, [lastName]);
+        if (!client || !user?.userId) return;
+
+        const fetchAvatar = async () => {
+            try {
+                const event = await client.getAccountData(CUSTOM_AVATAR_EVENT as any);
+                const data = event?.getContent<Record<string, string>>();
+                const mxcUrl = data?.[user.userId];
+                if (mxcUrl) {
+                    const url = client.mxcUrlToHttp(mxcUrl, 400, 400, "scale", true);
+                    setCustomAvatarUrl(url);
+                }
+            } catch (error) {
+                console.error("Failed to load custom avatar:", error);
+            }
+        };
+
+        fetchAvatar();
+    }, [client, user]);
+
 
     const displayName = lastName || user?.displayName || "user";
     return (
@@ -144,7 +197,7 @@ export default function ContactEditPage() {
 
                 <h1 className="text-lg font-semibold">Edit</h1>
                 <Button
-                    onClick={handleSaveCustomName}
+                    onClick={handleDone}
                     variant="ghost"
                     className="text-blue-500 font-semibold"
                 >
@@ -154,13 +207,29 @@ export default function ContactEditPage() {
 
             {/* Avatar + Name Section */}
             <div className="container mx-auto px-4">
+                <input
+                    type="file"
+                    accept="image/*"
+                    id="avatar-upload"
+                    className="hidden"
+                    onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                            setSelectedAvatarFile(file);
+                            const localUrl = URL.createObjectURL(file);
+                            setCustomAvatarUrl(localUrl);
+                        }
+                    }}
+                />
+
                 <div className="flex gap-4 p-4 rounded-2xl border border-white/30 bg-white/20 backdrop-blur-md w-full items-start mb-4 shadow-sm">
                     {/* Avatar */}
                     <img
-                        src={avatarUrl ?? "/avatar.png"}
+                        src={customAvatarUrl ?? avatarUrl ?? "/avatar.png"}
                         alt="Avatar"
                         className="w-14 h-14 rounded-full bg-gray-300 object-cover shrink-0"
                     />
+
 
                     {/* Name + input */}
                     <div className="flex-1 min-w-0">
@@ -190,7 +259,11 @@ export default function ContactEditPage() {
                 {/* Action Sections */}
                 <div className="rounded-2xl border border-white/30 bg-white/20 backdrop-blur-md overflow-hidden mb-4 shadow-sm">
                     {/* Suggest Photo */}
-                    <div className="p-4 flex justify-between items-start cursor-pointer hover:bg-gray-100">
+                    <div onClick={() => {
+                        document.getElementById("avatar-upload")?.click();
+                    }}
+
+                        className="p-4 flex justify-between items-start cursor-pointer hover:bg-gray-100">
                         <div>
                             <p className="font-medium">
                                 Suggest photo for {displayName}
@@ -207,7 +280,11 @@ export default function ContactEditPage() {
                     <div className="h-px bg-gray-200 mx-4" />
 
                     {/* Set Photo */}
-                    <div className="p-4 flex justify-between items-start cursor-pointer hover:bg-gray-100">
+                    <div onClick={() => {
+                        document.getElementById("avatar-upload")?.click();
+                    }}
+
+                        className="p-4 flex justify-between items-start cursor-pointer hover:bg-gray-100">
                         <div>
                             <p className="font-medium">
                                 Set photo for {displayName}
