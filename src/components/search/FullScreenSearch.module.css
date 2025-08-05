@@ -1,0 +1,177 @@
+/* Base styles for all devices */
+.fullscreenSearchEnter {
+  height: 100vh !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 9999 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+/* Content area - scrollable when keyboard is open */
+.searchContentArea {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  padding-bottom: 80px; /* Space for search bar */
+  max-height: calc(100vh - 130px); /* Default height */
+  transition: max-height 0.3s ease-in-out;
+}
+
+/* Search bar container */
+.searchBarContainer {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 10000 !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  backdrop-filter: blur(10px) !important;
+  transition: bottom 0.3s ease-in-out;
+}
+
+/* Keyboard active states - adjust content area height */
+.keyboardActive .searchContentArea {
+  max-height: calc(100vh - var(--keyboard-height, 320px) - 130px) !important;
+  overflow-y: auto !important;
+}
+
+.searchBarContainer.keyboardActive {
+  bottom: var(--keyboard-height, 320px) !important;
+}
+
+/* Mobile specific styles */
+@media screen and (max-width: 768px) {
+  .searchBarContainer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+  }
+
+  /* When keyboard is active - adjust to visible area */
+  .searchBarContainer.keyboardActive {
+    position: absolute !important;
+    bottom: 20px !important;
+    left: 0 !important;
+    right: 0 !important;
+    transform: none !important;
+  }
+
+  /* Prevent input zoom on iOS */
+  .searchBarContainer input {
+    font-size: 16px;
+    transform-origin: left top;
+  }
+
+  /* When keyboard is active */
+  .keyboardActive .searchContentArea {
+    padding-bottom: 100px;
+    max-height: calc(100vh - 200px);
+  }
+}
+
+/* Enhanced iOS handling with fallback */
+@supports (-webkit-touch-callout: none) {
+  .searchBarContainer.keyboardActive {
+    bottom: 20px !important;
+    transform: none !important;
+  }
+
+  .keyboardActive .searchContentArea {
+    max-height: calc(100vh - 200px);
+    max-height: calc(100dvh - 200px);
+  }
+}
+
+/* Enhanced Android specific handling */
+@media screen and (max-height: 600px) and (min-width: 300px) {
+  .searchBarContainer.keyboardActive {
+    bottom: 15px !important;
+    transform: none !important;
+  }
+}
+
+/* Android Chrome specific - force overlay behavior */
+@supports not (-webkit-touch-callout: none) {
+  /* This targets Android Chrome specifically */
+  .searchBarContainer.keyboardActive {
+    position: absolute !important;
+    bottom: 10px !important;
+    left: 0 !important;
+    right: 0 !important;
+    transform: none !important;
+    z-index: 10000 !important;
+  }
+} /* Smooth transitions */
+.fullscreenSearchEnter,
+.searchContentArea,
+.searchBarContainer {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Safe area handling for devices with notches */
+@media screen and (max-width: 768px) {
+  .fullscreenSearchEnter {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .searchBarContainer {
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Keep search bar in visible area when keyboard is active */
+  .searchBarContainer.keyboardActive {
+    bottom: 10px !important;
+    min-height: 70px;
+    padding: 16px;
+    transform: none !important;
+  }
+}
+
+/* Landscape mode adjustments */
+@media screen and (max-width: 768px) and (orientation: landscape) {
+  .keyboardActive .searchContentArea {
+    max-height: calc(40vh);
+    padding-bottom: 80px;
+  }
+
+  .searchBarContainer.keyboardActive {
+    bottom: 5px !important;
+    transform: none !important;
+  }
+}
+
+/* Very small screens (older phones) */
+@media screen and (max-height: 500px) {
+  .keyboardActive .searchContentArea {
+    max-height: calc(30vh);
+  }
+
+  .searchBarContainer.keyboardActive {
+    bottom: 5px !important;
+    padding: 12px;
+    transform: none !important;
+  }
+}
+
+/* Additional Android Chrome fixes */
+@media screen and (max-width: 768px) {
+  /* Work with browser's natural keyboard behavior */
+  .keyboardActive.fullscreenSearchEnter {
+    /* Let the browser handle viewport changes naturally */
+    height: auto !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    overflow: hidden !important;
+  }
+}
+
+/* Styles for the search input container with purple border and shadow */
+.searchInputWrapper {
+  box-shadow: 0 0 0 1px #9370db, 0 0 10px 1px rgba(147, 112, 219, 0.5);
+}
