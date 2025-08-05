@@ -52,6 +52,18 @@ const FullScreenSearch = ({
     const initialHeight = window.visualViewport?.height || window.innerHeight;
     setInitialViewportHeight(initialHeight);
 
+    // Prevent page from scrolling when component mounts
+    const originalOverflow = document.body.style.overflow;
+    const originalPosition = document.body.style.position;
+
+    document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.top = "0";
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.width = "100%";
+    document.body.style.height = "100vh";
+
     const handleViewportChange = () => {
       if (window.visualViewport) {
         const currentHeight = window.visualViewport.height;
@@ -110,6 +122,15 @@ const FullScreenSearch = ({
       } else {
         window.removeEventListener("resize", handleResize);
       }
+
+      // Restore original styles when component unmounts
+      document.body.style.overflow = originalOverflow;
+      document.body.style.position = originalPosition;
+      document.body.style.removeProperty("top");
+      document.body.style.removeProperty("left");
+      document.body.style.removeProperty("right");
+      document.body.style.removeProperty("width");
+      document.body.style.removeProperty("height");
     };
   }, []);
 
@@ -123,16 +144,46 @@ const FullScreenSearch = ({
         "--keyboard-height",
         `${keyboardHeight}px`
       );
+
+      // Prevent page from scrolling/moving on keyboard open
+      document.body.style.overflow = "hidden";
+      document.body.style.position = "fixed";
+      document.body.style.top = "0";
+      document.body.style.left = "0";
+      document.body.style.right = "0";
+      document.body.style.bottom = "0";
+      document.body.style.width = "100%";
+      document.body.style.height = "100vh";
     } else {
       document.body.classList.remove("keyboard-open");
       document.documentElement.classList.remove("keyboard-open");
       document.documentElement.style.removeProperty("--keyboard-height");
+
+      // Reset body styles
+      document.body.style.removeProperty("overflow");
+      document.body.style.removeProperty("position");
+      document.body.style.removeProperty("top");
+      document.body.style.removeProperty("left");
+      document.body.style.removeProperty("right");
+      document.body.style.removeProperty("bottom");
+      document.body.style.removeProperty("width");
+      document.body.style.removeProperty("height");
     }
 
     return () => {
       document.body.classList.remove("keyboard-open");
       document.documentElement.classList.remove("keyboard-open");
       document.documentElement.style.removeProperty("--keyboard-height");
+
+      // Reset body styles on cleanup
+      document.body.style.removeProperty("overflow");
+      document.body.style.removeProperty("position");
+      document.body.style.removeProperty("top");
+      document.body.style.removeProperty("left");
+      document.body.style.removeProperty("right");
+      document.body.style.removeProperty("bottom");
+      document.body.style.removeProperty("width");
+      document.body.style.removeProperty("height");
     };
   }, [isKeyboardOpen, keyboardHeight]);
 
