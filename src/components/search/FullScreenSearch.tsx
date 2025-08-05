@@ -155,8 +155,8 @@ const FullScreenSearch = ({
         isKeyboardOpen ? styles.keyboardActive : ""
       }`}
     >
-      {/* Search header */}
-      <div className="flex items-center justify-between p-3 flex-shrink-0 bg-[#c7e2f0] sticky top-0 z-10">
+      {/* Search header - sticky at top */}
+      <div className="flex items-center justify-between p-3 flex-shrink-0 bg-[#c7e2f0] sticky top-0 z-20 border-b border-white/20">
         <div className="text-2xl font-medium px-4 text-black">Search</div>
         <button
           onClick={onClose}
@@ -167,10 +167,8 @@ const FullScreenSearch = ({
         </button>
       </div>
 
-      {/* Content area */}
-      <div
-        className={`flex-1 overflow-y-auto pb-24 ${styles.searchContentArea}`}
-      >
+      {/* Content area - scrollable */}
+      <div className={`${styles.searchContentArea}`}>
         {!(
           searchTerm.length > 0 &&
           !searchLoading &&
@@ -380,18 +378,26 @@ const FullScreenSearch = ({
                   initialHeight: initialViewportHeight,
                   currentHeight,
                   heightDifference,
+                  isKeyboardDetected: heightDifference > 100,
                   userAgent: navigator.userAgent.slice(0, 50) + "...",
                 });
 
                 if (heightDifference > 100) {
                   setIsKeyboardOpen(true);
                   setKeyboardHeight(heightDifference);
+                  console.log(
+                    "Keyboard detected via viewport change, height:",
+                    heightDifference
+                  );
                 } else {
                   // Fallback for Android Chrome - force keyboard detection on focus
                   const isAndroid = /Android/i.test(navigator.userAgent);
                   if (isAndroid) {
                     setIsKeyboardOpen(true);
                     setKeyboardHeight(320); // Standard Android keyboard height
+                    console.log(
+                      "Android fallback keyboard detection, using height: 320px"
+                    );
                   }
                 }
               }, 300);
