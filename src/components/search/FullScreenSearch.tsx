@@ -115,7 +115,7 @@ const FullScreenSearch = ({
                 </div>
                 <div className="text-gray-600">
                   No results found for
-                  <span className="font-medium">{` '${searchTerm}'`}</span>.
+                  <span className="text-black font-medium">{` '${searchTerm}'`}</span>.
                   Please try a different search.
                 </div>
               </div>
@@ -221,7 +221,7 @@ const FullScreenSearch = ({
       </div>
 
       {/* Search bar - fixed at the bottom, won't move with keyboard */}
-      <div className="fixed bottom-0 left-0 right-0 px-4 py-3 border-t border-[#a7cfe8] bg-[#c2e3f5]/95 backdrop-blur-sm z-50 search-bar-container">
+      <div className="fixed bottom-0 left-0 right-0 px-4 py-3 backdrop-blur-sm z-50 search-bar-container">
         <div
           className="flex items-center rounded-full overflow-hidden px-2 bg-[#fce0f0]"
           style={{
@@ -261,6 +261,7 @@ const FullScreenSearch = ({
                 setSearchQuery("");
               }}
               className="p-2 text-[#121212] flex-shrink-0"
+              aria-label="Clear search"
             >
               <X size={16} />
             </button>
