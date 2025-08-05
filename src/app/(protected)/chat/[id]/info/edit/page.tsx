@@ -12,9 +12,50 @@ export default function ContactEditPage() {
     const client = useMatrixClient();
     const params = useParams();
     const roomId = decodeURIComponent(params.id as string);
+    const [inputName, setInputName] = React.useState("");
+    const [lastName, setLastName] = React.useState("");
+    const CUSTOM_NAME_EVENT = "dev.custom_name";
+
+    // Khi gõ input
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setInputName(e.target.value);
+    };
+
+    // Khi bấm Done thì lưu lại
+    const handleSaveCustomName = async () => {
+        if (!user?.userId || !client) return;
+
+        try {
+            const event = client.getAccountData(CUSTOM_NAME_EVENT as any);
+            const existingData = event?.getContent<Record<string, string>>() || {};
+            const updatedData: Record<string, string> = {
+                ...existingData,
+                [user.userId]: inputName,
+            };
+            await client.setAccountData(CUSTOM_NAME_EVENT as any, updatedData as any);
+
+            setLastName(inputName); 
+            router.back();          
+        } catch (error) {
+            console.error("Failed to save custom name:", error);
+        }
+    };
+
 
     const [user, setUser] = React.useState<sdk.User | undefined>(undefined);
     const [avatarUrl, setAvatarUrl] = React.useState<string | null>(null);
+    const handleRemoveContact = async () => {
+        if (!client || !roomId) return;
+
+        try {
+            await client.leave(roomId);
+            await client.forget(roomId);
+            router.push("/chat");
+        } catch (err) {
+            console.error("Failed to remove contact:", err);
+        }
+    };
+
 
     // Fetch user info & avatar
     React.useEffect(() => {
@@ -25,7 +66,6 @@ export default function ContactEditPage() {
                 if (res.success && res.user) {
                     setUser(res.user);
 
-                    // Kiểm tra avatarUrl tồn tại
                     const avatar = (res.user as any).avatarUrl;
                     if (avatar) {
                         const httpUrl = client.mxcUrlToHttp(avatar, 400, 400, "scale", true);
@@ -39,8 +79,18 @@ export default function ContactEditPage() {
                 console.error("Error:", res.err);
             });
     }, [roomId, client]);
+    // 2. Load custom name khi user đã có
+    React.useEffect(() => {
+        if (!client || !user?.userId) return;
 
+        const event = client.getAccountData(CUSTOM_NAME_EVENT as any);
+        const data = event?.getContent<Record<string, string>>();
+        const custom = data?.[user.userId];
+        if (custom) setLastName(custom);
 
+    }, [client, user]);
+
+    const displayName = lastName || user?.displayName || "user";
     return (
         <div className="w-full mx-auto p-4">
             {/* Header */}
@@ -67,7 +117,7 @@ export default function ContactEditPage() {
 
                 <h1 className="text-lg font-semibold">Edit</h1>
                 <Button
-                    onClick={() => router.back()}
+                    onClick={handleSaveCustomName}
                     variant="ghost"
                     className="text-blue-500 font-semibold"
                 >
@@ -88,7 +138,7 @@ export default function ContactEditPage() {
                     {/* Name + input */}
                     <div className="flex-1 min-w-0">
                         <p className="font-medium text-black">
-                            {user?.displayName ?? "Unknown User"}
+                            {lastName || user?.displayName || "Unknown User"}
                         </p>
 
                         <div className="overflow-hidden w-full my-1">
@@ -101,8 +151,11 @@ export default function ContactEditPage() {
                             </span>
                             <input
                                 placeholder=""
+                                value={inputName}
+                                onChange={handleInputChange}
                                 className="flex-1 min-w-0 border-none bg-transparent outline-none italic text-dark-500 placeholder:italic"
                             />
+
                         </div>
                     </div>
                 </div>
@@ -113,10 +166,10 @@ export default function ContactEditPage() {
                     <div className="p-4 flex justify-between items-start cursor-pointer hover:bg-gray-100">
                         <div>
                             <p className="font-medium">
-                                Suggest photo for {user?.displayName ?? "user"}
+                                Suggest photo for {displayName}
                             </p>
                             <p className="text-sm text-gray-500">
-                                You can replace {user?.displayName ?? "this user"}'s photo with
+                                You can replace {displayName}'s photo with
                                 another photo that only you can see.
                             </p>
                         </div>
@@ -130,10 +183,10 @@ export default function ContactEditPage() {
                     <div className="p-4 flex justify-between items-start cursor-pointer hover:bg-gray-100">
                         <div>
                             <p className="font-medium">
-                                Set photo for {user?.displayName ?? "user"}
+                                Set photo for {displayName}
                             </p>
                             <p className="text-sm text-gray-500">
-                                You can replace {user?.displayName ?? "this user"}'s photo with
+                                You can replace {displayName}'s photo with
                                 another photo that only you can see.
                             </p>
                         </div>
@@ -143,7 +196,11 @@ export default function ContactEditPage() {
                 </div>
 
                 {/* Remove Contact */}
-                <div className="mt-6 p-4 rounded-xl border border-white/30 bg-white/20 backdrop-blur-md shadow-sm cursor-pointer hover:bg-white/30 flex items-start justify-between">
+                <div
+                    onClick={handleRemoveContact}
+                    className="mt-6 p-4 rounded-xl border border-white/30 bg-white/20 backdrop-blur-md shadow-sm cursor-pointer hover:bg-white/30 flex items-start justify-between"
+                >
+
                     <div>
                         <p className="text-red-600 font-medium">Remove contact</p>
                         <p className="text-sm text-gray-500 mt-1">

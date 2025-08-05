@@ -50,6 +50,10 @@ export default function ChatsPage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const visibleRooms = rooms.filter((room) => {
+  const me = room.getMember(client?.getUserId() ?? "");
+  return me?.membership === "join"; 
+});
   useListenRoomInvites();
   const router = useRouter();
   const { showToast } = useToast();
@@ -960,7 +964,7 @@ export default function ChatsPage() {
         ) : (
           <div>
             <ChatList
-              rooms={rooms}
+              rooms={visibleRooms}
               isEditMode={isEditMode}
               selectedRooms={selectedRooms}
               onSelectRoom={handleSelectRoom}
