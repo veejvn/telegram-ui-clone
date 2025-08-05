@@ -5,7 +5,13 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/ChatAvatar";
-import { ChevronLeft, PhoneOutgoing, Video } from "lucide-react";
+import {
+  ChevronLeft,
+  PhoneOutgoing,
+  Video,
+  MoreHorizontal,
+  Edit3,
+} from "lucide-react";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import * as sdk from "matrix-js-sdk";
@@ -20,6 +26,7 @@ import { getDetailedStatus } from "@/utils/chat/presencesHelpers";
 import { useRouter } from "next/navigation";
 import { useUserPresence } from "@/hooks/useUserPrecense";
 import useCallStore from "@/stores/useCallStore";
+import GroupNameEditModal from "./GroupNameEditModal";
 
 interface Contact {
   id: string;
@@ -28,13 +35,33 @@ interface Contact {
   roomId: string;
 }
 
-const ChatHeader = ({ room }: { room: sdk.Room }) => {
+interface ChatHeaderProps {
+  room: sdk.Room;
+  isEditModalOpen: boolean;
+  setIsEditModalOpen: (open: boolean) => void;
+}
+
+const ChatHeader = ({
+  room,
+  isEditModalOpen,
+  setIsEditModalOpen,
+}: ChatHeaderProps) => {
   const client = useMatrixClient();
   const currentUserId = useAuthStore.getState().userId;
   const { roomId, type, otherUserId } = getRoomInfo(room, currentUserId);
   const clearMessages = useForwardStore((state) => state.clearMessages);
   const [user, setUser] = useState<sdk.User | undefined>(undefined);
   const router = useRouter();
+
+  // Group name edit modal state
+  const [groupName, setGroupName] = useState(room.name || "Group");
+
+  const joinRuleEvent = room?.currentState.getStateEvents(
+    "m.room.join_rules",
+    ""
+  );
+  const joinRule = joinRuleEvent?.getContent()?.join_rule;
+  const isGroup = joinRule === "public";
 
   let lastSeen = null;
   if (client) {
@@ -110,13 +137,15 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
     return {
       id: user.userId,
       name: user.displayName || user.userId || room.name,
-      lastSeen: isActuallyOnline ? "online" : getDetailedStatus(lastSeen) || "recently",
+      lastSeen: isActuallyOnline
+        ? "online"
+        : getDetailedStatus(lastSeen) || "recently",
       roomId: room.roomId,
     };
   };
 
   // Follow NewCallPage pattern - handle start call exactly the same way
-  const handleStartCall = async (callType: 'voice' | 'video') => {
+  const handleStartCall = async (callType: "voice" | "video") => {
     if (!user || !room) return;
 
     const contact = createContactFromUser();
@@ -128,7 +157,9 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
 
       // Navigate exactly like NewCallPage
       router.push(
-        `/call/${callType}?calleeId=${encodeURIComponent(contact.roomId)}&contact=${encodeURIComponent(contact.name)}`
+        `/call/${callType}?calleeId=${encodeURIComponent(
+          contact.roomId
+        )}&contact=${encodeURIComponent(contact.name)}`
       );
     } catch (error) {
       console.error("Failed to start call:", error);
@@ -137,75 +168,187 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
 
   const currentContact = createContactFromUser();
 
+  // Handle group name update
+  const handleUpdateGroupName = async (newName: string) => {
+    if (!client || !room) return;
+
+    try {
+      await client.setRoomName(room.roomId, newName);
+      setGroupName(newName);
+    } catch (error) {
+      console.error("Failed to update group name:", error);
+      throw error;
+    }
+  };
+
   return (
     <div className="flex items-center justify-between h-[50px] p-2">
-      {/* Left: Back button */}
-      <div className="w-[80px] flex justify-start">
-        {backToMain ? (
+      {isGroup ? (
+        <>
+          {/* Left: Back button and Group info together */}
+          <div className="flex items-center gap-3">
+            {/* Back button */}
+            {backToMain ? (
+              <button
+                className="flex items-center justify-center font-medium cursor-pointer bg-white/60 rounded-full p-1.5 border border-white
+              bg-gradient-to-br from-slate-100/50 via-gray-400/10 to-slate-50/15 
+              backdrop-blur-xs shadow-xs hover:scale-105 duration-300 transition-all ease-in-out"
+                onClick={handleBack}
+                title="Back"
+                aria-label="Back"
+              >
+                <ChevronLeft size={20} />
+              </button>
+            ) : (
+              <Link
+                href={"/chat"}
+                className="flex items-center justify-center cursor-pointer hover:opacity-70 bg-white/60 rounded-full p-1 border border-white
+              bg-gradient-to-br from-slate-100/50 via-gray-400/10 to-slate-50/15 
+              backdrop-blur-xs shadow-xs hover:scale-105 duration-300 transition-all ease-in-out"
+                onClick={() => {
+                  setTimeout(() => {
+                    clearMessages();
+                  }, 300);
+                }}
+              >
+                <ChevronLeft size={20} />
+              </Link>
+            )}
+
+            {/* Group Avatar */}
+            <div className="flex-shrink-0">
+              <Avatar className="w-8 h-8">
+                <AvatarImage
+                  src={
+                    room.getAvatarUrl(
+                      client?.getHomeserverUrl() || "",
+                      40,
+                      40,
+                      "crop"
+                    ) || undefined
+                  }
+                />
+                <AvatarFallback className="bg-black text-white text-lg font-medium">
+                  {room.name.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            </div>
+
+            {/* Group Name and Member Count */}
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h1 className="font-semibold text-gray-800 truncate">
+                  {groupName || "Group Name"}
+                </h1>
+                <button
+                  className="flex-shrink-0 p-1 hover:bg-gray-100 rounded"
+                  onClick={() => setIsEditModalOpen(true)}
+                >
+                  <Edit3 size={14} className="text-blue-500" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-500">
+                {room.getJoinedMembers().length.toString().padStart(2, "0")}{" "}
+                members
+              </p>
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Left: Back button */}
+          <div className="w-[80px] flex justify-start">
+            {backToMain ? (
+              <button
+                className="flex items-center justify-center font-medium cursor-pointer bg-white/60 rounded-full p-1.5 border border-white
+              bg-gradient-to-br from-slate-100/50 via-gray-400/10 to-slate-50/15 
+              backdrop-blur-xs shadow-xs hover:scale-105 duration-300 transition-all ease-in-out"
+                onClick={handleBack}
+                title="Back"
+                aria-label="Back"
+              >
+                <ChevronLeft size={20} />
+              </button>
+            ) : (
+              <Link
+                href={"/chat"}
+                className="flex items-center justify-center cursor-pointer hover:opacity-70 bg-white/60 rounded-full p-1 border border-white
+              bg-gradient-to-br from-slate-100/50 via-gray-400/10 to-slate-50/15 
+              backdrop-blur-xs shadow-xs hover:scale-105 duration-300 transition-all ease-in-out"
+                onClick={() => {
+                  setTimeout(() => {
+                    clearMessages();
+                  }, 300);
+                }}
+              >
+                <ChevronLeft size={20} />
+              </Link>
+            )}
+          </div>
+
+          {/* Center: Room name */}
+          <div className="flex-1 text-center truncate">
+            <Link href={`${room.roomId}/info`}>
+              <h1 className="font-semibold">{room.name}</h1>
+            </Link>
+          </div>
+        </>
+      )}
+
+      {/* Right: Call/Video buttons or More options */}
+      {isGroup ? (
+        <div className="w-[80px] flex items-center justify-end">
           <button
-            className="flex items-center justify-center font-medium cursor-pointer bg-white/60 rounded-full p-1.5 border border-white
+            className="flex items-center justify-center rounded-full p-1.5 border border-white cursor-pointer 
           bg-gradient-to-br from-slate-100/50 via-gray-400/10 to-slate-50/15 
           backdrop-blur-xs shadow-xs hover:scale-105 duration-300 transition-all ease-in-out"
-            onClick={handleBack}
-            title="Back"
-            aria-label="Back"
+            title="More options"
+            aria-label="More options"
           >
-            <ChevronLeft size={20} />
+            <Link href={`${room.roomId}/info`}>
+              <MoreHorizontal size={20} />
+            </Link>
           </button>
-        ) : (
-          <Link
-            href={"/chat"}
-            className="flex items-center justify-center cursor-pointer hover:opacity-70 bg-white/60 rounded-full p-1 border border-white
-          bg-gradient-to-br from-slate-100/50 via-gray-400/10 to-slate-50/15 
-          backdrop-blur-xs shadow-xs hover:scale-105 duration-300 transition-all ease-in-out"
-            onClick={() => {
-              setTimeout(() => {
-                clearMessages();
-              }, 300);
-            }}
+        </div>
+      ) : (
+        <div className="w-[80px] flex items-center gap-2 justify-end">
+          {/* Video Call Button */}
+          <button
+            className="flex items-center justify-center rounded-full p-1 border border-white cursor-pointer 
+          bg-gradient-to-br from-slate-100/70 via-gray-400/10 to-slate-50/30 backdrop-blur-xs 
+          shadow-xs hover:scale-105 duration-300 transition-all ease-in-out
+          disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            onClick={() => handleStartCall("video")}
+            disabled={!user || !client || !currentContact}
+            title="Video Call"
+            aria-label="Start video call"
           >
-            <ChevronLeft size={20} />
-          </Link>
-        )}
-      </div>
+            <Video size={20} />
+          </button>
 
-      {/* Center: Room name */}
-      <div className="flex-1 text-center truncate">
-        <Link href={`${room.roomId}/info`}>
-          <h1 className="font-semibold">{room.name}</h1>
-        </Link>
-      </div>
+          {/* Voice Call Button */}
+          <button
+            className="flex items-center justify-center rounded-full p-1.5 border border-white cursor-pointer 
+          bg-gradient-to-br from-slate-100/70 via-gray-400/10 to-slate-50/30 backdrop-blur-xs 
+          shadow-xs hover:scale-105 duration-300 transition-all ease-in-out
+          disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            onClick={() => handleStartCall("voice")}
+            disabled={!user || !client || !currentContact}
+            title="Voice Call"
+            aria-label="Start voice call"
+          >
+            <PhoneOutgoing size={15} />
+          </button>
+        </div>
+      )}
 
-      {/* Right: Call/Video buttons */}
-      <div className="w-[80px] flex items-center gap-2 justify-end">
-        {/* Video Call Button */}
-        <button
-          className="flex items-center justify-center rounded-full p-1 border border-white cursor-pointer 
-        bg-gradient-to-br from-slate-100/70 via-gray-400/10 to-slate-50/30 backdrop-blur-xs 
-        shadow-xs hover:scale-105 duration-300 transition-all ease-in-out
-        disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-          onClick={() => handleStartCall("video")}
-          disabled={!user || !client || !currentContact}
-          title="Video Call"
-          aria-label="Start video call"
-        >
-          <Video size={20} />
-        </button>
-
-        {/* Voice Call Button */}
-        <button
-          className="flex items-center justify-center rounded-full p-1.5 border border-white cursor-pointer 
-        bg-gradient-to-br from-slate-100/70 via-gray-400/10 to-slate-50/30 backdrop-blur-xs 
-        shadow-xs hover:scale-105 duration-300 transition-all ease-in-out
-        disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-          onClick={() => handleStartCall("voice")}
-          disabled={!user || !client || !currentContact}
-          title="Voice Call"
-          aria-label="Start voice call"
-        >
-          <PhoneOutgoing size={15} />
-        </button>
-      </div>
+      {/* Group Name Edit Modal */}
+      <GroupNameEditModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        currentName={groupName}
+        onSave={handleUpdateGroupName}
+      />
     </div>
   );
 };
