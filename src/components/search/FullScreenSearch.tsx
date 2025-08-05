@@ -48,21 +48,24 @@ const FullScreenSearch = ({
   const [initialViewportHeight, setInitialViewportHeight] = useState(0);
 
   useEffect(() => {
+    // Check if device is mobile
+    const isMobile =
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      ) ||
+      "ontouchstart" in window ||
+      window.innerWidth <= 768;
+
+    // Only initialize keyboard detection on mobile devices
+    if (!isMobile) {
+      return;
+    }
+
     // Store initial viewport height
     const initialHeight = window.visualViewport?.height || window.innerHeight;
     setInitialViewportHeight(initialHeight);
 
-    // Prevent page from scrolling when component mounts
-    const originalOverflow = document.body.style.overflow;
-    const originalPosition = document.body.style.position;
-
-    document.body.style.overflow = "hidden";
-    document.body.style.position = "fixed";
-    document.body.style.top = "0";
-    document.body.style.left = "0";
-    document.body.style.right = "0";
-    document.body.style.width = "100%";
-    document.body.style.height = "100vh";
+    console.log("Mobile device detected, initialHeight:", initialHeight);
 
     const handleViewportChange = () => {
       if (window.visualViewport) {
@@ -75,7 +78,7 @@ const FullScreenSearch = ({
           currentHeight,
           heightDifference,
           isKeyboard: heightDifference > 150,
-          userAgent: navigator.userAgent,
+          userAgent: navigator.userAgent.slice(0, 50) + "...",
         });
 
         // More precise keyboard detection
@@ -122,68 +125,25 @@ const FullScreenSearch = ({
       } else {
         window.removeEventListener("resize", handleResize);
       }
-
-      // Restore original styles when component unmounts
-      document.body.style.overflow = originalOverflow;
-      document.body.style.position = originalPosition;
-      document.body.style.removeProperty("top");
-      document.body.style.removeProperty("left");
-      document.body.style.removeProperty("right");
-      document.body.style.removeProperty("width");
-      document.body.style.removeProperty("height");
     };
   }, []);
 
   useEffect(() => {
-    // Add class to body when keyboard is open for additional styling
+    // Set CSS custom property for keyboard height
     if (isKeyboardOpen) {
-      document.body.classList.add("keyboard-open");
-      document.documentElement.classList.add("keyboard-open");
-      // Set CSS custom property for keyboard height
       document.documentElement.style.setProperty(
         "--keyboard-height",
         `${keyboardHeight}px`
       );
 
-      // Prevent page from scrolling/moving on keyboard open
-      document.body.style.overflow = "hidden";
-      document.body.style.position = "fixed";
-      document.body.style.top = "0";
-      document.body.style.left = "0";
-      document.body.style.right = "0";
-      document.body.style.bottom = "0";
-      document.body.style.width = "100%";
-      document.body.style.height = "100vh";
+      console.log("Keyboard opened, height:", keyboardHeight);
     } else {
-      document.body.classList.remove("keyboard-open");
-      document.documentElement.classList.remove("keyboard-open");
       document.documentElement.style.removeProperty("--keyboard-height");
-
-      // Reset body styles
-      document.body.style.removeProperty("overflow");
-      document.body.style.removeProperty("position");
-      document.body.style.removeProperty("top");
-      document.body.style.removeProperty("left");
-      document.body.style.removeProperty("right");
-      document.body.style.removeProperty("bottom");
-      document.body.style.removeProperty("width");
-      document.body.style.removeProperty("height");
+      console.log("Keyboard closed");
     }
 
     return () => {
-      document.body.classList.remove("keyboard-open");
-      document.documentElement.classList.remove("keyboard-open");
       document.documentElement.style.removeProperty("--keyboard-height");
-
-      // Reset body styles on cleanup
-      document.body.style.removeProperty("overflow");
-      document.body.style.removeProperty("position");
-      document.body.style.removeProperty("top");
-      document.body.style.removeProperty("left");
-      document.body.style.removeProperty("right");
-      document.body.style.removeProperty("bottom");
-      document.body.style.removeProperty("width");
-      document.body.style.removeProperty("height");
     };
   }, [isKeyboardOpen, keyboardHeight]);
 
@@ -397,39 +357,63 @@ const FullScreenSearch = ({
               setSearchQuery(e.target.value);
             }}
             onFocus={() => {
-              // For mobile devices, trigger manual keyboard detection
-              if ("ontouchstart" in window) {
-                setTimeout(() => {
-                  const currentHeight =
-                    window.visualViewport?.height || window.innerHeight;
-                  const heightDifference =
-                    initialViewportHeight - currentHeight;
+              // Only handle keyboard detection on mobile devices
+              const isMobile =
+                /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+                  navigator.userAgent
+                ) ||
+                "ontouchstart" in window ||
+                window.innerWidth <= 768;
 
-                  console.log("Focus event:", {
-                    initialHeight: initialViewportHeight,
-                    currentHeight,
-                    heightDifference,
-                  });
-
-                  if (heightDifference > 100) {
-                    setIsKeyboardOpen(true);
-                    setKeyboardHeight(heightDifference);
-                  } else {
-                    // Fallback for Android - assume standard keyboard height
-                    setIsKeyboardOpen(true);
-                    setKeyboardHeight(280);
-                  }
-                }, 300);
+              if (!isMobile) {
+                console.log("Desktop detected, skipping keyboard detection");
+                return;
               }
+
+              // For mobile devices, trigger manual keyboard detection
+              setTimeout(() => {
+                const currentHeight =
+                  window.visualViewport?.height || window.innerHeight;
+                const heightDifference = initialViewportHeight - currentHeight;
+
+                console.log("Mobile focus event:", {
+                  initialHeight: initialViewportHeight,
+                  currentHeight,
+                  heightDifference,
+                  userAgent: navigator.userAgent.slice(0, 50) + "...",
+                });
+
+                if (heightDifference > 100) {
+                  setIsKeyboardOpen(true);
+                  setKeyboardHeight(heightDifference);
+                } else {
+                  // Fallback for Android Chrome - force keyboard detection on focus
+                  const isAndroid = /Android/i.test(navigator.userAgent);
+                  if (isAndroid) {
+                    setIsKeyboardOpen(true);
+                    setKeyboardHeight(320); // Standard Android keyboard height
+                  }
+                }
+              }, 300);
             }}
             onBlur={() => {
-              // Reset keyboard state when input loses focus
-              if ("ontouchstart" in window) {
-                setTimeout(() => {
-                  setIsKeyboardOpen(false);
-                  setKeyboardHeight(0);
-                }, 100);
+              // Only handle keyboard detection on mobile devices
+              const isMobile =
+                /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+                  navigator.userAgent
+                ) ||
+                "ontouchstart" in window ||
+                window.innerWidth <= 768;
+
+              if (!isMobile) {
+                return;
               }
+
+              // Reset keyboard state when input loses focus
+              setTimeout(() => {
+                setIsKeyboardOpen(false);
+                setKeyboardHeight(0);
+              }, 100);
             }}
             placeholder="Tìm kiếm"
             className="flex-1 h-10 px-1 border-none focus:outline-none bg-transparent text-gray-800 text-base"
