@@ -28,18 +28,34 @@ export default function ContactEditPage() {
         try {
             const event = client.getAccountData(CUSTOM_NAME_EVENT as any);
             const existingData = event?.getContent<Record<string, string>>() || {};
+
             const updatedData: Record<string, string> = {
                 ...existingData,
                 [user.userId]: inputName,
             };
+
+            // Cập nhật custom name
             await client.setAccountData(CUSTOM_NAME_EVENT as any, updatedData as any);
 
-            setLastName(inputName); 
-            router.back();          
+            // Đợi một chút để đảm bảo client sync lại dữ liệu mới
+            await new Promise((resolve) => setTimeout(resolve, 300)); // đợi 300ms
+
+            // Đọc lại account data để đảm bảo đã được lưu đúng
+            const confirmedEvent = client.getAccountData(CUSTOM_NAME_EVENT as any);
+            const confirmedData = confirmedEvent?.getContent<Record<string, string>>();
+            const confirmedName = confirmedData?.[user.userId];
+
+            if (confirmedName === inputName) {
+                setLastName(confirmedName); // cập nhật lại state
+                router.replace(`/chat/${roomId}/info`); // điều hướng
+            } else {
+                console.warn("Tên vừa lưu chưa được đồng bộ, thử lại sau.");
+            }
         } catch (error) {
             console.error("Failed to save custom name:", error);
         }
     };
+
 
 
     const [user, setUser] = React.useState<sdk.User | undefined>(undefined);
@@ -83,12 +99,23 @@ export default function ContactEditPage() {
     React.useEffect(() => {
         if (!client || !user?.userId) return;
 
-        const event = client.getAccountData(CUSTOM_NAME_EVENT as any);
-        const data = event?.getContent<Record<string, string>>();
-        const custom = data?.[user.userId];
-        if (custom) setLastName(custom);
+        const fetchCustomName = async () => {
+            try {
+                const event = await client.getAccountData(CUSTOM_NAME_EVENT as any);
+                const data = event?.getContent<Record<string, string>>();
+                const custom = data?.[user.userId];
+                setLastName(custom ?? "");
+            } catch (error) {
+                console.error("Failed to fetch custom name:", error);
+            }
+        };
 
+        fetchCustomName(); // 👈 gọi async function để đảm bảo lấy đúng dữ liệu
     }, [client, user]);
+
+    React.useEffect(() => {
+        setInputName(lastName ?? "");
+    }, [lastName]);
 
     const displayName = lastName || user?.displayName || "user";
     return (
