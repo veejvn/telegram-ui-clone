@@ -16,7 +16,10 @@ import {
   ChevronLeft,
   Ellipsis,
   Loader2,
+  QrCode,
   ShoppingCart,
+  UserPlus2,
+  Users2,
   X,
 } from "lucide-react";
 import useSortedRooms from "@/hooks/useSortedRooms";
@@ -32,6 +35,14 @@ import { useToast } from "@/contexts/ToastProvider";
 import SearchBar from "@/components/search/SearchBar";
 import FullScreenSearch from "@/components/search/FullScreenSearch";
 import NavigationMenu from "@/components/layouts/NavigationMenu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 export default function ChatsPage() {
   const { refreshRooms, loading } = useSortedRooms();
   const rooms = useRoomStore((state) => state.rooms);
@@ -574,7 +585,7 @@ export default function ChatsPage() {
       const room = await ContactService.addContact(client, userId);
       if (room) {
         router.push(`/chat/${room.roomId}`);
-        closeFullScreenSearch();
+        //closeFullScreenSearch();
       }
     } catch (error: any) {
       console.error("Error creating room:", error.message);
@@ -662,7 +673,7 @@ export default function ChatsPage() {
         );
       if (room) {
         router.push(`/chat/${room.roomId}`);
-        closeFullScreenSearch();
+        //closeFullScreenSearch();
       }
     } else {
       await handleAddContact(client, user.user_id);
@@ -843,7 +854,34 @@ export default function ChatsPage() {
                   aria-label="More options"
                   title="More options"
                 >
-                  <Ellipsis className="w-5 h-5" />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Ellipsis className="w-5 h-5" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      // align="end"
+                      className="rounded-3xl p-2 mx-3 my-3 w-[210px]"
+                    >
+                      <DropdownMenuItem
+                        className="flex items-center justify-between"
+                        onSelect={() =>
+                          router.push("/chat/newMessage/addMember")
+                        }
+                      >
+                        Create Group
+                        <Users2 className="scale-125 text-blue-600" />
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="flex items-center justify-between">
+                        Add new contact
+                        <UserPlus2 className="scale-125 text-blue-600" />
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="flex items-center justify-between">
+                        QR Code <QrCode className="scale-125 text-blue-600" />
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </button>
               </div>
             </>
@@ -989,7 +1027,7 @@ export default function ChatsPage() {
           userIdChatBot={userIdChatBot}
         />
       )}
-      
+
       {/* Action bar for edit mode */}
       {isEditMode && (
         <ChatActionBar

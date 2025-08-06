@@ -91,12 +91,12 @@ const ChatPage = () => {
       }
 
       // 3. Debug logging to see what's happening
-      console.log("🐛 Initial setup:", {
-        bodyHeight: document.body.scrollHeight,
-        windowHeight: window.innerHeight,
-        documentHeight: document.documentElement.scrollHeight,
-        bodyClassList: [...document.body.classList],
-      });
+      // console.log("🐛 Initial setup:", {
+      //   bodyHeight: document.body.scrollHeight,
+      //   windowHeight: window.innerHeight,
+      //   documentHeight: document.documentElement.scrollHeight,
+      //   bodyClassList: [...document.body.classList],
+      // });
     }
 
     const handleViewportChange = () => {
