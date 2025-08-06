@@ -112,6 +112,12 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
   );
 
   const handleCopy = async (text: string) => {
+    // Đóng menu và reset vị trí trước khi copy
+    setOpen(false);
+    setShowOverlay(false);
+    setActiveMenuMessageId(null);
+    setTransformOffset(0);
+
     const success = await copyToClipboard(text);
     if (success) {
       toast.success("Copied to clipboard!");
@@ -122,6 +128,13 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
 
   const handleForward = async () => {
     if (!msg.text || !msg.sender || !msg.time || !client) return;
+
+    // Đóng menu và reset vị trí trước khi navigate
+    setOpen(false);
+    setShowOverlay(false);
+    setActiveMenuMessageId(null);
+    setTransformOffset(0);
+
     router.push("/chat/forward");
 
     setTimeout(() => {
@@ -137,7 +150,7 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
   const handleReply = () => {
     if (!msg.text || !msg.sender || !msg.time) return;
 
-    // Đóng menu
+    // Đóng menu và reset vị trí
     setOpen(false);
     setShowOverlay(false);
     setActiveMenuMessageId(null);
@@ -156,6 +169,13 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
 
   const handleDelete = async () => {
     if (!client || !roomId) return;
+
+    // Đóng menu và reset vị trí trước khi delete
+    setOpen(false);
+    setShowOverlay(false);
+    setActiveMenuMessageId(null);
+    setTransformOffset(0);
+
     // console.log(
     //   "Delete Message in TextMessage " + " roomId: " + roomId + " eventId: " + msg.eventId
     // );
@@ -219,9 +239,9 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
         // Hiển thị overlay ngay lập tức
         setShowOverlay(true);
 
-        // Hiện reactions + dropdown menu
+        // Set flag và trigger mở menu thông qua handleOpenChange
         allowOpenRef.current = true;
-        calculateOptimalPosition();
+        handleOpenChange(true);
       }
     }, 500); // Hold trong 500ms để hiện menu
   };
@@ -298,15 +318,17 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
     }, 100);
   };
 
-  const calculateOptimalPosition = () => {
+  const calculateOptimalPosition = (shouldOpenMenu = true) => {
     const messageElement = document.querySelector(
       `[data-message-id="${msg.eventId}"]`
     );
     if (!messageElement) {
-      // Fallback: mở menu ngay nếu không tìm thấy element
-      allowOpenRef.current = true;
-      setOpen(true);
-      setActiveMenuMessageId(msg.eventId);
+      // Fallback: mở menu ngay nếu không tìm thấy element và shouldOpenMenu = true
+      if (shouldOpenMenu) {
+        allowOpenRef.current = true;
+        setOpen(true);
+        setActiveMenuMessageId(msg.eventId);
+      }
       return;
     }
 
@@ -335,19 +357,22 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
       setTransformOffset(0);
     }
 
-    // Mở menu sau khi đã set transform và đảm bảo prevention đã được thiết lập
-    setTimeout(() => {
-      allowOpenRef.current = true;
-      setOpen(true);
-      setActiveMenuMessageId(msg.eventId);
-      // Ghi nhận thời gian mở menu
-      menuOpenTimeRef.current = Date.now();
-      // Đảm bảo prevention vẫn hoạt động
-      preventReactionClick.current = true;
+    // Chỉ mở menu nếu shouldOpenMenu = true
+    if (shouldOpenMenu) {
+      // Mở menu sau khi đã set transform và đảm bảo prevention đã được thiết lập
       setTimeout(() => {
-        preventReactionClick.current = false;
-      }, 500); // Thêm 500ms nữa sau khi menu mở
-    }, 200); // Tăng delay từ 150ms lên 200ms
+        allowOpenRef.current = true;
+        setOpen(true);
+        setActiveMenuMessageId(msg.eventId);
+        // Ghi nhận thời gian mở menu
+        menuOpenTimeRef.current = Date.now();
+        // Đảm bảo prevention vẫn hoạt động
+        preventReactionClick.current = true;
+        setTimeout(() => {
+          preventReactionClick.current = false;
+        }, 500); // Thêm 500ms nữa sau khi menu mở
+      }, 200); // Tăng delay từ 150ms lên 200ms
+    }
   };
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -355,8 +380,22 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
     if (nextOpen) {
       // Chỉ cho phép mở nếu không ở selection mode
       if (allowOpenRef.current && !isSelectionMode) {
-        setOpen(true);
-        setActiveMenuMessageId(msg.eventId);
+        // Gọi calculateOptimalPosition để tính toán vị trí tin nhắn trước khi mở menu
+        calculateOptimalPosition(false); // false để không mở menu tự động
+
+        // Sau đó mở menu
+        setTimeout(() => {
+          setOpen(true);
+          setActiveMenuMessageId(msg.eventId);
+          // Ghi nhận thời gian mở menu
+          menuOpenTimeRef.current = Date.now();
+          // Đảm bảo prevention vẫn hoạt động
+          preventReactionClick.current = true;
+          setTimeout(() => {
+            preventReactionClick.current = false;
+          }, 500);
+        }, 200);
+
         allowOpenRef.current = false;
       }
     } else {
@@ -387,7 +426,7 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
   const handleEdit = () => {
     if (!msg.text || !roomId || isDeleted) return;
 
-    // Đóng menu
+    // Đóng menu và reset vị trí
     setOpen(false);
     setShowOverlay(false);
     setActiveMenuMessageId(null);
@@ -446,6 +485,9 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
       //toast.error("Failed to pin/unpin message");
     }
   };
+
+  // Không cần useEffect để tính toán lại vị trí khi edit
+  // Vì logic đã được xử lý trong handleEdit
 
   return (
     <>

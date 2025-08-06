@@ -284,6 +284,7 @@ const FullScreenSearch = ({
                 setSearchQuery("");
               }}
               className="p-2 text-[#9370DB]"
+              aria-label="Clear search"
             >
               <X size={16} />
             </button>

@@ -4,10 +4,22 @@ import React from "react";
 import { X } from "lucide-react";
 import { useEditStore } from "@/stores/useEditStore";
 
-const EditMessageInput = () => {
+interface EditMessageInputProps {
+  onCancel?: () => void;
+}
+
+const EditMessageInput = ({ onCancel }: EditMessageInputProps) => {
   const { editMessage: editMsg, clearEditMessage, isEditing } = useEditStore();
 
   if (!editMsg || !isEditing) return null;
+
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel(); // Gọi handleEditCancel từ ChatComposer
+    } else {
+      clearEditMessage(); // Fallback
+    }
+  };
 
   return (
     <div className="">
@@ -20,7 +32,7 @@ const EditMessageInput = () => {
             <div className="flex items-center gap-2 mb-2">
               <span className="text-xs font-medium text-blue-500">Edit</span>
               <button
-                onClick={clearEditMessage}
+                onClick={handleCancel}
                 className="flex justify-center items-center ml-auto p-1 size-9 rounded-full bg-[#8080804D] transition-colors"
                 title="Cancel"
               >

@@ -20,7 +20,6 @@ import { getDetailedStatus } from "@/utils/chat/presencesHelpers";
 import { useRouter } from "next/navigation";
 import { useUserPresence } from "@/hooks/useUserPrecense";
 import useCallStore from "@/stores/useCallStore";
-import PinnedMessageBanner from "./PinnedMessageBanner";
 
 interface Contact {
   id: string;
@@ -213,9 +212,6 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
           </button>
         </div>
       </div>
-
-      {/* Pinned Message Banner */}
-      <PinnedMessageBanner roomId={roomId} />
     </>
   );
 };

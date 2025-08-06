@@ -64,11 +64,16 @@ import clsx from "clsx";
 import VoiceRecordingModal from "@/components/chat/VoiceRecordingModal";
 
 const ChatComposer = ({ roomId }: { roomId: string }) => {
+  // Animation timing constant for synchronization
+  const ANIMATION_DURATION = 0.4;
+
   const [text, setText] = useState("");
   const [isMultiLine, setIsMultiLine] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showStickers, setShowStickers] = useState(false);
   const [showModalVoiceRecord, setShowModalVoiceRecord] = useState(false);
+  // State để kiểm soát quá trình exit animation của nút gửi
+  const [isSendButtonAnimating, setIsSendButtonAnimating] = useState(false);
 
   const typingTimeoutRef = useRef<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -171,6 +176,10 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   const handleEditCancel = () => {
     clearEditMessage();
     setText("");
+    // Clear textarea
+    if (textareaRef.current) {
+      textareaRef.current.value = "";
+    }
   };
 
   const handleSend = () => {
@@ -501,17 +510,6 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [selectOpen]);
 
-  const renderIcon = (tab: string) => {
-    switch (tab) {
-      case "gallery":
-        return <CircleEllipsis className="mx-4" />;
-      case "location":
-        return <Search className="mx-4" />;
-      default:
-        return <div className="w-18 h-9"></div>;
-    }
-  };
-
   const handleSendLocation = async (location: {
     latitude: number;
     longitude: number;
@@ -757,92 +755,175 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
       <ReplyPreview />
 
       {/* Edit Message Input */}
-      <EditMessageInput />
+      <EditMessageInput onCancel={handleEditCancel} />
 
-      <div className={`flex pb-8 px-3 backdrop-blur-[24px] ${isEditing ? "bg-[#FFFFFF4D]" : ""}`}>
+      <div className={`flex pb-8 px-3 ${isEditing ? "bg-[#FFFFFF4D]" : ""}`}>
         {/* Nút Plus ngoài cùng bên trái */}
-        {!text.trim() && (
-          <div
-            className="w-12 h-12 flex items-center justify-center rounded-full shadow-sm
-  border-white cursor-pointer bg-gradient-to-br from-slate-100/70 
-  via-gray-400/10 to-slate-50/30 backdrop-blur-xs bg-white/30
-  hover:scale-105 duration-300 transition-all ease-in-out mr-2"
-            onClick={() => setOpen(true)}
-          >
-            <Plus className="w-6 h-6" />
-            {/* Input file ẩn để chọn ảnh */}
-            <input
-              ref={imageInputRef}
-              type="file"
-              accept="image/*,video/*"
-              multiple
-              className="hidden"
-              onChange={handleImagesAndVideos}
-              aria-label="file"
-            />
-          </div>
-        )}
-
-        {/* Khung nhập chat */}
-        <div className="flex flex-1 items-center px-3 h-12 rounded-3xl bg-white/80 border border-white shadow-sm min-w-0">
-          {/* Icon micro bên trái */}
-          <Mic
-            className="w-5 h-5 text-gray-400 mr-2 cursor-pointer flex-shrink-0"
-            onClick={() => {
-              setShowModalVoiceRecord(true);
-            }}
-          />
-          {/* Input nhập tin nhắn */}
-          <textarea
-            ref={textareaRef}
-            value={text}
-            onChange={onInputChange}
-            onKeyDown={handleKeyDown}
-            placeholder="Enter message"
-            className="flex-1 h-full bg-transparent outline-none text-[12px] text-gray-700 placeholder-gray-400
-        placeholder:italic placeholder:font-light px-2 resize-none mt-5"
-          />
-          {/* Icon smile bên phải */}
-          <Smile
-            className="w-5 h-5 text-gray-400 ml-2 cursor-pointer flex-shrink-0"
-            onClick={() => setShowEmojiPicker((prev) => !prev)}
-          />
-          {/* Icon gửi (nếu có text) */}
-
-          {showEmojiPicker && (
-            <div className="absolute bottom-22 right-2 z-50">
-              <EmojiPicker
-                width={300}
-                height={350}
-                onEmojiClick={handleEmojiClick}
-                searchDisabled={true}
-                previewConfig={{ showPreview: false }}
-                theme={
-                  theme.theme === "dark" ? EmojiTheme.DARK : EmojiTheme.LIGHT
-                }
-              />
-            </div>
-          )}
-        </div>
-        <div className="flex items-center">
-          {text.trim() && (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="2 2 20 20"
-              fill="currentColor"
-              className="ml-2 size-10 cursor-pointer hover:scale-110 duration-300 transition-all ease-in-out flex-shrink-0
-                  animate-in slide-in-from-right-20"
-              onClick={isEditing ? handleEditSave : handleSend}
+        <AnimatePresence>
+          {!isEditing && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8, x: -20 }}
+              animate={{ opacity: 1, scale: 1, x: 0 }}
+              exit={{ opacity: 0, scale: 0.8, x: -20 }}
+              transition={{
+                type: "spring",
+                stiffness: 400,
+                damping: 30,
+                duration: 0.2,
+              }}
+              className="relative size-12 mr-2 flex-shrink-0"
             >
-              <path
-                fillRule="evenodd"
-                d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm.53 5.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 1 0 1.06 1.06l1.72-1.72v5.69a.75.75 0 0 0 1.5 0v-5.69l1.72 1.72a.75.75 0 1 0 1.06-1.06l-3-3Z"
-                clipRule="evenodd"
-                className="text-blue-600"
-              />
-            </svg>
+              <div
+                className="absolute left-0 top-1/2 -translate-y-1/2 size-12 flex items-center justify-center rounded-full shadow-sm border-white cursor-pointer bg-gradient-to-br from-slate-100/70 via-gray-400/10 to-slate-50/30 backdrop-blur-xs bg-white/30"
+                onClick={() => setOpen(true)}
+              >
+                <Plus className="w-6 h-6" />
+                {/* Input file ẩn để chọn ảnh */}
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/*,video/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleImagesAndVideos}
+                  aria-label="file"
+                />
+              </div>
+            </motion.div>
           )}
-        </div>
+        </AnimatePresence>
+
+        {/* Khung nhập chat với animation layout */}
+        <motion.div
+          className="flex flex-1 items-center relative"
+          animate={{
+            width: text.trim() ? "calc(100% - 50px)" : "100%",
+            paddingRight: text.trim() ? 46 : 0,
+          }}
+          transition={{
+            type: "spring",
+            stiffness: 300,
+            damping: 30,
+            duration: 0.3,
+          }}
+        >
+          <div
+            className={`flex flex-1 items-center px-3 h-12 rounded-3xl bg-white/80 border border-white shadow-sm min-w-0${
+              text.trim() ? " mr-3" : ""
+            }`}
+          >
+            {/* Icon micro bên trái */}
+            <AnimatePresence>
+              {!isEditing && (
+                <motion.div
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Mic
+                    className="w-5 h-5 text-gray-400 mr-2 cursor-pointer flex-shrink-0"
+                    onClick={() => {
+                      setShowModalVoiceRecord(true);
+                    }}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Input nhập tin nhắn */}
+            <textarea
+              ref={textareaRef}
+              value={text}
+              onChange={onInputChange}
+              onKeyDown={handleKeyDown}
+              placeholder={isEditing ? "Edit your message..." : "Enter message"}
+              className="flex-1 h-full bg-transparent outline-none text-[12px] text-gray-700 placeholder-gray-400
+        placeholder:italic placeholder:font-light px-2 resize-none mt-5"
+            />
+
+            {/* Icon smile bên phải */}
+            <AnimatePresence>
+              {!isEditing && (
+                <motion.div
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Smile
+                    className="w-5 h-5 text-gray-400 ml-2 cursor-pointer flex-shrink-0"
+                    onClick={() => setShowEmojiPicker((prev) => !prev)}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Icon gửi tin nhắn */}
+          <AnimatePresence mode="wait">
+            {text.trim() && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8, x: 30 }}
+                animate={{ opacity: 1, scale: 1, x: 0 }}
+                exit={{ opacity: 0, scale: 0.8, x: 30 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 400,
+                  damping: 30,
+                  duration: 0.2,
+                }}
+                className="absolute top-1/2 -translate-y-1/2 bg-[#026AE0] size-11 rounded-full flex items-center justify-center cursor-pointer flex-shrink-0"
+                style={{ pointerEvents: "auto", right: 1 }}
+              >
+                <motion.svg
+                  initial={{ x: 3, opacity: 0.7 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.05, duration: 0.1 }}
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="size-6"
+                  onClick={isEditing ? handleEditSave : handleSend}
+                >
+                  <path
+                    fillRule="evenodd"
+                    clipRule="evenodd"
+                    d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"
+                    className="text-white"
+                  />
+                </motion.svg>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Emoji Picker with fixed position */}
+          <AnimatePresence>
+            {showEmojiPicker && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                transition={{ duration: 0.15 }}
+                className="fixed bottom-22 right-2 z-50"
+                style={{ transform: "translate3d(0, 0, 0)" }}
+              >
+                <EmojiPicker
+                  width={300}
+                  height={350}
+                  onEmojiClick={handleEmojiClick}
+                  searchDisabled={true}
+                  previewConfig={{ showPreview: false }}
+                  theme={
+                    theme.theme === "dark" ? EmojiTheme.DARK : EmojiTheme.LIGHT
+                  }
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
 
         {/* Voice Recording Modal */}
         <VoiceRecordingModal

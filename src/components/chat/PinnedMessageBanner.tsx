@@ -99,7 +99,7 @@ const PinnedMessageBanner: React.FC<PinnedMessageBannerProps> = ({
   return (
     <>
       {isVisible && pinnedMessage && (
-        <div className="bg-[#E3F2FD] backdrop-blur-[24px] relative mx-6 rounded-full border border-[#DDDDDD]">
+        <div className="bg-[#FFFFFF4D] mx-6 mt-5 backdrop-blur-[24px] relative rounded-full border border-[#DDDDDD]">
           <div
             className="px-4 py-3 cursor-pointer transition-colors"
             onClick={handleBannerClick}
