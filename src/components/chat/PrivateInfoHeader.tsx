@@ -76,6 +76,7 @@ export default function PrivateInfoHeader({ user }: { user: sdk.User }) {
           <button
             onClick={() => router.back()}
             className="h-10 px-4 flex items-center gap-1 text-sm font-medium border border-white rounded-full cursor-pointer bg-gradient-to-br from-slate-100/50 via-gray-400/10 to-slate-50/15 backdrop-blur-xs shadow-xs hover:scale-105 duration-300 transition-all ease-in-out"
+            aria-label="Back"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>

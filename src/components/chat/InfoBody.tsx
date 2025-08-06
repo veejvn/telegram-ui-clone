@@ -149,11 +149,15 @@ export default function InfoBody({ user }: { user: sdk.User }) {
       if (msg.type !== "text" || !msg.sender) return null;
 
       let text = msg.text;
+      //console.log("Processing message:", text);
 
       // Nếu là JSON forward, thì parse ra text gốc
       try {
         const parsed = JSON.parse(msg.text);
         if (parsed.forward && parsed.text) {
+          text = parsed.text;
+        }
+        else if (parsed.reply && parsed.text) {
           text = parsed.text;
         }
       } catch {
@@ -939,8 +943,7 @@ export default function InfoBody({ user }: { user: sdk.User }) {
                             }
                             const brand = getBrandName(url);
                             const desc =
-                              msg.text.split("\n")[1] ||
-                              "Lorem ipsum dolor sit amet consectetur.";
+                              msg.text.split("\n")[1] || url;
                             return url ? (
                               <div
                                 key={msg.eventId || index}
