@@ -105,7 +105,11 @@ const GroupInfoBody = ({ room }: GroupInfoBodyProps) => {
                   </AvatarFallback>
                 )}
               </Avatar>
-              <button className="absolute bottom-0 right-0 w-8 h-8  rounded-full bg-white flex items-center justify-center">
+              <button
+                className="absolute bottom-0 right-0 w-8 h-8  rounded-full bg-white flex items-center justify-center"
+                aria-label="Change group avatar"
+                title="Change group avatar"
+              >
                 <Camera size={16} className="text-blue-500" />
               </button>
             </div>
@@ -121,16 +125,21 @@ const GroupInfoBody = ({ room }: GroupInfoBodyProps) => {
                   onChange={(e) => setGroupName(e.target.value)}
                   className="text-center text-lg font-semibold bg-transparent border-b border-blue-500 focus:outline-none"
                   autoFocus
+                  aria-label="Group name input"
                 />
                 <button
                   onClick={handleSaveName}
                   className="text-blue-500 text-sm font-medium"
+                  aria-label="Save group name changes"
+                  title="Save group name changes"
                 >
                   Save
                 </button>
                 <button
                   onClick={handleCancelEdit}
                   className="text-gray-500 text-sm font-medium"
+                  aria-label="Cancel group name editing"
+                  title="Cancel group name editing"
                 >
                   Cancel
                 </button>
@@ -143,6 +152,8 @@ const GroupInfoBody = ({ room }: GroupInfoBodyProps) => {
                 <button
                   onClick={handleEditName}
                   className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
+                  aria-label="Edit group name"
+                  title="Edit group name"
                 >
                   <Edit3 size={14} className="text-blue-500" />
                 </button>
@@ -200,6 +211,8 @@ const GroupInfoBody = ({ room }: GroupInfoBodyProps) => {
                 className={`w-12 h-6 rounded-full transition-colors ${
                   isMuted ? "bg-blue-500" : "bg-white"
                 }`}
+                aria-label={isMuted ? "Unmute group" : "Mute group"}
+                title={isMuted ? "Unmute group" : "Mute group"}
               >
                 <div
                   className={`w-5 h-5  rounded-full transition-transform ${
@@ -225,6 +238,10 @@ const GroupInfoBody = ({ room }: GroupInfoBodyProps) => {
                 className={`w-12 h-6 rounded-full transition-colors ${
                   isPinned ? "bg-blue-500" : "bg-white"
                 }`}
+                aria-label={
+                  isPinned ? "Unpin group from top" : "Pin group to top"
+                }
+                title={isPinned ? "Unpin group from top" : "Pin group to top"}
               >
                 <div
                   className={`w-5 h-5 rounded-full transition-transform ${
@@ -351,12 +368,22 @@ const GroupInfoBody = ({ room }: GroupInfoBodyProps) => {
                         <button
                           onClick={() => handleChatWithMember(member)}
                           className="bg-blue-500 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-blue-600 transition-colors"
+                          aria-label={`Chat with ${
+                            member.name || member.userId
+                          }`}
+                          title={`Chat with ${member.name || member.userId}`}
                         >
                           Chat
                         </button>
                         <button
                           onClick={() => handleMoreOptions(member)}
                           className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
+                          aria-label={`More options for ${
+                            member.name || member.userId
+                          }`}
+                          title={`More options for ${
+                            member.name || member.userId
+                          }`}
                         >
                           <MoreHorizontal size={16} className="text-gray-500" />
                         </button>

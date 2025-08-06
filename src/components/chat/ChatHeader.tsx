@@ -243,6 +243,8 @@ const ChatHeader = ({
                 <button
                   className="flex-shrink-0 p-1 hover:bg-gray-100 rounded"
                   onClick={() => setIsEditModalOpen(true)}
+                  title="Edit group name"
+                  aria-label="Edit group name"
                 >
                   <Edit3 size={14} className="text-blue-500" />
                 </button>
