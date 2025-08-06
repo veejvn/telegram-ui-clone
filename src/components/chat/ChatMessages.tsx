@@ -17,13 +17,16 @@ import { groupMessagesByDate } from "@/utils/chat/groupMessagesByDate";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import { MessageMenuProvider } from "@/contexts/MessageMenuContext";
+import GroupSharingInterface from "./GroupSharingInterface";
+import * as sdk from "matrix-js-sdk";
 
 type ChatMessagesProps = {
   roomId: string;
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
+  room?: sdk.Room;
 };
 
-const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
+const ChatMessages = ({ roomId, messagesEndRef, room }: ChatMessagesProps) => {
   //console.log("Room Id in ChatMessages: " + roomId)
   useTimeline(roomId);
   const client = useMatrixClient();
@@ -33,6 +36,14 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
   const { prependMessages, setOldestEventId } = useChatStore();
   const messages = messagesByRoom[roomId] ?? [];
   const grouped = groupMessagesByDate(messages);
+
+  // Check if this is a group chat
+  const joinRuleEvent = room?.currentState.getStateEvents(
+    "m.room.join_rules",
+    ""
+  );
+  const joinRule = joinRuleEvent?.getContent()?.join_rule;
+  const isGroup = joinRule === "public";
 
   const searchParams = useSearchParams();
   const highlightId = searchParams.get("highlight") ?? null;
@@ -286,6 +297,51 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
           ref={containerRef}
           onScroll={handleScroll}
         >
+          {/* Show group sharing interface for group chats */}
+          {isGroup && room && (
+            <GroupSharingInterface
+              roomName={room.name || "Group"}
+              memberCount={room.getJoinedMembers().length}
+              creationDate={(() => {
+                const createEvent = room.currentState.getStateEvents(
+                  "m.room.create",
+                  ""
+                );
+                const timestamp = createEvent?.getTs(); // ✅ dùng getTs()
+
+                if (timestamp) {
+                  const date = new Date(timestamp);
+                  const now = new Date();
+                  const isToday = date.toDateString() === now.toDateString();
+
+                  if (isToday) {
+                    return `Today ${date
+                      .getHours()
+                      .toString()
+                      .padStart(2, "0")}:${date
+                      .getMinutes()
+                      .toString()
+                      .padStart(2, "0")}`;
+                  } else {
+                    return date.toLocaleDateString("en-US", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    });
+                  }
+                }
+                return undefined;
+              })()}
+              creatorName={
+                room.currentState
+                  .getStateEvents("m.room.create", "")
+                  ?.getSender()
+                  ?.replace(/^@/, "")
+                  ?.split(":")[0] || "Unknown"
+              }
+            />
+          )}
+
           {Object.entries(groupedFiltered).map(([dateLabel, msgs]) => (
             <div key={dateLabel}>
               <div className="text-center text-[10px] leading-[140%] tracking-normal my-1.5 font-normal">
