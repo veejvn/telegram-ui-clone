@@ -116,7 +116,7 @@ export const ChatListItem = ({
   );
 
   return (
-    <div className="flex px-2 py-2 relative">
+    <div className="flex px-2 py-2 relative select-none">
       {isEditMode && (
         <label className="mr-3 inline-flex items-center cursor-pointer">
           <input
@@ -149,9 +149,9 @@ export const ChatListItem = ({
 
       <div className="flex-1 ps-2.5 relative">
         <div className="flex items-center gap-1">
-          <h1 className="text-[18px] mb-0.5">{room.name}</h1>
           {isPinned && <PinIcon className="w-4 h-4 text-blue-500 ml-1" />}
-          {isMuted && <VolumeX className="w-4 h-4 text-zinc-400" />}
+          {isMuted && <VolumeX className="w-4 h-4 text-red-500" />}
+          <h1 className="text-[18px] mb-0.5 select-none">{room.name}</h1>
         </div>
         <p className="text-sm text-muted-foreground line-clamp-2">
           {lastMessageSenderId === userId ? (

@@ -3,7 +3,7 @@
 
 import { Separator } from "@/components/ui/ChatSeparator";
 import { ChatListItem } from "./ChatListItem";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import * as sdk from "matrix-js-sdk";
 import {
   SwipeableList,
@@ -46,6 +46,7 @@ export const ChatList = ({
   onArchive,
 }: ChatListProps) => {
   const client = useMatrixClient();
+  const router = useRouter();
   const [mutedRooms, setMutedRooms] = useState<string[]>([]);
   const [deleteRoomId, setDeleteRoomId] = useState<string | null>(null);
   const [deleteRoomName, setDeleteRoomName] = useState<string | null>(null);
@@ -59,6 +60,10 @@ export const ChatList = ({
   const [activeItemElement, setActiveItemElement] =
     useState<HTMLElement | null>(null);
   const [pinnedRooms, setPinnedRooms] = useState<string[]>([]);
+  const [isLongPressing, setIsLongPressing] = useState(false);
+  const [longPressTriggered, setLongPressTriggered] = useState(false);
+  const touchStartPositionRef = useRef<{ x: number; y: number } | null>(null);
+  const isSwipingRef = useRef(false);
 
   // Đọc pinnedRooms từ account_data khi component mount
   useEffect(() => {
@@ -71,7 +76,6 @@ export const ChatList = ({
     if (pinnedRoomsEvent) {
       const data = pinnedRoomsEvent.getContent();
       setPinnedRooms(data.rooms || []);
-      console.log("Loaded pinned rooms:", data.rooms);
     }
 
     // Lắng nghe sự kiện khi pinnedRooms thay đổi (từ thiết bị khác)
@@ -79,7 +83,6 @@ export const ChatList = ({
       if (event.getType() === "im.chatapp.pinned_rooms") {
         const data = event.getContent();
         setPinnedRooms(data.rooms || []);
-        console.log("Pinned rooms updated:", data.rooms);
       }
     };
 
@@ -89,6 +92,7 @@ export const ChatList = ({
       client.removeListener("accountData" as any, onAccountData);
     };
   }, [client]);
+
   useEffect(() => {
     if (!client) return;
 
@@ -110,7 +114,6 @@ export const ChatList = ({
         if (mutedRooms.includes(room.roomId)) {
           // Nếu phòng đã mute, chặn thông báo ở đây
           // Có thể chặn bằng cách gọi stopPropagation hoặc preventDefault nếu cần
-          console.log("Blocked notification from muted room:", room.name);
 
           // Matrix sử dụng một cơ chế khác để gửi thông báo,
           // nên ta cần đặt thuộc tính để chặn thông báo ở lớp cao hơn
@@ -147,57 +150,6 @@ export const ChatList = ({
     });
 
     onMute?.(roomId);
-  };
-
-  const handleLongPress = (
-    roomId: string,
-    event: React.MouseEvent | React.TouchEvent
-  ) => {
-    // Prevent default behavior
-    event.preventDefault();
-    event.stopPropagation();
-
-    // Lấy phần tử chứa toàn bộ đoạn chat (bao gồm avatar)
-    // Tìm phần tử cha là SwipeableListItem
-    let target = event.currentTarget as HTMLElement;
-
-    // Đảm bảo target không null
-    if (target) {
-      // Tìm phần tử chứa ChatListItem
-      const chatItem = target.querySelector(".block.w-full") || target;
-      setActiveItemElement(chatItem as HTMLElement);
-
-      setActiveRoomId(roomId);
-      setShowContextMenu(true);
-    } else {
-      console.error("Target element is null");
-    }
-  };
-
-  const startLongPress = (
-    roomId: string,
-    event: React.MouseEvent | React.TouchEvent
-  ) => {
-    const target = event.currentTarget as HTMLElement;
-
-    if (target) {
-      // Lưu lại target trước khi setTimeout
-      setActiveItemElement(target);
-      setActiveRoomId(roomId);
-
-      longPressTimerRef.current = setTimeout(() => {
-        setShowContextMenu(true);
-      }, 500);
-    } else {
-      console.error("Target element is null in startLongPress");
-    }
-  };
-
-  const endLongPress = () => {
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
-    }
   };
 
   const togglePinnedRoom = (roomId: string) => {
@@ -281,7 +233,6 @@ export const ChatList = ({
               latestEvent // read receipt (pass the MatrixEvent object)
             )
             .then(() => {
-              console.log("Room marked as read:", activeRoomId);
               // Force re-render để cập nhật UI
               setMutedRooms([...mutedRooms]);
             })
@@ -325,15 +276,27 @@ export const ChatList = ({
         break;
     }
     setShowContextMenu(false);
+    setLongPressTriggered(false);
   };
 
   useEffect(() => {
     const handleClickOutside = () => {
-      if (showContextMenu) setShowContextMenu(false);
+      if (showContextMenu) {
+        setShowContextMenu(false);
+        setLongPressTriggered(false);
+      }
     };
 
     document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+
+      // Cleanup timer when component unmounts
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
+    };
   }, [showContextMenu]);
 
   React.useEffect(() => {
@@ -424,14 +387,9 @@ export const ChatList = ({
                   <div
                     className={`w-full ${
                       pinnedRooms.includes(room.roomId)
-                        ? "bg-[#f7f9fa] border border-[#e3e4e4] bg-opacity-30 shadow-[0_0_4px_rgba(0,0,0,0.05)]"
+                        ? "bg-[#FFFFFF4D] backdrop-blur-[100px] border border-[#e3e4e4] shadow-[0_0_4px_rgba(0,0,0,0.05)]"
                         : "hover:bg-white/30"
-                    } rounded-lg active:bg-zinc-300 dark:hover:bg-zinc-700 dark:active:bg-zinc-700`}
-                    onMouseDown={(e) => startLongPress(room.roomId, e)}
-                    onMouseUp={endLongPress}
-                    onMouseLeave={endLongPress}
-                    onTouchStart={(e) => startLongPress(room.roomId, e)}
-                    onTouchEnd={endLongPress}
+                    } rounded-lg active:bg-zinc-300 dark:active:bg-zinc-700`}
                   >
                     {/* Nội dung hiện tại */}
                     {isEditMode ? (
@@ -444,21 +402,135 @@ export const ChatList = ({
                         isPinned={pinnedRooms.includes(room.roomId)}
                       />
                     ) : (
-                      <div
-                        className="block w-full cursor-pointer"
-                        onMouseDown={(e) => startLongPress(room.roomId, e)}
-                        onMouseUp={endLongPress}
-                        onMouseLeave={endLongPress}
-                        onTouchStart={(e) => startLongPress(room.roomId, e)}
-                        onTouchEnd={endLongPress}
-                      >
-                        <Link
-                          href={`/chat/${room.roomId}`}
-                          onClick={(e) => {
+                      <div className="relative">
+                        <button
+                          className="block w-full cursor-pointer text-left relative z-10"
+                          aria-label={`Open chat with ${
+                            room.name || "Unknown"
+                          }`}
+                          onMouseDown={(e) => {
+                            // Reset swipe state cho mouse events
+                            isSwipingRef.current = false;
+
+                            // Bắt đầu long press timer
+                            setIsLongPressing(true);
+                            setLongPressTriggered(false);
+                            setActiveItemElement(e.currentTarget);
+                            setActiveRoomId(room.roomId);
+
+                            longPressTimerRef.current = setTimeout(() => {
+                              setLongPressTriggered(true);
+                              setShowContextMenu(true);
+                              setIsLongPressing(false);
+                            }, 500);
+                          }}
+                          onMouseUp={(e) => {
+                            // Hủy long press timer nếu còn
                             if (longPressTimerRef.current) {
-                              e.preventDefault();
-                              endLongPress();
+                              clearTimeout(longPressTimerRef.current);
+                              longPressTimerRef.current = null;
                             }
+                            setIsLongPressing(false);
+                          }}
+                          onMouseLeave={(e) => {
+                            // Hủy long press timer nếu còn
+                            if (longPressTimerRef.current) {
+                              clearTimeout(longPressTimerRef.current);
+                              longPressTimerRef.current = null;
+                            }
+                            setIsLongPressing(false);
+                            setLongPressTriggered(false);
+                          }}
+                          onTouchStart={(e) => {
+                            // Reset swipe state
+                            isSwipingRef.current = false;
+
+                            // Lưu vị trí touch start
+                            const touch = e.touches[0];
+                            touchStartPositionRef.current = {
+                              x: touch.clientX,
+                              y: touch.clientY,
+                            };
+
+                            // Bắt đầu long press timer cho touch
+                            setIsLongPressing(true);
+                            setLongPressTriggered(false);
+                            setActiveItemElement(e.currentTarget);
+                            setActiveRoomId(room.roomId);
+
+                            longPressTimerRef.current = setTimeout(() => {
+                              // Chỉ trigger long press nếu KHÔNG đang swipe
+                              if (!isSwipingRef.current) {
+                                setLongPressTriggered(true);
+                                setShowContextMenu(true);
+                                setIsLongPressing(false);
+                              }
+                            }, 500);
+                          }}
+                          onTouchMove={(e) => {
+                            // Kiểm tra nếu đang swipe
+                            if (touchStartPositionRef.current) {
+                              const touch = e.touches[0];
+                              const deltaX = Math.abs(
+                                touch.clientX - touchStartPositionRef.current.x
+                              );
+                              const deltaY = Math.abs(
+                                touch.clientY - touchStartPositionRef.current.y
+                              );
+
+                              // Nếu di chuyển quá xa (threshold = 10px), coi như đang swipe
+                              if (deltaX > 10 || deltaY > 10) {
+                                isSwipingRef.current = true;
+
+                                // Hủy long press timer
+                                if (longPressTimerRef.current) {
+                                  clearTimeout(longPressTimerRef.current);
+                                  longPressTimerRef.current = null;
+                                }
+                                setIsLongPressing(false);
+                                setLongPressTriggered(false);
+                              }
+                            }
+                          }}
+                          onTouchEnd={(e) => {
+                            // Hủy long press timer nếu còn
+                            if (longPressTimerRef.current) {
+                              clearTimeout(longPressTimerRef.current);
+                              longPressTimerRef.current = null;
+                            }
+                            setIsLongPressing(false);
+
+                            // Reset touch position
+                            touchStartPositionRef.current = null;
+                          }}
+                          onTouchCancel={(e) => {
+                            // Hủy long press timer
+                            if (longPressTimerRef.current) {
+                              clearTimeout(longPressTimerRef.current);
+                              longPressTimerRef.current = null;
+                            }
+                            setIsLongPressing(false);
+                            setLongPressTriggered(false);
+
+                            // Reset swipe state
+                            isSwipingRef.current = false;
+                            touchStartPositionRef.current = null;
+                          }}
+                          onClick={(e) => {
+                            // Chỉ navigate nếu KHÔNG phải long press và KHÔNG đang swipe
+                            if (
+                              !longPressTriggered &&
+                              !showContextMenu &&
+                              !isSwipingRef.current
+                            ) {
+                              router.push(`/chat/${room.roomId}`);
+                            } else {
+                              // Reset flag sau khi xử lý
+                              setLongPressTriggered(false);
+                            }
+
+                            // Reset swipe state
+                            isSwipingRef.current = false;
                           }}
                         >
                           <ChatListItem
@@ -466,7 +538,7 @@ export const ChatList = ({
                             isMuted={mutedRooms.includes(room.roomId)}
                             isPinned={pinnedRooms.includes(room.roomId)}
                           />
-                        </Link>
+                        </button>
                       </div>
                     )}
                     {rooms.length - 1 !== idx ? (
@@ -481,11 +553,10 @@ export const ChatList = ({
         </SwipeableList>
         {showContextMenu && activeItemElement && (
           <div
-            className="fixed z-[9999] bg-white dark:bg-zinc-800 rounded-lg shadow-lg overflow-hidden"
+            className="fixed z-[9999] bg-white dark:bg-zinc-800 rounded-lg shadow-lg overflow-hidden w-[150px]"
             style={{
-              top: activeItemElement.getBoundingClientRect().bottom, // Hiển thị dưới phần tử chat
-              left: activeItemElement.getBoundingClientRect().left, // Căn trái với phần tử chat
-              width: "150px",
+              top: activeItemElement.getBoundingClientRect().bottom,
+              left: activeItemElement.getBoundingClientRect().left,
             }}
             onClick={(e) => {
               e.stopPropagation();
