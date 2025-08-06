@@ -35,10 +35,13 @@ import {
   unpinMessage,
   isMessagePinned,
 } from "@/services/pinService";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { getAvatarInitials, getAvatarColor } from "@/utils/generateAvatar";
+import { useUserAvatar } from "@/hooks/useUserAvatar";
 
 const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
   //console.log("TextMessage rendered for:", msg.eventId); // Debug log
-  //console.log("Message: " + msg.text + ", isDeleted: " + msg.isDeleted);
+  //console.log("Message: " + msg.text + ", status: " + msg.status);
   const theme = useTheme();
   const [open, setOpen] = useState(false);
   const [showOverlay, setShowOverlay] = useState(false);
@@ -51,6 +54,11 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
   const updateMessage = useChatStore.getState().updateMessage;
   const isDeleted = msg.isDeleted || msg.text === "Tin nhắn đã thu hồi";
   const { activeMenuMessageId, setActiveMenuMessageId } = useMessageMenu();
+
+  // Get user avatar
+  const { avatarUrl, loading: avatarLoading } = useUserAvatar(
+    !isSender ? msg.sender : undefined
+  );
 
   // Touch tracking để phát hiện scroll
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(
@@ -531,7 +539,7 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
                 <div
                   className={clsx(
                     "absolute top-[-45px] transform -translate-x-1/2 flex gap-1 justify-center z-[120]",
-                    !isSender ? "left-23" : "-right-23"
+                    !isSender ? "left-[85px]" : "-right-23" // Điều chỉnh vị trí cho avatar
                   )}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -581,6 +589,37 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
               )}
 
               <div className="flex relative items-end w-full">
+                {/* Avatar cho người nhận - chỉ hiển thị khi không phải người gửi */}
+                {!isSender && (
+                  <div className="mr-2 mb-1 flex-shrink-0">
+                    <Avatar
+                      className={`w-8 h-8 ${
+                        avatarLoading ? "animate-pulse" : ""
+                      }`}
+                      src={avatarUrl || undefined}
+                      alt={msg.senderDisplayName || msg.sender || "User"}
+                      style={
+                        !avatarUrl
+                          ? {
+                              backgroundColor: getAvatarColor(msg.sender || ""),
+                            }
+                          : undefined
+                      }
+                    >
+                      {!avatarUrl && (
+                        <AvatarFallback className="text-xs font-medium">
+                          {avatarLoading
+                            ? "..."
+                            : getAvatarInitials(
+                                msg.senderDisplayName,
+                                msg.sender
+                              )}
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
+                  </div>
+                )}
+
                 {/* Container cho tin nhắn với justify riêng */}
                 <div
                   className={clsx(

@@ -46,35 +46,139 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
   const [hasMoreByRoom, setHasMoreByRoom] = useState<{
     [roomId: string]: boolean;
   }>({});
+  const [isLoadingOldMessages, setIsLoadingOldMessages] = useState(false);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const prevScrollHeightRef = useRef<number | null>(null);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setHasMoreByRoom((prev) => ({
       ...prev,
       [roomId]: true,
     }));
+
+    // Cleanup timeout when roomId changes
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
   }, [roomId]);
 
-  // Auto scroll to bottom when new message
+  // Debug effect để kiểm tra container ref và tìm scroll container thực tế
   useEffect(() => {
-    if (!isLoadingMore && messagesEndRef?.current) {
+    const container = containerRef.current;
+    if (container) {
+      // Tìm scroll container thực tế (có thể là ScrollArea viewport)
+      let scrollContainer: HTMLElement = container;
+      let parent = container.parentElement;
+      while (parent) {
+        const style = getComputedStyle(parent);
+        if (style.overflowY === "auto" || style.overflowY === "scroll") {
+          scrollContainer = parent;
+          break;
+        }
+        parent = parent.parentElement;
+      }
+
+      // Attach scroll event to the actual scroll container
+      const handleScrollEvent = () => {
+        // Chỉ update shouldAutoScroll khi KHÔNG đang loading more
+        if (!isLoadingMore) {
+          const isNearBottom =
+            scrollContainer.scrollTop + scrollContainer.clientHeight >=
+            scrollContainer.scrollHeight - 100;
+          setShouldAutoScroll(isNearBottom);
+        }
+
+        handleScrollThrottled();
+      };
+
+      scrollContainer.addEventListener("scroll", handleScrollEvent);
+
+      return () => {
+        scrollContainer.removeEventListener("scroll", handleScrollEvent);
+      };
+    }
+  }, [containerRef.current, messages.length, isLoadingMore]);
+
+  // Auto scroll to bottom when new message (but NOT when loading older messages)
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const [lastMessageCount, setLastMessageCount] = useState(0);
+  const [isRestoringScroll, setIsRestoringScroll] = useState(false);
+
+  useEffect(() => {
+    // Chỉ auto scroll khi:
+    // 1. Không đang loading more
+    // 2. shouldAutoScroll = true (người dùng ở gần bottom)
+    // 3. Có message mới (messages.length tăng so với lần trước)
+    // 4. Không phải từ việc load old messages (prepend)
+    // 5. Không đang restore scroll position
+
+    const isNewMessage = messages.length > lastMessageCount;
+    const isAddingOldMessages = isLoadingOldMessages;
+
+    // Không auto scroll nếu đang load tin nhắn cũ hoặc đang restore scroll
+    if (
+      !isLoadingMore &&
+      !isAddingOldMessages &&
+      !isRestoringScroll &&
+      shouldAutoScroll &&
+      isNewMessage &&
+      messagesEndRef?.current
+    ) {
       requestAnimationFrame(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
       });
     }
-  }, [messages.length, isLoadingMore, messagesEndRef]);
 
-  // Restore scroll position after loading old messages
+    // Cập nhật count sau khi xử lý - CHỈ KHI THỰC SỰ CÓ THAY ĐỔI
+    if (messages.length !== lastMessageCount) {
+      setLastMessageCount(messages.length);
+    }
+  }, [
+    messages.length,
+    isLoadingMore,
+    shouldAutoScroll,
+    messagesEndRef,
+    isLoadingOldMessages,
+    isRestoringScroll,
+  ]); // Restore scroll position after loading old messages
   useLayoutEffect(() => {
     const container = containerRef.current;
-    if (isLoadingMore && prevScrollHeightRef.current !== null && container) {
-      container.scrollTop +=
-        container.scrollHeight - prevScrollHeightRef.current;
-      prevScrollHeightRef.current = null;
+    if (!container || prevScrollHeightRef.current === null) return;
+
+    // Đánh dấu đang restore scroll
+    setIsRestoringScroll(true);
+
+    // Tìm scroll container thực tế
+    let scrollContainer: HTMLElement = container;
+    let parent = container.parentElement;
+    while (parent) {
+      const style = getComputedStyle(parent);
+      if (style.overflowY === "auto" || style.overflowY === "scroll") {
+        scrollContainer = parent;
+        break;
+      }
+      parent = parent.parentElement;
     }
-  }, [messages.length, isLoadingMore]);
+
+    const heightDiff =
+      scrollContainer.scrollHeight - prevScrollHeightRef.current;
+    scrollContainer.scrollTop += heightDiff;
+
+    prevScrollHeightRef.current = null;
+
+    // Tạm thời disable auto scroll để không bị đẩy về bottom
+    setShouldAutoScroll(false);
+
+    // Enable lại sau khi scroll restore hoàn tất
+    setTimeout(() => {
+      setShouldAutoScroll(true);
+      setIsRestoringScroll(false);
+    }, 300);
+  }, [messages.length]);
 
   // Tìm các eventId chứa searchText (bỏ qua forward)
   const searchResults = useMemo(() => {
@@ -106,39 +210,94 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
 
   const handleScroll = async () => {
     const container = containerRef.current;
-    if (!container || isLoadingMore || !hasMoreByRoom[roomId] || !client)
+    if (!container) {
       return;
+    }
 
-    if (container.scrollTop < 100) {
+    // Tìm scroll container thực tế
+    let scrollContainer: HTMLElement = container;
+    let parent = container.parentElement;
+    while (parent) {
+      const style = getComputedStyle(parent);
+      if (style.overflowY === "auto" || style.overflowY === "scroll") {
+        scrollContainer = parent;
+        break;
+      }
+      parent = parent.parentElement;
+    }
+
+    if (isLoadingMore || !hasMoreByRoom[roomId] || !client) {
+      return;
+    }
+
+    // Kiểm tra nếu scroll gần đến top
+    const isNearTop = scrollContainer.scrollTop < 200;
+
+    if (isNearTop) {
       setIsLoadingMore(true);
-      prevScrollHeightRef.current = container.scrollHeight;
+      setIsLoadingOldMessages(true);
+
+      // Tìm scroll container thực tế và lưu scroll position
+      let scrollContainer: HTMLElement = container;
+      let parent = container.parentElement;
+      while (parent) {
+        const style = getComputedStyle(parent);
+        if (style.overflowY === "auto" || style.overflowY === "scroll") {
+          scrollContainer = parent;
+          break;
+        }
+        parent = parent.parentElement;
+      }
+
+      prevScrollHeightRef.current = scrollContainer.scrollHeight;
 
       try {
-        const newEvents = await getOlderMessages(roomId, client);
+        const newEvents = await getOlderMessages(roomId, client, 50);
+
         if (newEvents.length === 0) {
+          console.log("📭 No more messages to load");
           setHasMoreByRoom((prev) => ({ ...prev, [roomId]: false }));
         } else {
-          const mappedMsgs = convertEventsToMessages(newEvents).map((msg) => ({
-            ...msg,
-            status: msg.status as MessageStatus,
-            body: msg.text ?? "",
-            forwarded:
-              "forwarded" in msg ? (msg as any).forwarded ?? false : false, // Ensure 'forwarded' property exists
-            originalSender:
-              "originalSender" in msg
-                ? (msg as any).originalSender ?? undefined
-                : undefined, // Ensure 'originalSender' property exists
-          }));
+          const mappedMsgs = convertEventsToMessages(newEvents, client).map(
+            (msg) => ({
+              ...msg,
+              status: msg.status as MessageStatus,
+              body: msg.text ?? "",
+              forwarded:
+                "forwarded" in msg ? (msg as any).forwarded ?? false : false,
+              originalSender:
+                "originalSender" in msg
+                  ? (msg as any).originalSender ?? undefined
+                  : undefined,
+            })
+          );
+
           prependMessages(roomId, mappedMsgs);
           const oldest = mappedMsgs[0]?.eventId;
           setOldestEventId(roomId, oldest || null);
         }
       } catch (error) {
-        console.error("Failed to load older messages:", error);
+        console.error("❌ Failed to load older messages:", error);
+        // Reset hasMore để có thể thử lại
+        setHasMoreByRoom((prev) => ({ ...prev, [roomId]: true }));
       } finally {
         setIsLoadingMore(false);
+        setTimeout(() => {
+          setIsLoadingOldMessages(false);
+        }, 200);
       }
     }
+  };
+
+  // Throttled scroll handler
+  const handleScrollThrottled = () => {
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+
+    scrollTimeoutRef.current = setTimeout(() => {
+      handleScroll();
+    }, 100);
   };
 
   // ✅ Scroll vào highlight sau khi render dropdown search
@@ -150,10 +309,18 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
           block: "center",
         });
       }, 300); // delay để tránh bị che bởi dropdown
-    } else if (messagesEndRef?.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "auto" });
     }
-  }, [messages, highlightId]);
+    // KHÔNG auto scroll về bottom ở đây nữa - để auto scroll logic khác xử lý
+  }, [highlightId]); // Chỉ depend vào highlightId, không depend vào messages
+
+  // Initial scroll to bottom when component mounts or room changes
+  useEffect(() => {
+    if (messages.length > 0 && messagesEndRef?.current && !highlightId) {
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+      }, 100);
+    }
+  }, [roomId]);
 
   // Handle manual highlight events (for pinned messages and reply navigation)
   useEffect(() => {
@@ -313,11 +480,13 @@ const ChatMessages = ({ roomId, messagesEndRef }: ChatMessagesProps) => {
       )}
 
       <MessageMenuProvider>
-        <div
-          className="py-1 px-4 flex-1 overflow-y-auto"
-          ref={containerRef}
-          onScroll={handleScroll}
-        >
+        <div className="py-1 px-4 flex-1 overflow-y-auto" ref={containerRef}>
+          {isLoadingMore && (
+            <div className="text-center py-4 text-gray-400 dark:text-gray-500 flex items-center justify-center gap-2">
+              <div className="animate-spin w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full"></div>
+              Loading older messages...
+            </div>
+          )}
           {Object.entries(groupedFiltered).map(([dateLabel, msgs]) => (
             <div key={dateLabel}>
               <div className="text-center text-[10px] leading-[140%] tracking-normal my-1.5 font-normal">

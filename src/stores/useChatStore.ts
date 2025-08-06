@@ -17,6 +17,7 @@ export type Message = {
   eventId: string;
   sender: string | undefined;
   senderDisplayName?: string | undefined;
+  senderAvatarUrl?: string | null;
   text: string;
   time: string;
   timestamp?: number;
@@ -127,6 +128,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       (msg, index, self) =>
         index === self.findIndex((m) => m.eventId === msg.eventId)
     );
+
     set({
       messagesByRoom: {
         ...get().messagesByRoom,

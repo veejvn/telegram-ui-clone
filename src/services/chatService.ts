@@ -85,13 +85,22 @@ export const getTimeline = async (
     const room = client.getRoom(roomId);
     if (!room) return { success: false };
 
-    // ✅ Load thêm 100 sự kiện cũ nếu chưa có
-    await client.scrollback(room, 100);
+    // ✅ Đợi room sync nếu cần thiết
+    if (!room.getLiveTimeline().getEvents().length) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
+    // ✅ Load thêm messages cũ với cache clearing
+    const canPaginate = !!room
+      .getLiveTimeline()
+      .getPaginationToken(sdk.EventTimeline.BACKWARDS);
+    if (canPaginate) {
+      // Scrollback với limit cao hơn để load nhiều messages hơn
+      await client.scrollback(room, 50);
+    }
 
     const userId = client.getUserId();
     const messages = room.getLiveTimeline().getEvents() || [];
-
-    //console.log(messages.filter((e) => e.getType() === "m.room.message"))
 
     // ✅ Tìm eventId cuối cùng được user khác read (receipt "m.read")
     let lastReadEventId: string | null = null;
@@ -107,25 +116,31 @@ export const getTimeline = async (
           );
           if (otherReceipt) {
             lastReadEventId = event.getId() || null;
+            // console.log(
+            //   `📖 Found last read message by ${otherReceipt.userId}: "${event
+            //     .getContent()
+            //     ?.body?.substring(0, 30)}..." (eventId: ${lastReadEventId})`
+            // );
             break;
           }
         }
       }
     }
+    //console.log(`📖 Last read eventId: ${lastReadEventId}`);
 
-    let lastReadIndex = -1;
-    if (lastReadEventId) {
-      lastReadIndex = messages
-        .filter((e) => e.getType() === "m.room.message")
-        .findIndex((e) => e.getId() === lastReadEventId);
-    }
-
-    // ✅ Parse message với xử lý edit events
-    // Đầu tiên, tách các edit events và message events
+    // ✅ Tách các message events trước
     const messageEvents = messages.filter(
       (e) => e.getType() === "m.room.message"
     );
 
+    let lastReadIndex = -1;
+    if (lastReadEventId) {
+      lastReadIndex = messageEvents.findIndex(
+        (e) => e.getId() === lastReadEventId
+      );
+    }
+
+    // ✅ Parse message với xử lý edit events
     // Tạo map của edit events theo eventId gốc
     const editEvents = new Map<string, any>();
     messageEvents.forEach((event) => {
@@ -142,182 +157,198 @@ export const getTimeline = async (
     });
 
     // Parse các message events thực sự (loại bỏ edit events)
-    const parsedMessages: Message[] = messageEvents
-      .filter((e) => {
-        // Filter out edit events (messages with m.relates_to and rel_type "m.replace")
-        const content = e.getContent();
+    const nonEditEvents = messageEvents.filter((e) => {
+      // Filter out edit events (messages with m.relates_to and rel_type "m.replace")
+      const content = e.getContent();
+      if (
+        content["m.relates_to"] &&
+        content["m.relates_to"].rel_type === "m.replace"
+      ) {
+        return false; // This is an edit event, not a new message
+      }
+      return true;
+    });
+
+    // Tìm lại lastReadIndex trong mảng nonEditEvents
+    let lastReadIndexInParsed = -1;
+    if (lastReadEventId) {
+      lastReadIndexInParsed = nonEditEvents.findIndex(
+        (e) => e.getId() === lastReadEventId
+      );
+    }
+
+    const parsedMessages: Message[] = nonEditEvents.map((event, idx) => {
+      const content = event.getContent();
+      const sender = event.getSender() ?? "Unknown";
+      const senderDisplayName = event.sender?.name ?? sender;
+      const timestamp = event.getTs();
+      const time = new Date(timestamp).toLocaleString();
+      const eventId = event.getId() || "";
+      const isRedacted = event.isRedacted();
+      const isDeleted = isRedacted;
+
+      let text = isRedacted ? "Tin nhắn đã thu hồi" : content.body ?? "";
+      let isEdited = false;
+
+      // Check if this message has been edited
+      const editEvent = editEvents.get(eventId);
+      if (editEvent) {
+        // This message has been edited, use the edit content
+        const editContent = editEvent.getContent();
+        if (editContent["m.new_content"] && editContent["m.new_content"].body) {
+          text = editContent["m.new_content"].body;
+          isEdited = true;
+        }
+      } else {
+        // Check if this is an original edit message (fallback)
+        if (content["m.new_content"]) {
+          // This is an edit, use the new content
+          text = content["m.new_content"].body || text;
+          isEdited = true;
+        } else if (content.body && content.body.startsWith("* ")) {
+          // Fallback: check if body starts with "* " (edit indicator)
+          text = content.body.substring(2); // Remove "* " prefix
+          isEdited = true;
+        }
+      }
+
+      //console.log(eventId);
+
+      let status: MessageStatus = "sent";
+      // Chỉ set status = "read" nếu:
+      // 1. Tin nhắn do current user gửi (sender === userId)
+      // 2. Có tin nhắn nào đó đã được người khác đọc (lastReadIndexInParsed !== -1)
+      // 3. Tin nhắn này được gửi trước hoặc là tin nhắn cuối cùng được đọc (idx <= lastReadIndexInParsed)
+      if (
+        sender === userId &&
+        lastReadIndexInParsed !== -1 &&
+        idx <= lastReadIndexInParsed
+      ) {
+        status = "read";
+      }
+      // console.log(
+      //   `📧 Message: "${text.substring(
+      //     0,
+      //     20
+      //   )}...", sender: ${sender}, status: ${status}, idx: ${idx}, lastReadIndexInParsed: ${lastReadIndexInParsed}, isSent: ${
+      //     sender === userId
+      //   }`
+      // );
+
+      let imageUrl: string | null = null;
+      let imageInfo: ImageInfo | null = null;
+      let videoUrl: string | null = null;
+      let videoInfo: Metadata | null = null;
+      let fileUrl: string | null = null;
+      let fileInfo: FileInfo | null = null;
+      let latitude: number | null = null;
+      let longitude: number | null = null;
+      let description: string | null = null;
+
+      let audioUrl: string | null = null;
+      let audioDuration: number | null = null;
+      let isStickerAnimation: boolean = false;
+      let type: MessageType = "text";
+      let isForward: boolean = false;
+      let isReply: boolean = false;
+
+      // Check if message is forward or reply by parsing JSON
+      try {
+        const parsedText = JSON.parse(text);
         if (
-          content["m.relates_to"] &&
-          content["m.relates_to"].rel_type === "m.replace"
+          parsedText.forward &&
+          parsedText.text &&
+          parsedText.originalSender
         ) {
-          return false; // This is an edit event, not a new message
+          isForward = true;
+        } else if (parsedText.reply && parsedText.text && parsedText.replyTo) {
+          isReply = true;
         }
-        return true;
-      })
-      .map((event, idx) => {
-        const content = event.getContent();
-        const sender = event.getSender() ?? "Unknown";
-        const senderDisplayName = event.sender?.name ?? sender;
-        const timestamp = event.getTs();
-        const time = new Date(timestamp).toLocaleString();
-        const eventId = event.getId() || "";
-        const isRedacted = event.isRedacted();
-        const isDeleted = isRedacted;
+      } catch (e) {
+        // Not JSON, continue with normal parsing
+      }
 
-        let text = isRedacted ? "Tin nhắn đã thu hồi" : content.body ?? "";
-        let isEdited = false;
-
-        // Check if this message has been edited
-        const editEvent = editEvents.get(eventId);
-        if (editEvent) {
-          // This message has been edited, use the edit content
-          const editContent = editEvent.getContent();
-          if (
-            editContent["m.new_content"] &&
-            editContent["m.new_content"].body
-          ) {
-            text = editContent["m.new_content"].body;
-            isEdited = true;
-          }
-        } else {
-          // Check if this is an original edit message (fallback)
-          if (content["m.new_content"]) {
-            // This is an edit, use the new content
-            text = content["m.new_content"].body || text;
-            isEdited = true;
-          } else if (content.body && content.body.startsWith("* ")) {
-            // Fallback: check if body starts with "* " (edit indicator)
-            text = content.body.substring(2); // Remove "* " prefix
-            isEdited = true;
-          }
+      if (content.msgtype === "m.image") {
+        type = "image";
+        const mxcUrl = content.url;
+        if (mxcUrl) {
+          imageUrl = client.mxcUrlToHttp(mxcUrl, 800, 600, "scale", true);
         }
-
-        //console.log(eventId);
-
-        let status: MessageStatus = "sent";
-        if (sender === userId && lastReadIndex !== -1 && idx <= lastReadIndex) {
-          status = "read";
-        }
-        //console.log(text, sender, status, idx, lastReadIndex);
-
-        let imageUrl: string | null = null;
-        let imageInfo: ImageInfo | null = null;
-        let videoUrl: string | null = null;
-        let videoInfo: Metadata | null = null;
-        let fileUrl: string | null = null;
-        let fileInfo: FileInfo | null = null;
-        let latitude: number | null = null;
-        let longitude: number | null = null;
-        let description: string | null = null;
-
-        let audioUrl: string | null = null;
-        let audioDuration: number | null = null;
-        let isStickerAnimation: boolean = false;
-        let type: MessageType = "text";
-        let isForward: boolean = false;
-        let isReply: boolean = false;
-
-        // Check if message is forward or reply by parsing JSON
-        try {
-          const parsedText = JSON.parse(text);
-          if (
-            parsedText.forward &&
-            parsedText.text &&
-            parsedText.originalSender
-          ) {
-            isForward = true;
-          } else if (
-            parsedText.reply &&
-            parsedText.text &&
-            parsedText.replyTo
-          ) {
-            isReply = true;
-          }
-        } catch (e) {
-          // Not JSON, continue with normal parsing
-        }
-
-        if (content.msgtype === "m.image") {
-          type = "image";
-          const mxcUrl = content.url;
-          if (mxcUrl) {
-            imageUrl = client.mxcUrlToHttp(mxcUrl, 800, 600, "scale", true);
-          }
-          imageInfo = { width: content.info?.w, height: content.info?.h };
-        } else if (content.msgtype === "m.video") {
-          type = "video";
-          if (content.url) {
-            videoUrl = client.mxcUrlToHttp(content.url);
-            videoInfo = {
-              width: content.info?.w,
-              height: content.info?.h,
-              duration: content.info?.duration,
-            };
-          }
-        } else if (content.msgtype === "m.file") {
-          type = "file";
-          if (content.url) {
-            fileUrl = client.mxcUrlToHttp(content.url);
-          }
-          fileInfo = {
-            fileSize: content.info?.size,
-            mimeType: content.info?.mimetype,
+        imageInfo = { width: content.info?.w, height: content.info?.h };
+      } else if (content.msgtype === "m.video") {
+        type = "video";
+        if (content.url) {
+          videoUrl = client.mxcUrlToHttp(content.url);
+          videoInfo = {
+            width: content.info?.w,
+            height: content.info?.h,
+            duration: content.info?.duration,
           };
-        } else if (content.msgtype === "m.location") {
-          type = "location";
-          const geo_uri: string =
-            content["geo_uri"] || content["org.matrix.msc3488.location"]?.uri;
-          description =
-            content["org.matrix.msc3488.location"]?.description ??
-            content["body"];
-          const [, latStr, lonStr] =
-            geo_uri.match(/geo:([0-9.-]+),([0-9.-]+)/) || [];
-          latitude = parseFloat(latStr);
-          longitude = parseFloat(lonStr);
-        } else if (isOnlyEmojis(text)) {
-          type = "emoji";
-        } else if (content.msgtype === "m.audio") {
-          type = "audio";
-          if (content.url) {
-            // chuyển MXC → HTTP URL
-            audioUrl = client.mxcUrlToHttp(content.url);
-          }
-          // nếu server đẩy duration trong info
-          audioDuration = content.info?.duration ?? null;
-        } else if (content.msgtype === "m.sticker") {
-          type = "sticker";
-          isStickerAnimation = content.info?.isStickerAnimation ?? false;
         }
-
-        return {
-          eventId,
-          sender,
-          senderDisplayName,
-          text,
-          time,
-          timestamp,
-          imageUrl,
-          imageInfo,
-          videoUrl,
-          videoInfo,
-          fileUrl,
-          fileInfo,
-          audioUrl,
-          audioDuration,
-          status,
-          type,
-          isForward,
-          isReply,
-          isStickerAnimation,
-          isDeleted,
-          isEdited,
-          location: {
-            latitude,
-            longitude,
-            description: description ?? undefined,
-          },
+      } else if (content.msgtype === "m.file") {
+        type = "file";
+        if (content.url) {
+          fileUrl = client.mxcUrlToHttp(content.url);
+        }
+        fileInfo = {
+          fileSize: content.info?.size,
+          mimeType: content.info?.mimetype,
         };
-      });
+      } else if (content.msgtype === "m.location") {
+        type = "location";
+        const geo_uri: string =
+          content["geo_uri"] || content["org.matrix.msc3488.location"]?.uri;
+        description =
+          content["org.matrix.msc3488.location"]?.description ??
+          content["body"];
+        const [, latStr, lonStr] =
+          geo_uri.match(/geo:([0-9.-]+),([0-9.-]+)/) || [];
+        latitude = parseFloat(latStr);
+        longitude = parseFloat(lonStr);
+      } else if (isOnlyEmojis(text)) {
+        type = "emoji";
+      } else if (content.msgtype === "m.audio") {
+        type = "audio";
+        if (content.url) {
+          // chuyển MXC → HTTP URL
+          audioUrl = client.mxcUrlToHttp(content.url);
+        }
+        // nếu server đẩy duration trong info
+        audioDuration = content.info?.duration ?? null;
+      } else if (content.msgtype === "m.sticker") {
+        type = "sticker";
+        isStickerAnimation = content.info?.isStickerAnimation ?? false;
+      }
+
+      return {
+        eventId,
+        sender,
+        senderDisplayName,
+        text,
+        time,
+        timestamp,
+        imageUrl,
+        imageInfo,
+        videoUrl,
+        videoInfo,
+        fileUrl,
+        fileInfo,
+        audioUrl,
+        audioDuration,
+        status,
+        type,
+        isForward,
+        isReply,
+        isStickerAnimation,
+        isDeleted,
+        isEdited,
+        location: {
+          latitude,
+          longitude,
+          description: description ?? undefined,
+        },
+      };
+    });
 
     return {
       success: true,
@@ -337,18 +368,67 @@ export const getOlderMessages = async (
   limit = 20
 ) => {
   const room = client.getRoom(roomId);
-  if (!room) return [];
+  if (!room) {
+    return [];
+  }
 
-  // 👇 Kiểm tra có thể scrollback không
-  const canBackPaginate = !!room
-    .getLiveTimeline()
-    .getPaginationToken(sdk.EventTimeline.BACKWARDS);
-  if (!canBackPaginate) return [];
-
-  await client.scrollback(room, limit);
-
+  // Lấy events hiện tại trước khi scrollback
   const timeline = room.getLiveTimeline();
-  return timeline.getEvents();
+  const eventsBefore = timeline.getEvents();
+  const countBefore = eventsBefore.length;
+  // Lưu eventId đầu tiên (oldest) để so sánh
+  const oldestEventBefore =
+    eventsBefore.length > 0 ? eventsBefore[0].getId() : null;
+
+  // Kiểm tra có thể scrollback không - TRƯỚC KHI GỌI SCROLLBACK
+  const canBackPaginate = !!timeline.getPaginationToken(
+    sdk.EventTimeline.BACKWARDS
+  );
+
+  if (!canBackPaginate) {
+    return [];
+  }
+
+  // Scrollback để load thêm events
+  try {
+    await client.scrollback(room, limit);
+  } catch (error) {
+    return [];
+  }
+
+  // Lấy events sau khi scrollback
+  const eventsAfter = timeline.getEvents();
+  const countAfter = eventsAfter.length;
+
+  // Tìm vị trí của event cũ nhất trước đó trong mảng mới
+  let oldEventStartIndex = -1;
+  if (oldestEventBefore) {
+    oldEventStartIndex = eventsAfter.findIndex(
+      (e) => e.getId() === oldestEventBefore
+    );
+  }
+
+  // Các events mới sẽ là từ đầu mảng đến vị trí event cũ
+  const newEvents =
+    oldEventStartIndex > 0
+      ? eventsAfter.slice(0, oldEventStartIndex)
+      : eventsAfter.slice(0, countAfter - countBefore);
+
+  if (newEvents.length > 0) {
+
+    // Kiểm tra sau khi load xem còn có thể paginate tiếp không
+    const canPaginateAfter = !!timeline.getPaginationToken(
+      sdk.EventTimeline.BACKWARDS
+    );
+    return newEvents;
+  }
+
+  // Kiểm tra lại pagination token sau khi scrollback thất bại
+  const canPaginateAfterFail = !!timeline.getPaginationToken(
+    sdk.EventTimeline.BACKWARDS
+  );
+
+  return [];
 };
 
 export const getRoom = async (
@@ -371,10 +451,6 @@ export const getRoom = async (
 
     if (result) {
       console.clear();
-      console.log(
-        "%cGet room successful, room: " + result.name,
-        "color: green"
-      );
 
       return {
         success: true,
