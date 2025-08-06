@@ -589,7 +589,7 @@ export default function ChatsPage() {
       const room = await ContactService.addContact(client, userId);
       if (room) {
         router.push(`/chat/${room.roomId}`);
-        closeFullScreenSearch();
+        //closeFullScreenSearch();
       }
     } catch (error: any) {
       console.error("Error creating room:", error.message);
@@ -677,7 +677,7 @@ export default function ChatsPage() {
         );
       if (room) {
         router.push(`/chat/${room.roomId}`);
-        closeFullScreenSearch();
+        //closeFullScreenSearch();
       }
     } else {
       await handleAddContact(client, user.user_id);
@@ -859,7 +859,7 @@ export default function ChatsPage() {
                   title="More options"
                 >
                   <DropdownMenu>
-                    <DropdownMenuTrigger>
+                    <DropdownMenuTrigger asChild>
                       <Ellipsis className="w-5 h-5" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
