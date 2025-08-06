@@ -13,12 +13,12 @@ export default function ContactEditPage() {
     const params = useParams();
     const roomId = decodeURIComponent(params.id as string);
     const [inputName, setInputName] = React.useState("");
-    const [lastName, setLastName] = React.useState("");
+    const [lastName, setLastName] = React.useState<string | { name: string }>("");
     const CUSTOM_NAME_EVENT = "dev.custom_name";
     const CUSTOM_AVATAR_EVENT = "dev.custom_avatar";
     const [customAvatarUrl, setCustomAvatarUrl] = React.useState<string | null>(null);
     const [selectedAvatarFile, setSelectedAvatarFile] = React.useState<File | null>(null);
-    
+
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setInputName(e.target.value);
@@ -50,7 +50,8 @@ export default function ContactEditPage() {
 
             if (confirmedName === inputName) {
                 setLastName(confirmedName);
-                router.replace(`/chat/${roomId}/info`);
+                router.replace(`/chat/${roomId}/info?refresh=${Date.now()}`);
+
             } else {
                 console.warn("The name hasn't been synced yet. Please try again later.");
             }
@@ -147,7 +148,7 @@ export default function ContactEditPage() {
         fetchCustomName();
     }, [client, user]);
 
-    
+
 
     React.useEffect(() => {
         if (!client || !user?.userId) return;
@@ -170,7 +171,12 @@ export default function ContactEditPage() {
     }, [client, user]);
 
 
-    const displayName = lastName || user?.displayName || "user";
+    const displayName =
+        typeof lastName === "object"
+            ? lastName.name
+            : lastName || user?.displayName || "user";
+
+
     return (
         <div className="w-full mx-auto p-4">
             {/* Header */}
@@ -234,7 +240,7 @@ export default function ContactEditPage() {
                     {/* Name + input */}
                     <div className="flex-1 min-w-0">
                         <p className="font-medium text-black">
-                            {lastName || user?.displayName || "Unknown User"}
+                            {displayName}
                         </p>
 
                         <div className="overflow-hidden w-full my-1">

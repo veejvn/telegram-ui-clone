@@ -8,12 +8,14 @@ import { getUserInfoInPrivateRoom } from "@/services/chatService";
 import PrivateInfoHeader from "@/components/chat/PrivateInfoHeader";
 // import { getLS } from "@/tools/localStorage.tool";
 import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
-
+import { useSearchParams } from "next/navigation";
 export default function InfoPage() {
   const params = useParams();
   const roomId = decodeURIComponent(params.id as string);
   const client = useMatrixClient();
   const [user, setUser] = useState<sdk.User | undefined>(undefined);
+  const searchParams = useSearchParams();
+  const refreshKey = searchParams.get("refresh");
 
   useEffect(() => {
     if (!roomId || !client) return;
@@ -29,7 +31,7 @@ export default function InfoPage() {
       .catch((res) => {
         console.log("Error: ", res.err);
       });
-  }, [roomId, client]);
+  }, [roomId, client, refreshKey]);
 
   if (!user) {
     return (

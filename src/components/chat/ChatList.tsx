@@ -64,7 +64,31 @@ export const ChatList = ({
   const [longPressTriggered, setLongPressTriggered] = useState(false);
   const touchStartPositionRef = useRef<{ x: number; y: number } | null>(null);
   const isSwipingRef = useRef(false);
+  const [customNames, setCustomNames] = useState<Record<string, string>>({});
+  const [customAvatars, setCustomAvatars] = useState<Record<string, string>>({});
 
+  useEffect(() => {
+    if (!client) return;
+
+    const loadCustomData = async () => {
+      try {
+        const nameEvent = await client.getAccountData("dev.custom_name" as any);
+        const avatarEvent = await client.getAccountData("dev.custom_avatar" as any);
+
+        const nameContent = nameEvent?.getContent<Record<string, string>>() ?? {};
+        const avatarContent = avatarEvent?.getContent<Record<string, string>>() ?? {};
+
+        setCustomNames(nameContent);
+        setCustomAvatars(avatarContent);
+      } catch (error) {
+        console.error("Failed to fetch custom names/avatars:", error);
+      }
+    };
+
+    loadCustomData();
+  }, [client]);
+  
+  
   // Đọc pinnedRooms từ account_data khi component mount
   useEffect(() => {
     if (!client) return;
@@ -307,7 +331,7 @@ export const ChatList = ({
         try {
           const data = JSON.parse(stored);
           if (data.isMuted) muted.push(room.roomId);
-        } catch {}
+        } catch { }
       }
     });
     setMutedRooms(muted);
@@ -329,6 +353,10 @@ export const ChatList = ({
               return 0;
             })
             .map((room: sdk.Room, idx) => {
+              if (!client) return null;
+              const members = room.getMembers();
+              const userId = client.getUserId();
+              const otherMember = members.find((m) => m.userId !== userId);
               // Trailing actions: More, Delete, Archive
               const containerStyle =
                 "h-full flex items-center px-[2px] justify-between w-[280px]"; // Tăng chiều rộng container
@@ -385,11 +413,10 @@ export const ChatList = ({
                   trailingActions={trailingActions}
                 >
                   <div
-                    className={`w-full ${
-                      pinnedRooms.includes(room.roomId)
-                        ? "bg-[#FFFFFF4D] backdrop-blur-[100px] border border-[#e3e4e4] shadow-[0_0_4px_rgba(0,0,0,0.05)]"
-                        : "hover:bg-white/30"
-                    } rounded-lg active:bg-zinc-300 dark:active:bg-zinc-700`}
+                    className={`w-full ${pinnedRooms.includes(room.roomId)
+                      ? "bg-[#FFFFFF4D] backdrop-blur-[100px] border border-[#e3e4e4] shadow-[0_0_4px_rgba(0,0,0,0.05)]"
+                      : "hover:bg-white/30"
+                      } rounded-lg active:bg-zinc-300 dark:active:bg-zinc-700`}
                   >
                     {/* Nội dung hiện tại */}
                     {isEditMode ? (
@@ -400,14 +427,16 @@ export const ChatList = ({
                         onSelect={() => onSelectRoom?.(room.roomId)}
                         isMuted={mutedRooms.includes(room.roomId)}
                         isPinned={pinnedRooms.includes(room.roomId)}
+                        customName={otherMember ? customNames[otherMember.userId] : undefined}
+                        customAvatar={otherMember ? customAvatars[otherMember.userId] : undefined}
+                        
                       />
                     ) : (
                       <div className="relative">
                         <button
                           className="block w-full cursor-pointer text-left relative z-10"
-                          aria-label={`Open chat with ${
-                            room.name || "Unknown"
-                          }`}
+                          aria-label={`Open chat with ${room.name || "Unknown"
+                            }`}
                           onMouseDown={(e) => {
                             // Reset swipe state cho mouse events
                             isSwipingRef.current = false;
@@ -537,6 +566,8 @@ export const ChatList = ({
                             room={room}
                             isMuted={mutedRooms.includes(room.roomId)}
                             isPinned={pinnedRooms.includes(room.roomId)}
+                            customName={otherMember ? customNames[otherMember.userId] : undefined}
+                            customAvatar={otherMember ? customAvatars[otherMember.userId] : undefined}
                           />
                         </button>
                       </div>
@@ -577,11 +608,10 @@ export const ChatList = ({
                 {pinnedRooms.includes(activeRoomId || "") ? "Unpin" : "Pin"}
               </span>
               <PinIcon
-                className={`w-5 h-5 ${
-                  pinnedRooms.includes(activeRoomId || "")
-                    ? "text-gray-500"
-                    : "text-blue-500"
-                }`}
+                className={`w-5 h-5 ${pinnedRooms.includes(activeRoomId || "")
+                  ? "text-gray-500"
+                  : "text-blue-500"
+                  }`}
               />
             </button>
             <button
