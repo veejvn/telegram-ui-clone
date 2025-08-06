@@ -135,24 +135,21 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
   };
 
   const handleForward = async () => {
-    if (!msg.text || !msg.sender || !msg.time || !client) return;
+    if (!msg.text || !msg.sender || !msg.time) return;
 
-    // Đóng menu và reset vị trí trước khi navigate
+    // Đóng menu và reset vị trí
     setOpen(false);
     setShowOverlay(false);
     setActiveMenuMessageId(null);
     setTransformOffset(0);
 
-    router.push("/chat/forward");
-
-    setTimeout(() => {
-      addMessage({
-        text: msg.text,
-        senderId: msg.sender,
-        sender: msg.senderDisplayName!,
-        time: msg.time,
-      });
-    }, 1000);
+    // Add message to ForwardStore
+    addMessage({
+      text: msg.text,
+      senderId: msg.sender,
+      sender: msg.senderDisplayName || msg.sender,
+      time: msg.time,
+    });
   };
 
   const handleReply = () => {

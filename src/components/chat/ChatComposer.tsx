@@ -62,6 +62,7 @@ import StickerPicker from "@/components/common/StickerPicker";
 import styles from "./page.module.css";
 import clsx from "clsx";
 import VoiceRecordingModal from "@/components/chat/VoiceRecordingModal";
+import ForwardContactsList from "@/components/chat/ForwardContactsList";
 
 const ChatComposer = ({ roomId }: { roomId: string }) => {
   // Animation timing constant for synchronization
@@ -74,6 +75,7 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   const [showModalVoiceRecord, setShowModalVoiceRecord] = useState(false);
   // State để kiểm soát quá trình exit animation của nút gửi
   const [isSendButtonAnimating, setIsSendButtonAnimating] = useState(false);
+  const [showForwardContacts, setShowForwardContacts] = useState(false);
 
   const typingTimeoutRef = useRef<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -85,7 +87,12 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
   const [isTyping, setIsTyping] = useState(false);
   const addMessage = useChatStore((state) => state.addMessage);
   const updateMessage = useChatStore((state) => state.updateMessage);
-  const { messages: forwardMessages, clearMessages } = useForwardStore();
+  const {
+    messages: forwardMessages,
+    clearMessages,
+    roomIds: forwardRoomIds,
+    clearRooms,
+  } = useForwardStore();
   const { replyMessage, clearReply } = useReplyStore();
   const { editMessage: editMsg, clearEditMessage, isEditing } = useEditStore();
   const [open, setOpen] = useState(false);
@@ -117,6 +124,11 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
       }, 100);
     }
   }, [editMsg]);
+
+  // Auto show forward contacts list when forward messages exist
+  useEffect(() => {
+    setShowForwardContacts(forwardMessages.length > 0);
+  }, [forwardMessages]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -189,7 +201,86 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
     const userId = client.getUserId();
     const now = new Date();
 
-    //  1. Gửi message thường trước nếu có nội dung
+    // Nếu có forward messages và có rooms được chọn, chỉ gửi forward
+    if (forwardMessages.length > 0 && forwardRoomIds.length > 0) {
+      // Send additional message first if provided
+      if (trimmed) {
+        for (const targetRoomId of forwardRoomIds) {
+          const localId = `local_${now.getTime()}_${targetRoomId}_text`;
+
+          addMessage(targetRoomId, {
+            eventId: localId,
+            sender: userId ?? undefined,
+            senderDisplayName: userId ?? undefined,
+            text: trimmed,
+            time: now.toLocaleString(),
+            timestamp: now.getTime(),
+            status: "sent",
+            type: isOnlyEmojis(trimmed) ? "emoji" : "text",
+          });
+
+          setTimeout(() => {
+            sendMessage(targetRoomId, trimmed, client)
+              .then((res) => {
+                if (!res.success) console.log("Send Failed!");
+              })
+              .catch((err) => console.log("Send Error:", err));
+          }, 1000);
+        }
+      }
+
+      // Send forward messages to selected rooms
+      forwardMessages.forEach((fwd) => {
+        for (const targetRoomId of forwardRoomIds) {
+          const localId = `local_${now.getTime()}_${targetRoomId}_${Math.random()}`;
+          const forwardBody = JSON.stringify({
+            forward: true,
+            originalSenderId: fwd.senderId,
+            originalSender: fwd.sender,
+            text: fwd.text,
+          });
+
+          addMessage(targetRoomId, {
+            eventId: localId,
+            sender: userId ?? undefined,
+            senderDisplayName: fwd.sender,
+            text: forwardBody,
+            time: now.toLocaleString(),
+            timestamp: now.getTime(),
+            status: "sent",
+            type: "text",
+            isForward: true,
+          });
+
+          setTimeout(() => {
+            sendMessage(targetRoomId, forwardBody, client)
+              .then((res) => {
+                if (!res.success) console.log("Send Failed!");
+              })
+              .catch((err) => console.log("Send Error:", err));
+          }, 1000);
+        }
+      });
+
+      // Clear forward data after sending
+      clearMessages();
+      clearRooms();
+      setShowForwardContacts(false);
+      setText("");
+      if (textareaRef.current) {
+        textareaRef.current.value = "";
+      }
+
+      // Show success message
+      toast.success(
+        `Message forwarded to ${forwardRoomIds.length} chat${
+          forwardRoomIds.length > 1 ? "s" : ""
+        }`
+      );
+      return;
+    }
+
+    //  Gửi message thường nếu không có forward
     if (trimmed) {
       const localId = "local_" + Date.now();
       let messageBody = trimmed;
@@ -243,36 +334,6 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
           })
           .catch((err) => console.log("Send Error:", err));
       }, 1000);
-    }
-
-    //  2. Gửi các forward messages nếu có
-    if (forwardMessages.length > 0) {
-      forwardMessages.forEach((fwd) => {
-        const localId = "local_" + Date.now() + Math.random();
-        const forwardBody = JSON.stringify({
-          forward: true,
-          originalSenderId: fwd.senderId,
-          originalSender: fwd.sender,
-          text: fwd.text,
-        });
-
-        //console.log(forwardMessages);
-        addMessage(roomId, {
-          eventId: localId,
-          sender: userId ?? undefined,
-          senderDisplayName: fwd.sender,
-          text: forwardBody,
-          time: now.toLocaleString(),
-          timestamp: now.getTime(),
-          status: "sent",
-          type: "text",
-          isForward: true,
-        });
-
-        sendMessage(roomId, forwardBody, client);
-      });
-
-      clearMessages();
     }
   };
 
@@ -757,10 +818,28 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
       {/* Edit Message Input */}
       <EditMessageInput onCancel={handleEditCancel} />
 
-      <div className={`flex pb-8 px-3 ${isEditing ? "bg-[#FFFFFF4D]" : ""}`}>
+      {/* Forward Contacts List */}
+      <ForwardContactsList
+        isVisible={showForwardContacts}
+        onClose={() => {
+          setShowForwardContacts(false);
+          clearMessages(); // Clear forward messages when closing
+        }}
+      />
+
+      <div
+        className={
+          showForwardContacts
+            ? "pt-5 rounded-t-[36px] bg-[#FFFFFF4D] backdrop-blur-[48px] z-10"
+            : ""
+        }
+      ></div>
+      <div
+        className={clsx("flex pb-8 px-3", isEditing ? "bg-[#FFFFFF4D]" : "")}
+      >
         {/* Nút Plus ngoài cùng bên trái */}
         <AnimatePresence>
-          {!isEditing && (
+          {!isEditing && !showForwardContacts && (
             <motion.div
               initial={{ opacity: 0, scale: 0.8, x: -20 }}
               animate={{ opacity: 1, scale: 1, x: 0 }}
@@ -797,8 +876,14 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
         <motion.div
           className="flex flex-1 items-center relative"
           animate={{
-            width: text.trim() ? "calc(100% - 50px)" : "100%",
-            paddingRight: text.trim() ? 46 : 0,
+            width:
+              text.trim() || (showForwardContacts && forwardRoomIds.length > 0)
+                ? "calc(100% - 50px)"
+                : "100%",
+            paddingRight:
+              text.trim() || (showForwardContacts && forwardRoomIds.length > 0)
+                ? 46
+                : 0,
           }}
           transition={{
             type: "spring",
@@ -809,7 +894,9 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
         >
           <div
             className={`flex flex-1 items-center px-3 h-12 rounded-3xl bg-white/80 border border-white shadow-sm min-w-0${
-              text.trim() ? " mr-3" : ""
+              text.trim() || (showForwardContacts && forwardRoomIds.length > 0)
+                ? " mr-3"
+                : ""
             }`}
           >
             {/* Icon micro bên trái */}
@@ -862,7 +949,8 @@ const ChatComposer = ({ roomId }: { roomId: string }) => {
 
           {/* Icon gửi tin nhắn */}
           <AnimatePresence mode="wait">
-            {text.trim() && (
+            {(text.trim() ||
+              (showForwardContacts && forwardRoomIds.length > 0)) && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.8, x: 30 }}
                 animate={{ opacity: 1, scale: 1, x: 0 }}

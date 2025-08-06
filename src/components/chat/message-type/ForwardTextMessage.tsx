@@ -110,19 +110,19 @@ const ForwardTextMessage = ({
   };
 
   const handleForward = async () => {
-    if (!msg.text || !msg.sender || !msg.time || !client) return;
+    if (!msg.text || !msg.sender || !msg.time) return;
 
+    // Đóng menu
+    setOpen(false);
+
+    // Add message to ForwardStore
     const { addMessage } = useForwardStore.getState();
-    router.push("/chat/forward");
-
-    setTimeout(() => {
-      addMessage({
-        text: text,
-        senderId: msg.sender,
-        sender: msg.senderDisplayName!,
-        time: msg.time,
-      });
-    }, 1000);
+    addMessage({
+      text: text || msg.text,
+      senderId: msg.sender,
+      sender: msg.senderDisplayName || msg.sender,
+      time: msg.time,
+    });
   };
 
   const handlePin = async () => {
@@ -198,114 +198,116 @@ const ForwardTextMessage = ({
   };
 
   return (
-    <DropdownMenu open={open} onOpenChange={handleOpenChange}>
-      <DropdownMenuTrigger asChild>
-        <div
-          onTouchStart={handleHoldStart}
-          onTouchEnd={handleHoldEnd}
-          className={clsx(
-            "flex items-end", // Đảm bảo tail căn đáy với bubble
-            isSender ? "justify-end" : "justify-start",
-            "select-none"
-          )}
-        >
-          {/* 🡐 Tail cho tin nhận */}
-          {!isSender && (
-            <div className="text-[#FFFFFF] dark:text-[#282434]">
-              <BubbleTail isSender={false} fillColor="currentColor" />
-            </div>
-          )}
+    <>
+      <DropdownMenu open={open} onOpenChange={handleOpenChange}>
+        <DropdownMenuTrigger asChild>
+          <div
+            onTouchStart={handleHoldStart}
+            onTouchEnd={handleHoldEnd}
+            className={clsx(
+              "flex items-end", // Đảm bảo tail căn đáy với bubble
+              isSender ? "justify-end" : "justify-start",
+              "select-none"
+            )}
+          >
+            {/* 🡐 Tail cho tin nhận */}
+            {!isSender && (
+              <div className="text-[#FFFFFF] dark:text-[#282434]">
+                <BubbleTail isSender={false} fillColor="currentColor" />
+              </div>
+            )}
 
-          {/* 💬 Nội dung tin nhắn */}
-          <div className="flex flex-col">
-            <div className={textClass}>
-              <p
-                className={
-                  "whitespace-pre-wrap break-words leading-snug text-sm"
-                }
-              >
-                Forwarded from
-              </p>
-              <p
-                className={
-                  "whitespace-pre-wrap break-words leading-snug flex gap-1 text-sm"
-                }
-              >
-                <Avatar className="h-5 w-5">
-                  {avatarUrl ? (
-                    <AvatarImage src={avatarUrl} alt="avatar" />
-                  ) : (
-                    <>
-                      <AvatarImage src="" alt="Unknow" />
-                      <AvatarFallback className="bg-purple-400 text-white text-[10px] font-bold">
-                        {originalSender.slice(0, 1).toUpperCase()}
-                      </AvatarFallback>
-                    </>
-                  )}
-                </Avatar>
-                {originalSender}
-              </p>
-              <p
-                className={
-                  "whitespace-pre-wrap break-words leading-snug max-w-[70vw]"
-                }
-              >
-                {linkify(text)}
-              </p>
-              <div className={timeClass}>
-                {formatMsgTime(msg.time)}
-                {isSender &&
-                  (msg.status === "read" ? (
-                    <CheckCheck size={14} />
-                  ) : (
-                    <Check size={14} />
-                  ))}
+            {/* 💬 Nội dung tin nhắn */}
+            <div className="flex flex-col">
+              <div className={textClass}>
+                <p
+                  className={
+                    "whitespace-pre-wrap break-words leading-snug text-sm"
+                  }
+                >
+                  Forwarded from
+                </p>
+                <p
+                  className={
+                    "whitespace-pre-wrap break-words leading-snug flex gap-1 text-sm"
+                  }
+                >
+                  <Avatar className="h-5 w-5">
+                    {avatarUrl ? (
+                      <AvatarImage src={avatarUrl} alt="avatar" />
+                    ) : (
+                      <>
+                        <AvatarImage src="" alt="Unknow" />
+                        <AvatarFallback className="bg-purple-400 text-white text-[10px] font-bold">
+                          {originalSender.slice(0, 1).toUpperCase()}
+                        </AvatarFallback>
+                      </>
+                    )}
+                  </Avatar>
+                  {originalSender}
+                </p>
+                <p
+                  className={
+                    "whitespace-pre-wrap break-words leading-snug max-w-[70vw]"
+                  }
+                >
+                  {linkify(text)}
+                </p>
+                <div className={timeClass}>
+                  {formatMsgTime(msg.time)}
+                  {isSender &&
+                    (msg.status === "read" ? (
+                      <CheckCheck size={14} />
+                    ) : (
+                      <Check size={14} />
+                    ))}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* 🡒 Tail cho tin gửi */}
-          {isSender && (
-            <div className="text-[#DCF8C6] dark:text-[#6f42c1]">
-              <BubbleTail isSender={true} fillColor="currentColor" />
-            </div>
-          )}
-        </div>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="mx-2">
-        <DropdownMenuItem
-          className="flex justify-between items-center"
-          onClick={() => handleCopy(msg.text)}
-        >
-          <p>Copy</p>
-          <CopyIconSvg isDark={theme.resolvedTheme === "dark"} />
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          className="flex justify-between items-center"
-          onClick={handleForward}
-        >
-          <p>Forward</p>
-          <ForwardIconSvg isDark={theme.resolvedTheme === "dark"} />
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          className="flex justify-between items-center"
-          onClick={handlePin}
-        >
-          <p>{isPinned ? "Unpin" : "Pin"}</p>
-          <Pin
-            size={16}
-            className={isPinned ? "text-red-500" : "text-blue-500"}
-          />
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem className="flex justify-between items-center">
-          <p className="text-red-500">Delete</p>
-          <BinIconSvg />
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+            {/* 🡒 Tail cho tin gửi */}
+            {isSender && (
+              <div className="text-[#DCF8C6] dark:text-[#6f42c1]">
+                <BubbleTail isSender={true} fillColor="currentColor" />
+              </div>
+            )}
+          </div>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="mx-2">
+          <DropdownMenuItem
+            className="flex justify-between items-center"
+            onClick={() => handleCopy(msg.text)}
+          >
+            <p>Copy</p>
+            <CopyIconSvg isDark={theme.resolvedTheme === "dark"} />
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            className="flex justify-between items-center"
+            onClick={handleForward}
+          >
+            <p>Forward</p>
+            <ForwardIconSvg isDark={theme.resolvedTheme === "dark"} />
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            className="flex justify-between items-center"
+            onClick={handlePin}
+          >
+            <p>{isPinned ? "Unpin" : "Pin"}</p>
+            <Pin
+              size={16}
+              className={isPinned ? "text-red-500" : "text-blue-500"}
+            />
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem className="flex justify-between items-center">
+            <p className="text-red-500">Delete</p>
+            <BinIconSvg />
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
   );
 };
 

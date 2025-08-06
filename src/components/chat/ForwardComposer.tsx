@@ -195,39 +195,37 @@ export default function ForwardComposer() {
         </div>
 
         {roomIds.length > 0 ? (
-          <button disabled={isLoading}>
+          <button
+            disabled={isLoading}
+            className="ml-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white rounded-full p-2 transition-colors"
+          >
             {isLoading ? (
-              <Loader2 className="animate-spin w-10 h-10 text-blue-600" />
+              <Loader2 className="animate-spin w-6 h-6" />
             ) : (
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
                 fill="currentColor"
-                className="size-10 cursor-pointer hover:scale-110 duration-300 transition-all ease-in-out"
+                className="w-6 h-6"
                 onClick={handleSend}
               >
-                <path
-                  fillRule="evenodd"
-                  d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm.53 5.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 1 0 1.06 1.06l1.72-1.72v5.69a.75.75 0 0 0 1.5 0v-5.69l1.72 1.72a.75.75 0 1 0 1.06-1.06l-3-3Z"
-                  clipRule="evenodd"
-                  className="text-blue-600"
-                />
+                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
               </svg>
             )}
           </button>
         ) : (
-          <button disabled aria-label="input">
+          <button
+            disabled
+            aria-label="input"
+            className="ml-2 bg-gray-300 text-gray-500 rounded-full p-2"
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
               fill="currentColor"
-              className="size-10 cursor-pointer opacity-30"
+              className="w-6 h-6"
             >
-              <path
-                fillRule="evenodd"
-                d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm.53 5.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 1 0 1.06 1.06l1.72-1.72v5.69a.75.75 0 0 0 1.5 0v-5.69l1.72 1.72a.75.75 0 1 0 1.06-1.06l-3-3Z"
-                clipRule="evenodd"
-              />
+              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
             </svg>
           </button>
         )}

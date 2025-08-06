@@ -136,18 +136,22 @@ const ReplyMessage = ({
   };
 
   const handleForward = async () => {
-    if (!msg.text || !msg.sender || !msg.time || !client) return;
-    router.push("/chat/forward");
+    if (!msg.text || !msg.sender || !msg.time) return;
 
-    setTimeout(() => {
-      const { addMessage } = useForwardStore.getState();
-      addMessage({
-        text: text,
-        senderId: msg.sender,
-        sender: msg.senderDisplayName ?? msg.sender ?? "",
-        time: msg.time,
-      });
-    }, 1000);
+    // Đóng menu và reset vị trí
+    setOpen(false);
+    setShowOverlay(false);
+    setActiveMenuMessageId(null);
+    setTransformOffset(0);
+
+    // Add message to ForwardStore
+    const { addMessage } = useForwardStore.getState();
+    addMessage({
+      text: text || msg.text,
+      senderId: msg.sender,
+      sender: msg.senderDisplayName ?? msg.sender ?? "",
+      time: msg.time,
+    });
   };
 
   const handleReply = () => {
