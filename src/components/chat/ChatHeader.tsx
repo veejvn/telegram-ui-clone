@@ -34,6 +34,7 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
   const { roomId, type, otherUserId } = getRoomInfo(room, currentUserId);
   const clearMessages = useForwardStore((state) => state.clearMessages);
   const [user, setUser] = useState<sdk.User | undefined>(undefined);
+  const [customNames, setCustomNames] = useState<Record<string, string>>({});
   const router = useRouter();
 
   let lastSeen = null;
@@ -61,6 +62,24 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
         console.log("Error: ", res.err);
       });
   }, [roomId, client]);
+
+  // Load custom names from account_data
+  useEffect(() => {
+    if (!client) return;
+
+    const loadCustomNames = async () => {
+      try {
+        const nameEvent = await client.getAccountData("dev.custom_name" as any);
+        const nameContent =
+          nameEvent?.getContent<Record<string, string>>() ?? {};
+        setCustomNames(nameContent);
+      } catch (error) {
+        console.error("Failed to fetch custom names:", error);
+      }
+    };
+
+    loadCustomNames();
+  }, [client]);
 
   const [avatarUrl, setAvatarUrl] = React.useState<string | null>(null);
 
@@ -109,14 +128,20 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
 
     return {
       id: user.userId,
-      name: user.displayName || user.userId || room.name,
-      lastSeen: isActuallyOnline ? "online" : getDetailedStatus(lastSeen) || "recently",
+      name:
+        customNames[user.userId] ||
+        user.displayName ||
+        user.userId ||
+        room.name,
+      lastSeen: isActuallyOnline
+        ? "online"
+        : getDetailedStatus(lastSeen) || "recently",
       roomId: room.roomId,
     };
   };
 
   // Follow NewCallPage pattern - handle start call exactly the same way
-  const handleStartCall = async (callType: 'voice' | 'video') => {
+  const handleStartCall = async (callType: "voice" | "video") => {
     if (!user || !room) return;
 
     const contact = createContactFromUser();
@@ -128,7 +153,9 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
 
       // Navigate exactly like NewCallPage
       router.push(
-        `/call/${callType}?calleeId=${encodeURIComponent(contact.roomId)}&contact=${encodeURIComponent(contact.name)}`
+        `/call/${callType}?calleeId=${encodeURIComponent(
+          contact.roomId
+        )}&contact=${encodeURIComponent(contact.name)}`
       );
     } catch (error) {
       console.error("Failed to start call:", error);
@@ -172,7 +199,11 @@ const ChatHeader = ({ room }: { room: sdk.Room }) => {
       {/* Center: Room name */}
       <div className="flex-1 text-center truncate">
         <Link href={`${room.roomId}/info`}>
-          <h1 className="font-semibold">{room.name}</h1>
+          <h1 className="font-semibold">
+            {user && customNames[user.userId]
+              ? customNames[user.userId]
+              : room.name}
+          </h1>
         </Link>
       </div>
 

@@ -27,6 +27,17 @@ interface ChatListItemProps {
   customAvatar?: string;
 }
 
+function getHttpAvatarUrl(
+  client: sdk.MatrixClient | null,
+  mxcUrl?: string | null
+): string | undefined {
+  if (!mxcUrl) return undefined; // loại bỏ luôn trường hợp null
+  if (mxcUrl.startsWith("mxc://") && client) {
+    return client.mxcUrlToHttp(mxcUrl, 60, 60, "crop", false) ?? undefined;
+  }
+  return mxcUrl ?? undefined;
+}
+
 export const ChatListItem = ({
   room,
   isEditMode = false,
@@ -37,15 +48,6 @@ export const ChatListItem = ({
   customAvatar,
   customName,
 }: ChatListItemProps) => {
-  function getHttpAvatarUrl(client: sdk.MatrixClient | null, mxcUrl?: string | null): string | undefined {
-  if (!mxcUrl) return undefined; // loại bỏ luôn trường hợp null
-  if (mxcUrl.startsWith("mxc://") && client) {
-    return client.mxcUrlToHttp(mxcUrl, 60, 60, "crop", false) ?? undefined;
-  }
-  return mxcUrl ?? undefined;
-}
-
-
   const client = useMatrixClient();
   const userId = client?.getUserId();
   const HOMESERVER_URL: string =
@@ -88,7 +90,7 @@ export const ChatListItem = ({
   let avatarUrl = room.getAvatarUrl(HOMESERVER_URL, 60, 60, "crop", false);
   const members = room.getMembers();
   const isGroup = members.length > 2;
-  const finalAvatar = getHttpAvatarUrl(client, customAvatar ?? avatarUrl);
+
   if (!isGroup) {
     const otherMember = members.find((member) => member.userId !== userId);
     avatarUrl =
@@ -102,6 +104,8 @@ export const ChatListItem = ({
         false
       ) || "";
   }
+
+  const finalAvatar = getHttpAvatarUrl(client, customAvatar ?? avatarUrl);
 
   const { content, time, sender } = getLastMessagePreview(room);
 
@@ -130,7 +134,6 @@ export const ChatListItem = ({
   );
 
   return (
-    
     <div className="flex px-2 py-2 relative select-none">
       {isEditMode && (
         <label className="mr-3 inline-flex items-center cursor-pointer">
@@ -148,15 +151,13 @@ export const ChatListItem = ({
         </label>
       )}
       <div className="w-[60px] flex justify-center items-center">
-        
         <Avatar className="h-15 w-15">
-          {finalAvatar ?  (
+          {finalAvatar ? (
             <AvatarImage src={finalAvatar} alt="avatar" />
           ) : (
             <>
-              
               <AvatarFallback className="bg-purple-400 text-white text-xl font-bold">
-               {room.name?.slice(0, 1) ?? "?"}
+                {room.name?.slice(0, 1) ?? "?"}
               </AvatarFallback>
             </>
           )}
@@ -172,7 +173,6 @@ export const ChatListItem = ({
               ? customName.name
               : customName ?? room.name}
           </h1>
-
         </div>
         <p className="text-sm text-muted-foreground line-clamp-2">
           {lastMessageSenderId === userId ? (
@@ -192,8 +192,9 @@ export const ChatListItem = ({
           {/* Tick hoặc badge unread */}
           {lastMessageSenderId === userId ? (
             <span
-              className={`inline-flex items-center justify-center w-5 h-5 rounded-full mt-1 ${lastReadReceipts ? "bg-blue-500" : "bg-gray-300"
-                }`}
+              className={`inline-flex items-center justify-center w-5 h-5 rounded-full mt-1 ${
+                lastReadReceipts ? "bg-blue-500" : "bg-gray-300"
+              }`}
             >
               <Check className="w-3.5 h-3.5 text-white" />
             </span>
