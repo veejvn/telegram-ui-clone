@@ -107,16 +107,6 @@ const ChatPage = () => {
         const heightDiff = initialHeight - currentHeight;
         const isKeyboardOpen = heightDiff > 100;
 
-        console.log("🐛 Safari viewport change:", {
-          initialHeight,
-          currentHeight,
-          heightDiff,
-          isKeyboardOpen,
-          bodyScrollHeight: document.body.scrollHeight,
-          documentScrollHeight: document.documentElement.scrollHeight,
-          canScroll: document.body.scrollHeight > window.innerHeight,
-        });
-
         const chatContainer = document.querySelector(
           `.${styles.chatContainer}`
         ) as HTMLElement;

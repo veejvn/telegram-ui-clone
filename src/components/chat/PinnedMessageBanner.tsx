@@ -10,6 +10,9 @@ import { useRouter } from "next/navigation";
 import PinnedMessagesList from "./PinnedMessagesList";
 import { RiPushpinFill } from "react-icons/ri";
 
+// Constant empty array to avoid creating new arrays on each render
+const EMPTY_ARRAY: PinnedMessage[] = [];
+
 interface PinnedMessageBannerProps {
   roomId: string;
 }
@@ -18,16 +21,15 @@ const PinnedMessageBanner: React.FC<PinnedMessageBannerProps> = React.memo(
   ({ roomId }) => {
     const client = useMatrixClient();
     const router = useRouter();
-    const {
-      getLatestPinnedMessage,
-      getPinnedMessages,
-      unpinMessage: unpinFromStore,
-    } = usePinStore();
+    const { unpinMessage: unpinFromStore } = usePinStore();
 
-    // Use direct store subscriptions for reactive updates with memoization
-    const pinnedMessages = usePinStore(
-      useCallback((state) => state.pinnedMessagesByRoom[roomId] || [], [roomId])
+    // Memoized selector to prevent infinite re-renders
+    const pinnedMessagesSelector = useCallback(
+      (state: any) => state.pinnedMessagesByRoom[roomId] ?? EMPTY_ARRAY,
+      [roomId]
     );
+
+    const pinnedMessages = usePinStore(pinnedMessagesSelector);
 
     const pinnedMessage = useMemo(
       () => (pinnedMessages.length > 0 ? pinnedMessages[0] : null),
