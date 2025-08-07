@@ -3,15 +3,20 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const TopicsSettingPage = () => {
   const [topicsEnabled, setTopicsEnabled] = useState(true);
+  const router = useRouter();
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-[#c9dbed] to-[#e7d7c7]">
       {/* Header */}
       <div className="flex items-center justify-between p-4">
-        <button className="w-10 h-10 rounded-full bg-white/30 flex items-center justify-center">
+        <button className="w-10 h-10 rounded-full bg-white/30 flex items-center justify-center" 
+          onClick={() => router.back()}
+          aria-label="Back" title="Back to previous page"
+          >
           <svg
             width="24"
             height="24"

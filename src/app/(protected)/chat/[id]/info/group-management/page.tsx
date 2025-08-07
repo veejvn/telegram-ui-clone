@@ -1,13 +1,22 @@
 "use client";
+import { useParams, useRouter } from "next/navigation";
 import React from "react";
 import { IoChevronForward, IoChevronBack } from "react-icons/io5";
 
 const GroupManagementPage = () => {
+  const params = useParams();
+  const roomId = decodeURIComponent(params.id as string);
+  const router = useRouter();
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-[#c9dbed] to-[#e7d7c7]">
       {/* Header */}
       <div className="relative flex items-center justify-center py-3">
-        <button className="absolute left-2 p-2 rounded-full bg-[#FFFFFF4D] flex items-center justify-center">
+        <button
+          className="absolute left-2 p-2 rounded-full bg-[#FFFFFF4D] flex items-center justify-center"
+          aria-label="Back"
+          onClick={() => window.history.back()}
+        >
           <IoChevronBack className="text-[#1c1c1e]" />
         </button>
         <h1 className="text-center text-lg font-medium text-[#1c1c1e]">
@@ -35,7 +44,12 @@ const GroupManagementPage = () => {
                 <div className="absolute right-1 top-1 bg-white w-5 h-5 rounded-full"></div>
               </div>
             </div>
-            <div className="flex items-center justify-between px-5 py-4">
+            <div
+              className="flex items-center justify-between px-5 py-4"
+              onClick={() =>
+                router.push(`/chat/${roomId}/info/group-management/join-requests`)
+              }
+            >
               <div className="flex-shrink-1 mr-2 max-w-[70%]">
                 <p className="text-sm font-medium text-[#1c1c1e]">
                   Join Requests

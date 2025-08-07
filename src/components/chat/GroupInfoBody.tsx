@@ -21,6 +21,7 @@ import {
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/ChatAvatar";
 import { ScrollArea } from "../ui/scroll-area";
+import { useRouter } from "next/navigation";
 
 interface GroupInfoBodyProps {
   room: sdk.Room;
@@ -44,6 +45,7 @@ const GroupInfoBody = ({ room }: GroupInfoBodyProps) => {
     96,
     "crop"
   );
+  const router = useRouter();
 
   // Get current user ID
   const currentUserId = client?.getUserId();
@@ -301,7 +303,12 @@ const GroupInfoBody = ({ room }: GroupInfoBodyProps) => {
               <div className="bg-white/30 text-white h-[1px] "></div>
 
               {/* Group Management */}
-              <div className="flex items-center justify-between">
+              <div
+                className="flex items-center justify-between"
+                onClick={() =>
+                  router.push(`/chat/${room.roomId}/info/group-management`)
+                }
+              >
                 <div className="flex items-center gap-3">
                   <div className="bg-gray-500/40 rounded-full p-1.5">
                     <svg
@@ -356,11 +363,11 @@ const GroupInfoBody = ({ room }: GroupInfoBodyProps) => {
               <div className="bg-white/30 text-white h-[1px] "></div>
 
               {/* Report */}
-              <div className="flex items-center justify-between">
-                <div
-                  className="flex items-center gap-3 cursor-pointer"
-                  onClick={() => setIsReportModalOpen(true)}
-                >
+              <div
+                className="flex items-center justify-between"
+                onClick={() => setIsReportModalOpen(true)}
+              >
+                <div className="flex items-center gap-3 cursor-pointer">
                   <div className="bg-gray-500/40 rounded-full p-1.5">
                     <svg
                       width="16"
@@ -384,7 +391,10 @@ const GroupInfoBody = ({ room }: GroupInfoBodyProps) => {
               <div className="bg-white/30 text-white h-[1px] "></div>
 
               {/* Topics */}
-              <div className="flex items-center justify-between">
+              <div
+                className="flex items-center justify-between"
+                onClick={() => router.push(`/chat/${room.roomId}/info/topics`)}
+              >
                 <div className="flex items-center gap-3">
                   <div className="bg-gray-500/40 rounded-full p-1.5">
                     <svg
@@ -532,6 +542,7 @@ const GroupInfoBody = ({ room }: GroupInfoBodyProps) => {
               <button
                 onClick={() => setIsReportModalOpen(false)}
                 className="absolute right-3 top-3 p-1.5 bg-[#d1d1d6] rounded-full"
+                aria-label="Close report modal"
               >
                 <X size={20} color="#1c1c1e" />
               </button>
