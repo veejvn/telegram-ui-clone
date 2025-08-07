@@ -1,27 +1,22 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import * as sdk from "matrix-js-sdk";
 import {
-  UserPlus,
-  Share2,
-  LogOut,
-  VolumeX,
-  Pin,
-  Settings,
-  FolderOpen,
-  Flag,
-  Grid3X3,
-  Camera,
-  Edit3,
-  ChevronLeft,
   MoreHorizontal,
+  ChevronLeft,
+  UserPlus,
+  Edit3,
+  Share2,
+  Camera,
   X,
+  LogOut,
 } from "lucide-react";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/ChatAvatar";
 import { ScrollArea } from "../ui/scroll-area";
 import { useRouter } from "next/navigation";
+import { isRoomMuted, muteRoom, unmuteRoom } from "@/services/muteRoomService";
 
 interface GroupInfoBodyProps {
   room: sdk.Room;
@@ -30,6 +25,8 @@ interface GroupInfoBodyProps {
 const GroupInfoBody = ({ room }: GroupInfoBodyProps) => {
   const client = useMatrixClient();
   const [isMuted, setIsMuted] = useState(false);
+  const [loading, setLoading] = useState(false);
+
   const [isPinned, setIsPinned] = useState(true);
   const [groupName, setGroupName] = useState(room.name || "Group Name");
   const [isEditing, setIsEditing] = useState(false);
@@ -58,6 +55,38 @@ const GroupInfoBody = ({ room }: GroupInfoBodyProps) => {
     "Hate speech or violence",
     "Flag as inappropriate",
   ];
+
+  useEffect(() => {
+    async function fetchMuteStatus() {
+      if (!client) return;
+
+      try {
+        const isMuted = await isRoomMuted(client, room.roomId);
+        setIsMuted(!!isMuted);
+      } catch (error) {
+        setIsMuted(false);
+      }
+    }
+
+    fetchMuteStatus();
+  }, [client, room.roomId]);
+
+  const handleToggleMute = async () => {
+    if (!client) return;
+    setLoading(true);
+    try {
+      if (isMuted) {
+        await unmuteRoom(client, room.roomId);
+      } else {
+        await muteRoom(client, room.roomId);
+      }
+      setIsMuted(!isMuted);
+    } catch (err) {
+      console.error("Toggle mute failed:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAddMember = () => {
     // TODO: Implement add member functionality
@@ -225,7 +254,7 @@ const GroupInfoBody = ({ room }: GroupInfoBodyProps) => {
           <div className="bg-neutral-400/50 rounded-3xl py-4 px-3 backdrop-blur-sm">
             <div className="space-y-3">
               {/* Mute group */}
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between py-3">
                 <div className="flex items-center gap-3">
                   <div className="bg-gray-500/40 rounded-full p-1.5">
                     <svg
@@ -243,16 +272,18 @@ const GroupInfoBody = ({ room }: GroupInfoBodyProps) => {
                   </div>
                   <span className="text-white text-sm">Mute group</span>
                 </div>
+
                 <button
-                  onClick={() => setIsMuted(!isMuted)}
-                  className={`w-12 h-6 rounded-full transition-colors ${
+                  onClick={handleToggleMute}
+                  disabled={loading}
+                  className={`w-12 h-6 rounded-full transition-colors duration-300 ${
                     isMuted ? "bg-blue-500" : "bg-white"
-                  }`}
+                  } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
                   aria-label={isMuted ? "Unmute group" : "Mute group"}
                   title={isMuted ? "Unmute group" : "Mute group"}
                 >
                   <div
-                    className={`w-5 h-5 rounded-full transition-transform ${
+                    className={`w-5 h-5 rounded-full transition-transform duration-300 ${
                       isMuted
                         ? "translate-x-6 bg-white"
                         : "translate-x-0.5 bg-gray-500"
@@ -260,7 +291,9 @@ const GroupInfoBody = ({ room }: GroupInfoBodyProps) => {
                   />
                 </button>
               </div>
-              <div className="bg-white/30 text-white h-[1px] "></div>
+
+              {/* Divider */}
+              <div className="bg-white/30 h-[1px]" />
 
               {/* Pin group to top */}
               <div className="flex items-center justify-between">

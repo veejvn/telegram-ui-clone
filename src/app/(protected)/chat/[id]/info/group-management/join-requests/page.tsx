@@ -1,7 +1,6 @@
 "use client";
 import React from "react";
 import { IoChevronBack } from "react-icons/io5";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 const JoinRequestsPage = () => {
@@ -32,7 +31,10 @@ const JoinRequestsPage = () => {
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-[#c9dbed] to-[#e7d7c7]">
       {/* Header */}
       <div className="relative flex items-center justify-center py-3">
-        <div className="absolute left-2 p-2 rounded-full bg-[#FFFFFF4D] flex items-center justify-center" onClick={() => router.back()}>
+        <div
+          className="absolute left-2 p-2 rounded-full bg-[#FFFFFF4D] flex items-center justify-center"
+          onClick={() => router.back()}
+        >
           <IoChevronBack className="text-[#1c1c1e]" />
         </div>
         <h1 className="text-center text-lg font-medium text-[#1c1c1e]">
