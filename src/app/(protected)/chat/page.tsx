@@ -5,7 +5,7 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from "next/link";
 import { ChatList } from "@/components/chat/ChatList";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import * as sdk from "@/lib/matrix-sdk";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
@@ -51,9 +51,10 @@ export default function ChatsPage() {
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const visibleRooms = rooms.filter((room) => {
-  const me = room.getMember(client?.getUserId() ?? "");
-  return me?.membership === "join"; 
-});
+    const me = room.getMember(client?.getUserId() ?? "");
+    // Hiển thị cả phòng đã join và phòng được mời
+    return me?.membership === "join" || me?.membership === "invite";
+  });
   useListenRoomInvites();
   const router = useRouter();
   const { showToast } = useToast();
@@ -179,21 +180,24 @@ export default function ChatsPage() {
   };
 
   // Utility functions for search
-  const getMxcAvatarUrl = (url: string | null) => {
-    if (!url || !client) return null;
+  const getMxcAvatarUrl = useCallback(
+    (url: string | null) => {
+      if (!url || !client) return null;
 
-    try {
-      if (url.startsWith("mxc://")) {
-        return client.mxcUrlToHttp(url, 60, 60, "crop");
-      } else if (url.startsWith("http")) {
-        return url;
+      try {
+        if (url.startsWith("mxc://")) {
+          return client.mxcUrlToHttp(url, 60, 60, "crop");
+        } else if (url.startsWith("http")) {
+          return url;
+        }
+        return null;
+      } catch (error) {
+        console.error(`Error processing avatar URL:`, error);
+        return null;
       }
-      return null;
-    } catch (error) {
-      console.error(`Error processing avatar URL:`, error);
-      return null;
-    }
-  };
+    },
+    [client]
+  );
 
   // Load contacts
   useEffect(() => {
@@ -348,44 +352,77 @@ export default function ChatsPage() {
         }
       );
 
-      localResults.forEach((user) => {
+      // Loại bỏ duplicate từ localResults trước khi thêm vào combinedResults
+      const dedupedLocalResults = localResults.filter(
+        (user, index, self) =>
+          index === self.findIndex((u) => u.user_id === user.user_id)
+      );
+
+      dedupedLocalResults.forEach((user) => {
         if (!processedUserIds.has(user.user_id)) {
           processedUserIds.add(user.user_id);
-          combinedResults.push(user);
+          combinedResults.push({
+            ...user,
+            source: user.room_id ? "contacts" : "recent_searches", // Thêm source để debug
+          });
         }
       });
 
-      // Search in chat rooms
+      // Search in direct chat rooms only (không tìm trong group)
       if (client) {
         const rooms = client.getRooms() || [];
 
-        for (const room of rooms) {
-          const isDirectRoom =
-            client.getAccountData("m.direct" as keyof sdk.AccountDataEvents) &&
-            Object.values(
-              client
-                .getAccountData("m.direct" as keyof sdk.AccountDataEvents)
-                ?.getContent() || {}
-            ).some(
-              (roomIds: any) =>
-                Array.isArray(roomIds) && roomIds.includes(room.roomId)
-            );
-          if (!isDirectRoom) continue;
+        // Lấy danh sách direct rooms từ m.direct account data
+        const directData = client.getAccountData(
+          "m.direct" as keyof sdk.AccountDataEvents
+        );
+        const directRooms = directData?.getContent() || {};
+        const allDirectRoomIds = new Set<string>();
 
-          const members = room
-            .getJoinedMembers()
-            .filter((member) => member.userId !== client.getUserId());
+        // Collect all direct room IDs
+        Object.values(directRooms).forEach((roomIds: any) => {
+          if (Array.isArray(roomIds)) {
+            roomIds.forEach((roomId) => allDirectRoomIds.add(roomId));
+          }
+        });
+
+        for (const room of rooms) {
+          // Chỉ tìm kiếm trong direct rooms, skip group rooms
+          if (!allDirectRoomIds.has(room.roomId)) {
+            continue;
+          }
+
+          // Kiểm tra thêm: room phải có đúng 2 members (1-1 chat)
+          const joinedMembers = room.getJoinedMembers();
+          if (joinedMembers.length !== 2) {
+            console.log(
+              `Skipping room ${room.roomId} - not 1-1 chat (${joinedMembers.length} members)`
+            );
+            continue;
+          }
+
+          const members = joinedMembers.filter(
+            (member) => member.userId !== client.getUserId()
+          );
 
           for (const member of members) {
             const memberName = (member.name || "").toLowerCase();
             const memberId = member.userId.toLowerCase();
             const term = searchTerm.toLowerCase();
 
+            // Loại bỏ bot user
+            if (member.userId === userIdChatBot) {
+              continue;
+            }
+
             if (
               (memberName.includes(term) || memberId.includes(term)) &&
               !processedUserIds.has(member.userId)
             ) {
               processedUserIds.add(member.userId);
+              console.log(
+                `Found user in direct room: ${member.userId} (room: ${room.roomId})`
+              );
 
               let avatarUrl = null;
               try {
@@ -448,7 +485,10 @@ export default function ChatsPage() {
                 room_id: room.roomId,
                 isOnline: isOnline,
                 lastSeen: lastSeen,
+                source: "direct_room", // Thêm source để debug
               });
+
+              // Chỉ lấy 1 user đầu tiên trong direct room (vì 1-1 chat)
               break;
             }
           }
@@ -499,18 +539,26 @@ export default function ChatsPage() {
                 }
               }
 
-              return user;
+              return {
+                ...user,
+                source: "matrix_api", // Thêm source để debug
+              };
             });
 
             // Combine results and remove duplicates
-            processedApiResults.forEach((user) => {
+            const dedupedApiResults = processedApiResults.filter(
+              (user, index, self) =>
+                index === self.findIndex((u) => u.user_id === user.user_id)
+            );
+
+            dedupedApiResults.forEach((user) => {
               if (!processedUserIds.has(user.user_id)) {
                 processedUserIds.add(user.user_id);
                 combinedResults.push(user);
               }
             });
 
-            // Remove duplicates using Map
+            // Final deduplication using Map (safety net)
             const uniqueResults = Array.from(
               new Map(
                 combinedResults.map((item) => [item.user_id, item])
@@ -583,212 +631,144 @@ export default function ChatsPage() {
     return id;
   };
 
-  const handleAddContact = async (client: sdk.MatrixClient, rawId: string) => {
-    const userId = normalizeUserIdInput(rawId, client);
-    try {
-      const room = await ContactService.addContact(client, userId);
-      if (room) {
-        router.push(`/chat/${room.roomId}`);
-        //closeFullScreenSearch();
-      }
-    } catch (error: any) {
-      console.error("Error creating room:", error.message);
-    }
-  };
-
-  const handleUserClick = async (user: any) => {
-    if (!client || user.user_id === userIdChatBot) return;
-
-    // Add to recent searches
-    const newRecent = [...recentSearches];
-    const existingIndex = newRecent.findIndex(
-      (r) => r.user_id === user.user_id
-    );
-
-    let avatarUrl = null;
-    if (user.processed_avatar_url && user.processed_avatar_url !== "") {
-      avatarUrl = user.processed_avatar_url;
-    } else if (user.avatar_url && user.avatar_url !== "") {
+  const handleAddContact = useCallback(
+    async (client: sdk.MatrixClient, rawId: string) => {
+      const userId = normalizeUserIdInput(rawId, client);
       try {
-        avatarUrl = getMxcAvatarUrl(user.avatar_url);
-      } catch (error) {
-        console.error("Error converting mxc URL:", error);
-      }
-    }
-
-    let lastSeen = user.lastSeen;
-    let isOnline = user.isOnline;
-
-    try {
-      const presence = client.getUser(user.user_id)?.presence;
-      if (presence) {
-        if (presence === "online") {
-          isOnline = true;
-          lastSeen = new Date();
-        } else if (
-          typeof presence === "object" &&
-          presence !== null &&
-          "lastActiveAgo" in presence &&
-          typeof (presence as { lastActiveAgo?: number }).lastActiveAgo ===
-            "number"
-        ) {
-          const lastActive =
-            Date.now() - (presence as { lastActiveAgo: number }).lastActiveAgo;
-          lastSeen = new Date(lastActive);
-          isOnline = Date.now() - lastActive < 2 * 60 * 1000;
+        const room = await ContactService.addContact(client, userId);
+        if (room) {
+          router.push(`/chat/${room.roomId}`);
+          //closeFullScreenSearch();
         }
+      } catch (error: any) {
+        console.error("Error creating room:", error.message);
       }
-    } catch (error) {
-      console.error("Error getting presence info:", error);
-    }
+    },
+    [router]
+  );
 
-    const userToSave = {
-      ...user,
-      processed_avatar_url: avatarUrl,
-      isOnline: isOnline,
-      lastSeen: lastSeen,
-    };
+  const handleUserClick = useCallback(
+    async (user: any) => {
+      if (!client || user.user_id === userIdChatBot) return;
 
-    if (existingIndex >= 0) {
-      newRecent.splice(existingIndex, 1);
-    }
-
-    newRecent.unshift(userToSave);
-    const updatedRecent = newRecent.slice(0, 5);
-    setRecentSearches(updatedRecent);
-
-    try {
-      localStorage.setItem("recentSearches", JSON.stringify(updatedRecent));
-    } catch (err) {
-      console.error("Failed to save recent searches:", err);
-    }
-
-    const isFriend = client
-      ?.getRooms()
-      .some((room) =>
-        room.getJoinedMembers().some((member) => member.userId === user.user_id)
-      );
-
-    if (isFriend) {
-      const room = client
-        .getRooms()
-        .find((r) =>
-          r.getJoinedMembers().some((m) => m.userId === user.user_id)
+      // Add to recent searches using functional update to avoid dependency on recentSearches
+      setRecentSearches((currentRecentSearches) => {
+        const newRecent = [...currentRecentSearches];
+        const existingIndex = newRecent.findIndex(
+          (r) => r.user_id === user.user_id
         );
-      if (room) {
-        router.push(`/chat/${room.roomId}`);
-        //closeFullScreenSearch();
-      }
-    } else {
-      await handleAddContact(client, user.user_id);
-    }
-  };
 
-  const clearHistory = () => {
+        let avatarUrl = null;
+        if (user.processed_avatar_url && user.processed_avatar_url !== "") {
+          avatarUrl = user.processed_avatar_url;
+        } else if (user.avatar_url && user.avatar_url !== "") {
+          try {
+            avatarUrl = getMxcAvatarUrl(user.avatar_url);
+          } catch (error) {
+            console.error("Error converting mxc URL:", error);
+          }
+        }
+
+        let lastSeen = user.lastSeen;
+        let isOnline = user.isOnline;
+
+        try {
+          const presence = client.getUser(user.user_id)?.presence;
+          if (presence) {
+            if (presence === "online") {
+              isOnline = true;
+              lastSeen = new Date();
+            } else if (
+              typeof presence === "object" &&
+              presence !== null &&
+              "lastActiveAgo" in presence &&
+              typeof (presence as { lastActiveAgo?: number }).lastActiveAgo ===
+                "number"
+            ) {
+              const lastActive =
+                Date.now() -
+                (presence as { lastActiveAgo: number }).lastActiveAgo;
+              lastSeen = new Date(lastActive);
+              isOnline = Date.now() - lastActive < 2 * 60 * 1000;
+            }
+          }
+        } catch (error) {
+          console.error("Error getting presence info:", error);
+        }
+
+        const userToSave = {
+          ...user,
+          processed_avatar_url: avatarUrl,
+          isOnline: isOnline,
+          lastSeen: lastSeen,
+        };
+
+        if (existingIndex >= 0) {
+          newRecent.splice(existingIndex, 1);
+        }
+
+        newRecent.unshift(userToSave);
+        const updatedRecent = newRecent.slice(0, 5);
+
+        try {
+          localStorage.setItem("recentSearches", JSON.stringify(updatedRecent));
+        } catch (err) {
+          console.error("Failed to save recent searches:", err);
+        }
+
+        return updatedRecent;
+      });
+
+      const isFriend = client
+        ?.getRooms()
+        .some((room) =>
+          room
+            .getJoinedMembers()
+            .some((member) => member.userId === user.user_id)
+        );
+
+      if (isFriend) {
+        const room = client
+          .getRooms()
+          .find((r) =>
+            r.getJoinedMembers().some((m) => m.userId === user.user_id)
+          );
+        if (room) {
+          router.push(`/chat/${room.roomId}`);
+          //closeFullScreenSearch();
+        }
+      } else {
+        await handleAddContact(client, user.user_id);
+      }
+    },
+    [client, userIdChatBot, getMxcAvatarUrl, router, handleAddContact]
+  );
+
+  const clearHistory = useCallback(() => {
     setRecentSearches([]);
     localStorage.removeItem("recentSearches");
-  };
+  }, []);
 
-  const renderAvatar = (user: any) => {
-    let avatarUrl = user.processed_avatar_url;
+  const renderAvatar = useCallback(
+    (user: any) => {
+      let avatarUrl = user.processed_avatar_url;
 
-    if (!avatarUrl && user.avatar_url) {
-      try {
-        avatarUrl = getMxcAvatarUrl(user.avatar_url);
-        user.processed_avatar_url = avatarUrl;
-      } catch (error) {
-        console.error("Error processing avatar in renderAvatar:", error);
+      if (!avatarUrl && user.avatar_url) {
+        try {
+          avatarUrl = getMxcAvatarUrl(user.avatar_url);
+          user.processed_avatar_url = avatarUrl;
+        } catch (error) {
+          console.error("Error processing avatar in renderAvatar:", error);
+        }
       }
-    }
 
-    if (avatarUrl) {
-      return (
-        <div className="relative w-full h-full">
-          <img
-            src={avatarUrl}
-            alt="avatar"
-            className="w-12 h-12 rounded-full object-cover"
-            onError={(e) => {
-              console.error("Error loading avatar:", avatarUrl);
-              e.currentTarget.style.display = "none";
-              const parent = e.currentTarget.parentElement;
-              if (parent) {
-                const fallbackAvatar = document.createElement("div");
-                fallbackAvatar.className =
-                  "w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center font-bold text-orange-800 text-lg";
-                fallbackAvatar.innerText = (
-                  user.display_name ||
-                  user.user_id ||
-                  "?"
-                )
-                  .charAt(0)
-                  .toUpperCase();
-                parent.appendChild(fallbackAvatar);
-              }
-            }}
-          />
-          {user.isOnline && (
-            <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
-          )}
-        </div>
-      );
-    }
-
-    const firstChar = (user.display_name || user.user_id || "?")
-      .charAt(0)
-      .toUpperCase();
-
-    return (
-      <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center font-bold text-orange-800 text-lg relative">
-        {firstChar}
-        {user.isOnline && (
-          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
-        )}
-      </div>
-    );
-  };
-
-  const closeFullScreenSearch = () => {
-    setIsFullScreenSearch(false);
-    setSearchTerm("");
-    setSearchQuery("");
-  };
-
-  const renderContactItem = (contact: any) => {
-    const name = contact.display_name?.split(" ")[0] || "User";
-    const shortenedName =
-      name.length > 10 ? name.substring(0, 7) + "..." : name;
-
-    let avatarUrl = contact.processed_avatar_url;
-
-    if (!avatarUrl && contact.avatar_url) {
-      try {
-        avatarUrl = getMxcAvatarUrl(contact.avatar_url);
-        contact.processed_avatar_url = avatarUrl;
-      } catch (error) {
-        console.error("Error processing avatar in renderContactItem:", error);
-      }
-    }
-
-    let statusText = "offline";
-    if (contact.isOnline) {
-      statusText = "online";
-    } else if (contact.lastSeen) {
-      statusText = getDetailedStatus(contact.lastSeen);
-    }
-
-    return (
-      <div
-        key={contact.user_id}
-        className="flex flex-col items-center cursor-pointer"
-        onClick={() => handleUserClick(contact)}
-      >
-        <div className="relative">
-          {avatarUrl ? (
+      if (avatarUrl) {
+        return (
+          <div className="relative w-full h-full">
             <img
               src={avatarUrl}
-              alt={contact.display_name}
-              className="w-14 h-14 rounded-full object-cover"
+              alt="avatar"
+              className="w-12 h-12 rounded-full object-cover"
               onError={(e) => {
                 console.error("Error loading avatar:", avatarUrl);
                 e.currentTarget.style.display = "none";
@@ -796,34 +776,122 @@ export default function ChatsPage() {
                 if (parent) {
                   const fallbackAvatar = document.createElement("div");
                   fallbackAvatar.className =
-                    "w-14 h-14 rounded-full bg-orange-100 flex items-center justify-center";
-                  fallbackAvatar.innerHTML = `<span class="text-orange-800 font-medium text-xl">${(
-                    contact.display_name || "U"
+                    "w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center font-bold text-orange-800 text-lg";
+                  fallbackAvatar.innerText = (
+                    user.display_name ||
+                    user.user_id ||
+                    "?"
                   )
                     .charAt(0)
-                    .toUpperCase()}</span>`;
+                    .toUpperCase();
                   parent.appendChild(fallbackAvatar);
                 }
               }}
             />
-          ) : (
-            <div className="w-14 h-14 rounded-full bg-orange-100 flex items-center justify-center">
-              <span className="text-orange-800 font-medium text-xl">
-                {(contact.display_name || "U").charAt(0).toUpperCase()}
-              </span>
-            </div>
-          )}
-          {contact.isOnline && (
+            {user.isOnline && (
+              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+            )}
+          </div>
+        );
+      }
+
+      const firstChar = (user.display_name || user.user_id || "?")
+        .charAt(0)
+        .toUpperCase();
+
+      return (
+        <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center font-bold text-orange-800 text-lg relative">
+          {firstChar}
+          {user.isOnline && (
             <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
           )}
         </div>
-        <div className="mt-1 text-xs text-center text-gray-600 max-w-[60px] truncate">
-          {shortenedName}
-          <span className="block text-xs text-blue-500 mt-1">{statusText}</span>
+      );
+    },
+    [getMxcAvatarUrl]
+  );
+
+  const closeFullScreenSearch = useCallback(() => {
+    setIsFullScreenSearch(false);
+    setSearchTerm("");
+    setSearchQuery("");
+  }, []);
+
+  const renderContactItem = useCallback(
+    (contact: any) => {
+      const name = contact.display_name?.split(" ")[0] || "User";
+      const shortenedName =
+        name.length > 10 ? name.substring(0, 7) + "..." : name;
+
+      let avatarUrl = contact.processed_avatar_url;
+
+      if (!avatarUrl && contact.avatar_url) {
+        try {
+          avatarUrl = getMxcAvatarUrl(contact.avatar_url);
+          contact.processed_avatar_url = avatarUrl;
+        } catch (error) {
+          console.error("Error processing avatar in renderContactItem:", error);
+        }
+      }
+
+      let statusText = "offline";
+      if (contact.isOnline) {
+        statusText = "online";
+      } else if (contact.lastSeen) {
+        statusText = getDetailedStatus(contact.lastSeen);
+      }
+
+      return (
+        <div
+          key={contact.user_id}
+          className="flex flex-col items-center cursor-pointer"
+          onClick={() => handleUserClick(contact)}
+        >
+          <div className="relative">
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt={contact.display_name}
+                className="w-14 h-14 rounded-full object-cover"
+                onError={(e) => {
+                  console.error("Error loading avatar:", avatarUrl);
+                  e.currentTarget.style.display = "none";
+                  const parent = e.currentTarget.parentElement;
+                  if (parent) {
+                    const fallbackAvatar = document.createElement("div");
+                    fallbackAvatar.className =
+                      "w-14 h-14 rounded-full bg-orange-100 flex items-center justify-center";
+                    fallbackAvatar.innerHTML = `<span class="text-orange-800 font-medium text-xl">${(
+                      contact.display_name || "U"
+                    )
+                      .charAt(0)
+                      .toUpperCase()}</span>`;
+                    parent.appendChild(fallbackAvatar);
+                  }
+                }}
+              />
+            ) : (
+              <div className="w-14 h-14 rounded-full bg-orange-100 flex items-center justify-center">
+                <span className="text-orange-800 font-medium text-xl">
+                  {(contact.display_name || "U").charAt(0).toUpperCase()}
+                </span>
+              </div>
+            )}
+            {contact.isOnline && (
+              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+            )}
+          </div>
+          <div className="mt-1 text-xs text-center text-gray-600 max-w-[60px] truncate">
+            {shortenedName}
+            <span className="block text-xs text-blue-500 mt-1">
+              {statusText}
+            </span>
+          </div>
         </div>
-      </div>
-    );
-  };
+      );
+    },
+    [getMxcAvatarUrl, getDetailedStatus, handleUserClick]
+  );
 
   return (
     <div className="flex flex-col h-screen space-y-2 bg-gradient-to-b from-cyan-700/30 via-cyan-300/15 to-yellow-600/25">

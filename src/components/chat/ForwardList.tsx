@@ -48,46 +48,13 @@ export default function ForwardList({ isSelected }: { isSelected: boolean }) {
   return (
     <>
       {rooms.map((room, index) => {
-        const isChecked = roomIds.includes(room.roomId);
-
         return (
-          <div
-            className=" hover:bg-gray-200 cursor-pointer"
-            key={room.roomId}
-            onClick={() => handleClick(room.roomId)}
-          >
-            <div className="flex items-center justify-between">
-              <ForwardListItem room={room} />
-
-              {isSelected && (
-                <div className="px-4">
-                  {/* checked */}
-                  {isChecked ? (
-                    <span className="flex items-center justify-center w-6 h-6">
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full border-2 border-blue-500 bg-blue-500">
-                        <svg
-                          className="w-4 h-4 text-white"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth={3}
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                      </span>
-                    </span>
-                  ) : (
-                    <span className="flex items-center justify-center w-6 h-6">
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full border-2 border-blue-500 bg-transparent"></span>
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
+          <div key={room.roomId}>
+            <ForwardListItem
+              room={room}
+              isSelected={isSelected}
+              onClick={() => handleClick(room.roomId)}
+            />
 
             {rooms.length - 1 !== index && (
               <div className="ml-[65px]">

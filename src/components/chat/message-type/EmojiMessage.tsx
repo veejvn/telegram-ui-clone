@@ -17,10 +17,31 @@ import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
 import { copyToClipboard } from "@/utils/copyToClipboard";
 import { toast } from "sonner";
+import { usePinStore } from "@/stores/usePinStore";
+import {
+  pinMessage,
+  unpinMessage,
+  isMessagePinned,
+} from "@/services/pinService";
+import { useMatrixClient } from "@/contexts/MatrixClientProvider";
+import { Pin, Reply, Copy, Forward, Trash2 } from "lucide-react";
 
-const EmojiMessage = ({ msg, isSender }: MessagePros) => {
+const EmojiMessage = ({ msg, isSender, roomId }: MessagePros) => {
   const theme = useTheme();
   const [open, setOpen] = useState(false);
+  const client = useMatrixClient();
+
+  // Pin store
+  const {
+    pinMessage: pinToStore,
+    unpinMessage: unpinFromStore,
+    isMessagePinned: isPinnedInStore,
+  } = usePinStore();
+
+  // Use reactive store subscription for pin status
+  const isPinned = usePinStore((state) =>
+    state.isMessagePinned(roomId || "", msg.eventId)
+  );
   const textClass = clsx(
     "flex items-center gap-1 text-xs",
     isSender ? "text-white justify-end" : "text-white"
@@ -65,6 +86,46 @@ const EmojiMessage = ({ msg, isSender }: MessagePros) => {
       holdTimeout.current = null;
     }
     // Nếu menu đã mở thì không đóng ở đây (để user chọn menu)
+  };
+
+  const handlePin = async () => {
+    if (!client || !roomId) return;
+
+    try {
+      if (isPinned) {
+        // Unpin message
+        const result = await unpinMessage(client, roomId, msg.eventId);
+        if (result.success) {
+          unpinFromStore(roomId, msg.eventId);
+        } else {
+          toast.error(result.error || "Failed to unpin message");
+        }
+      } else {
+        // Pin message
+        const result = await pinMessage(client, roomId, msg.eventId);
+        if (result.success) {
+          // Add to local store
+          pinToStore(roomId, {
+            eventId: msg.eventId,
+            text: msg.text,
+            sender: msg.sender || "",
+            senderDisplayName: msg.senderDisplayName,
+            time: msg.time,
+            timestamp: msg.timestamp,
+            type: msg.type || "emoji",
+            roomId,
+            pinnedAt: Date.now(),
+          });
+        } else {
+          toast.error(result.error || "Failed to pin message");
+        }
+      }
+
+      setOpen(false);
+    } catch (error) {
+      console.error("Error handling pin:", error);
+      toast.error("Failed to pin/unpin message");
+    }
   };
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -116,6 +177,17 @@ const EmojiMessage = ({ msg, isSender }: MessagePros) => {
           <DropdownMenuItem className="flex justify-between items-center">
             <p>Forward</p>
             <ForwardIconSvg isDark={theme.theme === "dark"} />
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            className="flex justify-between items-center"
+            onClick={handlePin}
+          >
+            <p>{isPinned ? "Unpin" : "Pin"}</p>
+            <Pin
+              size={16}
+              className={isPinned ? "text-red-500" : "text-blue-500"}
+            />
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem className="flex justify-between items-center">

@@ -27,10 +27,21 @@ import { useChatStore } from "@/stores/useChatStore";
 import { deleteMessage } from "@/services/chatService";
 import { useMessageMenu } from "@/contexts/MessageMenuContext";
 import { useSelectionStore } from "@/stores/useSelectionStore";
+import { useReplyStore } from "@/stores/useReplyStore";
+import { usePinStore } from "@/stores/usePinStore";
+import { useEditStore } from "@/stores/useEditStore";
+import {
+  pinMessage,
+  unpinMessage,
+  isMessagePinned,
+} from "@/services/pinService";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { getAvatarInitials, getAvatarColor } from "@/utils/generateAvatar";
+import { useUserAvatar } from "@/hooks/useUserAvatar";
 
 const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
   //console.log("TextMessage rendered for:", msg.eventId); // Debug log
-  //console.log("Message: " + msg.text + ", isDeleted: " + msg.isDeleted);
+  //console.log("Message: " + msg.text + ", status: " + msg.status);
   const theme = useTheme();
   const [open, setOpen] = useState(false);
   const [showOverlay, setShowOverlay] = useState(false);
@@ -43,6 +54,11 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
   const updateMessage = useChatStore.getState().updateMessage;
   const isDeleted = msg.isDeleted || msg.text === "Tin nhắn đã thu hồi";
   const { activeMenuMessageId, setActiveMenuMessageId } = useMessageMenu();
+
+  // Get user avatar
+  const { avatarUrl, loading: avatarLoading } = useUserAvatar(
+    !isSender ? msg.sender : undefined
+  );
 
   // Touch tracking để phát hiện scroll
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(
@@ -60,7 +76,25 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
     enterSelectionMode,
   } = useSelectionStore();
 
+  // Reply store
+  const { setReplyMessage } = useReplyStore();
+
+  // Pin store
+  const {
+    pinMessage: pinToStore,
+    unpinMessage: unpinFromStore,
+    isMessagePinned: isPinnedInStore,
+  } = usePinStore();
+
+  // Edit store
+  const { setEditMessage } = useEditStore();
+
   const isSelected = isMessageSelected(msg.eventId);
+
+  // Use reactive store subscription for pin status
+  const isPinned = usePinStore((state) =>
+    state.isMessagePinned(roomId || "", msg.eventId)
+  );
 
   // Mock reactions data - in real app this would come from msg.reactions
   const reactions = [
@@ -86,6 +120,12 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
   );
 
   const handleCopy = async (text: string) => {
+    // Đóng menu và reset vị trí trước khi copy
+    setOpen(false);
+    setShowOverlay(false);
+    setActiveMenuMessageId(null);
+    setTransformOffset(0);
+
     const success = await copyToClipboard(text);
     if (success) {
       toast.success("Copied to clipboard!");
@@ -95,21 +135,52 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
   };
 
   const handleForward = async () => {
-    if (!msg.text || !msg.sender || !msg.time || !client) return;
-    router.push("/chat/forward");
+    if (!msg.text || !msg.sender || !msg.time) return;
 
-    setTimeout(() => {
-      addMessage({
-        text: msg.text,
-        senderId: msg.sender,
-        sender: msg.senderDisplayName!,
-        time: msg.time,
-      });
-    }, 1000);
+    // Đóng menu và reset vị trí
+    setOpen(false);
+    setShowOverlay(false);
+    setActiveMenuMessageId(null);
+    setTransformOffset(0);
+
+    // Add message to ForwardStore
+    addMessage({
+      text: msg.text,
+      senderId: msg.sender,
+      sender: msg.senderDisplayName || msg.sender,
+      time: msg.time,
+    });
+  };
+
+  const handleReply = () => {
+    if (!msg.text || !msg.sender || !msg.time) return;
+
+    // Đóng menu và reset vị trí
+    setOpen(false);
+    setShowOverlay(false);
+    setActiveMenuMessageId(null);
+    setTransformOffset(0);
+
+    // Set reply message
+    setReplyMessage({
+      eventId: msg.eventId,
+      text: msg.text,
+      sender: msg.sender,
+      senderDisplayName: msg.senderDisplayName || msg.sender,
+      time: msg.time,
+      type: msg.type,
+    });
   };
 
   const handleDelete = async () => {
     if (!client || !roomId) return;
+
+    // Đóng menu và reset vị trí trước khi delete
+    setOpen(false);
+    setShowOverlay(false);
+    setActiveMenuMessageId(null);
+    setTransformOffset(0);
+
     // console.log(
     //   "Delete Message in TextMessage " + " roomId: " + roomId + " eventId: " + msg.eventId
     // );
@@ -158,18 +229,26 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
     // Nếu tin nhắn đã bị xóa thì không làm gì
     if (isDeleted) return;
 
-    // Nếu đã ở selection mode thì không làm gì (click sẽ handle)
-    if (isSelectionMode) return;
-
     // Nếu đang scroll thì không kích hoạt hold
     if (isScrollingRef.current) return;
 
     holdTimeout.current = window.setTimeout(() => {
-      // Double check không đang scroll trước khi enter selection mode
+      // Double check không đang scroll trước khi hiện menu
       if (!isScrollingRef.current) {
-        enterSelectionMode(msg.eventId);
+        // Ngăn reaction click ngay lập tức
+        preventReactionClick.current = true;
+        setTimeout(() => {
+          preventReactionClick.current = false;
+        }, 600);
+
+        // Hiển thị overlay ngay lập tức
+        setShowOverlay(true);
+
+        // Set flag và trigger mở menu thông qua handleOpenChange
+        allowOpenRef.current = true;
+        handleOpenChange(true);
       }
-    }, 500); // Giảm thời gian từ 1000ms xuống 500ms
+    }, 500); // Hold trong 500ms để hiện menu
   };
 
   const handleHoldEnd = () => {
@@ -187,24 +266,8 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
     // Nếu đang scroll thì không xử lý click
     if (isScrollingRef.current) return;
 
-    // Nếu đang ở selection mode thì toggle selection
-    if (isSelectionMode) {
-      toggleMessage(msg.eventId);
-      return;
-    }
-
-    // Ngăn reaction click ngay lập tức và trong thời gian dài hơn
-    preventReactionClick.current = true;
-    setTimeout(() => {
-      preventReactionClick.current = false;
-    }, 600); // Tăng từ 400ms lên 600ms
-
-    // Hiển thị overlay ngay lập tức khi click
-    setShowOverlay(true);
-
-    // Nếu không ở selection mode thì hiện reactions + dropdown menu
-    allowOpenRef.current = true;
-    calculateOptimalPosition();
+    // Click không làm gì cả - menu chỉ mở qua hold gesture
+    // Selection mode chỉ hoạt động qua "Select" button trong menu
   };
 
   // Xử lý touch events để phát hiện scroll
@@ -260,15 +323,17 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
     }, 100);
   };
 
-  const calculateOptimalPosition = () => {
+  const calculateOptimalPosition = (shouldOpenMenu = true) => {
     const messageElement = document.querySelector(
       `[data-message-id="${msg.eventId}"]`
     );
     if (!messageElement) {
-      // Fallback: mở menu ngay nếu không tìm thấy element
-      allowOpenRef.current = true;
-      setOpen(true);
-      setActiveMenuMessageId(msg.eventId);
+      // Fallback: mở menu ngay nếu không tìm thấy element và shouldOpenMenu = true
+      if (shouldOpenMenu) {
+        allowOpenRef.current = true;
+        setOpen(true);
+        setActiveMenuMessageId(msg.eventId);
+      }
       return;
     }
 
@@ -297,19 +362,22 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
       setTransformOffset(0);
     }
 
-    // Mở menu sau khi đã set transform và đảm bảo prevention đã được thiết lập
-    setTimeout(() => {
-      allowOpenRef.current = true;
-      setOpen(true);
-      setActiveMenuMessageId(msg.eventId);
-      // Ghi nhận thời gian mở menu
-      menuOpenTimeRef.current = Date.now();
-      // Đảm bảo prevention vẫn hoạt động
-      preventReactionClick.current = true;
+    // Chỉ mở menu nếu shouldOpenMenu = true
+    if (shouldOpenMenu) {
+      // Mở menu sau khi đã set transform và đảm bảo prevention đã được thiết lập
       setTimeout(() => {
-        preventReactionClick.current = false;
-      }, 500); // Thêm 500ms nữa sau khi menu mở
-    }, 200); // Tăng delay từ 150ms lên 200ms
+        allowOpenRef.current = true;
+        setOpen(true);
+        setActiveMenuMessageId(msg.eventId);
+        // Ghi nhận thời gian mở menu
+        menuOpenTimeRef.current = Date.now();
+        // Đảm bảo prevention vẫn hoạt động
+        preventReactionClick.current = true;
+        setTimeout(() => {
+          preventReactionClick.current = false;
+        }, 500); // Thêm 500ms nữa sau khi menu mở
+      }, 200); // Tăng delay từ 150ms lên 200ms
+    }
   };
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -317,8 +385,22 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
     if (nextOpen) {
       // Chỉ cho phép mở nếu không ở selection mode
       if (allowOpenRef.current && !isSelectionMode) {
-        setOpen(true);
-        setActiveMenuMessageId(msg.eventId);
+        // Gọi calculateOptimalPosition để tính toán vị trí tin nhắn trước khi mở menu
+        calculateOptimalPosition(false); // false để không mở menu tự động
+
+        // Sau đó mở menu
+        setTimeout(() => {
+          setOpen(true);
+          setActiveMenuMessageId(msg.eventId);
+          // Ghi nhận thời gian mở menu
+          menuOpenTimeRef.current = Date.now();
+          // Đảm bảo prevention vẫn hoạt động
+          preventReactionClick.current = true;
+          setTimeout(() => {
+            preventReactionClick.current = false;
+          }, 500);
+        }, 200);
+
         allowOpenRef.current = false;
       }
     } else {
@@ -332,6 +414,85 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
       menuOpenTimeRef.current = 0;
     }
   };
+
+  const handleSelectionClick = () => {
+    if (isDeleted) return;
+
+    // Đóng menu và reset vị trí tin nhắn trước khi vào selection mode
+    setOpen(false);
+    setShowOverlay(false);
+    setActiveMenuMessageId(null);
+    setTransformOffset(0); // Reset vị trí tin nhắn về ban đầu
+
+    // Enter selection mode với message này
+    enterSelectionMode(msg.eventId);
+  };
+
+  const handleEdit = () => {
+    if (!msg.text || !roomId || isDeleted) return;
+
+    // Đóng menu và reset vị trí
+    setOpen(false);
+    setShowOverlay(false);
+    setActiveMenuMessageId(null);
+    setTransformOffset(0);
+
+    // Set edit message
+    setEditMessage({
+      eventId: msg.eventId,
+      text: msg.text,
+      roomId: roomId,
+    });
+  };
+
+  const handlePin = async () => {
+    if (!client || !roomId || isDeleted) return;
+
+    try {
+      if (isPinned) {
+        // Unpin message
+        const result = await unpinMessage(client, roomId, msg.eventId);
+        if (result.success) {
+          unpinFromStore(roomId, msg.eventId);
+        } else {
+          console.error(result.error || "Failed to unpin message");
+          //toast.error(result.error || "Failed to unpin message");
+        }
+      } else {
+        // Pin message
+        const result = await pinMessage(client, roomId, msg.eventId);
+        if (result.success) {
+          // Add to local store
+          pinToStore(roomId, {
+            eventId: msg.eventId,
+            text: msg.text,
+            sender: msg.sender || "",
+            senderDisplayName: msg.senderDisplayName,
+            time: msg.time,
+            timestamp: msg.timestamp,
+            type: msg.type || "text",
+            roomId,
+            pinnedAt: Date.now(),
+          });
+        } else {
+          console.error(result.error || "Failed to pin message");
+          //toast.error(result.error || "Failed to pin message");
+        }
+      }
+
+      // Đóng menu sau khi pin/unpin
+      setOpen(false);
+      setShowOverlay(false);
+      setActiveMenuMessageId(null);
+      setTransformOffset(0);
+    } catch (error) {
+      console.error("Error handling pin:", error);
+      //toast.error("Failed to pin/unpin message");
+    }
+  };
+
+  // Không cần useEffect để tính toán lại vị trí khi edit
+  // Vì logic đã được xử lý trong handleEdit
 
   return (
     <>
@@ -375,7 +536,7 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
                 <div
                   className={clsx(
                     "absolute top-[-45px] transform -translate-x-1/2 flex gap-1 justify-center z-[120]",
-                    !isSender ? "left-23" : "-right-23"
+                    !isSender ? "left-[85px]" : "-right-23" // Điều chỉnh vị trí cho avatar
                   )}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -425,6 +586,37 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
               )}
 
               <div className="flex relative items-end w-full">
+                {/* Avatar cho người nhận - chỉ hiển thị khi không phải người gửi */}
+                {!isSender && (
+                  <div className="mr-2 mb-1 flex-shrink-0">
+                    <Avatar
+                      className={`w-8 h-8 ${
+                        avatarLoading ? "animate-pulse" : ""
+                      }`}
+                      src={avatarUrl || undefined}
+                      alt={msg.senderDisplayName || msg.sender || "User"}
+                      style={
+                        !avatarUrl
+                          ? {
+                              backgroundColor: getAvatarColor(msg.sender || ""),
+                            }
+                          : undefined
+                      }
+                    >
+                      {!avatarUrl && (
+                        <AvatarFallback className="text-xs font-medium">
+                          {avatarLoading
+                            ? "..."
+                            : getAvatarInitials(
+                                msg.senderDisplayName,
+                                msg.sender
+                              )}
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
+                  </div>
+                )}
+
                 {/* Container cho tin nhắn với justify riêng */}
                 <div
                   className={clsx(
@@ -461,14 +653,22 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
                       className={clsx(textClass, "max-w-[75vw] break-words")}
                     >
                       <p
-                        className={
-                          "py-2 whitespace-pre-wrap break-words leading-snug select-none"
-                        }
+                        className={clsx(
+                          "py-2 whitespace-pre-wrap break-words leading-snug select-none",
+                          msg.isEdited && "text-gray-600 dark:text-gray-300"
+                        )}
                       >
                         {linkify(msg.text)}
                       </p>
 
-                      <div className={timeClass}>{formatMsgTime(msg.time)}</div>
+                      <div className={timeClass}>
+                        {msg.isEdited && (
+                          <span className="text-[10px] text-gray-500 ml-2">
+                            edited
+                          </span>
+                        )}
+                        {formatMsgTime(msg.time)}
+                      </div>
                     </div>
                   </div>
 
@@ -488,13 +688,16 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
           </DropdownMenuTrigger>
           {!isDeleted && !isSelectionMode && (
             <DropdownMenuContent
-              className="mx-2 w-[192px] h-[261px] rounded-3xl relative z-[120]"
+              className="mx-2 w-[192px] rounded-3xl relative z-[120]"
               side="bottom"
               align="center"
               sideOffset={10}
               alignOffset={0}
             >
-              <DropdownMenuItem className="flex justify-between items-center py-1">
+              <DropdownMenuItem
+                className="flex justify-between items-center py-1"
+                onClick={handleReply}
+              >
                 <span className="text-sm">Reply</span>
                 <Reply size={16} className="text-blue-500" />
               </DropdownMenuItem>
@@ -507,14 +710,28 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
                 <Copy size={16} className="text-blue-500" />
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="flex justify-between items-center py-1">
-                <span className="text-sm">Edit</span>
-                <Edit size={16} className="text-blue-500" />
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="flex justify-between items-center py-1">
-                <span className="text-sm">Pin</span>
-                <Pin size={16} className="text-blue-500" />
+              {/* Chỉ hiển thị Edit cho tin nhắn của chính mình */}
+              {isSender && (
+                <>
+                  <DropdownMenuItem
+                    className="flex justify-between items-center py-1"
+                    onClick={handleEdit}
+                  >
+                    <span className="text-sm">Edit</span>
+                    <Edit size={16} className="text-blue-500" />
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+              <DropdownMenuItem
+                className="flex justify-between items-center py-1"
+                onClick={handlePin}
+              >
+                <span className="text-sm">{isPinned ? "Unpin" : "Pin"}</span>
+                <Pin
+                  size={16}
+                  className={isPinned ? "text-red-500" : "text-blue-500"}
+                />
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -533,7 +750,10 @@ const TextMessage = ({ msg, isSender, animate, roomId }: MessagePros) => {
                 <Trash2 size={16} className="text-red-500" />
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="flex justify-between items-center py-1">
+              <DropdownMenuItem
+                className="flex justify-between items-center py-1"
+                onClick={handleSelectionClick}
+              >
                 <span className="text-sm">Select</span>
                 <CheckCircle size={16} className="text-blue-500" />
               </DropdownMenuItem>

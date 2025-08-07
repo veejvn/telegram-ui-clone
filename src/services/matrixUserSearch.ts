@@ -18,9 +18,6 @@ export async function searchMatrixUsers(
   // Chuyển về lowercase để tìm kiếm không phân biệt hoa thường
   const normalizedTerm = originalTerm.toLowerCase();
 
-  console.log("Tìm kiếm với từ khóa:", originalTerm);
-  console.log("Từ khóa đã chuẩn hóa:", normalizedTerm);
-
   // Kết quả tìm kiếm
   let results: any[] = [];
 
@@ -46,12 +43,9 @@ export async function searchMatrixUsers(
     userIdVariants.push(`${username}:${defaultDomain}`);
   }
 
-  console.log("Thử tìm với các biến thể:", userIdVariants);
-
   // BƯỚC 2: Thử tìm theo user ID đầy đủ
   for (const userId of userIdVariants) {
     try {
-      console.log("Thử tìm với ID:", userId);
       const profile = await client.getProfileInfo(userId);
 
       if (profile) {
@@ -60,17 +54,14 @@ export async function searchMatrixUsers(
           display_name: profile.displayname || userId,
           avatar_url: profile.avatar_url || "",
         });
-        console.log("Tìm thấy theo ID:", profile);
       }
     } catch (e) {
-      console.log(`Không tìm thấy user với ID: ${userId}`);
+      // Không tìm thấy user với ID này
     }
   }
 
   // BƯỚC 3: Luôn tìm trong directory để có kết quả đầy đủ
   try {
-    console.log("Tìm kiếm trong directory với từ khóa:", originalTerm);
-
     // Chú ý: Gửi từ khóa gốc để bảo toàn các chữ hoa trong tìm kiếm API
     const directoryResult = await client.searchUserDirectory({
       term: originalTerm,
@@ -78,10 +69,6 @@ export async function searchMatrixUsers(
     });
 
     if (Array.isArray(directoryResult?.results)) {
-      console.log(
-        `Tìm thấy ${directoryResult.results.length} kết quả từ directory`
-      );
-
       // Thêm kết quả từ directory, loại bỏ trùng lặp
       directoryResult.results.forEach((user: any) => {
         if (
@@ -103,7 +90,6 @@ export async function searchMatrixUsers(
 
   // BƯỚC 4: Tìm trong rooms hiện có (đặc biệt quan trọng cho tìm kiếm một phần tên)
   try {
-    console.log("Tìm kiếm trong rooms hiện có...");
     const rooms = client.getRooms();
     const termWithoutDiacritics = removeVietnameseTones(normalizedTerm);
 
@@ -152,7 +138,7 @@ export async function searchMatrixUsers(
                 );
               }
             } catch (e) {
-              console.log("Không lấy được avatar");
+              // Không lấy được avatar
             }
 
             results.push({
@@ -182,11 +168,6 @@ export async function searchMatrixUsers(
 
     // Nếu từ khóa đã được chuyển đổi thì tìm kiếm với phiên bản không dấu
     if (termWithoutDiacritics !== normalizedTerm) {
-      console.log(
-        "Tìm kiếm bổ sung với từ khóa không dấu:",
-        termWithoutDiacritics
-      );
-
       // Tìm trong directory với phiên bản không dấu
       try {
         const directoryResult = await client.searchUserDirectory({
@@ -210,7 +191,7 @@ export async function searchMatrixUsers(
           });
         }
       } catch (error) {
-        console.log("Lỗi khi tìm kiếm không dấu trong directory");
+        // Lỗi khi tìm kiếm không dấu trong directory
       }
     }
 
@@ -221,7 +202,6 @@ export async function searchMatrixUsers(
     ) {
       const capitalizedTerm =
         originalTerm.charAt(0).toUpperCase() + originalTerm.slice(1);
-      console.log("Thử tìm với chữ hoa đầu:", capitalizedTerm);
 
       try {
         const directoryResult = await client.searchUserDirectory({
@@ -246,7 +226,7 @@ export async function searchMatrixUsers(
           });
         }
       } catch (error) {
-        console.log("Lỗi khi tìm kiếm với chữ hoa đầu");
+        // Lỗi khi tìm kiếm với chữ hoa đầu
       }
     }
   } catch (error) {
@@ -263,13 +243,12 @@ export async function searchMatrixUsers(
       seenUserIds.add(lowercaseId);
       uniqueResults.push(user);
     } else {
-      console.log(`Loại bỏ kết quả trùng lặp: ${user.user_id}`);
+      // Loại bỏ kết quả trùng lặp
     }
   });
 
   // Gán lại kết quả sau khi đã lọc trùng
   results = uniqueResults;
-  console.log(`Số kết quả sau khi loại bỏ trùng lặp: ${results.length}`);
 
   // Sắp xếp kết quả - ưu tiên tên hiển thị khớp với từ khóa
   results.sort((a, b) => {
@@ -300,7 +279,6 @@ export async function searchMatrixUsers(
     return aName.localeCompare(bName);
   });
 
-  console.log(`Tổng cộng tìm thấy ${results.length} kết quả:`, results);
   return results;
 }
 

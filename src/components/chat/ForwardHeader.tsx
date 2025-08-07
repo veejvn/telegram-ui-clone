@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import ForwardSearchBar from "./ForwardSearchBar";
 import ForwardList from "./ForwardList";
+import ForwardSelectedList from "./ForwardSelectedList";
 import { useRouter } from "next/navigation";
 import ForwardComposer from "./ForwardComposer";
 import { useForwardStore } from "@/stores/useForwardStore";
@@ -44,6 +45,10 @@ export default function ForwardHeader() {
         </div>
 
         <ForwardSearchBar />
+
+        {/* Selected contacts display */}
+        {isSelect && <ForwardSelectedList />}
+
         <p className="px-4 text-blue-600 py-1.5 text-sm">All chats</p>
         <div className="w-1/7 lg:w-1/26 bg-blue-600 h-0.5 mx-4 rounded-t-full"></div>
       </div>
