@@ -26,6 +26,7 @@ const ChatPage = () => {
   const [mounted, setMounted] = useState(false);
   const [joining, setJoining] = useState(false);
   const [room, setRoom] = useState<sdk.Room | null>();
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false); // <-- lifted state
   const param = useParams();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const user = useUserStore.getState().user;
@@ -91,12 +92,12 @@ const ChatPage = () => {
       }
 
       // 3. Debug logging to see what's happening
-      console.log("🐛 Initial setup:", {
-        bodyHeight: document.body.scrollHeight,
-        windowHeight: window.innerHeight,
-        documentHeight: document.documentElement.scrollHeight,
-        bodyClassList: [...document.body.classList],
-      });
+      // console.log("🐛 Initial setup:", {
+      //   bodyHeight: document.body.scrollHeight,
+      //   windowHeight: window.innerHeight,
+      //   documentHeight: document.documentElement.scrollHeight,
+      //   bodyClassList: [...document.body.classList],
+      // });
     }
 
     const handleViewportChange = () => {
@@ -357,7 +358,11 @@ const ChatPage = () => {
               {/* Header */}
               {!isSelectionMode ? (
                 <div className={clsx("shrink-0 z-10", styles.chatHeader)}>
-                  <ChatHeader room={room} />
+                  <ChatHeader
+                    room={room}
+                    isEditModalOpen={isEditModalOpen}
+                    setIsEditModalOpen={setIsEditModalOpen}
+                  />
                 </div>
               ) : (
                 <div className="shrink-0 h-[50px] bg-transparent"></div>
@@ -379,6 +384,7 @@ const ChatPage = () => {
                     <ChatMessages
                       roomId={roomId}
                       messagesEndRef={messagesEndRef}
+                      room={room}
                     />
                   </ScrollArea>
                 </div>
@@ -399,7 +405,7 @@ const ChatPage = () => {
                     Unblock
                   </button>
                 </div>
-              ) : !isSelectionMode ? (
+              ) : !isEditModalOpen && !isSelectionMode ? (
                 <div className={clsx("shrink-0 z-10", styles.chatFooter)}>
                   <ChatComposer roomId={roomId} />
                 </div>
@@ -427,7 +433,11 @@ const ChatPage = () => {
             {/* Header */}
             {!isSelectionMode ? (
               <div className={clsx("shrink-0 z-10", styles.chatHeader)}>
-                <ChatHeader room={room} />
+                <ChatHeader
+                  room={room}
+                  isEditModalOpen={isEditModalOpen}
+                  setIsEditModalOpen={setIsEditModalOpen}
+                />
               </div>
             ) : (
               <div className="shrink-0 h-12 bg-transparent"></div>
@@ -449,6 +459,7 @@ const ChatPage = () => {
                   <ChatMessages
                     roomId={roomId}
                     messagesEndRef={messagesEndRef}
+                    room={room}
                   />
                 </ScrollArea>
               </div>
@@ -469,7 +480,7 @@ const ChatPage = () => {
                   Unblock
                 </button>
               </div>
-            ) : !isSelectionMode ? (
+            ) : !isEditModalOpen && !isSelectionMode ? (
               <div className={clsx("shrink-0 z-10", styles.chatFooter)}>
                 <ChatComposer roomId={roomId} />
               </div>
