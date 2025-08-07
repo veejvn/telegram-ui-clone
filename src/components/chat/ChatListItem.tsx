@@ -89,7 +89,14 @@ export const ChatListItem = ({
 
   let avatarUrl = room.getAvatarUrl(HOMESERVER_URL, 60, 60, "crop", false);
   const members = room.getMembers();
-  const isGroup = members.length > 2;
+
+  // Sử dụng cùng logic với ChatHeader để phát hiện group chat
+  const joinRuleEvent = room?.currentState.getStateEvents(
+    "m.room.join_rules",
+    ""
+  );
+  const joinRule = joinRuleEvent?.getContent()?.join_rule;
+  const isGroup = joinRule === "public";
 
   if (!isGroup) {
     const otherMember = members.find((member) => member.userId !== userId);
@@ -105,7 +112,11 @@ export const ChatListItem = ({
       ) || "";
   }
 
-  const finalAvatar = getHttpAvatarUrl(client, customAvatar ?? avatarUrl);
+  // Chỉ sử dụng customAvatar cho chat 1-1, không phải group
+  const finalAvatar = getHttpAvatarUrl(
+    client,
+    isGroup ? avatarUrl : customAvatar ?? avatarUrl
+  );
 
   const { content, time, sender } = getLastMessagePreview(room);
 
@@ -169,9 +180,13 @@ export const ChatListItem = ({
           {isPinned && <PinIcon className="w-4 h-4 text-blue-500 ml-1" />}
           {isMuted && <VolumeX className="w-4 h-4 text-red-500" />}
           <h1 className="text-[18px] mb-0.5 select-none">
-            {typeof customName === "object"
-              ? customName.name
-              : customName ?? room.name}
+            {
+              isGroup
+                ? room.name // Hiển thị tên phòng cho group
+                : typeof customName === "object"
+                ? customName.name
+                : customName ?? room.name // Hiển thị custom name cho chat 1-1
+            }
           </h1>
         </div>
         <p className="text-sm text-muted-foreground line-clamp-2">
