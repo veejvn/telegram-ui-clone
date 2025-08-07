@@ -4,6 +4,7 @@ import ChatComposer from "@/components/chat/ChatComposer";
 import ChatHeader from "@/components/chat/ChatHeader";
 import ChatMessages from "@/components/chat/ChatMessages";
 import ChatLayout from "@/components/chat/ChatLayout";
+import PinnedMessageBanner from "@/components/chat/PinnedMessageBanner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTheme } from "next-themes";
 import { useParams } from "next/navigation";
@@ -105,16 +106,6 @@ const ChatPage = () => {
         const currentHeight = window.innerHeight;
         const heightDiff = initialHeight - currentHeight;
         const isKeyboardOpen = heightDiff > 100;
-
-        console.log("🐛 Safari viewport change:", {
-          initialHeight,
-          currentHeight,
-          heightDiff,
-          isKeyboardOpen,
-          bodyScrollHeight: document.body.scrollHeight,
-          documentScrollHeight: document.documentElement.scrollHeight,
-          canScroll: document.body.scrollHeight > window.innerHeight,
-        });
 
         const chatContainer = document.querySelector(
           `.${styles.chatContainer}`
@@ -350,7 +341,7 @@ const ChatPage = () => {
           <ChatLayout roomId={roomId}>
             <div
               className={clsx(
-                "bg-gradient-to-b from-cyan-700/30 via-cyan-300/15 to-yellow-600/25",
+                "relative bg-gradient-to-b from-cyan-700/30 via-cyan-300/15 to-yellow-600/25",
                 styles.chatContainer
               )}
             >
@@ -365,6 +356,13 @@ const ChatPage = () => {
                 </div>
               ) : (
                 <div className="shrink-0 h-[50px] bg-transparent"></div>
+              )}
+
+              {/* Pinned Message Banner */}
+              {!isSelectionMode && (
+                <div className="absolute w-full top-10 shrink-0 z-10">
+                  <PinnedMessageBanner roomId={roomId} />
+                </div>
               )}
 
               {/* Chat content scrollable */}
@@ -433,6 +431,13 @@ const ChatPage = () => {
               </div>
             ) : (
               <div className="shrink-0 h-12 bg-transparent"></div>
+            )}
+
+            {/* Pinned Message Banner */}
+            {!isSelectionMode && (
+              <div className="shrink-0 z-10 mt-5 bg-transparent">
+                <PinnedMessageBanner roomId={roomId} />
+              </div>
             )}
 
             {/* Chat content scrollable */}

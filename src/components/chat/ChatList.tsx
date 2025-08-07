@@ -64,19 +64,96 @@ export const ChatList = ({
   const [longPressTriggered, setLongPressTriggered] = useState(false);
   const touchStartPositionRef = useRef<{ x: number; y: number } | null>(null);
   const isSwipingRef = useRef(false);
+  const [customNames, setCustomNames] = useState<Record<string, string>>({});
+  const [customAvatars, setCustomAvatars] = useState<Record<string, string>>(
+    {}
+  );
+
+  useEffect(() => {
+    if (!client || !client.isInitialSyncComplete()) return;
+
+    const loadCustomData = async () => {
+      try {
+        // Kiểm tra client đã sẵn sàng
+        if (
+          client.getSyncState() !== "SYNCING" &&
+          client.getSyncState() !== "PREPARED"
+        ) {
+          await new Promise((resolve) => {
+            const checkSync = () => {
+              if (
+                client.getSyncState() === "SYNCING" ||
+                client.getSyncState() === "PREPARED"
+              ) {
+                resolve(true);
+              } else {
+                setTimeout(checkSync, 100);
+              }
+            };
+            checkSync();
+          });
+        }
+
+        const nameEvent = await client.getAccountData("dev.custom_name" as any);
+        const avatarEvent = await client.getAccountData(
+          "dev.custom_avatar" as any
+        );
+
+        const nameContent =
+          nameEvent?.getContent<Record<string, string>>() ?? {};
+        const avatarContent =
+          avatarEvent?.getContent<Record<string, string>>() ?? {};
+
+        setCustomNames(nameContent);
+        setCustomAvatars(avatarContent);
+      } catch (error) {
+        console.error("Failed to fetch custom names/avatars:", error);
+      }
+    };
+
+    loadCustomData();
+  }, [client]);
 
   // Đọc pinnedRooms từ account_data khi component mount
   useEffect(() => {
-    if (!client) return;
+    if (!client || !client.isInitialSyncComplete()) return;
 
-    // Lấy dữ liệu từ account_data
-    const pinnedRoomsEvent = client.getAccountData(
-      "im.chatapp.pinned_rooms" as keyof sdk.AccountDataEvents
-    );
-    if (pinnedRoomsEvent) {
-      const data = pinnedRoomsEvent.getContent();
-      setPinnedRooms(data.rooms || []);
-    }
+    const loadPinnedRooms = async () => {
+      try {
+        // Kiểm tra client đã sẵn sàng
+        if (
+          client.getSyncState() !== "SYNCING" &&
+          client.getSyncState() !== "PREPARED"
+        ) {
+          await new Promise((resolve) => {
+            const checkSync = () => {
+              if (
+                client.getSyncState() === "SYNCING" ||
+                client.getSyncState() === "PREPARED"
+              ) {
+                resolve(true);
+              } else {
+                setTimeout(checkSync, 100);
+              }
+            };
+            checkSync();
+          });
+        }
+
+        // Lấy dữ liệu từ account_data
+        const pinnedRoomsEvent = client.getAccountData(
+          "im.chatapp.pinned_rooms" as keyof sdk.AccountDataEvents
+        );
+        if (pinnedRoomsEvent) {
+          const data = pinnedRoomsEvent.getContent();
+          setPinnedRooms(data.rooms || []);
+        }
+      } catch (error) {
+        console.error("Failed to load pinned rooms:", error);
+      }
+    };
+
+    loadPinnedRooms();
 
     // Lắng nghe sự kiện khi pinnedRooms thay đổi (từ thiết bị khác)
     const onAccountData = (event: any) => {
@@ -153,7 +230,7 @@ export const ChatList = ({
   };
 
   const togglePinnedRoom = (roomId: string) => {
-    if (!client || !roomId) return;
+    if (!client || !roomId || !client.isInitialSyncComplete()) return;
 
     const newPinnedRooms = pinnedRooms.includes(roomId)
       ? pinnedRooms.filter((id) => id !== roomId)
@@ -329,6 +406,10 @@ export const ChatList = ({
               return 0;
             })
             .map((room: sdk.Room, idx) => {
+              if (!client) return null;
+              const members = room.getMembers();
+              const userId = client.getUserId();
+              const otherMember = members.find((m) => m.userId !== userId);
               // Trailing actions: More, Delete, Archive
               const containerStyle =
                 "h-full flex items-center px-[2px] justify-between w-[280px]"; // Tăng chiều rộng container
@@ -400,6 +481,16 @@ export const ChatList = ({
                         onSelect={() => onSelectRoom?.(room.roomId)}
                         isMuted={mutedRooms.includes(room.roomId)}
                         isPinned={pinnedRooms.includes(room.roomId)}
+                        customName={
+                          otherMember
+                            ? customNames[otherMember.userId]
+                            : undefined
+                        }
+                        customAvatar={
+                          otherMember
+                            ? customAvatars[otherMember.userId]
+                            : undefined
+                        }
                       />
                     ) : (
                       <div className="relative">
@@ -537,6 +628,16 @@ export const ChatList = ({
                             room={room}
                             isMuted={mutedRooms.includes(room.roomId)}
                             isPinned={pinnedRooms.includes(room.roomId)}
+                            customName={
+                              otherMember
+                                ? customNames[otherMember.userId]
+                                : undefined
+                            }
+                            customAvatar={
+                              otherMember
+                                ? customAvatars[otherMember.userId]
+                                : undefined
+                            }
                           />
                         </button>
                       </div>

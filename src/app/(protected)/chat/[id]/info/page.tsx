@@ -10,12 +10,14 @@ import { getUserInfoInPrivateRoom } from "@/services/chatService";
 import PrivateInfoHeader from "@/components/chat/PrivateInfoHeader";
 // import { getLS } from "@/tools/localStorage.tool";
 import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
-
+import { useSearchParams } from "next/navigation";
 export default function InfoPage() {
   const params = useParams();
   const roomId = decodeURIComponent(params.id as string);
   const client = useMatrixClient();
   const [user, setUser] = useState<sdk.User | undefined>(undefined);
+  const searchParams = useSearchParams();
+  const refreshKey = searchParams.get("refresh");
   const [room, setRoom] = useState<sdk.Room | null>(null);
   const [isGroup, setIsGroup] = useState(false);
 
@@ -51,7 +53,7 @@ export default function InfoPage() {
           });
       }
     }
-  }, [roomId, client]);
+  }, [roomId, client, refreshKey]);
 
   // Loading state
   if (!room || (isGroup ? false : !user)) {

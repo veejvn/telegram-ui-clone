@@ -23,6 +23,19 @@ interface ChatListItemProps {
   onSelect?: () => void;
   isMuted?: boolean;
   isPinned?: boolean;
+  customName?: string | { name: string };
+  customAvatar?: string;
+}
+
+function getHttpAvatarUrl(
+  client: sdk.MatrixClient | null,
+  mxcUrl?: string | null
+): string | undefined {
+  if (!mxcUrl) return undefined; // loại bỏ luôn trường hợp null
+  if (mxcUrl.startsWith("mxc://") && client) {
+    return client.mxcUrlToHttp(mxcUrl, 60, 60, "crop", false) ?? undefined;
+  }
+  return mxcUrl ?? undefined;
 }
 
 export const ChatListItem = ({
@@ -32,6 +45,8 @@ export const ChatListItem = ({
   onSelect,
   isMuted = false,
   isPinned = false,
+  customAvatar,
+  customName,
 }: ChatListItemProps) => {
   const client = useMatrixClient();
   const userId = client?.getUserId();
@@ -74,7 +89,15 @@ export const ChatListItem = ({
 
   let avatarUrl = room.getAvatarUrl(HOMESERVER_URL, 60, 60, "crop", false);
   const members = room.getMembers();
-  const isGroup = members.length > 2;
+
+  // Sử dụng cùng logic với ChatHeader để phát hiện group chat
+  const joinRuleEvent = room?.currentState.getStateEvents(
+    "m.room.join_rules",
+    ""
+  );
+  const joinRule = joinRuleEvent?.getContent()?.join_rule;
+  const isGroup = joinRule === "public";
+
   if (!isGroup) {
     const otherMember = members.find((member) => member.userId !== userId);
     avatarUrl =
@@ -88,6 +111,15 @@ export const ChatListItem = ({
         false
       ) || "";
   }
+
+  // Chỉ sử dụng customAvatar cho chat 1-1, không phải group
+  const finalAvatar = getHttpAvatarUrl(
+    client,
+    isGroup ? avatarUrl : customAvatar ?? avatarUrl
+  );
+
+  // Kiểm tra xem phòng có phải là lời mời không
+  const isInvite = room.getMyMembership() === "invite";
 
   const { content, time, sender } = getLastMessagePreview(room);
 
@@ -134,13 +166,12 @@ export const ChatListItem = ({
       )}
       <div className="w-[60px] flex justify-center items-center">
         <Avatar className="h-15 w-15">
-          {avatarUrl ? (
-            <AvatarImage src={avatarUrl} alt="avatar" />
+          {finalAvatar ? (
+            <AvatarImage src={finalAvatar} alt="avatar" />
           ) : (
             <>
-              <AvatarImage src="" alt="Unknow Avatar" />
               <AvatarFallback className="bg-purple-400 text-white text-xl font-bold">
-                {room.name.slice(0, 1)}
+                {room.name?.slice(0, 1) ?? "?"}
               </AvatarFallback>
             </>
           )}
@@ -151,10 +182,46 @@ export const ChatListItem = ({
         <div className="flex items-center gap-1">
           {isPinned && <PinIcon className="w-4 h-4 text-blue-500 ml-1" />}
           {isMuted && <VolumeX className="w-4 h-4 text-red-500" />}
-          <h1 className="text-[18px] mb-0.5 select-none">{room.name}</h1>
+          <h1 className="text-[18px] mb-0.5 select-none">
+            {(() => {
+              if (isGroup) {
+                // Cho group chat, luôn hiển thị tên phòng
+                return room.name || "Group Chat";
+              } else {
+                // Cho chat 1-1, ưu tiên customName, sau đó fallback
+                let displayName = "";
+
+                if (typeof customName === "object" && customName?.name) {
+                  displayName = customName.name;
+                } else if (
+                  typeof customName === "string" &&
+                  customName.trim()
+                ) {
+                  displayName = customName;
+                } else if (room.name && room.name.trim()) {
+                  displayName = room.name;
+                } else {
+                  // Fallback cuối cùng: tên của member khác trong chat 1-1
+                  const otherMember = room
+                    .getMembers()
+                    .find((member) => member.userId !== userId);
+                  displayName =
+                    otherMember?.name ||
+                    otherMember?.rawDisplayName ||
+                    "Unknown User";
+                }
+
+                return displayName;
+              }
+            })()}
+          </h1>
         </div>
         <p className="text-sm text-muted-foreground line-clamp-2">
-          {lastMessageSenderId === userId ? (
+          {isInvite ? (
+            <span className="text-blue-500 font-medium">
+              📩 Invited to chat
+            </span>
+          ) : lastMessageSenderId === userId ? (
             <>
               <span className="text-black/80">You: </span>
               {truncateText(content || "")}
@@ -168,8 +235,12 @@ export const ChatListItem = ({
         </p>
         <div className="flex flex-col justify-between pb-1.5 absolute right-0 top-0 h-full items-end">
           <span className="text-xs text-gray-400 mb-1">{time}</span>
-          {/* Tick hoặc badge unread */}
-          {lastMessageSenderId === userId ? (
+          {/* Tick hoặc badge unread hoặc invite */}
+          {isInvite ? (
+            <span className="inline-flex items-center justify-center min-w-[50px] h-5 px-2 rounded-full bg-blue-500 text-[10px] font-bold text-white mt-1">
+              Invite
+            </span>
+          ) : lastMessageSenderId === userId ? (
             <span
               className={`inline-flex items-center justify-center w-5 h-5 rounded-full mt-1 ${
                 lastReadReceipts ? "bg-blue-500" : "bg-gray-300"

@@ -17,6 +17,7 @@ export type Message = {
   eventId: string;
   sender: string | undefined;
   senderDisplayName?: string | undefined;
+  senderAvatarUrl?: string | null;
   text: string;
   time: string;
   timestamp?: number;
@@ -31,12 +32,20 @@ export type Message = {
   status: MessageStatus;
   type?: MessageType;
   isForward?: boolean;
+  isReply?: boolean;
   isStickerAnimation?: boolean;
   isDeleted?: boolean;
+  isEdited?: boolean;
   location?: {
     latitude: number | null;
     longitude: number | null;
     description?: string;
+  };
+  replyTo?: {
+    eventId: string;
+    text: string;
+    sender: string;
+    senderDisplayName: string;
   };
 };
 
@@ -119,6 +128,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       (msg, index, self) =>
         index === self.findIndex((m) => m.eventId === msg.eventId)
     );
+
     set({
       messagesByRoom: {
         ...get().messagesByRoom,

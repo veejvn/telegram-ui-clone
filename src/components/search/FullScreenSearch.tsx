@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { X, Search, Sparkles } from "lucide-react";
 import { getDetailedStatus } from "@/utils/chat/presencesHelpers";
 import styles from "./FullScreenSearch.module.css";
@@ -64,8 +64,6 @@ const FullScreenSearch = ({
     // Store initial viewport height
     const initialHeight = window.visualViewport?.height || window.innerHeight;
     setInitialViewportHeight(initialHeight);
-
-    console.log("Mobile device detected, initialHeight:", initialHeight);
 
     const handleViewportChange = () => {
       if (window.visualViewport) {
@@ -136,10 +134,8 @@ const FullScreenSearch = ({
         `${keyboardHeight}px`
       );
 
-      console.log("Keyboard opened, height:", keyboardHeight);
     } else {
       document.documentElement.style.removeProperty("--keyboard-height");
-      console.log("Keyboard closed");
     }
 
     return () => {
@@ -275,11 +271,17 @@ const FullScreenSearch = ({
         ) : (
           <div>
             {/* Contacts row */}
-            {contacts.length > 0 && (
+            {contacts.length > 0 ? (
               <div className="flex overflow-x-auto px-4 py-2 space-x-4 no-scrollbar">
                 {contacts
                   .slice(0, 10)
                   .map((contact) => renderContactItem(contact))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="text-gray-500 text-sm">
+                  Không có liên hệ nào
+                </div>
               </div>
             )}
 
@@ -324,7 +326,11 @@ const FullScreenSearch = ({
                 ))}
               </div>
             ) : (
-              <div className="pb-4"></div>
+              <div className="text-center py-8">
+                <div className="text-gray-500 text-sm">
+                  Chưa có tìm kiếm gần đây
+                </div>
+              </div>
             )}
           </div>
         )}
@@ -373,14 +379,6 @@ const FullScreenSearch = ({
                 const currentHeight =
                   window.visualViewport?.height || window.innerHeight;
                 const heightDifference = initialViewportHeight - currentHeight;
-
-                console.log("Mobile focus event:", {
-                  initialHeight: initialViewportHeight,
-                  currentHeight,
-                  heightDifference,
-                  isKeyboardDetected: heightDifference > 100,
-                  userAgent: navigator.userAgent.slice(0, 50) + "...",
-                });
 
                 if (heightDifference > 100) {
                   setIsKeyboardOpen(true);
