@@ -64,6 +64,35 @@ export const ChatList = ({
   const [longPressTriggered, setLongPressTriggered] = useState(false);
   const touchStartPositionRef = useRef<{ x: number; y: number } | null>(null);
   const isSwipingRef = useRef(false);
+  const [customNames, setCustomNames] = useState<Record<string, string>>({});
+  const [customAvatars, setCustomAvatars] = useState<Record<string, string>>(
+    {}
+  );
+
+  useEffect(() => {
+    if (!client) return;
+
+    const loadCustomData = async () => {
+      try {
+        const nameEvent = await client.getAccountData("dev.custom_name" as any);
+        const avatarEvent = await client.getAccountData(
+          "dev.custom_avatar" as any
+        );
+
+        const nameContent =
+          nameEvent?.getContent<Record<string, string>>() ?? {};
+        const avatarContent =
+          avatarEvent?.getContent<Record<string, string>>() ?? {};
+
+        setCustomNames(nameContent);
+        setCustomAvatars(avatarContent);
+      } catch (error) {
+        console.error("Failed to fetch custom names/avatars:", error);
+      }
+    };
+
+    loadCustomData();
+  }, [client]);
 
   // Đọc pinnedRooms từ account_data khi component mount
   useEffect(() => {
@@ -329,6 +358,10 @@ export const ChatList = ({
               return 0;
             })
             .map((room: sdk.Room, idx) => {
+              if (!client) return null;
+              const members = room.getMembers();
+              const userId = client.getUserId();
+              const otherMember = members.find((m) => m.userId !== userId);
               // Trailing actions: More, Delete, Archive
               const containerStyle =
                 "h-full flex items-center px-[2px] justify-between w-[280px]"; // Tăng chiều rộng container
@@ -400,6 +433,16 @@ export const ChatList = ({
                         onSelect={() => onSelectRoom?.(room.roomId)}
                         isMuted={mutedRooms.includes(room.roomId)}
                         isPinned={pinnedRooms.includes(room.roomId)}
+                        customName={
+                          otherMember
+                            ? customNames[otherMember.userId]
+                            : undefined
+                        }
+                        customAvatar={
+                          otherMember
+                            ? customAvatars[otherMember.userId]
+                            : undefined
+                        }
                       />
                     ) : (
                       <div className="relative">
@@ -537,6 +580,16 @@ export const ChatList = ({
                             room={room}
                             isMuted={mutedRooms.includes(room.roomId)}
                             isPinned={pinnedRooms.includes(room.roomId)}
+                            customName={
+                              otherMember
+                                ? customNames[otherMember.userId]
+                                : undefined
+                            }
+                            customAvatar={
+                              otherMember
+                                ? customAvatars[otherMember.userId]
+                                : undefined
+                            }
                           />
                         </button>
                       </div>

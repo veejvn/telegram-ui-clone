@@ -23,6 +23,19 @@ interface ChatListItemProps {
   onSelect?: () => void;
   isMuted?: boolean;
   isPinned?: boolean;
+  customName?: string | { name: string };
+  customAvatar?: string;
+}
+
+function getHttpAvatarUrl(
+  client: sdk.MatrixClient | null,
+  mxcUrl?: string | null
+): string | undefined {
+  if (!mxcUrl) return undefined; // loại bỏ luôn trường hợp null
+  if (mxcUrl.startsWith("mxc://") && client) {
+    return client.mxcUrlToHttp(mxcUrl, 60, 60, "crop", false) ?? undefined;
+  }
+  return mxcUrl ?? undefined;
 }
 
 export const ChatListItem = ({
@@ -32,6 +45,8 @@ export const ChatListItem = ({
   onSelect,
   isMuted = false,
   isPinned = false,
+  customAvatar,
+  customName,
 }: ChatListItemProps) => {
   const client = useMatrixClient();
   const userId = client?.getUserId();
@@ -74,7 +89,15 @@ export const ChatListItem = ({
 
   let avatarUrl = room.getAvatarUrl(HOMESERVER_URL, 60, 60, "crop", false);
   const members = room.getMembers();
-  const isGroup = members.length > 2;
+
+  // Sử dụng cùng logic với ChatHeader để phát hiện group chat
+  const joinRuleEvent = room?.currentState.getStateEvents(
+    "m.room.join_rules",
+    ""
+  );
+  const joinRule = joinRuleEvent?.getContent()?.join_rule;
+  const isGroup = joinRule === "public";
+
   if (!isGroup) {
     const otherMember = members.find((member) => member.userId !== userId);
     avatarUrl =
@@ -88,6 +111,12 @@ export const ChatListItem = ({
         false
       ) || "";
   }
+
+  // Chỉ sử dụng customAvatar cho chat 1-1, không phải group
+  const finalAvatar = getHttpAvatarUrl(
+    client,
+    isGroup ? avatarUrl : customAvatar ?? avatarUrl
+  );
 
   const { content, time, sender } = getLastMessagePreview(room);
 
@@ -134,13 +163,12 @@ export const ChatListItem = ({
       )}
       <div className="w-[60px] flex justify-center items-center">
         <Avatar className="h-15 w-15">
-          {avatarUrl ? (
-            <AvatarImage src={avatarUrl} alt="avatar" />
+          {finalAvatar ? (
+            <AvatarImage src={finalAvatar} alt="avatar" />
           ) : (
             <>
-              <AvatarImage src="" alt="Unknow Avatar" />
               <AvatarFallback className="bg-purple-400 text-white text-xl font-bold">
-                {room.name.slice(0, 1)}
+                {room.name?.slice(0, 1) ?? "?"}
               </AvatarFallback>
             </>
           )}
@@ -151,7 +179,15 @@ export const ChatListItem = ({
         <div className="flex items-center gap-1">
           {isPinned && <PinIcon className="w-4 h-4 text-blue-500 ml-1" />}
           {isMuted && <VolumeX className="w-4 h-4 text-red-500" />}
-          <h1 className="text-[18px] mb-0.5 select-none">{room.name}</h1>
+          <h1 className="text-[18px] mb-0.5 select-none">
+            {
+              isGroup
+                ? room.name // Hiển thị tên phòng cho group
+                : typeof customName === "object"
+                ? customName.name
+                : customName ?? room.name // Hiển thị custom name cho chat 1-1
+            }
+          </h1>
         </div>
         <p className="text-sm text-muted-foreground line-clamp-2">
           {lastMessageSenderId === userId ? (

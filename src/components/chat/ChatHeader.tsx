@@ -51,6 +51,7 @@ const ChatHeader = ({
   const { roomId, type, otherUserId } = getRoomInfo(room, currentUserId);
   const clearMessages = useForwardStore((state) => state.clearMessages);
   const [user, setUser] = useState<sdk.User | undefined>(undefined);
+  const [customNames, setCustomNames] = useState<Record<string, string>>({});
   const router = useRouter();
 
   // Group name edit modal state
@@ -88,6 +89,24 @@ const ChatHeader = ({
         console.log("Error: ", res.err);
       });
   }, [roomId, client]);
+
+  // Load custom names from account_data
+  useEffect(() => {
+    if (!client) return;
+
+    const loadCustomNames = async () => {
+      try {
+        const nameEvent = await client.getAccountData("dev.custom_name" as any);
+        const nameContent =
+          nameEvent?.getContent<Record<string, string>>() ?? {};
+        setCustomNames(nameContent);
+      } catch (error) {
+        console.error("Failed to fetch custom names:", error);
+      }
+    };
+
+    loadCustomNames();
+  }, [client]);
 
   const [avatarUrl, setAvatarUrl] = React.useState<string | null>(null);
 
@@ -136,7 +155,11 @@ const ChatHeader = ({
 
     return {
       id: user.userId,
-      name: user.displayName || user.userId || room.name,
+      name:
+        customNames[user.userId] ||
+        user.displayName ||
+        user.userId ||
+        room.name,
       lastSeen: isActuallyOnline
         ? "online"
         : getDetailedStatus(lastSeen) || "recently",
@@ -255,6 +278,21 @@ const ChatHeader = ({
               </p>
             </div>
           </div>
+
+          {/* Right: More options for group */}
+          <div className="w-[80px] flex items-center justify-end">
+            <button
+              className="flex items-center justify-center rounded-full p-1.5 border border-white cursor-pointer 
+            bg-gradient-to-br from-slate-100/50 via-gray-400/10 to-slate-50/15 
+            backdrop-blur-xs shadow-xs hover:scale-105 duration-300 transition-all ease-in-out"
+              title="More options"
+              aria-label="More options"
+            >
+              <Link href={`${room.roomId}/info`}>
+                <MoreHorizontal size={20} />
+              </Link>
+            </button>
+          </div>
         </>
       ) : (
         <>
@@ -291,57 +329,45 @@ const ChatHeader = ({
           {/* Center: Room name */}
           <div className="flex-1 text-center truncate">
             <Link href={`${room.roomId}/info`}>
-              <h1 className="font-semibold">{room.name}</h1>
+              <h1 className="font-semibold">
+                {user && customNames[user.userId]
+                  ? customNames[user.userId]
+                  : room.name}
+              </h1>
             </Link>
           </div>
+
+          {/* Right: Call/Video buttons */}
+          <div className="w-[80px] flex items-center gap-2 justify-end">
+            {/* Video Call Button */}
+            <button
+              className="flex items-center justify-center rounded-full p-1 border border-white cursor-pointer 
+            bg-gradient-to-br from-slate-100/70 via-gray-400/10 to-slate-50/30 backdrop-blur-xs 
+            shadow-xs hover:scale-105 duration-300 transition-all ease-in-out
+            disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              onClick={() => handleStartCall("video")}
+              disabled={!user || !client || !currentContact}
+              title="Video Call"
+              aria-label="Start video call"
+            >
+              <Video size={20} />
+            </button>
+
+            {/* Voice Call Button */}
+            <button
+              className="flex items-center justify-center rounded-full p-1.5 border border-white cursor-pointer 
+            bg-gradient-to-br from-slate-100/70 via-gray-400/10 to-slate-50/30 backdrop-blur-xs 
+            shadow-xs hover:scale-105 duration-300 transition-all ease-in-out
+            disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              onClick={() => handleStartCall("voice")}
+              disabled={!user || !client || !currentContact}
+              title="Voice Call"
+              aria-label="Start voice call"
+            >
+              <PhoneOutgoing size={15} />
+            </button>
+          </div>
         </>
-      )}
-
-      {/* Right: Call/Video buttons or More options */}
-      {isGroup ? (
-        <div className="w-[80px] flex items-center justify-end">
-          <button
-            className="flex items-center justify-center rounded-full p-1.5 border border-white cursor-pointer 
-          bg-gradient-to-br from-slate-100/50 via-gray-400/10 to-slate-50/15 
-          backdrop-blur-xs shadow-xs hover:scale-105 duration-300 transition-all ease-in-out"
-            title="More options"
-            aria-label="More options"
-          >
-            <Link href={`${room.roomId}/info`}>
-              <MoreHorizontal size={20} />
-            </Link>
-          </button>
-        </div>
-      ) : (
-        <div className="w-[80px] flex items-center gap-2 justify-end">
-          {/* Video Call Button */}
-          <button
-            className="flex items-center justify-center rounded-full p-1 border border-white cursor-pointer 
-          bg-gradient-to-br from-slate-100/70 via-gray-400/10 to-slate-50/30 backdrop-blur-xs 
-          shadow-xs hover:scale-105 duration-300 transition-all ease-in-out
-          disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-            onClick={() => handleStartCall("video")}
-            disabled={!user || !client || !currentContact}
-            title="Video Call"
-            aria-label="Start video call"
-          >
-            <Video size={20} />
-          </button>
-
-          {/* Voice Call Button */}
-          <button
-            className="flex items-center justify-center rounded-full p-1.5 border border-white cursor-pointer 
-          bg-gradient-to-br from-slate-100/70 via-gray-400/10 to-slate-50/30 backdrop-blur-xs 
-          shadow-xs hover:scale-105 duration-300 transition-all ease-in-out
-          disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-            onClick={() => handleStartCall("voice")}
-            disabled={!user || !client || !currentContact}
-            title="Voice Call"
-            aria-label="Start voice call"
-          >
-            <PhoneOutgoing size={15} />
-          </button>
-        </div>
       )}
 
       {/* Group Name Edit Modal */}
