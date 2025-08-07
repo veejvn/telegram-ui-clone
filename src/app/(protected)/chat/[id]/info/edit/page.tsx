@@ -27,7 +27,7 @@ export default function ContactEditPage() {
   };
 
   const handleSaveCustomName = async () => {
-    if (!user?.userId || !client) return;
+    if (!user?.userId || !client || !client.isInitialSyncComplete()) return;
 
     try {
       const event = client.getAccountData(CUSTOM_NAME_EVENT as any);
@@ -61,7 +61,13 @@ export default function ContactEditPage() {
   };
 
   const handleSaveCustomAvatar = async () => {
-    if (!client || !user?.userId || !selectedAvatarFile) return;
+    if (
+      !client ||
+      !user?.userId ||
+      !selectedAvatarFile ||
+      !client.isInitialSyncComplete()
+    )
+      return;
 
     try {
       const res = await client.uploadContent(selectedAvatarFile, {
@@ -136,10 +142,30 @@ export default function ContactEditPage() {
   }, [roomId, client]);
 
   React.useEffect(() => {
-    if (!client || !user?.userId) return;
+    if (!client || !user?.userId || !client.isInitialSyncComplete()) return;
 
     const fetchCustomName = async () => {
       try {
+        // Kiểm tra client đã sẵn sàng
+        if (
+          client.getSyncState() !== "SYNCING" &&
+          client.getSyncState() !== "PREPARED"
+        ) {
+          await new Promise((resolve) => {
+            const checkSync = () => {
+              if (
+                client.getSyncState() === "SYNCING" ||
+                client.getSyncState() === "PREPARED"
+              ) {
+                resolve(true);
+              } else {
+                setTimeout(checkSync, 100);
+              }
+            };
+            checkSync();
+          });
+        }
+
         const event = await client.getAccountData(CUSTOM_NAME_EVENT as any);
         const data = event?.getContent<Record<string, string>>();
         const custom = data?.[user.userId];
@@ -153,10 +179,30 @@ export default function ContactEditPage() {
   }, [client, user]);
 
   React.useEffect(() => {
-    if (!client || !user?.userId) return;
+    if (!client || !user?.userId || !client.isInitialSyncComplete()) return;
 
     const fetchAvatar = async () => {
       try {
+        // Kiểm tra client đã sẵn sàng
+        if (
+          client.getSyncState() !== "SYNCING" &&
+          client.getSyncState() !== "PREPARED"
+        ) {
+          await new Promise((resolve) => {
+            const checkSync = () => {
+              if (
+                client.getSyncState() === "SYNCING" ||
+                client.getSyncState() === "PREPARED"
+              ) {
+                resolve(true);
+              } else {
+                setTimeout(checkSync, 100);
+              }
+            };
+            checkSync();
+          });
+        }
+
         const event = await client.getAccountData(CUSTOM_AVATAR_EVENT as any);
         const data = event?.getContent<Record<string, string>>();
         const mxcUrl = data?.[user.userId];
@@ -184,7 +230,7 @@ export default function ContactEditPage() {
         <button
           onClick={() => router.back()}
           className="w-10 h-10 rounded-full bg-white/30 hover:bg-white/40 backdrop-blur-md flex items-center justify-center shadow-sm"
-            aria-label="Back"
+          aria-label="Back"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

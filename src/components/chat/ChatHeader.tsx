@@ -92,10 +92,30 @@ const ChatHeader = ({
 
   // Load custom names from account_data
   useEffect(() => {
-    if (!client) return;
+    if (!client || !client.isInitialSyncComplete()) return;
 
     const loadCustomNames = async () => {
       try {
+        // Kiểm tra client đã sẵn sàng
+        if (
+          client.getSyncState() !== "SYNCING" &&
+          client.getSyncState() !== "PREPARED"
+        ) {
+          await new Promise((resolve) => {
+            const checkSync = () => {
+              if (
+                client.getSyncState() === "SYNCING" ||
+                client.getSyncState() === "PREPARED"
+              ) {
+                resolve(true);
+              } else {
+                setTimeout(checkSync, 100);
+              }
+            };
+            checkSync();
+          });
+        }
+
         const nameEvent = await client.getAccountData("dev.custom_name" as any);
         const nameContent =
           nameEvent?.getContent<Record<string, string>>() ?? {};
