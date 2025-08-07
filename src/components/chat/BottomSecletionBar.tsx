@@ -10,7 +10,7 @@ interface BottomActionBarProps {
   onForward: (messageIds: string[]) => void;
 }
 
-const BottomActionBar: React.FC<BottomActionBarProps> = ({
+const BottomSecletionBar: React.FC<BottomActionBarProps> = ({
   onDelete,
   onForward,
 }) => {
@@ -80,4 +80,4 @@ const BottomActionBar: React.FC<BottomActionBarProps> = ({
   );
 };
 
-export default BottomActionBar;
+export default BottomSecletionBar;
