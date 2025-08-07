@@ -180,13 +180,37 @@ export const ChatListItem = ({
           {isPinned && <PinIcon className="w-4 h-4 text-blue-500 ml-1" />}
           {isMuted && <VolumeX className="w-4 h-4 text-red-500" />}
           <h1 className="text-[18px] mb-0.5 select-none">
-            {
-              isGroup
-                ? room.name // Hiển thị tên phòng cho group
-                : typeof customName === "object"
-                ? customName.name
-                : customName ?? room.name // Hiển thị custom name cho chat 1-1
-            }
+            {(() => {
+              if (isGroup) {
+                // Cho group chat, luôn hiển thị tên phòng
+                return room.name || "Group Chat";
+              } else {
+                // Cho chat 1-1, ưu tiên customName, sau đó fallback
+                let displayName = "";
+
+                if (typeof customName === "object" && customName?.name) {
+                  displayName = customName.name;
+                } else if (
+                  typeof customName === "string" &&
+                  customName.trim()
+                ) {
+                  displayName = customName;
+                } else if (room.name && room.name.trim()) {
+                  displayName = room.name;
+                } else {
+                  // Fallback cuối cùng: tên của member khác trong chat 1-1
+                  const otherMember = room
+                    .getMembers()
+                    .find((member) => member.userId !== userId);
+                  displayName =
+                    otherMember?.name ||
+                    otherMember?.rawDisplayName ||
+                    "Unknown User";
+                }
+
+                return displayName;
+              }
+            })()}
           </h1>
         </div>
         <p className="text-sm text-muted-foreground line-clamp-2">

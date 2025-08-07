@@ -70,10 +70,30 @@ export const ChatList = ({
   );
 
   useEffect(() => {
-    if (!client) return;
+    if (!client || !client.isInitialSyncComplete()) return;
 
     const loadCustomData = async () => {
       try {
+        // Kiểm tra client đã sẵn sàng
+        if (
+          client.getSyncState() !== "SYNCING" &&
+          client.getSyncState() !== "PREPARED"
+        ) {
+          await new Promise((resolve) => {
+            const checkSync = () => {
+              if (
+                client.getSyncState() === "SYNCING" ||
+                client.getSyncState() === "PREPARED"
+              ) {
+                resolve(true);
+              } else {
+                setTimeout(checkSync, 100);
+              }
+            };
+            checkSync();
+          });
+        }
+
         const nameEvent = await client.getAccountData("dev.custom_name" as any);
         const avatarEvent = await client.getAccountData(
           "dev.custom_avatar" as any
@@ -96,16 +116,44 @@ export const ChatList = ({
 
   // Đọc pinnedRooms từ account_data khi component mount
   useEffect(() => {
-    if (!client) return;
+    if (!client || !client.isInitialSyncComplete()) return;
 
-    // Lấy dữ liệu từ account_data
-    const pinnedRoomsEvent = client.getAccountData(
-      "im.chatapp.pinned_rooms" as keyof sdk.AccountDataEvents
-    );
-    if (pinnedRoomsEvent) {
-      const data = pinnedRoomsEvent.getContent();
-      setPinnedRooms(data.rooms || []);
-    }
+    const loadPinnedRooms = async () => {
+      try {
+        // Kiểm tra client đã sẵn sàng
+        if (
+          client.getSyncState() !== "SYNCING" &&
+          client.getSyncState() !== "PREPARED"
+        ) {
+          await new Promise((resolve) => {
+            const checkSync = () => {
+              if (
+                client.getSyncState() === "SYNCING" ||
+                client.getSyncState() === "PREPARED"
+              ) {
+                resolve(true);
+              } else {
+                setTimeout(checkSync, 100);
+              }
+            };
+            checkSync();
+          });
+        }
+
+        // Lấy dữ liệu từ account_data
+        const pinnedRoomsEvent = client.getAccountData(
+          "im.chatapp.pinned_rooms" as keyof sdk.AccountDataEvents
+        );
+        if (pinnedRoomsEvent) {
+          const data = pinnedRoomsEvent.getContent();
+          setPinnedRooms(data.rooms || []);
+        }
+      } catch (error) {
+        console.error("Failed to load pinned rooms:", error);
+      }
+    };
+
+    loadPinnedRooms();
 
     // Lắng nghe sự kiện khi pinnedRooms thay đổi (từ thiết bị khác)
     const onAccountData = (event: any) => {
@@ -182,7 +230,7 @@ export const ChatList = ({
   };
 
   const togglePinnedRoom = (roomId: string) => {
-    if (!client || !roomId) return;
+    if (!client || !roomId || !client.isInitialSyncComplete()) return;
 
     const newPinnedRooms = pinnedRooms.includes(roomId)
       ? pinnedRooms.filter((id) => id !== roomId)
