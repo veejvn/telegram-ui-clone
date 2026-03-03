@@ -154,8 +154,8 @@ export function MatrixClientProvider({
             "[MatrixClientProvider] Token verification failed:",
             tokenError
           );
-          setError(`Lỗi xác thực token: ${tokenError.message}
-            Chi tiết: - Error: ${tokenError.message}
+          setError(`Lỗi xác thực token: ${tokenError.message} Chi tiết: 
+            - Error: ${tokenError.message}
             Vui lòng đăng nhập lại.`);
           logout();
           clearUser();
