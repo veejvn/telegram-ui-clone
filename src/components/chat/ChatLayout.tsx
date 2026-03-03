@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useSelectionStore } from "@/stores/useSelectionStore";
-import BottomActionBar from "./BottomActionBar";
+import BottomSecletionBar from "./BottomSecletionBar";
 import SelectionHeader from "./SelectionHeader";
 import { deleteMessage } from "@/services/chatService";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
@@ -85,7 +85,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ children, roomId }) => {
       <div className="h-full">{children}</div>
 
       {/* Bottom Action Bar - fixed at bottom */}
-      <BottomActionBar onDelete={handleDelete} onForward={handleForward} />
+      <BottomSecletionBar onDelete={handleDelete} onForward={handleForward} />
     </div>
   );
 };

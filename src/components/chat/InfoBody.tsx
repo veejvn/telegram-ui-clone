@@ -254,14 +254,6 @@ export default function InfoBody({ user }: { user: sdk.User }) {
       "";
     const avatarMxc = room.getAvatarUrl(baseUrl, 48, 48, "crop", true, false);
     const avatarUrl = avatarMxc && client ? avatarMxc : "";
-    console.log(
-      "Group:",
-      room.name,
-      "Avatar MXC:",
-      avatarMxc,
-      "Avatar URL:",
-      avatarUrl
-    );
     return {
       eventId: room.roomId,
       name: room.name || room.roomId,
@@ -361,8 +353,8 @@ export default function InfoBody({ user }: { user: sdk.User }) {
             </Avatar>
 
 
-<p className="text-lg font-semibold mt-1">{customName ?? user.displayName ?? user.userId}</p>
-            
+            <p className="text-lg font-semibold mt-1">{customName ?? user.displayName ?? user.userId}</p>
+
             <p className="text-sm text-[#6B7271] font-normal">
               {isActuallyOnline ? "Online" : getDetailedStatus(lastSeen)}
             </p>

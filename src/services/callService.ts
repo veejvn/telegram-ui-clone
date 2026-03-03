@@ -64,11 +64,8 @@ class CallService extends EventEmitter {
       console.warn(
         "⚠️ [CallService] Instance is being initialized, waiting..."
       );
-      // Wait for initialization to complete
-      while (CallService.isInitializing) {
-        // Busy wait - in production you might want to use a promise
-      }
-      return CallService.instance!;
+      // Return early - the singleton was already created or is creating
+      return CallService.instance ?? new CallService();
     }
 
     console.log("🆕 [CallService] Creating new singleton instance");
@@ -131,7 +128,7 @@ class CallService extends EventEmitter {
           this.setupCallFromSync(
             invite[0],
             callId,
-            "!GjGBadHVuqZYqWQxvZ:matrix.teknix.dev"
+            roomId
           );
         }
       }
@@ -485,11 +482,11 @@ class CallService extends EventEmitter {
         // Navigation info
         navigationUrl: isVideo
           ? `/call/video?calleeId=${roomId}&contact=${encodeURIComponent(
-              opponentId || "Unknown"
-            )}`
+            opponentId || "Unknown"
+          )}`
           : `/call/voice?calleeId=${roomId}&contact=${encodeURIComponent(
-              opponentId || "Unknown"
-            )}`,
+            opponentId || "Unknown"
+          )}`,
       });
 
       // this.emit("answer-call-sync", {
@@ -891,7 +888,7 @@ class CallService extends EventEmitter {
       console.error("[CallService] Không thể bật camera:", err);
       alert(
         "Không thể bật camera: " +
-          (err instanceof Error ? err.message : String(err))
+        (err instanceof Error ? err.message : String(err))
       );
     }
   }

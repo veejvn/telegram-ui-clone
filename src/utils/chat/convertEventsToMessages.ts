@@ -1,7 +1,7 @@
 // src/utils/chat/convertEventsToMessages.ts
 
 import type { MatrixClient, MatrixEvent } from "matrix-js-sdk";
-import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
+import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis";
 import { Message, MessageType, MessageStatus } from "@/stores/useChatStore";
 import { FileInfo, ImageInfo } from "@/types/chat";
 import { Metadata } from "@/utils/chat/send-message/getVideoMetadata";
