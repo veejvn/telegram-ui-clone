@@ -2,7 +2,7 @@
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { sendMessage } from "@/services/chatService";
 import { useChatStore } from "@/stores/useChatStore";
-import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
+import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis";
 import EmojiPicker, { Theme as EmojiTheme } from "emoji-picker-react";
 import { Loader2, Smile } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -121,8 +121,7 @@ export default function ForwardComposer() {
         toast.success(`Message sent to ${roomNames[0]} and ${roomNames[1]}`);
       } else if (roomNames.length > 2) {
         toast.success(
-          `Message sent to ${roomNames[0]} and ${
-            roomNames.length - 1
+          `Message sent to ${roomNames[0]} and ${roomNames.length - 1
           } other chats`
         );
       } else {
@@ -158,9 +157,8 @@ export default function ForwardComposer() {
       <MultiForwardMsgPreview />
       <div className="relative flex justify-between items-center px-2 py-1.5 lg:py-3 pb-10">
         <div
-          className={`outline-2 p-1 mx-1 relative ${
-            isMultiLine ? "rounded-2xl" : "rounded-full"
-          } flex items-center justify-between w-full bg-[#f0f0f0] dark:bg-[#2b2b2d]`}
+          className={`outline-2 p-1 mx-1 relative ${isMultiLine ? "rounded-2xl" : "rounded-full"
+            } flex items-center justify-between w-full bg-[#f0f0f0] dark:bg-[#2b2b2d]`}
         >
           <textarea
             ref={textareaRef}

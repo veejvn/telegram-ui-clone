@@ -19,7 +19,6 @@ export default function Providers({
   const router = useRouter();
   const callAction = useWebAppMethodHandler();
   useWebAppListener((eventName, payload) => {
-    console.log("🚀 ~ eventName", eventName);
     switch (eventName) {
       case EventName.acceptCall:
         callAction.acceptCall({
@@ -45,10 +44,14 @@ export default function Providers({
 
   useEffect(() => {
     const handleAutoAcceptAndNavigate = (data: any) => {
-      console.log("[UI] Auto accept and navigate:", data);
+      // console.log("[UI] Auto accept and navigate:", data);
       router.replace(data.navigationUrl);
     };
     callService.on("auto-accept-and-navigate", handleAutoAcceptAndNavigate);
+
+    return () => {
+      callService.off("auto-accept-and-navigate", handleAutoAcceptAndNavigate);
+    };
   }, []);
 
   return (

@@ -8,7 +8,7 @@ import { getInitials } from "@/utils/getInitials";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import React, { useEffect } from "react";
-import { getBackgroundColorClass } from "@/utils/getBackgroundColor ";
+import { getBackgroundColorClass } from "@/utils/getBackgroundColor";
 import { extractUsernameFromMatrixId } from "@/utils/matrixHelpers";
 import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
 import Head from "next/head";

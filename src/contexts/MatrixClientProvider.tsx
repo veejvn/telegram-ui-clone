@@ -18,7 +18,7 @@ import {
 import { clearMatrixAuthCookies } from "@/utils/clearAuthCookies";
 import { ErrorDisplay } from "@/components/common/ErrorDisplay";
 import { useAuthStore } from "@/stores/useAuthStore";
-import useRegisterPushKey from "@/hooks/useRegisterPushKey ";
+import useRegisterPushKey from "@/hooks/useRegisterPushKey";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 import { useUserStore } from "@/stores/useUserStore";
 
@@ -114,8 +114,7 @@ export function MatrixClientProvider({
           if (!whoAmIResponse.ok) {
             const errorData = await whoAmIResponse.json();
             throw new Error(
-              `WhoAmI failed (${whoAmIResponse.status}): ${
-                errorData.error || "Unknown error"
+              `WhoAmI failed (${whoAmIResponse.status}): ${errorData.error || "Unknown error"
               }`
             );
           }
@@ -231,9 +230,8 @@ export function MatrixClientProvider({
       } catch (error: any) {
         console.error("[MatrixClientProvider] Failed to setup client:", error);
 
-        const errorMsg = `Lỗi khởi tạo Matrix client: ${
-          error?.message || "Không xác định"
-        }
+        const errorMsg = `Lỗi khởi tạo Matrix client: ${error?.message || "Không xác định"
+          }
 
 Chi tiết:
 - HTTP Status: ${error?.httpStatus || "N/A"}

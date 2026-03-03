@@ -4,7 +4,7 @@
 
 import * as sdk from "@/lib/matrix-sdk";
 import { Message, MessageStatus, MessageType } from "@/stores/useChatStore";
-import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
+import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { FileInfo, ImageInfo, LocationInfo } from "@/types/chat";
@@ -431,43 +431,7 @@ export const getOlderMessages = async (
   return [];
 };
 
-export const getRoom = async (
-  roomId: string | undefined
-): Promise<{
-  success: boolean;
-  err?: any;
-  room?: sdk.Room;
-}> => {
-  const client = useMatrixClient();
-  if (!client) {
-    return {
-      success: false,
-      err: "User not authenticated or session invalid.",
-    };
-  }
 
-  try {
-    const result: sdk.Room | null = await client.getRoom(roomId);
-
-    if (result) {
-      console.clear();
-
-      return {
-        success: true,
-        room: result,
-      };
-    } else {
-      console.clear();
-      console.log("Get room failed !");
-      return {
-        success: false,
-        err: "Invalid room, check room_id !",
-      };
-    }
-  } catch (error) {
-    return { success: false, err: error };
-  }
-};
 
 export const getUserInfoInPrivateRoom = async (
   roomId: string,

@@ -13,7 +13,7 @@ import UnreadMsgsCount from "./UnreadMsgsCount";
 import useUnreadMessages from "@/hooks/useUnreadMsgs";
 
 import { Check } from "lucide-react";
-import { useReadReceipts } from "@/hooks/useReadReceipts ";
+import { useReadReceipts } from "@/hooks/useReadReceipts";
 import { truncateText } from "@/utils/chat/truncateText";
 
 interface ChatListItemProps {
@@ -242,9 +242,8 @@ export const ChatListItem = ({
             </span>
           ) : lastMessageSenderId === userId ? (
             <span
-              className={`inline-flex items-center justify-center w-5 h-5 rounded-full mt-1 ${
-                lastReadReceipts ? "bg-blue-500" : "bg-gray-300"
-              }`}
+              className={`inline-flex items-center justify-center w-5 h-5 rounded-full mt-1 ${lastReadReceipts ? "bg-blue-500" : "bg-gray-300"
+                }`}
             >
               <Check className="w-3.5 h-3.5 text-white" />
             </span>

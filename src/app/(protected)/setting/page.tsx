@@ -10,7 +10,7 @@ import { useUserStore } from "@/stores/useUserStore";
 import { getInitials } from "@/utils/getInitials";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { getBackgroundColorClass } from "@/utils/getBackgroundColor ";
+import { getBackgroundColorClass } from "@/utils/getBackgroundColor";
 import { getHeaderStyleWithStatusBar } from "@/utils/getHeaderStyleWithStatusBar";
 import { extractUsernameFromMatrixId } from "@/utils/matrixHelpers";
 import { getLanguageLabelByCode, getSelectedLanguageCode } from "@/utils/setting/language";

@@ -2,7 +2,7 @@
 import * as sdk from "matrix-js-sdk";
 import { formatTime } from "./formatTimeString";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
+import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis";
 
 export const getLastMessagePreview = (
   room: sdk.Room

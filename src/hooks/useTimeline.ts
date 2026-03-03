@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { useMatrixClient } from "@/contexts/MatrixClientProvider";
 import { getTimeline, sendReadReceipt } from "@/services/chatService";
 import { MessageType, useChatStore } from "@/stores/useChatStore";
-import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis ";
+import { isOnlyEmojis } from "@/utils/chat/isOnlyEmojis";
 import { FileInfo, ImageInfo } from "@/types/chat";
 import { Metadata } from "@/utils/chat/send-message/getVideoMetadata";
 import type { Room, MatrixEvent } from "matrix-js-sdk";
@@ -268,7 +268,7 @@ export const useTimeline = (roomId: string) => {
       isMounted = false;
       client.removeListener("Room.timeline" as any, onTimeline);
       client.removeListener("Room.receipt" as any, onReceipt);
-      client.removeListener("Event.localEchoUpdated" as any, onEventUpdate);
+      client.removeListener("Room.localEchoUpdated" as any, onEventUpdate);
     };
   }, [client, roomId]);
 };
